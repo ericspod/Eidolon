@@ -1,2 +1,2 @@
 # Eidolon
-Eidolon biomedical visualization and analysis framework
+Eidolon biomedical visualization and analysis framework (coming soon)
