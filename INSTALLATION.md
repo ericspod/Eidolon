@@ -18,12 +18,9 @@ Install Python either by downloading the Anaconda package or installing the comp
 
 Install the Anaconda Python 2.7 64bit Graphical installer: http://continuum.io/downloads
 
-This should include PyQt4, but if not then you will need to install it manually. In a command window, navigate to the '''!Anaconda/Scripts''' directory and execute the following to install PyQt4 (version 4.10.4 as of this writing):
+This should include PyQt4, but if not then you will need to install it manually. In a command window, navigate to the *Anaconda/Scripts* directory and execute the following to install PyQt4 (version 4.10.4 as of this writing):
 
-{{{#!sh
-conda.exe install pyqt
-}}}
-
+    conda.exe install pyqt
 
 ### Manual Python Install
 
@@ -49,6 +46,7 @@ Eidolon has only been compiled to work on Ubuntu 12.04 and 14.04 so these instru
  * System-installed IRTK (Optional)
 
 You may also need the following packages:
+
  * libopenjpeg2 (OpenJpeg)
  * openexr (OpenExr)
 
@@ -58,9 +56,7 @@ Follow the instructions below for your OS version before installing anything.
 
 The built-in version of Python with 12.* is not compatible anymore so a manual install isn't feasible. Follow the instructions below for installing Anaconda then install libopenjpeg2, openexr, and libcg by running the following:
 
-{{{#!sh
-sudo apt-get install libopenjpeg2 openexr libcg
-}}}
+    sudo apt-get install libopenjpeg2 openexr libcg
 
 Otherwise use a package manager (ie. Synaptic).
 
@@ -84,17 +80,13 @@ With Ubuntu 12.04 there's a number of issues with older software now, so the eas
 
 Install the package with the following command:
 
-{{{#!sh 
-bash Anaconda2-2.5.0-Linux-x86_64.sh
-}}}
+    bash Anaconda2-2.5.0-Linux-x86_64.sh
 
 This will by default put Anaconda in your home directory, so you need to put **$HOME/Anaconda2/bin** in your **PATH** variable, or modify whatever aliases you're using to prioritize that Python over your system Python. A useful thing to add to your **.bashrc** file is a function which sets the PATH variable in this way just for opening Eidolon:
 
-{{{#!sh
-function eidolon {
-  PATH="$HOME/anaconda2/bin:$PATH" $HOME/Eidolon/run.sh $*
-}
-}}}
+    function eidolon {
+      PATH="$HOME/anaconda2/bin:$PATH" $HOME/Eidolon/run.sh $*
+    }
 
 (This assumes the Eidolon directory is in your home directory and Anaconda was installed to the default place)
 
@@ -102,9 +94,7 @@ function eidolon {
 
 The simplest way to install these on is all together on the command line:
 
-{{{#!sh
-sudo apt-get install python2.7 python-numpy python-scipy python-qt4 libcg
-}}}
+    sudo apt-get install python2.7 python-numpy python-scipy python-qt4 libcg
 
 Otherwise use a package manager to install these individually.
 
@@ -112,15 +102,13 @@ Otherwise use a package manager to install these individually.
 
 Eidolon can also use system-installed IRTK executables. If these are present they will be used automatically, otherwise those packaged with Eidolon will be used. To install the IRTK onto your system using the provided PPA, run the following:
 
-{{{#!sh
-sudo apt-add-repository ppa:ghisvail/irtk
-sudo apt-get update
-sudo apt-get install irtk
-}}}
+    sudo apt-add-repository ppa:ghisvail/irtk
+    sudo apt-get update
+    sudo apt-get install irtk
 
 ----
 ## OS X
 
 There is a OS X application package provided containing a .app object. Download the .dmg from the main trac page, mount it and copy the .app package to wherever you want, then double click to start. Alternatively .tgz packages of development releases can be acquired by request. 
 
-The tutorial material is within the .app directory, so you will have go into this with Finder and copy **Eidolon_?.?.?.app/Contents/Resources/tutorial** to some other location to be able to open the script files from within Eidolon. You get access to the contents of the .app directory by right-clicking on it and selecting **Show Package Contents**.
+The tutorial material is within the .app directory, so you will have go into this with Finder and copy *Eidolon_?.?.?.app/Contents/Resources/tutorial* to some other location to be able to open the script files from within Eidolon. You get access to the contents of the .app directory by right-clicking on it and selecting **Show Package Contents**.
