@@ -4,9 +4,9 @@ Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubu
 
 For all platforms it requires:
  * Python 2.7
- * PyQt 4.10.4+ (earlier 4.* versions may work also)
- * Numpy 1.8.0+ (earlier 1.7 versions may work too, 1.6 does not for some features)
- * SciPy 0.13.3+ (earlier versions might also work)
+ * PyQt 4.10.4+ (earlier 4.* versions may work)
+ * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
+ * SciPy 0.13.3+ (earlier versions may work)
  
 ----
 
