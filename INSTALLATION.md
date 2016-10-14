@@ -45,6 +45,8 @@ Eidolon has only been compiled to work on Ubuntu 12.04 and 14.04 so these instru
  * libcg
  * System-installed IRTK (Optional)
 
+These can be installed with **apt-get** or a package manager (ie. Synaptic).
+
 You may also need the following packages:
 
  * libopenjpeg2 (OpenJpeg)
@@ -54,13 +56,7 @@ Follow the instructions below for your OS version before installing anything.
 
 ### Ubuntu 12.* 
 
-The built-in version of Python with 12.* is not compatible anymore so a manual install isn't feasible. Follow the instructions below for installing Anaconda then install libopenjpeg2, openexr, and libcg by running the following:
-
-    sudo apt-get install libopenjpeg2 openexr libcg
-
-Otherwise use a package manager (ie. Synaptic).
-
-If you don't want to use Anaconda you'll have to compile new versions of Python 2.7.11, Numpy, SciPy, PyQt, etc. then recompile Eidolon. Not fun.
+The built-in version of Python with 12.* is not compatible anymore so a manual install isn't feasible. Follow the instructions below for installing Anaconda after installing the above packages. If you don't want to use Anaconda you'll have to compile new versions of Python 2.7.11, Numpy, SciPy, PyQt, etc. then recompile Eidolon. Not fun.
 
 ### Anaconda
 
