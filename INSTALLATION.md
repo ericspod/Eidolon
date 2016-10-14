@@ -62,19 +62,7 @@ Otherwise use a package manager (ie. Synaptic).
 
 If you don't want to use Anaconda you'll have to compile new versions of Python 2.7.11, Numpy, SciPy, PyQt, etc. then recompile Eidolon. Not fun.
 
-### Ubuntu 14.*
-
-Install Python by following the manual install instructions below.
-
-The Ogre3D library distributed with this version of Ubuntu is needed, so install the following:
-
- * libogre-1.9.0
-
-For developers, also install:
-
- * libogre-1.9-dev
-
-### NB: Anaconda
+### Anaconda
 
 With Ubuntu 12.04 there's a number of issues with older software now, so the easiest solution is to download the 64-bit Python 2.7 Anaconda distribution from here: https://www.continuum.io/downloads
 
@@ -90,6 +78,14 @@ This will by default put Anaconda in your home directory, so you need to put **$
 
 (This assumes the Eidolon directory is in your home directory and Anaconda was installed to the default place)
 
+### Ubuntu 14.*
+
+Install Python by following the manual install instructions below. Do not use Anaconda unless you want to recompile Eidolon, the included binaries were compiled again the default system Python.
+
+The Ogre3D library distributed with this version of Ubuntu is needed, so install the following:
+
+ * libogre-1.9.0
+ 
 ### Manual Python Install
 
 The simplest way to install these on is all together on the command line:
@@ -111,4 +107,4 @@ Eidolon can also use system-installed IRTK executables. If these are present the
 
 There is a OS X application package provided containing a .app object. Download the .dmg from the main trac page, mount it and copy the .app package to wherever you want, then double click to start. Alternatively .tgz packages of development releases can be acquired by request. 
 
-The tutorial material is within the .app directory, so you will have go into this with Finder and copy *Eidolon_?.?.?.app/Contents/Resources/tutorial* to some other location to be able to open the script files from within Eidolon. You get access to the contents of the .app directory by right-clicking on it and selecting **Show Package Contents**.
+The tutorial material is within the .app directory, so you will have go into this with Finder and copy **Eidolon_?.?.?.app/Contents/Resources/tutorial** to some other location to be able to open the script files from within Eidolon. You get access to the contents of the .app directory by right-clicking on it and selecting **Show Package Contents**.
