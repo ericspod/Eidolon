@@ -1,2 +1,6 @@
 *~
 #*
+*.pyc
+**/build
+screen.png
+eidolon.log
