@@ -27,3 +27,20 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along
 with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
+
+## Used and Included Libraries Copyrights
+
+#### Python
+
+Python is licensed under the Python Software Foundation License.
+Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
+2012, 2013, 2014, 2015, 2016 Python Software Foundation.  All rights reserved.
+
+#### PyQt
+PyQt is licensed under the GPL version 3.
+PyQt is Copyright (C) 2011 Riverbank Computing Limited <info@riverbankcomputing.com>
+                                            
+#### Ogre
+
+OGRE (www.ogre3d.org) is made available under the MIT License.
+Copyright (c) 2000-2015 Torus Knot Software Ltd
