@@ -1,0 +1,32 @@
+
+#include "UtilRoutines.cg"
+float4 main
+(
+	uniform sampler3D dataTex,
+	uniform sampler2D specTex,
+	//uniform float4 texSize,
+	uniform float3 v0,
+	uniform float3 v1,
+	uniform float3 v2,
+	uniform float3 v3,
+	uniform float3 v4,
+	uniform float3 v7,
+	uniform float3 planept,
+	uniform float3 planenorm,
+	uniform float3 planeright,
+	uniform float planemode,
+	uniform float boxmode,
+	in float3 texCoord : TEXCOORD0
+) : COLOR0
+{
+	float4 res=float4(0,0,0,0);
+	
+	if(inOBBVerts(texCoord,v0,v1,v2,v3,v4,v7,boxmode) && inPlane(texCoord,planept,planenorm,planeright,planemode)){
+		res=tex3D(dataTex,texCoord);
+		float a=res.a;
+		res=tex2D(specTex,res.rr);
+		res.a*=a;
+	}
+	return res;
+}
+

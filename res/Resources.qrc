@@ -1,0 +1,33 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>cube.png</file>
+    <file>eye.png</file>
+    <file>eye-disabled.png</file>
+    <file>image.png</file>
+    <file>stats-bars.png</file>
+    <file>document.png</file>
+    <file>help-circled.png</file>
+    <file>scissors.png</file>
+    <file>stop.png</file>
+    <file>play.png</file>
+    <file>plus-round.png</file>
+    <file>minus-round.png</file>
+    <file>camera.png</file>
+    <file>gear-b.png</file>
+    <file>wrench.png</file>
+    <file>close.png</file>
+    <file>trash-a.png</file>
+    <file>nametag.png</file>
+    <file>clone.png</file>
+    <file>seg.png</file>
+    <file>checkbox.png</file>
+    <file>uncheckbox.png</file>
+    <file>down.png</file>
+    <file>close-circled.png</file>
+    <file>clipboard.png</file>
+    <file>skip-forward.png</file>
+    <file>skip-backward.png</file>
+    <file>chevron-left.png</file>
+    <file>chevron-right.png</file>
+  </qresource>
+</RCC>

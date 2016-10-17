@@ -1,0 +1,153 @@
+
+float contrastWindowAlpha(float val, float minv, float maxv)
+{
+	float v=(val-minv)/(maxv-minv);
+	if(v>1.0 || v<0)
+		return 0;
+	
+	return v;
+}
+
+float4 sobel2D(float3 pos, float3 shift,sampler3D dataTex)
+{
+	float sx=shift.x;
+	float sy=shift.y;
+	float px=pos.x;
+	float py=pos.y;
+	float pz=pos.z;
+	
+	float4 center=tex3D(dataTex,pos);
+	
+	float4 a=tex3D(dataTex,float3(px-sx, py-sy, pz));
+	float4 b=tex3D(dataTex,float3(px   , py-sy, pz));
+	float4 c=tex3D(dataTex,float3(px+sx, py-sy, pz));
+	float4 d=tex3D(dataTex,float3(px-sx, py   , pz));
+	float4 f=tex3D(dataTex,float3(px+sx, py   , pz));
+	float4 g=tex3D(dataTex,float3(px-sx, py+sy, pz));
+	float4 h=tex3D(dataTex,float3(px   , py+sy, pz));
+	float4 i=tex3D(dataTex,float3(px+sx, py+sy, pz));
+	
+	float4 gx=2*(f-d)+c+i-g-a;//-a+c+-2*d+2*f-g+i;
+	float4 gy=2*(b-h)+c+a-g-i; //a+b*2+c-g-2*h-i;
+	
+	return float4(center.rgb,center.a*sqrt(gx*gx+gy*gy));
+}
+
+float4 sobel2DAlpha(float3 pos, float shift,sampler3D dataTex)
+{
+	float sx=shift;
+	float sy=shift;
+	float px=pos.x;
+	float py=pos.y;
+	float pz=pos.z;
+	
+	float4 center=tex3D(dataTex,pos);
+	
+	float a=tex3D(dataTex,float3(px-sx, py-sy, pz)).a;
+	float b=tex3D(dataTex,float3(px   , py-sy, pz)).a;
+	float c=tex3D(dataTex,float3(px+sx, py-sy, pz)).a;
+	float d=tex3D(dataTex,float3(px-sx, py   , pz)).a;
+	float f=tex3D(dataTex,float3(px+sx, py   , pz)).a;
+	float g=tex3D(dataTex,float3(px-sx, py+sy, pz)).a;
+	float h=tex3D(dataTex,float3(px   , py+sy, pz)).a;
+	float i=tex3D(dataTex,float3(px+sx, py+sy, pz)).a;
+	
+	float gx=2*(f-d)+c+i-g-a;
+	float gy=2*(b-h)+c+a-g-i;
+	
+	return float4(center.rgb,center.a*sqrt(gx*gx+gy*gy));
+}
+
+// Determines if `pos' is within an oriented bound box defined by center `center' and width/length/height orthogonal half vectors `hx'/`hy'/ `hz'.
+bool inOBB(float3 pos, float3 center, float3 hx, float3 hy, float3 hz)
+{
+	float3 diff=pos-center;
+	float dx=dot(hx,diff);
+	float dy=dot(hy,diff);
+	float dz=dot(hz,diff);
+	float lx=length(hx);
+	float ly=length(hy);
+	float lz=length(hz);
+	
+	return abs(dx)<=lx*lx;// && abs(dy)<=ly*ly && abs(dz)<=lz*lz;
+}
+
+// Returns the distance from `pos' to the plane defined by the point `planept' and normal `planenorm'.
+float planeDist(float3 pos, float3 planept, float3 planenorm)
+{
+	return dot(planenorm,pos-planept);
+}
+
+/*
+ * Returns True if the point `pos' is a position relative to the plane defined by point `planept' and normal `planenorm'.
+ * If `planemode' is: 
+ *   0, the result is true when `pos' is below the plane,
+ *   1, then true when `pos' is above, 
+ *   2, then true when `pos' is within 0.005 of the plane, 
+ *   3, then true when `pos' is within 0.005 of the orthogonal planes normal to `planenorm', `planeright', and their cross product.
+ */
+bool inPlane(float3 pos, float3 planept, float3 planenorm,float3 planeright, int planemode)
+{
+	if(length(planenorm)==0) // no plane given so true by default
+		return true;
+
+	float dist=planeDist(pos,planept,planenorm);
+
+	if(planemode==3){
+		float rdist=planeDist(pos,planept,planeright);
+		float udist=planeDist(pos,planept,cross(planenorm,planeright));
+		return abs(dist)<0.005 || abs(rdist)<0.005 || abs(udist)<0.005;
+	}
+	else
+		return (planemode==0 && dist<=0) || (planemode==1 && dist>=0) || (planemode==2 && abs(dist)<0.005);
+}
+
+/* 
+ * Returns true if `pt' is in the oriented bounding box defined by the given vertices in XYZ order (omitting vertices 5 and 6) 
+ * and `mode' equals 0, or true if `pt' is not in the box and `mode' equals 1.
+ */
+bool inOBBVerts(float3 pt,float3 v0, float3 v1, float3 v2, float3 v3, float3 v4,  float3 v7, int mode)
+{
+	if(distance(v0,v7)==0) // no box given so true by default
+		return true;
+	
+	float3 n1=cross(v4-v0,v2-v0);
+	float3 n2=cross(v1-v0,v4-v0);
+	float3 n3=cross(v2-v0,v3-v0);
+	
+	float3 d1=pt-v0;
+	float3 d2=pt-v7;
+	
+	bool inobb= dot(n1,d1)>=0 && dot(n1,d2)<=0 && dot(n2,d1)>=0 && dot(n2,d2)<=0 && dot(n3,d1)>=0 && dot(n3,d2)<=0;
+	return inobb==(mode==0);
+}
+
+// Interpolates between values (p1,p2,m1,m2) which are at xi values xi=0,1,-1,2 respectively.
+float4 catmullRomSpline(float t,float4 p1,float4 p2,float4 m1, float4 m2)
+{
+	//return p1 + 0.5 * t*(p2 - m1 + t*(2.0*m1 - 5.0*p1 + 4.0*p2 - m2 + t*(3.0*(p1 - p2) + m2 - m1)));
+	float t2=t*t;
+	float t3=t2*t;
+	float t3_05=t3*0.5;
+	float t3_15=t3*1.5;
+	float t_05=t*0.5;
+	
+	return (t3_15-2.5*t2+1)*p1+(2*t2+t_05-t3_15)*p2+(t2-t_05-t3_05)*m1+(t3_05-0.5*t2)*m2;
+}
+
+// Performs bilinear filtering in the X-Y dimensions and cubic filtering in the Z dimension.
+float4 cubicBilinear(float3 texCoord,float zdim,sampler3D dataTex)
+{
+	float step=1.0/zdim; // separation between original 2D images within the 3D texture
+	float z=texCoord.z*zdim; // multiply the texture coord by the number of original images; each image is at a whole value of `z'
+	float floorz=int(z); // this is not essentially the index of the texture just below `z'
+	float posz=floorz*step; // multiplying by the separation results in a texture coord 
+	
+	float4 p1=tex3D(dataTex,float3(texCoord.x,texCoord.y,posz          ));
+	float4 p2=tex3D(dataTex,float3(texCoord.x,texCoord.y,posz+step     ));
+	float4 m1=tex3D(dataTex,float3(texCoord.x,texCoord.y,posz-step     ));
+	float4 m2=tex3D(dataTex,float3(texCoord.x,texCoord.y,posz+step+step));
+	
+	return catmullRomSpline(z-floorz,p1,p2,m1,m2);
+}
+

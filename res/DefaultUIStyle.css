@@ -1,0 +1,132 @@
+/*
+
+http://qt-project.org/doc/qt-4.8/stylesheet-reference.html
+http://qt-project.org/doc/qt-4.7/stylesheet-examples.html
+
+change stylesheet in console: mgr.callThreadSafe(getUIApp().setStyleSheet,open('res/DefaultUIStyle.css').read()) 
+*/
+
+QWidget {
+	background-color: rgb(100, 100, 100);
+	alternate-background-color: rgb(120, 120, 120);
+	color:rgb(240, 240, 240);
+}
+
+QToolTip {
+	background-color: rgb(120, 120, 120);
+	border: 0px;
+}
+
+QAbstractItemView {
+	background-color: rgb(100, 100, 100);
+	color:rgb(240, 240, 240);
+	padding:0;
+}
+
+QTextEdit,QLineEdit,QPlainTextEdit {
+	color: #000;
+	background-color: rgb(200, 200, 200);
+}
+
+QPushButton, QSpinBox, QDoubleSpinBox,QComboBox {
+	border-radius: 6;
+	padding: 1px 1px 1px 1px;
+	border : 1px solid rgb(215, 128, 26); /*rgb(140,140,140);*/
+}
+
+.QPushButton {
+	padding: 1px 10px 1px 10px;	
+}
+
+QPushButton:pressed {
+	background-color: rgb(120, 120, 120);
+}
+
+QComboBox {
+	padding-left: 3px;
+}
+
+QComboBox::drop-down {
+   width: 16px;
+   border: 0px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/down.png);
+    width:16px;
+    height: 10px;
+}
+
+QComboBox::down-arrow:on { /* shift the arrow when popup is open */
+    top: 1px;
+    left: 1px;
+}
+
+QGroupBox {
+	padding: 0px;
+	padding-top: 10px;
+	padding-left:5px;
+	border-radius:6;
+	border: 1px solid rgb(150, 90, 18); /*rgb(75, 75, 75);*/
+}
+
+QFrame[frameShape="4"], QFrame[frameShape="5"]{
+	color:rgb(150, 90, 18); 
+}
+
+QStatusBar::item { 
+	border-color: None; 
+}
+
+QCheckBox,QGroupBox, QRadioButton {
+	background-color: rgb(95, 95, 95);
+}
+
+QGroupBox::title {
+	subcontrol-origin: padding;
+	subcontrol-position: top left; 
+	padding-top: -1px;
+	padding-left:1px;
+	background: transparent;
+	color: white;
+}
+
+QLabel {
+	background-color: None; 
+}
+ 
+QToolBox::tab::selected {
+	color:white;
+	font:italic bold;
+}
+
+QGroupBox::indicator
+{
+	border: 1px solid rgb(150, 90, 18);
+	background-color: rgb(95, 95, 95);
+}
+
+QCheckBox::indicator, QRadioButton::indicator
+{
+	border: 1px solid rgb(95,95,95); /*rgb(215, 128, 26);*/
+	background-color: rgb(95, 95, 95);
+}
+
+QCheckBox::indicator:checked, QGroupBox::indicator:checked, QRadioButton::indicator:checked
+{
+	image:url(:/icons/checkbox.png);
+	padding: 1px;
+}
+
+QCheckBox::indicator:!checked, QGroupBox::indicator:!checked, QRadioButton::indicator:!checked
+{
+	image:url(:/icons/uncheckbox.png);
+	padding: 1px;
+}
+
+QGroupBox::indicator:disabled, QCheckBox::indicator:disabled, QRadioButton::indicator:disabled
+{
+	border: 1px solid rgb(50, 50, 50);
+	background-color: rgb(50, 50, 50);
+}
+

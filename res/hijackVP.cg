@@ -1,0 +1,30 @@
+struct VertIn {
+	float4 pos   : POSITION;
+	float4 tex   : TEXCOORD0;
+	float4 color : COLOR0;
+};
+ 
+struct VertOut {
+	float4 pos   : POSITION;
+	float4 tex   : TEXCOORD0;
+	float4 coord1 : TEXCOORD1;
+	float4 coord2 : TEXCOORD2;
+	float4 coord3 : TEXCOORD3;
+	float4 coord4 : TEXCOORD4;
+	float4 coord5 : TEXCOORD5;
+	float4 color : COLOR0;
+};
+
+VertOut main(VertIn IN, uniform float2 depthRange, uniform float4x4 worldView,uniform float4x4 worldViewProj, uniform float4x4 world,uniform float4 camPos,uniform float4 lightPos,uniform float4 lightDir) {
+	VertOut OUT;
+	OUT.pos = mul(worldViewProj, IN.pos); // transform the position to screen coordinates
+	OUT.coord1 = lightPos;
+	OUT.coord2 = lightDir;
+	OUT.coord3 = camPos;
+	OUT.coord4 = mul(world,IN.pos); // transform the position to world coordinates and store in the hijacked tex coord
+	OUT.coord5 =  OUT.pos;
+	OUT.coord5.w = (mul(worldViewProj, IN.pos).z-depthRange.x)/(depthRange.y-depthRange.x);
+	OUT.tex = IN.tex; // copy over texture coord
+	OUT.color = IN.color; // copy over color
+	return OUT;
+}
