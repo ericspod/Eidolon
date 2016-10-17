@@ -62,7 +62,7 @@ The built-in version of Python with 12.* is not compatible anymore so a manual i
 
 With Ubuntu 12.04 there's a number of issues with older software now, so the easiest solution is to download the 64-bit Python 2.7 Anaconda distribution from here: https://www.continuum.io/downloads
 
-Install the package with the following command:
+Install the package with the following command (or something similar):
 
     bash Anaconda2-2.5.0-Linux-x86_64.sh
 
