@@ -44,7 +44,7 @@ Compiling in Windows requires Anaconda with its associated **MinGW** distributio
 
  3. Install MinGW with the following:
 
-    pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
+        pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
 
 
 ## Building 
