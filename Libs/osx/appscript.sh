@@ -23,5 +23,5 @@ export PATH="$VIZDIR/../Frameworks/Python.framework/Versions/2.7/bin:$PATH"
 export DYLD_LIBRARY_PATH=$VIZDIR
 export DYLD_FRAMEWORK_PATH=$VIZDIR/../Frameworks
 
-python2.7 $VIZDIR/visapp.py $@
+python2.7 $VIZDIR/main.py $@
 
