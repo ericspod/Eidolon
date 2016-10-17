@@ -28,7 +28,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along
 with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-## Used and Included Libraries Copyrights
+## Used/Included Library Copyrights
 
 #### Python
 
@@ -44,3 +44,9 @@ PyQt is Copyright (C) 2011 Riverbank Computing Limited <info@riverbankcomputing.
 
 OGRE (www.ogre3d.org) is made available under the MIT License.
 Copyright (c) 2000-2015 Torus Knot Software Ltd
+
+#### Cython 
+
+Cython is available under the open source Apache License v2.
+
+
