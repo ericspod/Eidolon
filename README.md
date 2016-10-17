@@ -11,8 +11,6 @@ See BUILDING.md.
 
 ## License
 
-Eidolon is licensed under the GPL v3, see LICENSE.txt for details. 
-
 Copyright (C) 2016 Eric Kerfoot, King's College London, all rights reserved
 
 This file is part of Eidolon.
