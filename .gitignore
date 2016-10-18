@@ -1,6 +1,7 @@
 *~
 #*
 *.pyc
+*.pickle
 **/build
 screen.png
 eidolon.log
