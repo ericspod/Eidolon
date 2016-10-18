@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>785</width>
+    <width>825</width>
     <height>816</height>
    </rect>
   </property>
@@ -158,19 +158,12 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="startTimeBox">
-          <property name="maximum">
-           <number>99999</number>
-          </property>
-         </widget>
+         <widget class="QDoubleSpinBox" name="startTimeBox"/>
         </item>
         <item row="2" column="1">
-         <widget class="QSpinBox" name="intervalBox">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>99999</number>
+         <widget class="QDoubleSpinBox" name="intervalBox">
+          <property name="value">
+           <double>1.000000000000000</double>
           </property>
          </widget>
         </item>
