@@ -92,7 +92,7 @@ def generateConfig(inargs):
 			sys.exit(0)
 
 	# define the parser for the fixed arguments, this will parse those stated below and leave others for plugins to pick up later
-	parser=argparse.ArgumentParser(prog=prog,description='Visualizer',add_help=False)
+	parser=argparse.ArgumentParser(prog=prog,description='Eidolon',add_help=False)
 	parser.add_argument('--version', action='version', version=str(__version__))
 	parser.add_argument('--config',help='Specify configuration file',dest='config',metavar='FILE',nargs=1)
 	parser.add_argument('--var',help='Provide script string variables',dest='var',metavar='NAME,VAL,...',nargs=1,action='append')
@@ -105,7 +105,7 @@ def generateConfig(inargs):
 
 	args,unknown=parser.parse_known_args(inargs) # parse arguments after setting up config in case we quit (ie. --help) and cleanupMatrices gets called
 	
-	# load the config file in the Visualizer's directory if it exists
+	# load the config file in the Eidolon's directory if it exists
 	if os.path.isfile(os.path.join(vizdir,'config.ini')):
 		configfile=os.path.join(vizdir,'config.ini')
 		readConfig(configfile,conf)

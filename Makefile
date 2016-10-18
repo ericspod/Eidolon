@@ -101,7 +101,7 @@ distfile: # creates the universal distributable .tgz file with path DISTNAME.tgz
 	rm -rf $(DISTNAME)
 
 appfile: # creates the OS X .app directory with path DISTNAME.app
-	cp -R $(LIB_HOME)/Visualizer.app $(DISTNAME)
+	cp -R $(LIB_HOME)/Eidolon.app $(DISTNAME)
 	cp -R main.py config.ini res src tutorial $(LIB_HOME)/bin/Release/*.dylib $(DISTNAME)/Contents/Resources
 	rm -rf $(DISTNAME)/Contents/Resources/src/renderer $(DISTNAME)/Contents/Resources/src/*/build
 	mkdir $(DISTNAME)/Contents/Resources/Libs

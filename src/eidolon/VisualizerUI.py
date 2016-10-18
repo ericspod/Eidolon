@@ -2169,7 +2169,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
 		self.scene=self.viz.getRenderScene() # must be after show() since rendering is prevented until the RenderScene is created
 
-		self.scene.logMessage('Visualizer Version: '+eidolon.__version__)
+		self.scene.logMessage('Eidolon Version: '+eidolon.__version__)
 		self.scene.logMessage('Qt Version: '+str(QtCore.qVersion()))
 		self.scene.logMessage('Python Version: '+sys.version)
 		self.scene.logMessage('Python exe: '+sys.executable)

@@ -17,7 +17,7 @@ function getFileDir() {
 # directory of this script
 export VIZDIR=$(getFileDir "${BASH_SOURCE[0]}")
 
-export PYTHONPATH=$VIZDIR/src:$VIZDIR/src/visualizer:$VIZDIR/src/plugins
+export PYTHONPATH=$VIZDIR/src:$VIZDIR/src/eidolon:$VIZDIR/src/plugins
 export PATH="$VIZDIR/../Frameworks/Python.framework/Versions/2.7/bin:$PATH"
 
 export DYLD_LIBRARY_PATH=$VIZDIR

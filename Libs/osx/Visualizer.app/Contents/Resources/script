@@ -20,7 +20,7 @@ export VIZDIR=$(getFileDir "${BASH_SOURCE[0]}")
 # symlink each compiled library for OSX to the correct name
 for i in $VIZDIR/src/visualizer/*.dylib; do ln -fs $i ${i%.dylib}.so;done
 
-export PYTHONPATH=$VIZDIR/src:$VIZDIR/src/visualizer:$VIZDIR/src/plugins:$VIZDIR/src/ui
+export PYTHONPATH=$VIZDIR/src:$VIZDIR/src/eidolon:$VIZDIR/src/plugins:$VIZDIR/src/ui
 export PATH="$VIZDIR/../Frameworks/Python.framework/Versions/2.7/bin:$PATH"
 
 export DYLD_LIBRARY_PATH=$VIZDIR

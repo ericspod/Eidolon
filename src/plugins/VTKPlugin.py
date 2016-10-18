@@ -398,9 +398,9 @@ class VTKPlugin(MeshScenePlugin):
 		
 		if not desc:
 			if isinstance(obj,MeshSceneObject):
-				desc=repr({'desc':'Visualizer Output For '+obj.getName(),'timestep':obj.timestepList[dsindex]})
+				desc=repr({'desc':'Eidolon Output For '+obj.getName(),'timestep':obj.timestepList[dsindex]})
 			else:
-				desc='Visualizer Output For '+obj.getName()
+				desc='Eidolon Output For '+obj.getName()
 			
 		f=Future()
 		@taskroutine('Saving VTK Legacy File')
