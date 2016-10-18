@@ -9,6 +9,10 @@ See INSTALLATION.md for details on how to run Eidolon. The code includes precomp
 
 See BUILDING.md.
 
+## Documentation
+
+The wiki https://github.com/ericspod/Eidolon/wiki is the main source of documentation for now. Online documentation at runtime for Python code can be seen through the console using the **help** command.
+
 ## License
 
 Copyright (C) 2016 Eric Kerfoot, King's College London, all rights reserved
