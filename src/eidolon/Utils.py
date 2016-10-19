@@ -57,6 +57,7 @@ logFilename=None
 VIZDIRVAR='VIZDIR'
 RESDIRVAR='RESDIR'
 SHMDIRVAR='SHMDIR'
+APPDIR='APPDIR'
 
 isDarwin=platform.system().lower()=='darwin'
 isWindows=platform.system().lower()=='windows'

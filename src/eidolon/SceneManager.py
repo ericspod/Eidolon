@@ -383,7 +383,7 @@ class SceneManager(object):
 			self.scriptlocals[p.name.replace(' ','_')]=p
 
 		if self.conf.hasValue('var','names'): # add command line variables to the script variable map
-			names=self.conf.get('var','names').split(',')
+			names=self.conf.get('var','names').split('|')
 			for n in names:
 				self.scriptlocals[n]=self.conf.get('var',n)
 

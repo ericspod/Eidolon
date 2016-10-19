@@ -23,6 +23,7 @@ from Renderer import vec3,color,initSharedDir,Config,platformID,PT_FRAGMENT,PT_V
 
 import sys
 import os
+import shutil
 import argparse
 import ConfigParser
 
@@ -34,6 +35,9 @@ from SceneUtils import cleanupMatrices
 from ImageAlgorithms import hounsfieldToUnit
 
 from __init__ import __version__
+
+
+conffilename='config.ini'
 
 
 def readConfig(configfile,conf):
@@ -62,7 +66,16 @@ def readConfig(configfile,conf):
 
 
 def generateConfig(inargs):
-	'''Setup and return a Config object based on the environment and provided command line arguments `inargs'.'''
+	'''
+	Setup and return a Config object based on the environment and provided command line arguments `inargs'. This will
+	parse the values in `inargs' according to the in-built command line argument specification, and store the results
+	in the "args" group of the returned Config object. The configuration file in the Eidolon directory is the loaded
+	and its values are inserted into the Config object. If a configuration file is specified on the command line or
+	otherwise there is one in the app directory, this is loaded and its values override those already loaded. Any
+	arguments defined on the command line are then inserted into the object, and the "var" argument if present is then
+	parsed and its values inserted. 
+	'''
+	
 	vizdir=Utils.getVizDir()
 	prog='run.bat' if platformID=='Windows' else 'run.sh'
 	conf=Config()
@@ -106,16 +119,18 @@ def generateConfig(inargs):
 	args,unknown=parser.parse_known_args(inargs) # parse arguments after setting up config in case we quit (ie. --help) and cleanupMatrices gets called
 	
 	# load the config file in the Eidolon's directory if it exists
-	if os.path.isfile(os.path.join(vizdir,'config.ini')):
-		configfile=os.path.join(vizdir,'config.ini')
+	if os.path.isfile(os.path.join(vizdir,conffilename)):
+		configfile=os.path.join(vizdir,conffilename)
 		readConfig(configfile,conf)
 
-	# read the config file specified on the command line, or if not given read ~/.viz/config.ini if present
+	appdir=os.path.expanduser(conf.get(platformID,Utils.APPDIR))
+	
+	# read the config file specified on the command line, or if not given read appdir/config.ini if present, and override current values in conf with these
 	if args.config:
 		configfile=args.config
 		readConfig(configfile,conf)
-	elif os.path.isfile(os.path.expanduser('~/.viz/config.ini')):
-		configfile=os.path.expanduser('~/.viz/config.ini')
+	elif appdir and os.path.isfile(os.path.join(appdir,conffilename)):
+		configfile=os.path.join(appdir,conffilename)
 		readConfig(configfile,conf)
 
 	# override loaded settings with those specified on the command line
@@ -131,7 +146,7 @@ def generateConfig(inargs):
 			conf.set('var',arg[0],arg[1])
 			names.append(arg[0])
 
-		conf.set('var','names',','.join(names))
+		conf.set('var','names','|'.join(names))
 
 	# load parsed argument values into the group 'args', joining the lists with '|' characters
 	for n,v in args.__dict__.items():
@@ -168,6 +183,13 @@ def initDefault(conf):
 	Initialize the default components of Eidolon. This sets up tracing, concurrency, inits the UI, sets the
 	style sheet, creates the main window, and finally creates the SceneManager. Returns the main window and manager.
 	'''
+	appdir=os.path.expanduser(conf.get(platformID,Utils.APPDIR))
+	vizdir=conf.get(platformID,Utils.VIZDIRVAR)
+		
+	if not os.path.exists(appdir):
+		os.mkdir(appdir,0700)
+		Utils.argtiming(shutil.copy)(os.path.join(vizdir,conffilename),os.path.join(appdir,conffilename))
+		
 	if conf.hasValue('args','l'):
 		Utils.setLogging(conf.get(platformID,'logfile'))
 
