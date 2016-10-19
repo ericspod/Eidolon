@@ -13,6 +13,10 @@ See BUILDING.md.
 
 The wiki https://github.com/ericspod/Eidolon/wiki is the main source of documentation for now. Online documentation at runtime for Python code can be seen through the console using the **help** command.
 
+## Authors
+
+Eidolon is developed and maintained by Eric Kerfoot <eric.kerfoot@kcl.ac.uk>.
+
 ## License
 
 Copyright (C) 2016 Eric Kerfoot, King's College London, all rights reserved
