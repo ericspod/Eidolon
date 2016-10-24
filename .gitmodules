@@ -1,0 +1,3 @@
+[submodule "Libs/EidolonLibs"]
+	path = Libs/EidolonLibs
+	url = git@github.com:ericspod/EidolonLibs.git
