@@ -47,7 +47,6 @@ from codeop import compile_command
 from functools import wraps
 from threading import Thread, RLock, Event,currentThread,_MainThread
 
-#from __init__ import VIZDIRVAR, RESDIRVAR, SHMDIRVAR, APPDIR
 
 halfpi=math.pi/2.0
 
