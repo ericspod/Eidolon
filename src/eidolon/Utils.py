@@ -47,6 +47,7 @@ from codeop import compile_command
 from functools import wraps
 from threading import Thread, RLock, Event,currentThread,_MainThread
 
+#from __init__ import VIZDIRVAR, RESDIRVAR, SHMDIRVAR, APPDIR
 
 halfpi=math.pi/2.0
 
@@ -58,6 +59,7 @@ VIZDIRVAR='VIZDIR'
 RESDIRVAR='RESDIR'
 SHMDIRVAR='SHMDIR'
 APPDIR='APPDIR'
+LIBSDIR='EidolonLibs'
 
 isDarwin=platform.system().lower()=='darwin'
 isWindows=platform.system().lower()=='windows'
@@ -475,7 +477,7 @@ def setLogging(logfile='eidolon.log',filemode='a'):
 
 def addLibraryEgg(egg):
 	'''Add the nominated egg file to the front of the system path, assuming this is found in ${VIZDIR}/Libs/python.'''
-	sys.path.insert(0,os.path.join(getVizDir(),'Libs','python',ensureExt(egg,'.egg')))
+	sys.path.insert(0,os.path.join(getVizDir(),LIBSDIR,'python',ensureExt(egg,'.egg')))
 
 
 def processExists(pid):

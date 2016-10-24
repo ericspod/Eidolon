@@ -187,8 +187,9 @@ def initDefault(conf):
 	vizdir=conf.get(platformID,Utils.VIZDIRVAR)
 		
 	if not os.path.exists(appdir):
+		Utils.printFlush('Creating user directory ~/.eidolon')
 		os.mkdir(appdir,0700)
-		Utils.argtiming(shutil.copy)(os.path.join(vizdir,conffilename),os.path.join(appdir,conffilename))
+		shutil.copy(os.path.join(vizdir,conffilename),os.path.join(appdir,conffilename))
 		
 	if conf.hasValue('args','l'):
 		Utils.setLogging(conf.get(platformID,'logfile'))

@@ -16,6 +16,7 @@ function getFileDir() {
 
 # directory of this script
 export VIZDIR=$(getFileDir "${BASH_SOURCE[0]}")
+export LIBSDIR=$VIZDIR/EidolonLibs
 
 export PYTHONPATH=$VIZDIR/src:$VIZDIR/src/eidolon:$VIZDIR/src/plugins:$VIZDIR/src/ui
 if [ "$(uname -o 2>/dev/null)" == "Cygwin" ]
@@ -27,14 +28,14 @@ then
 	# symlink each compiled library for OSX to the correct name
 	for i in $VIZDIR/src/eidolon/*.dylib; do ln -fs $i ${i%.dylib}.so;done
 	
-	export DYLD_LIBRARY_PATH=$VIZDIR/Libs/osx/bin/Release
-	export DYLD_FRAMEWORK_PATH=$VIZDIR/Libs/osx/bin/Release:/Library/Frameworks
+	export DYLD_LIBRARY_PATH=$LIBSDIR/osx/bin/Release
+	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin/Release:/Library/Frameworks
 else
 	PLAT=ubuntu$(lsb_release -sr | head -c 2)
 	# symlink every compiled library for this platform to the correct name
 	for i in $VIZDIR/src/eidolon/*.so.$PLAT; do ln -fs $i ${i%.so.$PLAT}.so;done
 	
-	export LD_LIBRARY_PATH=$VIZDIR/Libs/$PLAT/bin/Release:$VIZDIR/Libs/IRTK:$LD_LIBRARY_PATH
+	export LD_LIBRARY_PATH=$LIBSDIR/$PLAT/bin/Release:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
 python2.7 $VIZDIR/main.py "$@"
