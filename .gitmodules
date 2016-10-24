@@ -1,3 +1,3 @@
 [submodule "Libs/osx"]
-	path = Libs/EidolonLibs/osx
+	path = Libs/osx
 	url = git@github.com:ericspod/EidolonLibs.git
