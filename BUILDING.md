@@ -39,6 +39,10 @@ OS X must be setup with the necessary Python frameworks, download and install th
 Compiling in Windows requires Anaconda with its associated **MinGW** distribution and GNU Make.
 
  1. Install Cygwin from http://www.cygwin.org first, making sure to include **make** with the installation. Modify your config files to ensure the Anaconda executables are topmost in your **PATH**. 
+ 
+ **OR**
+ 
+ Use the Windows shell or PowerShell to invoke the commands in the next 2 steps, and then calling **mingw32-make.exe** when building instead of **make**. Cygwin isn't necessary but is really handy.
 
  2. Next pip must be installed, go to https://pip.pypa.io/en/latest/installing.html to get the get-pip.py script and run it in your Cygwin terminal. 
 
@@ -49,7 +53,7 @@ Compiling in Windows requires Anaconda with its associated **MinGW** distributio
 
 ## Building 
 
-To build in any platform, simply use the **make** command without any arguments. 
+To build in any platform, simply use the **make** command without any arguments (or **mingw32-make.exe** if not using Cygwin). 
 This will first run pyuic to generate Python from the Qt UI definition files, then builds with Cython to create the Python/C++ binding objects. 
 This can be done with separate commands as follows:
 
