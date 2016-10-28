@@ -152,14 +152,4 @@ def testInv1():
 		eq_(r1*(r1/v),v)
 
 
-def testOrtho1():
-	r1=rotator(vec3.Z(),halfpi)
-	assert r1.isOrthogonalTo(rotator())
-
-
-def testOrtho2():
-	r1=rotator(vec3.X(),math.pi)
-	assert r1.isOrthogonalTo(rotator(vec3.Y(),halfpi))
-
-
 nose.runmodule()	
