@@ -16,20 +16,32 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import ReprType,AxesType
+# Run unit tests from this directory with the command "../../run.sh *tests.py"
 
-dds=Dicom.loadDirDataset(scriptdir+'/DicomData') # load the Dicom files from this directory, returns a DicomDataset object
+import nose,math
+from nose.tools import eq_
+from random import triangular
 
-series='1.3.6.1.4.1.9590.100.1.1.2375764972290531328210423958986997132495' # series UID values are stored in the Dicom files
 
-obj=Dicom.loadSeries(series) # load the series, this produces a ImageSceneObject object
+epsilon=1e-10 # separate value that can be tweaked for tests only
+halfpi=math.pi/2
+quartpi=math.pi/4
 
-mgr.addSceneObject(obj)
+def neq_(a,b):
+	assert a!=b, '%r == %r' % (a, b)
+	
 
-rep=obj.createRepr(ReprType._imgtimestack) # this image has timesteps so load a time stack
-mgr.addSceneObjectRepr(rep)
-mgr.showBoundBox(rep)
+def eqa_(a,b):
+	assert abs(a-b)<=epsilon, '%r != %r' % (a, b)
 
-mgr.controller.setRotation(-2,0.5)
-mgr.setAxesType(AxesType._originarrows)
-mgr.setCameraSeeAll()
+
+def eqas_(a,b):
+	assert all(abs(i-j)<=epsilon for i,j in zip(a,b)), '%r != %r' % (a, b)
+
+
+def randnums(num,minv,maxv):
+	return tuple(triangular(minv,maxv) for _ in xrange(num))
+	
+	
+def randangle():
+	return triangular(-math.pi*2,math.pi*2)
