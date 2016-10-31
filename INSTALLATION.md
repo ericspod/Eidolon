@@ -1,5 +1,6 @@
 # Installation Requirements 
 
+These are the instructions for installing the necessary components to run Eidolong from a git checkout.
 Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubuntu 12.*, 14.*), and OS X 10.8+. iOS and Android are tentative possibilities.
 
 For all platforms it requires:
@@ -98,9 +99,10 @@ Eidolon can also use system-installed IRTK executables. If these are present the
     sudo apt-get update
     sudo apt-get install irtk
 
-----
-## OS X
+[//]: <>
+//----
+//## OS X
 
-There is a OS X application package provided containing a .app object. Download the .dmg from the main trac page, mount it and copy the .app package to wherever you want, then double click to start. Alternatively .tgz packages of development releases can be acquired by request. 
+//There is a OS X application package provided containing a .app object. Download the .dmg from the main trac page, mount it and copy the .app package to wherever you want, then double click to start. Alternatively .tgz packages of development releases can be acquired by request. 
 
 The tutorial material is within the .app directory, so you will have go into this with Finder and copy **Eidolon_?.?.?.app/Contents/Resources/tutorial** to some other location to be able to open the script files from within Eidolon. You get access to the contents of the .app directory by right-clicking on it and selecting **Show Package Contents**.
