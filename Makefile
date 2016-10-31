@@ -33,7 +33,7 @@ else ifeq ($(findstring CYGWIN,$(KERNEL_NAME)),CYGWIN)
 	PLAT=win64_cygwin
 endif
 
-LIB_HOME = ./Libs/$(PLAT)
+LIB_HOME = ./EidolonLibs/$(PLAT)
 SRC=./src
 RESRC=$(SRC)/renderer
 PYSRC=$(SRC)/eidolon
@@ -83,14 +83,14 @@ cython:
 
 distfile: # creates the universal distributable .tgz file with path DISTNAME.tgz
 	mkdir $(DISTNAME)
-	cp -Rf src Libs tutorial res $(DISTNAME)
+	cp -Rf src EidolonLibs tutorial res $(DISTNAME)
 	cp main.py run.sh run.bat config.ini $(DISTNAME)
 	rm -rf $(DISTNAME)/src/renderer $(DISTNAME)/src/*/*.ui $(DISTNAME)/src/*/*.o $(DISTNAME)/res/*.qrc
-	rm -rf $(DISTNAME)/Libs/*/include $(DISTNAME)/Libs/*/lib $(DISTNAME)/Libs/*/bin/Debug
-	rm -rf $(DISTNAME)/Libs/osx/bin/Release/*.framework/Versions/*/Headers
-	rm -rf $(DISTNAME)/Libs/win64_msvc $(DISTNAME)/src/*/build
-	find $(DISTNAME)/Libs -name \*.lib  -delete
-	find $(DISTNAME)/Libs -name \*.a -delete
+	rm -rf $(DISTNAME)/EidolonLibs/*/include $(DISTNAME)/EidolonLibs/*/lib $(DISTNAME)/EidolonLibs/*/bin/Debug
+	rm -rf $(DISTNAME)/EidolonLibs/osx/bin/Release/*.framework/Versions/*/Headers
+	rm -rf $(DISTNAME)/EidolonLibs/win64_msvc $(DISTNAME)/src/*/build
+	find $(DISTNAME)/EidolonLibs -name \*.lib  -delete
+	find $(DISTNAME)/EidolonLibs -name \*.a -delete
 	find $(DISTNAME) -name .DS_Store -delete
 	find $(DISTNAME) -name \*~ -delete
 	#find $(DISTNAME) -name \*.pyc -delete
@@ -104,12 +104,12 @@ appfile: # creates the OS X .app directory with path DISTNAME.app
 	cp -R $(LIB_HOME)/Eidolon.app $(DISTNAME)
 	cp -R main.py config.ini res src tutorial $(LIB_HOME)/bin/Release/*.dylib $(DISTNAME)/Contents/Resources
 	rm -rf $(DISTNAME)/Contents/Resources/src/renderer $(DISTNAME)/Contents/Resources/src/*/build
-	mkdir $(DISTNAME)/Contents/Resources/Libs
-	cp -R ./Libs/python ./Libs/IRTK $(DISTNAME)/Contents/Resources/Libs
+	mkdir $(DISTNAME)/Contents/Resources/EidolonLibs
+	cp -R ./EidolonLibs/python ./EidolonLibs/IRTK $(DISTNAME)/Contents/Resources/EidolonLibs
 	cp -R $(LIB_HOME)/bin/Release/*.framework /Library/Frameworks/Python.framework $(DISTNAME)/Contents/Frameworks
 	cp -R /Library/Frameworks/QtCore.framework /Library/Frameworks/QtGui.framework /Library/Frameworks/QtSvg.framework $(DISTNAME)/Contents/Frameworks
 	rm -rf $(DISTNAME)/Contents/Frameworks/*/Headers $(DISTNAME)/Contents/Frameworks/*/Versions/Current/Headers
-	rm -rf $(DISTNAME)/Contents/Resources/Libs/IRTK/*.exe $(DISTNAME)/Contents/Resources/Libs/IRTK/*.bin $(DISTNAME)/Contents/Resources/Libs/IRTK/*.dll $(DISTNAME)/Contents/Resources/Libs/IRTK/*.so.1
+	rm -rf $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.exe $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.bin $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.dll $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.so.1
 	-find $(DISTNAME) -name .svn -exec rm -rf '{}' ';' >/dev/null 2>&1
 	find $(DISTNAME)/Contents/Resources -name \*.ui -delete
 	find $(DISTNAME) -name \*~ -delete
@@ -146,7 +146,7 @@ clean_gen:
 
 epydoc:
 	-mkdir ./docs/epydoc
-	PYTHONPATH=./Libs/python/epydoc-3.0.1-py2.7.egg $(PYTHON) -c 'from epydoc.cli import cli;cli()' $(SRC)/* --graph=all -o ./docs/epydoc
+	PYTHONPATH=./EidolonLibs/python/epydoc-3.0.1-py2.7.egg $(PYTHON) -c 'from epydoc.cli import cli;cli()' $(SRC)/* --graph=all -o ./docs/epydoc
 
 header:
 	@echo "---------------------------------"

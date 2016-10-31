@@ -68,11 +68,18 @@ sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 scriptdir= os.path.dirname(os.path.abspath(__file__)) # path of the current file
 libsuffix='Release' # "Release" or "Debug" to choose which libraries to link with
 srcfiles=['Renderer.pyx','RenderTypes.cpp','OgreRenderTypes.cpp']
-libraries=[]
+libraries=['OgreMain','OgreOverlay']
 extra_compile_args=['-w','-O3']
 extra_link_args=[]
 define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None)]
 destfile='../eidolon/Renderer.'
+
+# building against static libraries, not working quite yet
+if 'static' in sys.argv:
+	sys.argv.remove('static')
+	isStatic=True
+else:
+	isStatic=False
 
 cpptime=max(map(os.path.getmtime,glob.glob('*.cpp')))
 htime=max(map(os.path.getmtime,glob.glob('*.h')))
@@ -96,12 +103,14 @@ if isDarwin:
 elif isWindows:
 	platdir='win64_mingw'
 	sys.argv.append('--compiler=mingw32') # force the use of mingw
-	libraries=['OgreMain','OgreOverlay']
 	define_macros+=[('RENDER_EXPORT',None)]
 	destfile+='pyd'
+	
+#	if isStatic:
+#		libraries=['OgreMainStatic','OgreOverlayStatic','RenderSystem_GLStatic','Plugin_CgProgramManagerStatic','zlib','freetype','FreeImage','zziplib','Ws2_32']
 else:
 	assert isLinux
-	libraries+=['m','OgreMain','OgreOverlay']
+	libraries+=['m']
 
 	with open('/etc/lsb-release') as o:
 		lsb=dict(l.strip().split('=') for l in o.readlines())
@@ -116,15 +125,19 @@ else:
 	destfile+='so.%s'%platdir
 
 # root directory for the current platform's libraries
-libdir=os.path.abspath(os.path.join(scriptdir,'..','..','Libs',platdir))
+libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
 assert os.path.isdir(libdir),'%r not found'%libdir
 
 # include file directories
 includedirs=['.',libdir+'/include',libdir+'/include/boost',libdir+'/include/OGRE']
 
-if isLinux:
+if isWindows and isStatic:
+	pass # no static building for now 
+#	includedirs=['.',libdir+'/includestatic',libdir+'/includestatic/OGRE']
+elif isLinux:
 	includedirs=['/usr/include/','/usr/include/OGRE']+includedirs
-	
+
+# add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())
 
 # directory containing shared objects or frameworks
@@ -149,6 +162,7 @@ extension=Extension(
 
 setup(ext_modules = cythonize(extension))
 
+os.remove('./Renderer.cpp')
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 shutil.move('Renderer.pyd' if isWindows else 'Renderer.so',destfile)
 
