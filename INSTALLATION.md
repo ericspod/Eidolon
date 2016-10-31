@@ -22,6 +22,7 @@ Install the Anaconda Python 2.7 64bit Graphical installer: http://continuum.io/d
 The more recent versions of Anaconda come with PyQt5 so we'll have to swap these out. 
 Go into the **Anaconda Navigator**, select **Environments** and type **pyqt** into the search box on the right
 Clicking on the checkbox next to **pyqt** gives you the option to swap versions, select the most recent 4 version.
+Alternatively an older version of Anaconda, such as 3.0, works and would be easier.
 
 ### Manual Python Install
 
@@ -30,10 +31,15 @@ If you don't want to use Anaconda then you'll need to install the following:
  * Python 2.7 64bit: http://www.python.org/download/
  * Numpy: http://sourceforge.net/projects/numpy/files/
  * SciPy: http://www.scipy.org/install.html (comes with Numpy, get a 64bit version)
- * PyQt 4: http://www.riverbankcomputing.com/software/pyqt/download (may need to be 4.10 version exactly)
+ * PyQt 4: http://www.riverbankcomputing.com/software/pyqt/download 
 
 ----
 
+## OS X
+
+Follow the instructions above for Windows, installing Anaconda or a manual Python install.
+
+----
 ## Linux
 
 Eidolon has only been compiled to work on Ubuntu 12.04 and 14.04 so these instructions are for these distros only. The Eidolon requires the following packages: 
@@ -91,18 +97,3 @@ The simplest way to install these on is all together on the command line:
 
 Otherwise use a package manager to install these individually.
 
-### IRTK
-
-Eidolon can also use system-installed IRTK executables. If these are present they will be used automatically, otherwise those packaged with Eidolon will be used. To install the IRTK onto your system using the provided PPA, run the following:
-
-    sudo apt-add-repository ppa:ghisvail/irtk
-    sudo apt-get update
-    sudo apt-get install irtk
-
-[//]: <>
-//----
-//## OS X
-
-//There is a OS X application package provided containing a .app object. Download the .dmg from the main trac page, mount it and copy the .app package to wherever you want, then double click to start. Alternatively .tgz packages of development releases can be acquired by request. 
-
-The tutorial material is within the .app directory, so you will have go into this with Finder and copy **Eidolon_?.?.?.app/Contents/Resources/tutorial** to some other location to be able to open the script files from within Eidolon. You get access to the contents of the .app directory by right-clicking on it and selecting **Show Package Contents**.
