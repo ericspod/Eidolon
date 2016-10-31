@@ -4,7 +4,7 @@ Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubu
 
 For all platforms it requires:
  * Python 2.7
- * PyQt 4.10.4+ (earlier 4.* versions may work)
+ * PyQt 4.10.4+ (earlier 4.* versions may work, 5 will not for now)
  * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
  * SciPy 0.13.3+ (earlier versions may work)
  
@@ -18,9 +18,9 @@ Install Python either by downloading the Anaconda package or installing the comp
 
 Install the Anaconda Python 2.7 64bit Graphical installer: http://continuum.io/downloads
 
-This should include PyQt4, but if not then you will need to install it manually. In a command window, navigate to the *Anaconda/Scripts* directory and execute the following to install PyQt4 (version 4.10.4 as of this writing):
-
-    conda.exe install pyqt
+The more recent versions of Anaconda come with PyQt5 so we'll have to swap these out. 
+Go into the **Anaconda Navigator**, select **Environments** and type **pyqt** into the search box on the right
+Clicking on the checkbox next to **pyqt** gives you the option to swap versions, select the most recent 4 version.
 
 ### Manual Python Install
 
