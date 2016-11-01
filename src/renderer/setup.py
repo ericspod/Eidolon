@@ -66,7 +66,7 @@ generateMatrix('Color','icolor','color','color._new','color._get')
 sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 
 scriptdir= os.path.dirname(os.path.abspath(__file__)) # path of the current file
-libsuffix='Release' # "Release" or "Debug" to choose which libraries to link with
+libsuffix='' # "" (for release builds) or "Debug" to choose which libraries to link with
 srcfiles=['Renderer.pyx','RenderTypes.cpp','OgreRenderTypes.cpp']
 libraries=['OgreMain','OgreOverlay']
 extra_compile_args=['-w','-O3']

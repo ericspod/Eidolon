@@ -12,7 +12,7 @@ IF "%InstallPath%" == "" FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY HKLM\SOFTW
 :: Choose a default value if neither registry key is present
 IF [%InstallPath%] == [] SET InstallPath=C:\Python27\
 
-SET PATH=%InstallPath%\Lib\site-packages\PyQt4;%VIZDIR%EidolonLibs\win64_mingw\bin\Release;%PATH%
+SET PATH=%InstallPath%\Lib\site-packages\PyQt4;%VIZDIR%EidolonLibs\win64_mingw\bin;%PATH%
 SET PYTHONPATH=%VIZDIR%src;%VIZDIR%src\eidolon;%VIZDIR%src\plugins;%VIZDIR%src\ui
 
 %InstallPath%\python.exe "%VIZDIR%main.py" %*
