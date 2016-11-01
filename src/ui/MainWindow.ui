@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1199</width>
-    <height>885</height>
+    <width>872</width>
+    <height>750</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,8 +44,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1199</width>
-     <height>25</height>
+     <width>872</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -122,7 +122,7 @@
    <property name="minimumSize">
     <size>
      <width>412</width>
-     <height>596</height>
+     <height>513</height>
     </size>
    </property>
    <property name="toolTip">
@@ -212,7 +212,7 @@
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>100</height>
+                <height>50</height>
                </size>
               </property>
               <property name="maximumSize">
@@ -394,7 +394,7 @@
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>150</height>
+             <height>50</height>
             </size>
            </property>
            <property name="verticalScrollBarPolicy">
@@ -411,8 +411,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>459</width>
-              <height>261</height>
+              <width>396</width>
+              <height>166</height>
              </rect>
             </property>
            </widget>
@@ -445,8 +445,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>459</width>
-              <height>277</height>
+              <width>396</width>
+              <height>314</height>
              </rect>
             </property>
            </widget>

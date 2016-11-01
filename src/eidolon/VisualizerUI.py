@@ -237,9 +237,24 @@ QLabel { background-color:rgba(0,0,0,150.0); padding:1px;}'''
 
 def centerWindow(wind):
 	'''Centers the window `wind' on the desktop by moving it only.'''
-	geom = wind.frameGeometry()
+	geom = wind.geometry()
 	geom.moveCenter(QtGui.QDesktopWidget().availableGeometry().center())
 	wind.move(geom.topLeft())
+	
+
+def resizeScreenRelative(wind,w,h):
+	geom = wind.geometry()
+	desk=QtGui.QDesktopWidget().availableGeometry()
+	nw=geom.width()
+	nh=geom.height()
+	
+	if nw>desk.width():
+		nw=int(desk.width()*w)
+		
+	if nh>desk.height():
+		nh=int(desk.height()*h)
+		
+	wind.resize(nw,nh)
 
 
 def screenshotWidget(w,filename):
@@ -2197,6 +2212,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		self.raise_() # bring window to front in OS X
 		self.activateWindow() # bring window to front in Windows (?)
 
+		resizeScreenRelative(self,0.8,0.8)
 		centerWindow(self)
 
 	def _showAbout(self):

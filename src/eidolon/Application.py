@@ -233,7 +233,7 @@ def initDefault(conf):
 	except:
 		width=1200
 		height=800
-
+		
 	# create the main window and the manager object
 	win=VisualizerUI.createVizWin(conf,width,height)
 	mgr=SceneManager.createSceneMgr(win,conf)
