@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/ChooseImgStack.ui'
 #
-# Created: Fri Apr 15 18:19:53 2016
-#      by: PyQt4 UI code generator 4.10.4
+# Created: Tue Nov  1 18:26:12 2016
+#      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
 

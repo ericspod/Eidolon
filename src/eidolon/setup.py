@@ -62,7 +62,7 @@ else:
 		raise ValueError,'Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb)
 
 
-libdir=os.path.abspath(os.path.join(scriptdir,'..','..','Libs',platdir))
+libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
 assert os.path.isdir(libdir),'%r not found'%libdir
 
 # include file directories

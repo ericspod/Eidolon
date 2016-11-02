@@ -21,10 +21,10 @@
 #ifndef RENDERSCENE_H_
 #define RENDERSCENE_H_
 
-#include <OGRE/Ogre.h>
-#include <OGRE/OgrePlugin.h>
-#include <OGRE/Overlay/OgreOverlaySystem.h>
-#include <OGRE/Overlay/OgreFontManager.h>
+#include <Ogre/Ogre.h>
+#include <Ogre/OgrePlugin.h>
+#include <OgreOverlay/OgreOverlaySystem.h>
+#include <OgreOverlay/OgreFontManager.h>
 
 #include "RenderTypes.h"
 
@@ -2250,11 +2250,11 @@ private:
 		bool namefound=false;
 		
 		for(int i=0;i<1000000;i++){
-#ifdef __APPLE__
-			namefound=rmgr.getByName(uname,resGroupName).isNull();
-#else
+//#ifdef __APPLE__
+//			namefound=rmgr.getByName(uname,resGroupName).isNull();
+//#else
 			namefound=rmgr.getResourceByName(uname,resGroupName).isNull();
-#endif			
+//#endif			
 	
 			if(namefound)
 				break;

@@ -62,6 +62,18 @@ generateMatrix('Index','indexval')
 generateMatrix('Vec3','ivec3','vec3','vec3._new','vec3._get')
 generateMatrix('Color','icolor','color','color._new','color._get')
 
+# platform identifiers, exactly 1 should be true
+isDarwin=platform.system().lower()=='darwin'
+isWindows=platform.system().lower()=='windows'
+isLinux=platform.system().lower()=='linux'
+
+# building against static libraries, not working quite yet
+if 'static' in sys.argv:
+	sys.argv.remove('static')
+	isStatic=True
+else:
+	isStatic=False
+
 # ensure there's a value for CC, this is omitted sometimes but gcc is a valid substitute
 sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 
@@ -74,13 +86,6 @@ extra_link_args=[]
 define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None)]
 destfile='../eidolon/Renderer.'
 
-# building against static libraries, not working quite yet
-if 'static' in sys.argv:
-	sys.argv.remove('static')
-	isStatic=True
-else:
-	isStatic=False
-
 cpptime=max(map(os.path.getmtime,glob.glob('*.cpp')))
 htime=max(map(os.path.getmtime,glob.glob('*.h')))
 
@@ -88,17 +93,14 @@ htime=max(map(os.path.getmtime,glob.glob('*.h')))
 if htime>cpptime:
 	os.utime(glob.glob('*.cpp')[0],None)
 
-# platform identifiers, exactly 1 should be true
-isDarwin=platform.system().lower()=='darwin'
-isWindows=platform.system().lower()=='windows'
-isLinux=platform.system().lower()=='linux'
-
-
 if isDarwin:
 	platdir='osx'
-
-	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay','-framework', 'Python'] # add frameworks to link with
 	destfile+='dylib'
+	libraries=[] # linking with frameworks and not libraries
+
+	# add frameworks to link with
+	extra_compile_args+=['-framework', 'Ogre', '-framework','OgreOverlay','-framework', 'Python']
+	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay','-framework', 'Python'] 
 
 elif isWindows:
 	platdir='win64_mingw'
@@ -128,6 +130,10 @@ else:
 libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
 assert os.path.isdir(libdir),'%r not found'%libdir
 
+# directory containing shared objects or frameworks
+shared_dir=libdir+'/bin/'+libsuffix
+library_dir=libdir+'/lib/'+libsuffix
+
 # include file directories
 includedirs=['.',libdir+'/include',libdir+'/include/boost',libdir+'/include/OGRE']
 
@@ -140,12 +146,9 @@ elif isLinux:
 # add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())
 
-# directory containing shared objects or frameworks
-shared_dir=libdir+'/bin/'+libsuffix
-library_dir=libdir+'/lib/'+libsuffix
-
-if isDarwin:
-	extra_link_args+=['-F'+shared_dir] # add the directory to search for frameworks in
+if isDarwin: # add the directory to search for frameworks in
+	extra_compile_args+=['-F'+shared_dir]
+	extra_link_args+=['-F'+shared_dir] 
 
 extension=Extension(
 	'Renderer',

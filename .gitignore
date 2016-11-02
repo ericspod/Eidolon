@@ -3,6 +3,7 @@
 *.pyc
 *.pickle
 **/build
+**/.DS_Store
 screen.png
 eidolon.log
 src/renderer/Renderer.cpp
