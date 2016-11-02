@@ -102,31 +102,35 @@ distfile: # creates the universal distributable .tgz file with path DISTNAME.tgz
 
 appfile: # creates the OS X .app directory with path DISTNAME.app
 	cp -R $(LIB_HOME)/Eidolon.app $(DISTNAME)
-	cp -R main.py config.ini res src tutorial $(LIB_HOME)/bin/*.dylib $(DISTNAME)/Contents/Resources
+	cp -R main.py config.ini res src tutorial $(DISTNAME)/Contents/Resources
+	#cp -R $(LIB_HOME)/bin/*.dylib $(DISTNAME)/Contents/Resources
 	rm -rf $(DISTNAME)/Contents/Resources/src/renderer $(DISTNAME)/Contents/Resources/src/*/build
 	mkdir $(DISTNAME)/Contents/Resources/EidolonLibs
-	cp -R ./EidolonLibs/python ./EidolonLibs/IRTK $(DISTNAME)/Contents/Resources/EidolonLibs
+	cp -R ./EidolonLibs/python $(DISTNAME)/Contents/Resources/EidolonLibs
+	mkdir $(DISTNAME)/Contents/Frameworks
 	cp -R $(LIB_HOME)/bin/*.framework /Library/Frameworks/Python.framework $(DISTNAME)/Contents/Frameworks
 	cp -R /Library/Frameworks/QtCore.framework /Library/Frameworks/QtGui.framework /Library/Frameworks/QtSvg.framework $(DISTNAME)/Contents/Frameworks
 	rm -rf $(DISTNAME)/Contents/Frameworks/*/Headers $(DISTNAME)/Contents/Frameworks/*/Versions/Current/Headers
-	rm -rf $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.exe $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.bin $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.dll $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.so.1
-	-find $(DISTNAME) -name .svn -exec rm -rf '{}' ';' >/dev/null 2>&1
+	#cp -R ./EidolonLibs/IRTK $(DISTNAME)/Contents/Resources/EidolonLibs
+	#rm -rf $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.exe $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.bin $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.dll $(DISTNAME)/Contents/Resources/EidolonLibs/IRTK/*.so.1
+	-find $(DISTNAME) -name .git -exec rm -rf '{}' ';' >/dev/null 2>&1
 	find $(DISTNAME)/Contents/Resources -name \*.ui -delete
 	find $(DISTNAME) -name \*~ -delete
-	find $(DISTNAME) -name \*.pxd -delete
+	#find $(DISTNAME) -name \*.pxd -delete
 	find $(DISTNAME) -name \*.pickle -delete
 	mv $(DISTNAME) $(DISTNAME).app
 	tar czf $(DISTNAME).tgz $(DISTNAME).app
+	#diutil create -volname $(DISTNAME) -srcfolder $(DISTNAME).app -ov -format UDZO -imagekey zlib-level=9 $(DISTNAME).dmg
 	rm -rf $(DISTNAME).app
 
 package:
-	git pull
-	$(MAKE)
-	./run.sh --version
+	#git pull
+	#$(MAKE)
+	#./run.sh --version
 ifeq ($(PLAT),osx)
-	make appfile DISTNAME=$(shell date '+VizMac_%Y_%m_%d')
+	make appfile DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
 else
-	make distfile DISTNAME=$(shell date '+VizAll_%Y_%m_%d')
+	make distfile DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
 endif
 
 tutorialfile:
