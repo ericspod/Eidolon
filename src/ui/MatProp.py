@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/MatProp.ui'
 #
-# Created: Mon Oct 17 15:55:12 2016
-#      by: PyQt4 UI code generator 4.10.1
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -40,12 +39,12 @@ class Ui_matProp(object):
         self.chooseDiffuse.setMinimumSize(QtCore.QSize(80, 0))
         self.chooseDiffuse.setMaximumSize(QtCore.QSize(70, 16777215))
         self.chooseDiffuse.setObjectName(_fromUtf8("chooseDiffuse"))
-        self.gridLayout_2.addWidget(self.chooseDiffuse, 1, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.chooseDiffuse, 1, 1, 1, 1, QtCore.Qt.AlignHCenter)
         self.chooseSpecular = QtGui.QPushButton(self.groupBox)
         self.chooseSpecular.setMinimumSize(QtCore.QSize(80, 0))
         self.chooseSpecular.setMaximumSize(QtCore.QSize(70, 16777215))
         self.chooseSpecular.setObjectName(_fromUtf8("chooseSpecular"))
-        self.gridLayout_2.addWidget(self.chooseSpecular, 5, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.chooseSpecular, 5, 1, 1, 1, QtCore.Qt.AlignHCenter)
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         self.label_10 = QtGui.QLabel(self.groupBox)
@@ -75,12 +74,12 @@ class Ui_matProp(object):
         self.chooseAmbient.setMinimumSize(QtCore.QSize(80, 0))
         self.chooseAmbient.setMaximumSize(QtCore.QSize(70, 16777215))
         self.chooseAmbient.setObjectName(_fromUtf8("chooseAmbient"))
-        self.gridLayout_2.addWidget(self.chooseAmbient, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.chooseAmbient, 1, 0, 1, 1, QtCore.Qt.AlignHCenter)
         self.chooseEmissive = QtGui.QPushButton(self.groupBox)
         self.chooseEmissive.setMinimumSize(QtCore.QSize(80, 0))
         self.chooseEmissive.setMaximumSize(QtCore.QSize(70, 16777215))
         self.chooseEmissive.setObjectName(_fromUtf8("chooseEmissive"))
-        self.gridLayout_2.addWidget(self.chooseEmissive, 5, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.chooseEmissive, 5, 0, 1, 1, QtCore.Qt.AlignHCenter)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_2.addItem(spacerItem, 5, 2, 1, 1)
         self.verticalLayout.addWidget(self.groupBox)

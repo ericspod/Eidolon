@@ -135,7 +135,7 @@ shared_dir=libdir+'/bin/'+libsuffix
 library_dir=libdir+'/lib/'+libsuffix
 
 # include file directories
-includedirs=['.',libdir+'/include',libdir+'/include/boost',libdir+'/include/OGRE']
+includedirs=['.',libdir+'/include',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
 
 if isWindows and isStatic:
 	pass # no static building for now 

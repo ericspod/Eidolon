@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/MeasureObjProp.ui'
 #
-# Created: Mon Oct 17 15:55:12 2016
-#      by: PyQt4 UI code generator 4.10.1
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 

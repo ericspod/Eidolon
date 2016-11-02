@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/RegionGraphWidget.ui'
 #
-# Created: Fri Apr 15 18:19:53 2016
-#      by: PyQt4 UI code generator 4.10.4
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -48,8 +47,8 @@ class Ui_RegionGraphWidget(object):
         self.checkboxGroup.setSizePolicy(sizePolicy)
         self.checkboxGroup.setObjectName(_fromUtf8("checkboxGroup"))
         self.gridLayout_2 = QtGui.QGridLayout(self.checkboxGroup)
-        self.gridLayout_2.setSpacing(0)
         self.gridLayout_2.setContentsMargins(0, 3, 0, 0)
+        self.gridLayout_2.setSpacing(0)
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
         self.verticalLayout.addWidget(self.checkboxGroup)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)

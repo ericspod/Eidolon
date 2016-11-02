@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/Measure2DView.ui'
 #
-# Created: Fri Oct 14 14:41:17 2016
-#      by: PyQt4 UI code generator 4.10.4
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -59,8 +58,8 @@ class Ui_Measure2DView(object):
         self.objectList.setObjectName(_fromUtf8("objectList"))
         self.horizontalLayout.addWidget(self.objectList)
         self.verticalLayout_5 = QtGui.QVBoxLayout()
-        self.verticalLayout_5.setSpacing(0)
         self.verticalLayout_5.setContentsMargins(-1, -1, 0, -1)
+        self.verticalLayout_5.setSpacing(0)
         self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setContentsMargins(-1, 0, -1, -1)
@@ -100,7 +99,6 @@ class Ui_Measure2DView(object):
         self.line.setLineWidth(3)
         self.line.setMidLineWidth(0)
         self.line.setFrameShape(QtGui.QFrame.HLine)
-        self.line.setFrameShadow(QtGui.QFrame.Sunken)
         self.line.setObjectName(_fromUtf8("line"))
         self.verticalLayout_5.addWidget(self.line)
         self.gridLayout = QtGui.QGridLayout()
@@ -152,8 +150,8 @@ class Ui_Measure2DView(object):
         self.horizontalLayout.addLayout(self.verticalLayout_5)
         self.horizontalLayout_2.addWidget(self.groupBox)
         self.verticalLayout_4 = QtGui.QVBoxLayout()
-        self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setContentsMargins(-1, -1, 0, -1)
+        self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
         self.groupBox_2 = QtGui.QGroupBox(self.measureBox)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Maximum)
