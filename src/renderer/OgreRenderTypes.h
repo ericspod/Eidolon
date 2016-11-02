@@ -21,10 +21,10 @@
 #ifndef RENDERSCENE_H_
 #define RENDERSCENE_H_
 
-#include <Ogre/Ogre.h>
-#include <Ogre/OgrePlugin.h>
-#include <OgreOverlay/OgreOverlaySystem.h>
-#include <OgreOverlay/OgreFontManager.h>
+#include <Ogre.h>
+#include <OgrePlugin.h>
+#include <OgreOverlaySystem.h>
+#include <OgreFontManager.h>
 
 #include "RenderTypes.h"
 

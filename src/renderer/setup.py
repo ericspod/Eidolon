@@ -67,13 +67,6 @@ isDarwin=platform.system().lower()=='darwin'
 isWindows=platform.system().lower()=='windows'
 isLinux=platform.system().lower()=='linux'
 
-# building against static libraries, not working quite yet
-if 'static' in sys.argv:
-	sys.argv.remove('static')
-	isStatic=True
-else:
-	isStatic=False
-
 # ensure there's a value for CC, this is omitted sometimes but gcc is a valid substitute
 sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 
@@ -99,7 +92,6 @@ if isDarwin:
 	libraries=[] # linking with frameworks and not libraries
 
 	# add frameworks to link with
-	extra_compile_args+=['-framework', 'Ogre', '-framework','OgreOverlay','-framework', 'Python']
 	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay','-framework', 'Python'] 
 
 elif isWindows:
@@ -108,8 +100,6 @@ elif isWindows:
 	define_macros+=[('RENDER_EXPORT',None)]
 	destfile+='pyd'
 	
-#	if isStatic:
-#		libraries=['OgreMainStatic','OgreOverlayStatic','RenderSystem_GLStatic','Plugin_CgProgramManagerStatic','zlib','freetype','FreeImage','zziplib','Ws2_32']
 else:
 	assert isLinux
 	libraries+=['m']
@@ -135,19 +125,15 @@ shared_dir=libdir+'/bin/'+libsuffix
 library_dir=libdir+'/lib/'+libsuffix
 
 # include file directories
-includedirs=['.',libdir+'/include',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
+includedirs=['.',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
 
-if isWindows and isStatic:
-	pass # no static building for now 
-#	includedirs=['.',libdir+'/includestatic',libdir+'/includestatic/OGRE']
-elif isLinux:
+if isLinux:
 	includedirs=['/usr/include/','/usr/include/OGRE']+includedirs
 
 # add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())
 
 if isDarwin: # add the directory to search for frameworks in
-	extra_compile_args+=['-F'+shared_dir]
 	extra_link_args+=['-F'+shared_dir] 
 
 extension=Extension(
