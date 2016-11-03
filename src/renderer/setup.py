@@ -102,7 +102,7 @@ elif isWindows:
 	
 else:
 	assert isLinux
-	libraries+=['m']
+	libraries+=['m','rt']
 
 	with open('/etc/lsb-release') as o:
 		lsb=dict(l.strip().split('=') for l in o.readlines())
