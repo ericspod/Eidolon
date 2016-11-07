@@ -128,7 +128,7 @@ library_dir=libdir+'/lib/'+libsuffix
 includedirs=['.',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
 
 if isLinux:
-	includedirs=['/usr/include/','/usr/include/OGRE']+includedirs
+	includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
 
 # add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())

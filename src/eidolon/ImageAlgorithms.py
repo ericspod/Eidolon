@@ -395,7 +395,7 @@ def applyVolumeMask(imgobj,mask,threshold,task=None):
 		raise ValueError,"ImageSceneObject `imgobj' must be time-dependent"
 
 	minx,miny,maxx,maxy=calculateStackClipSq(mask,threshold)
-	outobj=imgobj.cropXY(imgobj.getName()+'VCrop',minx,miny,maxx,maxy)
+	outobj=imgobj.plugin.cropXY(imgobj,imgobj.getName()+'VCrop',minx,miny,maxx,maxy)
 
 #	for ind,ming in enumerate(mask):
 #		ming=ming.img
@@ -434,14 +434,14 @@ def cropObjectEmptySpace(obj,name,xymargins=0,zFilter=False):
 		miny=max(0,miny-xymargins/2)
 		maxx=min(cols-1,maxx+xymargins/2)
 		maxy=min(rows-1,maxy+xymargins/2)
-		newobj=newobj.cropXY(name,minx,miny,maxx,maxy)
+		newobj=newobj.plugin.cropXY(newobj,name,minx,miny,maxx,maxy)
 
 	return newobj
 
 
 def centerImagesLocalSpace(obj):
 	for i in obj.images:
-		i.position-=obj.getAABB().center
+		i.position-=obj.aabb.center
 		i.calculateDimensions()
 
 	obj.aabb=BoundBox(matIter(s.getCorners() for s in obj.images))
@@ -688,7 +688,7 @@ def mergeImages(imgobjs,imgout,mergefunc=None,task=None):
 		if o==imgout:
 			inters.append(o)
 		else:
-			i=imgout.clone('resampleclone'+o.getName())
+			i=imgout.plugin.clone(imgout,'resampleclone'+o.getName())
 			resampleImage(o,i)
 			inters.append(i)
 
@@ -698,31 +698,6 @@ def mergeImages(imgobjs,imgout,mergefunc=None,task=None):
 	for i in inters: 
 		if i!=imgout:
 			i.clear()
-
-
-@timing
-def createVoxelSizeVolume(obj,dims=None,dimmult=1.0):
-	'''
-	Create a new object with the same spatial dimensions as `obj' but with voxels of dimensions `dims'*`dimmult'.
-	If `dims' is None then the current voxel size for `obj' is used, otherwise it must be a vec3 object. The `dimmult'
-	value can be a vec3 or a float.
-	'''
-	assert not obj.is2D
-	
-	dims=vec3(*dims) if dims else vec3(min(obj.getVoxelSize()))
-	dims*=dimmult
-	trans=obj.getVolumeTransform()
-	t=obj.getTimestepList()
-	w,h,d=map(fcomp(int,abs,round),trans.getScale()/dims)
-	
-	#w,h,d,t=obj.getMatrixDims()
-	#d=int(trans.getScale().z()/dims.z()) # choose a new depth value to make the images isotropic
-	
-#	images=generateImageStack(w,h,int(trans.getScale().z()/dims[2]),t,trans.getTranslation(),trans.getRotation(),dims,obj.getName()+'_Iso')
-#	imgobj=ImageSceneObject(obj.getName()+'_Iso',obj.source,images,obj.plugin,obj.isTimeDependent)
-	imgobj=obj.plugin.createImageStackObject(obj.getName()+'_Iso',w,h,d,len(t),trans.getTranslation(),trans.getRotation(),dims)
-	imgobj.setTimestepList(t)
-	return imgobj
 	
 	
 def dilateImageVolume(obj,size=(5,5,5)):
@@ -735,6 +710,42 @@ def dilateImageVolume(obj,size=(5,5,5)):
 		result=scipy.ndimage.morphology.grey_dilation(volume,size)
 		for i,img in enumerate(images):
 			np.asarray(img.img)[:,:]=result[:,:,i]
+	
+
+@concurrent
+def extendImageRange(process,imglist,mx,my,fillVal):
+	images=[]
+	for p in process.prange():
+		img=imglist[p-process.startval]
+		images.append(img.resize(mx,my,fillVal))
+
+	return images	
+	
 			
+@timing
+def extendImage(obj,name,mx,my,mz,fillVal=0,task=None):
+	if mx==0 and my==0:
+		images=[i.clone() for i in obj.images]
+	else:
+		obj.setShared(True)
+		result=extendImageRange(len(obj.images),1,task,obj.images,mx,my,fillVal,partitionArgs=(obj.images,))
+		checkResultMap(result)
+		images=sumResultMap(result)
+		
+	dz=obj.getVolumeTransform().getRotation()*(obj.getVoxelSize()*vec3(0,0,1))
+	
+	for stack in obj.getVolumeStacks():
+		for i in range(mz):
+			img=images[stack[0]].clone()
+			img.img.fill(fillVal)
+			img.position-=dz*i
+			images.append(img)
 			
+			img=images[stack[-1]].clone()
+			img.img.fill(fillVal)
+			img.position+=dz*i
+			images.append(img)
+			
+	return obj.plugin.createSceneObject(name,images,obj.source,obj.isTimeDependent)
+	
 	

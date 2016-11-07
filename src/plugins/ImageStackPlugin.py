@@ -20,6 +20,7 @@
 from eidolon import *
 from ChooseImgStack import Ui_OpenImgStackDialog
 
+
 class ChooseImgStackDialog(QtGui.QDialog,Ui_OpenImgStackDialog):
 	def __init__(self, plugin,parent=None):
 		QtGui.QDialog.__init__(self,parent)
@@ -65,6 +66,53 @@ class ImageStackPlugin(ImageScenePlugin):
 		ImageScenePlugin.init(self,plugid,win,mgr)
 		if win:
 			win.addMenuItem('Import','ImgStackLoad'+str(plugid),'&Image Stack Directory',self._openDirDialog)
+			
+	def loadObject(self,filename,name=None,**kwargs):
+		filenames=kwargs.pop('filenames',[filename])
+		name=name or splitPathExt(filename)[1]
+		return self.loadImageStackObject(name,filenames,**kwargs)
+
+	def loadImageStackObject(self,name,filenames,pos=vec3(),rot=rotator(),spacing=(1.0,1.0),imgsep=1.0,sortIndex=None,regex=None,reverse=False,task=None):
+		'''
+		Loads a stack of images (or a sequence of stacks), ordered bottom up, into a ImageSceneObject. If
+		`sortIndex' is not None, this is the sorting index in the file names used to sort the stack. The start
+		position `pos' is intepreted as the top left position of the bottom-most image. If `filenames' is a list
+		of filenames only, the series is not timed, however if it's a list of lists of filenames then each sublist
+		is (optionally) sorted and then loaded into a time series object.
+		'''
+
+		isTimed=isIterable(filenames[0]) and not isinstance(filenames[0],str)
+
+		if isTimed:
+			if sortIndex!=None:
+				filenames=[sortFilenameList(fn,sortIndex,regex) for fn in filenames]
+
+			if reverse:
+				for f in filenames:
+					f.reverse()
+
+			positions=[pos+(rot*vec3(0,0,imgsep*i)) for i in range(len(filenames[0]))]
+
+			imagesteps=[loadImageStack(fn,self.mgr.scene.loadImageFile,positions,rot,spacing,task) for fn in filenames]
+
+			for i,imgs in enumerate(imagesteps):
+				for img in imgs:
+					img.timestep=i
+
+			images=listSum(imagesteps)
+			filenames=listSum(filenames)
+		else:
+			if sortIndex!=None:
+				filenames=sortFilenameList(filenames,sortIndex,regex)
+
+			if reverse:
+				filenames.reverse()
+
+			positions=[pos+(rot*vec3(0,0,imgsep*i)) for i in range(len(filenames))]
+
+			images=loadImageStack(filenames,self.mgr.scene.loadImageFile,positions,rot,spacing,task)
+
+		return self.createSceneObject(name,images,filenames,isTimed)
 			
 	def _openDirDialog(self):
 		@taskroutine('Loading Image Stack')

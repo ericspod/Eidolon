@@ -149,6 +149,31 @@ class SharedImage(object):
 		newimg=self.img.subMatrix(self.img.getName()+'crop',rows,cols,miny,minx,self.img.isShared())
 		newmin,newmax=minmaxMatrixReal(newimg)
 		return SharedImage(self.filename,newpos,self.orientation,(cols,rows),self.spacing,self.timestep,newimg,newmin,newmax)
+		
+	def resize(self,x,y,fillVal=0):
+		'''
+		Extend or contract the image by `x' pixels on the left and right and `y' pixels on the top and bottom. This 
+		will change the column count by x*2 and row count by y*2.
+		'''
+		newpos=self.getPlanePos(vec3(-x-0.5,-y-0.5),False)
+		rows=2*y+self.dimensions[1]
+		cols=2*x+self.dimensions[0]
+		newimg=RealMatrix(self.img.getName()+'resize',rows,cols,self.img.isShared())
+		
+		for n,m in trange(rows,cols):
+			ny=n-y
+			mx=m-x
+			if 0<=ny<self.img.n() and 0<=mx<self.img.m():
+				newimg.setAt(self.img.getAt(ny,mx),n,m)
+			else:
+				newimg.setAt(fillVal,n,m)
+				
+		if x>0 or y>0:
+			newmin,newmax=minmax(fillVal,self.imgmin,self.imgmax)
+		else:
+			newmin,newmax=minmaxMatrixReal(newimg)
+				
+		return SharedImage(self.filename,newpos,self.orientation,(cols,rows),self.spacing,self.timestep,newimg,newmin,newmax)
 
 	def allocateImg(self,name,isShared=True):
 		cols,rows=self.dimensions
@@ -247,7 +272,7 @@ class SharedImage(object):
 		self.calculateDimensions()
 
 	def __str__(self):
-		return '<SharedImage %xi, Pos: %r, Dims: %r, Spacing: %r, TS: %r>'%(id(self),self.position,self.dimensions,self.spacing,self.timestep)
+		return '<SharedImage %xi, Pos: %r, Orient: %r, Dims: %r, Spacing: %r, TS: %r>'%(id(self),self.position,self.orientation,self.dimensions,self.spacing,self.timestep)
 
 
 class ImageSceneObject(SceneObject):
@@ -274,7 +299,8 @@ class ImageSceneObject(SceneObject):
 		self.histogram=None
 
 		if isTimeDependent==None:
-			self.isTimeDependent=len(images)>1 and any(images[0].isSameLocation(i) for i in images[1:])
+			#self.isTimeDependent=len(images)>1 and any(images[0].isSameLocation(i) for i in images[1:])
+			self.isTimeDependent=len(images)>1 and any(images[0].timestep!=i.timestep for i in images[1:])
 
 		self.calculateAABB()
 
@@ -285,12 +311,6 @@ class ImageSceneObject(SceneObject):
 	def clear(self):
 		for i in self.images:
 			i.deallocateImg()
-
-	def clone(self,name):
-		return ImageSceneObject(name,self.source,[i.clone() for i in self.images],self.plugin,self.isTimeDependent)
-
-	def cropXY(self,name,minx,miny,maxx,maxy):
-		return ImageSceneObject(name,self.source,[i.crop(minx,miny,maxx,maxy) for i in self.images],self.plugin,self.isTimeDependent)
 
 	def setShared(self,isShared):
 		for i in self.images:
@@ -456,8 +476,9 @@ class ImageSceneObject(SceneObject):
 			orientlists=self.getTimeOrientMap().values()
 
 			if len(orientlists)>0:
-				for ts in xrange(len(orientlists[0])):
-					assert all(ts<len(olist) for olist in orientlists),'%s %r'%(ts,map(len,orientlists))
+				for ts in xrange(len(orientlists[0])): # ts is the index of a timestep, 
+					assert all(ts<len(olist) for olist in orientlists),'Not all orient lists have value for timestep %s\norient list lengths are: %r'%(ts,map(len,orientlists))
+					
 					inds=[olist[ts] for olist in orientlists] # indices of all images for this timestep
 					images=indexList(inds,self.images) # get the SharedImage objects
 					sortorder=sortImageStack(images) # determine the ordering of the images which form a bottom-up stack

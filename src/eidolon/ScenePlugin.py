@@ -1147,48 +1147,15 @@ class ImageScenePlugin(ScenePlugin):
 				f.setObject(rep)
 
 		return self.mgr.runTasks(createReprTask(),f)
+		
+	def createSceneObject(self,name,images,source=None,isTimeDependent=None):
+		return ImageSceneObject(name,source,images,self,isTimeDependent)
+		
+	def clone(self,obj,name):
+		return self.createSceneObject(name,[i.clone() for i in obj.images],obj.source,obj.isTimeDependent)
 
-	def loadImageStackObject(self,name,filenames,pos=vec3(),rot=rotator(),spacing=(1.0,1.0),imgsep=1.0,sortIndex=None,regex=None,reverse=False,task=None):
-		'''
-		Loads a stack of images (or a sequence of stacks), ordered bottom up, into a ImageSceneObject. If
-		`sortIndex' is not None, this is the sorting index in the file names used to sort the stack. The start
-		position `pos' is intepreted as the top left position of the bottom-most image. If `filenames' is a list
-		of filenames only, the series is not timed, however if it's a list of lists of filenames then each sublist
-		is (optionally) sorted and then loaded into a time series object.
-		'''
-
-		isTimed=isIterable(filenames[0]) and not isinstance(filenames[0],str)
-
-		if isTimed:
-			if sortIndex!=None:
-				filenames=[sortFilenameList(fn,sortIndex,regex) for fn in filenames]
-
-			if reverse:
-				for f in filenames:
-					f.reverse()
-
-			positions=[pos+(rot*vec3(0,0,imgsep*i)) for i in range(len(filenames[0]))]
-
-			imagesteps=[loadImageStack(fn,self.mgr.scene.loadImageFile,positions,rot,spacing,task) for fn in filenames]
-
-			for i,imgs in enumerate(imagesteps):
-				for img in imgs:
-					img.timestep=i
-
-			images=listSum(imagesteps)
-			filenames=listSum(filenames)
-		else:
-			if sortIndex!=None:
-				filenames=sortFilenameList(filenames,sortIndex,regex)
-
-			if reverse:
-				filenames.reverse()
-
-			positions=[pos+(rot*vec3(0,0,imgsep*i)) for i in range(len(filenames))]
-
-			images=loadImageStack(filenames,self.mgr.scene.loadImageFile,positions,rot,spacing,task)
-
-		return ImageSceneObject(name,filenames,images,self,isTimed)
+	def cropXY(self,obj,name,minx,miny,maxx,maxy):
+		return self.createSceneObject(name,[i.crop(minx,miny,maxx,maxy) for i in obj.images],obj.source,obj.isTimeDependent)
 		
 	def extractTimesteps(self,obj,name,indices=None,timesteps=None,setTimestep=False):
 		'''
@@ -1222,21 +1189,25 @@ class ImageScenePlugin(ScenePlugin):
 					for img in images:
 						img.timestep=ts
 				
-		return ImageSceneObject(name,obj.source,clonedimages,self,isTimeDependent)
+		return self.createSceneObject(name,clonedimages,obj.source,isTimeDependent)
 
-	def createImageStackObject(self,name,width,height,slices,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1),task=None):
+	def createImageStackObject(self,name,width,height,slices,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1)):
 		'''Create a blank image object with each timestep ordered bottom-up with integer timesteps.'''
 		src=(width,height,slices, timesteps,pos,rot,spacing)
 		images=generateImageStack(width,height,slices,timesteps,pos,rot,spacing,name)
-		return ImageSceneObject(name,src,images,self,timesteps>1)
+		return self.createSceneObject(name,images,src,timesteps>1)
 
-	def createRespacedObject(self,name,obj,spacing=vec3(1),task=None):
+	def createRespacedObject(self,obj,name,spacing=vec3(1)):
 		'''Create an image object occupying the same space as `obj' with voxel dimensions given by `spacing'.'''
 		trans=obj.getVolumeTransform()
-		w,h,d=map(fcomp(int,abs),trans.getScale()/spacing)
-		return self.createImageStackObject(name,w,h,d,len(obj.getTimestepList()),trans.getTranslation(),trans.getRotation(),spacing,task)
+		t=obj.getTimestepList()
+		w,h,d=map(fcomp(int,abs,round),trans.getScale()/spacing)
 		
-	def createIntersectObject(self,name,objs,timesteps=1,spacing=vec3(1),task=None):
+		imgobj=obj.plugin.createImageStackObject(name,w,h,d,len(t),trans.getTranslation(),trans.getRotation(),spacing)
+		imgobj.setTimestepList(t)
+		return imgobj
+		
+	def createIntersectObject(self,name,objs,timesteps=1,spacing=vec3(1)):
 		assert all(not o.is2D for o in objs)
 
 		trans=objs[0].getVolumeTransform()
@@ -1253,12 +1224,12 @@ class ImageScenePlugin(ScenePlugin):
 		assert all(minv<maxv for minv,maxv in zip(mincorner,maxcorner))
 
 		w,h,d=map(int,(maxcorner-mincorner)*(trans.getScale().abs()/spacing))
-		return self.createImageStackObject(name,w,h,d,timesteps,trans*mincorner,trans.getRotation(),spacing,task)
+		return self.createImageStackObject(name,w,h,d,timesteps,trans*mincorner,trans.getRotation(),spacing)
 
 	def createTestImage(self,w,h,d,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1)):
 		'''Generate a test image object with the given dimensions (w,h,d) with image values range (minv,maxv).'''
 		images=generateTestImageStack(w,h,d,timesteps,pos,rot,spacing)
-		return ImageSceneObject('TestImage',(w,h,d,timesteps,pos,rot,spacing),images,self)
+		return self.createSceneObject('TestImage',images,(w,h,d,timesteps,pos,rot,spacing),timesteps>1)
 		
 	def createSequence(self,name,objs,timesteps=None):
 		timesteps=timesteps or range(len(objs))
@@ -1270,7 +1241,7 @@ class ImageScenePlugin(ScenePlugin):
 				i.timestep=t
 				images.append(i)
 				
-		return ImageSceneObject(name,None,images,self)
+		return self.createSceneObject(name,images,objs[0].source,len(timesteps)>1)
 
 	def createObjectFromArray(self,name,array,interval=1.0,toffset=0,pos=vec3(),rot=rotator(),spacing=vec3(1),task=None):
 		'''
@@ -1284,7 +1255,7 @@ class ImageScenePlugin(ScenePlugin):
 		dims=len(shape)
 		height,width,slices,timesteps=shape+[1]*(4-dims)
 		
-		obj=self.createImageStackObject(name,width,height,slices,timesteps,pos,rot,spacing,task)
+		obj=self.createImageStackObject(name,width,height,slices,timesteps,pos,rot,spacing)
 
 		if task:
 			task.setMaxProgress(slices*timesteps)
