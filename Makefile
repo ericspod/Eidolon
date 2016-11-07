@@ -64,9 +64,9 @@ PYUIC=$(PYTHON) $(QTDIR)/uic/pyuic.py
 
 #--------------------------------------------------------------------------------------
 
-.PHONY: clean clean_gen header all ui cython resource distfile appfile package tutorialfile
+.PHONY: clean clean_gen header all ui renderer pyxlibs resource distfile appfile package tutorialfile
 
-all: header ui cython
+all: header ui renderer pyxlibs
 
 %.py : %.ui
 	$(PYUIC) $< > $@
@@ -76,8 +76,10 @@ ui : $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui))
 resource:
 	$(PYRCC) res/Resources.qrc -o $(SRC)/ui/Resources_rc.py
 
-cython:
+renderer:
 	cd $(RESRC) && python setup.py build_ext --inplace
+
+pyxlibs:
 	cd $(PYSRC) && python setup.py build_ext --inplace
 	rm -f $(patsubst %.pyx,%.cpp,$(wildcard $(PYSRC)/*.pyx))
 

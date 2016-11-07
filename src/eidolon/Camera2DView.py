@@ -244,13 +244,13 @@ class BaseCamera2DWidget(Base2DWidget):
 		figure is visible to this widget's camera only, otherwise it's default behaviour is unchanged.
 		'''
 		fig=self.mgr.scene.createFigure(name,'',ftype)
+		fig.fillData(PyVertexBuffer([]),PyIndexBuffer([]))
+		fig.setVisible(True)
 
 		if is2DOnly: # visible to this widget's 2D camera only
 			fig.setCameraVisibility(None,False)
 			fig.setCameraVisibility(self.camera,True)
 
-		fig.fillData(PyVertexBuffer([]),PyIndexBuffer([]))
-		fig.setVisible(True)
 		return fig
 
 	def createMaterial(self,name,useLighting=False,useVertexColor=True):

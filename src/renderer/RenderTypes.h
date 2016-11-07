@@ -85,6 +85,8 @@
 
 #define _HASH(h,v,s) (((h)<<(s)|((h)>>((sizeof(h)<<3)-(s))))^(v))
 
+#define DBGOUT(c) do { std::cout << c << std::endl; std::cout.flush(); } while(0)
+
 namespace RenderTypes {
 
 // various string names

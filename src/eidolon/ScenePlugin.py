@@ -1243,7 +1243,7 @@ class ImageScenePlugin(ScenePlugin):
 		inv=trans.inverse()
 		mincorner=vec3(0)
 		maxcorner=vec3(1)
-		corners=[]
+		#corners=[]
 		
 		for o in objs[1:]:
 			bb=BoundBox(inv*c for c in o.getVolumeCorners())
@@ -1259,6 +1259,18 @@ class ImageScenePlugin(ScenePlugin):
 		'''Generate a test image object with the given dimensions (w,h,d) with image values range (minv,maxv).'''
 		images=generateTestImageStack(w,h,d,timesteps,pos,rot,spacing)
 		return ImageSceneObject('TestImage',(w,h,d,timesteps,pos,rot,spacing),images,self)
+		
+	def createSequence(self,name,objs,timesteps=None):
+		timesteps=timesteps or range(len(objs))
+		
+		images=[]
+		for t,o in zip(timesteps,objs):
+			for i in o.images:
+				i=i.clone()
+				i.timestep=t
+				images.append(i)
+				
+		return ImageSceneObject(name,None,images,self)
 
 	def createObjectFromArray(self,name,array,interval=1.0,toffset=0,pos=vec3(),rot=rotator(),spacing=vec3(1),task=None):
 		'''

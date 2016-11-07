@@ -60,9 +60,8 @@ void setCameraVisibility(const Camera* cam, Ogre::MovableObject *obj,bool isVisi
 		obj->setVisibilityFlags(isVisible ? ~flag : flag);
 	}
 	else{
-		Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
-		u32 flag=ocam->getViewport()->getVisibilityMask();
-	
+		u32 flag=dynamic_cast<const OgreCamera*>(cam)->getVisibilityMask();
+		
 		if(isVisible)
 			obj->addVisibilityFlags(flag);
 		else
@@ -745,13 +744,15 @@ OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & ma
 void OgreBBSetFigure::setCameraVisibility(const Camera* cam, bool isVisible)
 {
 	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i){
-		Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
+		/*Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
 		u32 flag=ocam->getViewport()->getVisibilityMask();
 
 		if(isVisible)
 			(*i)->addVisibilityFlags(flag);
 		else
 			(*i)->removeVisibilityFlags(flag);
+		*/
+		OgreRenderTypes::setCameraVisibility(cam,*i,isVisible,scene);
 	}
 }
 
@@ -887,13 +888,15 @@ void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bo
 
 void OgreRibbonFigure::setCameraVisibility(const Camera* cam, bool isVisible)
 {
-	Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
+	/*Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
 	u32 flag=ocam->getViewport()->getVisibilityMask();
 
 	if(isVisible)
 		bbchain->addVisibilityFlags(flag);
 	else
-		bbchain->removeVisibilityFlags(flag);	
+		bbchain->removeVisibilityFlags(flag);
+	*/
+	OgreRenderTypes::setCameraVisibility(cam,bbchain,isVisible,scene);
 }
 
 std::pair<sval,planevert*> TextureVolumeRenderable::getPlaneIntersects(vec3 planept, vec3 planenorm)

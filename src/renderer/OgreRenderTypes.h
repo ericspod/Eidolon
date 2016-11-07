@@ -245,6 +245,11 @@ public:
 	{
 		return port->getActualHeight();
 	}
+	
+	virtual u32 getVisibilityMask() const
+	{
+		return port->getVisibilityMask();
+	}
 
 	virtual void setBGColor(const color & c)
 	{

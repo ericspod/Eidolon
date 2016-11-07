@@ -436,7 +436,7 @@ def setTrace():
 			if 'threading' in filename:
 				return None
 
-			if logging.root.isEnabledFor(logging.DEBUG):
+			if logging.getLogger().getEffectiveLevel()==logging.DEBUG:
 				logging.debug("%s:%s:%d: %s",threadname,filename, frame.f_lineno,event)
 			else:
 				printFlush("%s:%s:%d: %s"%(threadname,filename, frame.f_lineno,event))
@@ -470,6 +470,7 @@ def setLogging(logfile='eidolon.log',filemode='a'):
 		level=logging.DEBUG,
 		datefmt='%Y-%m-%d %H:%M:%S'
 	)
+	logging.getLogger().setLevel(logging.DEBUG)
 	logging.info('Start log')
 	logging.raiseExceptions=False # stop exception prints about the log file being closed when writing traces
 

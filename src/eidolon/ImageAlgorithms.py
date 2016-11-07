@@ -701,17 +701,27 @@ def mergeImages(imgobjs,imgout,mergefunc=None,task=None):
 
 
 @timing
-def createIsotropicVolume(obj,dims=None,dimmult=1.0):
+def createVoxelSizeVolume(obj,dims=None,dimmult=1.0):
+	'''
+	Create a new object with the same spatial dimensions as `obj' but with voxels of dimensions `dims'*`dimmult'.
+	If `dims' is None then the current voxel size for `obj' is used, otherwise it must be a vec3 object. The `dimmult'
+	value can be a vec3 or a float.
+	'''
 	assert not obj.is2D
 	
 	dims=vec3(*dims) if dims else vec3(min(obj.getVoxelSize()))
 	dims*=dimmult
 	trans=obj.getVolumeTransform()
-	w,h,d,t=obj.getMatrixDims()
+	t=obj.getTimestepList()
+	w,h,d=map(fcomp(int,abs,round),trans.getScale()/dims)
 	
-	images=generateImageStack(w,h,int(trans.getScale().z()/dims[2]),t,trans.getTranslation(),trans.getRotation(),dims,obj.getName()+'_Iso')
-	imgobj=ImageSceneObject(obj.getName()+'_Iso',obj.source,images,obj.plugin,obj.isTimeDependent)
-	imgobj.setTimestepList(obj.getTimestepList())
+	#w,h,d,t=obj.getMatrixDims()
+	#d=int(trans.getScale().z()/dims.z()) # choose a new depth value to make the images isotropic
+	
+#	images=generateImageStack(w,h,int(trans.getScale().z()/dims[2]),t,trans.getTranslation(),trans.getRotation(),dims,obj.getName()+'_Iso')
+#	imgobj=ImageSceneObject(obj.getName()+'_Iso',obj.source,images,obj.plugin,obj.isTimeDependent)
+	imgobj=obj.plugin.createImageStackObject(obj.getName()+'_Iso',w,h,d,len(t),trans.getTranslation(),trans.getRotation(),dims)
+	imgobj.setTimestepList(t)
 	return imgobj
 	
 	

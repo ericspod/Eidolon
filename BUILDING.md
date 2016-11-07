@@ -16,13 +16,13 @@ For all platforms the following are required either separately, as included with
 
 ### Linux (Ubuntu 12/14) 
 
-**Ubuntu 12.*** doesn't require anything extra if Anaconda is installed, so this is the easiest way to get started with development.
+**Ubuntu 12.\*** doesn't require anything extra if Anaconda is installed, so this is the easiest way to get started with development.
 
-**Ubuntu 14.*** version of Eidolon uses the system Ogre3D package so the development components for that must be installed plus the Qt development tools and Cython:
+**Ubuntu 14.\*** version of Eidolon uses the system Ogre3D package so the development components for that must be installed plus the Qt development tools and Cython:
 
     sudo apt-get install libogre-1.9-dev pyqt4-dev-tools qt4-dev-tools cython
 
-Additionally for either platform, **git**, **g++** and **make** are needed to build the libraries, you should have these already. 
+Additionally for either platform, **g++** and **make** are needed to build the libraries, you should have these already. 
 
 ### OS X
 
@@ -58,7 +58,8 @@ This will first run pyuic to generate Python from the Qt UI definition files, th
 This can be done with separate commands as follows:
 
     make ui 
-    make cython 
+    make renderer 
+    make pyxlibs 
 
 Building in Windows is the same as the above using **Cygwin** as the environment in which you run make, and using the **MinGW** distribution installed with Anaconda.
 
