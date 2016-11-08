@@ -126,9 +126,9 @@ package:
 	$(MAKE)
 	./run.sh --version
 ifeq ($(PLAT),osx)
-	make appfile DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
+	make appfile DISTNAME=Eidolon_Mac_$(shell ./run.sh --version 2>&1)
 else
-	make distfile DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
+	make distfile DISTNAME=Eidolon_All_$(shell ./run.sh --version 2>&1)
 endif
 
 tutorialfile:
