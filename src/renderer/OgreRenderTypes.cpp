@@ -580,13 +580,6 @@ Texture* OgreRenderScene::createTexture(const char* name,sval width, sval height
 		depth=_max<sval>(1,depth);
 		std::string uname=getUniqueResourceName(name,Ogre::TextureManager::getSingleton());
 		
-		/*Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(uname,resGroupName);
-		if(!tp.isNull()){
-			std::ostringstream os;
-			os << "Texture " << uname <<" already exists";
-			throw RenderException(os.str().c_str());
-		}*/
-		
 		// create a texture that's always 3D even if depth==1, this is so the shaders can always work with a sampler3D object
 		Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().createManual(uname,resGroupName, Ogre::TEX_TYPE_3D, width,height,depth,0,convert(format));
 
