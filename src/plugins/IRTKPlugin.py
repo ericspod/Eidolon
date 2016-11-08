@@ -924,9 +924,7 @@ class IRTKPluginMixin(object):
 				outfile=self.getNiftiFile(cropname)
 
 				if isExtended:
-					#reffile,f2=self.extendImageStack(refname,mx,my,mz)
-					f2=self.extendImageStack(refname,mx,my,mz)
-					reffile=f2[0]
+					reffile=self.extendImageStack(refname,mx,my,mz)[1][0]
 
 				ff=self.mgr.execBatchProgramTask(self.region,imgfile,outfile,'-ref',reffile,logfile=logfile1,cwd=cwd)
 				self._checkProgramTask(ff)
@@ -939,47 +937,11 @@ class IRTKPluginMixin(object):
 				f.setObject(self.loadNiftiFiles([outfile]))
 
 		return self.mgr.runTasks([_crop(imgname,refname)],f)
-
-#	def extendImageStackZ(self,obj,mz):
-#		obj.setName(self.getUniqueShortName(obj.getName(),'Ext'))
-#
-#		dz=obj.getVolumeTransform().getRotation()*(obj.getVoxelSize()*vec3(0,0,1))
-#		newimgs=[]
-#		for stack in obj.getVolumeStacks():
-#			for i in range(mz+1):
-#				img=obj.images[stack[0]].clone()
-#				img.img.fill(0)
-#				img.position-=dz*i
-#				newimgs.append(img)
-#				img=obj.images[stack[-1]].clone()
-#				img.img.fill(0)
-#				img.position+=dz*i
-#				newimgs.append(img)
-#
-#		obj.images+=newimgs
-#
-#		return self.saveToNifti([obj])
-#
-#	def extendImageStack(self,stackname,mx=0,my=0,mz=0,value=None):
-#		ename=self.getNiftiFile(self.getUniqueShortName(stackname,'Ext'))
-#
-#		args=[self.getNiftiFile(stackname),ename]
-#
-#		if mx>0:
-#			args+=['-x',str(mx)]
-#		if my>0:
-#			args+=['-y',str(my)]
-#		if mz>0:
-#			args+=['-z',str(mz)]
-#		if value!=None:
-#			args+=['-value',str(value)]
-#
-#		return ename,self.mgr.execBatchProgramTask(self.enlarge,*args)
 		
 	def extendImageStack(self,stackname,mx=0,my=0,mz=0,value=0):
 		obj=self.findObject(stackname)
 		ext=extendImage(obj,self.getUniqueShortName(stackname,'Ext'),mx,my,mz,value)
-		return self.saveToNifti([ext],True)
+		return ext,self.saveToNifti([ext],True)
 
 	def applyMotionTrack(self,objname,srcname,trackname,isFrameByFrame=False):
 		obj=self.findObject(objname)
@@ -1162,7 +1124,7 @@ class IRTKPluginMixin(object):
 				assert trackobj!=None,'Cannot find object '+trackname
 
 				if not isTagged:
-					trackfile=self.extendImageStack(trackname,mz=4)[0]
+					trackfile=self.extendImageStack(trackname,mz=4)[1][0]
 					#self._checkProgramTask(f1)
 				else:
 					trackfile=self.getNiftiFile(trackname)
@@ -1171,7 +1133,7 @@ class IRTKPluginMixin(object):
 					mask=self.findObject(maskname)
 					maski=trackobj.plugin.extractTimesteps(trackobj,maskname+'I',timesteps=[0])
 					resampleImage(mask,maski)
-					maskfile=self.extendImageStack(maski,mz=4)[0]
+					maskfile=self.extendImageStack(maski,mz=4)[1][0]
 					#self._checkProgramTask(f2)
 				else:
 					maskfile=None

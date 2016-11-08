@@ -723,28 +723,30 @@ def extendImageRange(process,imglist,mx,my,fillVal):
 	
 			
 @timing
-def extendImage(obj,name,mx,my,mz,fillVal=0,task=None):
+def extendImage(obj,name,mx,my,mz,fillVal=0,numProcs=0,task=None):
 	if mx==0 and my==0:
 		images=[i.clone() for i in obj.images]
 	else:
 		obj.setShared(True)
-		result=extendImageRange(len(obj.images),1,task,obj.images,mx,my,fillVal,partitionArgs=(obj.images,))
+		result=extendImageRange(len(obj.images),numProcs,task,obj.images,mx,my,fillVal,partitionArgs=(obj.images,))
 		checkResultMap(result)
 		images=sumResultMap(result)
 		
 	dz=obj.getVolumeTransform().getRotation()*(obj.getVoxelSize()*vec3(0,0,1))
-	
-	for stack in obj.getVolumeStacks():
-		for i in range(mz):
-			img=images[stack[0]].clone()
-			img.img.fill(fillVal)
-			img.position-=dz*i
-			images.append(img)
-			
-			img=images[stack[-1]].clone()
-			img.img.fill(fillVal)
-			img.position+=dz*i
-			images.append(img)
+	if mz>0:
+		for stack in obj.getVolumeStacks():
+			for i in range(1,mz+1):
+				img=images[stack[0]].clone()
+				img.img.fill(fillVal)
+				img.position-=dz*i
+				img.calculateDimensions()
+				images.append(img)
+				
+				img=images[stack[-1]].clone()
+				img.img.fill(fillVal)
+				img.position+=dz*i
+				img.calculateDimensions()
+				images.append(img)
 			
 	return obj.plugin.createSceneObject(name,images,obj.source,obj.isTimeDependent)
 	

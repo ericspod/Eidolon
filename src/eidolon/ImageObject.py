@@ -477,6 +477,7 @@ class ImageSceneObject(SceneObject):
 
 			if len(orientlists)>0:
 				for ts in xrange(len(orientlists[0])): # ts is the index of a timestep, 
+					# this ensures that all timesteps have the same number of images
 					assert all(ts<len(olist) for olist in orientlists),'Not all orient lists have value for timestep %s\norient list lengths are: %r'%(ts,map(len,orientlists))
 					
 					inds=[olist[ts] for olist in orientlists] # indices of all images for this timestep
