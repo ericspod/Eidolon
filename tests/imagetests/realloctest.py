@@ -27,7 +27,7 @@ images=generateTimeSphereImages(step,dim)
 obj=ImageSceneObject('Sphere',[],images)
 mgr.addSceneObject(obj)
 
-rep=obj.createRepr(ReprType._imgtimestack)
+rep=obj.createRepr(ReprType._imgtimevolume)
 mgr.addSceneObjectRepr(rep)
 
 obj=None
@@ -39,7 +39,7 @@ images=generateTimeSphereImages(step,dim)
 obj=ImageSceneObject('Sphere',[],images)
 mgr.addSceneObject(obj)
 
-rep=obj.createRepr(ReprType._imgtimestack)
+rep=obj.createRepr(ReprType._imgtimevolume)
 mgr.addSceneObjectRepr(rep)
 
 mgr.setCameraSeeAll()

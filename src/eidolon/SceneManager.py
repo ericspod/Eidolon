@@ -1497,7 +1497,6 @@ class SceneManager(object):
 		
 		self.showTimeDialog()
 		self.repaint()
-		del rep
 		self._collect()
 		
 	def clearScene(self):

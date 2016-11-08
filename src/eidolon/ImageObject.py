@@ -739,6 +739,13 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
 		self._isVisible=False
 		for f in self.figs:
 			f.setVisible(False)
+			
+		self.figs=[]
+		self.figmats=[]
+		self.figtextures=[] 
+		self.buffs=[] 
+
+		self.chosenSlice=None 
 
 	def setVisible(self,isVisible):
 		if isVisible!=self._isVisible:
@@ -861,7 +868,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 		self.figorients=[] # figure orientation
 		self.figdims=[] # figure dimensions
 		self.figinds=[] # list of indices of which images/matrices define the figure
-		self.fighexes=[]
+		self.fighexes=[] # list of volume hexahedra represented by 6-tuples of vec3
 		self.submatrices=[]
 		self.subalphas=[]
 
@@ -948,6 +955,17 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 
 	def removeFromScene(self,scene):
 		self.setVisible(False)
+		self.figs=[]
+		self.figtexbb=[]
+		self.figmats=[]
+		self.figtextures=[] 
+		self.figpositions=[]
+		self.figorients=[]
+		self.figdims=[]
+		self.figinds=[] 
+		self.fighexes=[]
+		self.submatrices=[]
+		self.subalphas=[]
 
 	def setVisible(self,isVisible):
 		if isVisible!=self._isVisible:
