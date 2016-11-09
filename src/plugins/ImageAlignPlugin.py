@@ -16,28 +16,20 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from eidolon import *
 
-import eidolon
 
-# necessary for now to include plugins here for multiprocessing
-import CheartPlugin
-import DicomPlugin
-import NiftiPlugin
-import MetaImagePlugin
-import VTKPlugin
-import MeditPlugin
-import STLPlugin
-import NRRDPlugin
-import ParRecPlugin
-import ImageStackPlugin
-import SlicePlugin
-import PlotPlugin
-import SegmentPlugin
-import ReportCardPlugin
-import MeasurementPlugin
-import CardiacMotionPlugin
-import ImageAlignPlugin
+class ImageAlignPlugin(ScenePlugin):
+	'''Legacy plugin to ensure old projects continue to work.'''
+	def __init__(self):
+		ScenePlugin.__init__(self,'ImgAlign')
 
-if __name__ == '__main__': # needed for Windows multiprocessing (unless you want fork bombs)
-	eidolon.defaultMain()
+	def init(self,plugid,win,mgr):
+		ScenePlugin.init(self,plugid,win,mgr)
+		self.CardiacMotion=mgr.getPlugin('CardiacMotion')
 
+	def createAlignProject(self,name,parentdir):
+		self.CardiacMotion.createProject(name,parentdir)
+		
+
+addPlugin(ImageAlignPlugin())
