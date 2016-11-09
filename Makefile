@@ -88,7 +88,7 @@ distfile: # creates the universal distributable .tgz file with path DISTNAME.tgz
 	cp -Rf src EidolonLibs tutorial res $(DISTNAME)
 	cp main.py run.sh run.bat config.ini $(DISTNAME)
 	rm -rf $(DISTNAME)/src/renderer $(DISTNAME)/src/*/*.ui $(DISTNAME)/src/*/*.o $(DISTNAME)/res/*.qrc
-	rm -rf $(DISTNAME)/EidolonLibs/*/include $(DISTNAME)/EidolonLibs/*/lib $(DISTNAME)/EidolonLibs/*/bin/Debug
+	rm -rf $(DISTNAME)/EidolonLibs/*/include $(DISTNAME)/EidolonLibs/*/lib
 	rm -rf $(DISTNAME)/EidolonLibs/osx/bin/*.framework/Versions/*/Headers
 	rm -rf $(DISTNAME)/EidolonLibs/win64_msvc $(DISTNAME)/src/*/build
 	find $(DISTNAME)/EidolonLibs -name \*.lib  -delete
@@ -107,7 +107,7 @@ appfile: # creates the OS X .app directory with path DISTNAME.app
 	cp -R main.py config.ini res src tutorial $(DISTNAME)/Contents/Resources
 	rm -rf $(DISTNAME)/Contents/Resources/src/renderer $(DISTNAME)/Contents/Resources/src/*/build
 	mkdir $(DISTNAME)/Contents/Resources/EidolonLibs
-	cp -R ./EidolonLibs/python $(DISTNAME)/Contents/Resources/EidolonLibs
+	cp -R ./EidolonLibs/python ./EidolonLibs/IRTK $(DISTNAME)/Contents/Resources/EidolonLibs
 	mkdir $(DISTNAME)/Contents/Frameworks
 	cp -R $(LIB_HOME)/bin/*.framework /Library/Frameworks/Python.framework $(DISTNAME)/Contents/Frameworks
 	cp -R /Library/Frameworks/QtCore.framework /Library/Frameworks/QtGui.framework /Library/Frameworks/QtSvg.framework $(DISTNAME)/Contents/Frameworks
