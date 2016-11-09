@@ -736,7 +736,7 @@ class IRTKPluginMixin(object):
 				outfile=self.getNiftiFile(outname)
 				
 				if cropEmpty:
-					obj=self.ImgAlign.emptyCropObject(obj,False)
+					obj=self.emptyCropObject(obj,False)
 
 #				tempNii=not os.path.isfile(infile)
 #

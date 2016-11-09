@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AlignProp</class>
- <widget class="QWidget" name="AlignProp">
+ <class>CardiacMotionProp</class>
+ <widget class="QWidget" name="CardiacMotionProp">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -45,8 +45,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>529</width>
-        <height>202</height>
+        <width>516</width>
+        <height>224</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -202,8 +202,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>529</width>
-        <height>419</height>
+        <width>516</width>
+        <height>480</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -444,8 +444,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>512</width>
-        <height>764</height>
+        <width>516</width>
+        <height>888</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -870,8 +870,8 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>512</width>
-        <height>1017</height>
+        <width>516</width>
+        <height>1218</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1580,8 +1580,8 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>512</width>
-        <height>1161</height>
+        <width>516</width>
+        <height>1364</height>
        </rect>
       </property>
       <property name="sizePolicy">

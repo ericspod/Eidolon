@@ -26,7 +26,7 @@ from VTKPlugin import DatasetTypes
 from CheartPlugin import LoadDialog
 from ReportCardPlugin import ReportCardSceneObject
 from DicomPlugin import readDicomHeartRate
-from AlignProjProp import Ui_AlignProp
+from CardiacMotionProp import Ui_CardiacMotionProp
 
 
 def avgDevRange(vals,stddevDist=1.0):
@@ -505,7 +505,7 @@ def calculateLinTetVolume(datasetlist,elemvals,choosevals,task=None):
 	return listSum(results[p] for p in sorted(results))
 
 
-class AlignProjPropWidget(QtGui.QWidget,Ui_AlignProp):
+class CardiacMotionPropWidget(QtGui.QWidget,Ui_CardiacMotionProp):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		self.setupUi(self)
@@ -525,14 +525,14 @@ ConfigNames=enum(
 )
 
 
-class AlignProject(Project):
+class CardiacMotionProject(Project):
 	def __init__(self,name,parentdir,mgr):
 		Project.__init__(self,name,parentdir,mgr)
 		self.addHandlers()
-		self.ImgAlign=mgr.getPlugin('ImgAlign')
+		self.CardiacMotion=mgr.getPlugin('CardiacMotion')
 		self.ReportCard=mgr.getPlugin('ReportCard')
-		self.ImgAlign.project=self
-		self.header='\nImgAlign.createAlignProject(%r,scriptdir+"/..")\n' %(self.name)
+		self.CardiacMotion.project=self
+		self.header='\nCardiacMotion.createProject(%r,scriptdir+"/..")\n' %(self.name)
 		self.alignprop=None
 		self.numUnknownJobs=0
 		self.reportcard=None
@@ -544,7 +544,7 @@ class AlignProject(Project):
 		self.configMap[ConfigNames._serveraddr]='localhost'
 		self.configMap[ConfigNames._adaptive]=0.9
 		self.configMap[ConfigNames._jobids]=[]
-		self.configMap[ConfigNames._paramfile]=self.ImgAlign.patient1e4
+		self.configMap[ConfigNames._paramfile]=self.CardiacMotion.patient1e4
 
 		for o in list(mgr.enumSceneObjects()):
 			mgr.removeSceneObject(o)
@@ -577,7 +577,7 @@ class AlignProject(Project):
 		cppdel(prop.dirButton)
 		cppdel(prop.chooseLocLabel)
 		
-		self.alignprop=AlignProjPropWidget()
+		self.alignprop=CardiacMotionPropWidget()
 		prop.verticalLayout.insertWidget(prop.verticalLayout.count()-1,self.alignprop)
 
 		self.alignprop.loadCineButton.clicked.connect(self._loadCineSeries)
@@ -590,7 +590,7 @@ class AlignProject(Project):
 		
 		self.alignprop.saveCHeartCheck.clicked.connect(self.updateConfigFromProp)
 
-#		self.alignprop.alignCheckButton.clicked.connect(lambda:self.ImgAlign.checkLongAxisAlign(str(self.alignprop.alignCheckBox.currentText()),str(self.alignprop.checkTargetBox.currentText())))
+#		self.alignprop.alignCheckButton.clicked.connect(lambda:self.CardiacMotion.checkLongAxisAlign(str(self.alignprop.alignCheckBox.currentText()),str(self.alignprop.checkTargetBox.currentText())))
 
 		self.alignprop.shortAxisBox.activated.connect(self.updateConfigFromProp)
 		self.alignprop.saxsegBox.activated.connect(self.updateConfigFromProp)
@@ -739,7 +739,7 @@ class AlignProject(Project):
 		self.alignprop.volMeshBox.currentIndexChanged.emit(self.alignprop.volMeshBox.currentIndex())
 		self.alignprop.strainMeshBox.currentIndexChanged.emit(self.alignprop.strainMeshBox.currentIndex())
 
-		trackdirs=map(os.path.basename,self.ImgAlign.getTrackingDirs())
+		trackdirs=map(os.path.basename,self.CardiacMotion.getTrackingDirs())
 		fillList(self.alignprop.trackDataBox,trackdirs)
 		fillList(self.alignprop.strainTrackBox,trackdirs)
 		fillList(self.alignprop.strainMeshTrackBox,trackdirs)
@@ -838,13 +838,13 @@ class AlignProject(Project):
 			filename=self.getProjectFile(obj.getName())
 			
 			if isinstance(obj,ImageSceneObject):
-				self.ImgAlign.saveToNifti([obj],True)
+				self.CardiacMotion.saveToNifti([obj],True)
 			elif isinstance(obj,MeshSceneObject):
 				savecheart=self.configMap[ConfigNames._savecheart].lower()=='true'
 				if savecheart:
-					self.ImgAlign.CHeart.saveObject(obj,filename,setFilenames=True)
+					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True)
 				else:
-					self.ImgAlign.VTK.saveObject(obj,filename,setFilenames=True)
+					self.CardiacMotion.VTK.saveObject(obj,filename,setFilenames=True)
 
 			Project.addObject(self,obj)
 
@@ -857,12 +857,12 @@ class AlignProject(Project):
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)
 		if len(filenames)>0:
-			self.ImgAlign.loadNiftiFiles(filenames)
+			self.CardiacMotion.loadNiftiFiles(filenames)
 
 	def _loadMetaFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose MetaImage Header filename',filterstr='Header Files (*.mhd *.mha)',chooseMultiple=True)
 		if len(filenames)>0:
-			self.ImgAlign.loadMetaFiles(filenames)
+			self.CardiacMotion.loadMetaFiles(filenames)
 
 	def _alignButton(self):
 		saxname=self.configMap[ConfigNames._shortaxis]
@@ -878,7 +878,7 @@ class AlignProject(Project):
 		elif segname=='':
 			self.mgr.showMsg('A segmentation must be loaded first.','Cannot Perform Alignment')
 		else:
-			self.ImgAlign.alignShortStack(saxname,segname,templatename)#,timeregname)
+			self.CardiacMotion.alignShortStack(saxname,segname,templatename)#,timeregname)
 
 #	def _createTimeRegButton(self):
 #		template=self.getProjectObj(self.configMap[ConfigNames._templateimg])
@@ -886,7 +886,7 @@ class AlignProject(Project):
 #			self.mgr.showMsg('No template image specified so nothing to time-register to.','Cannot Perform Operation')
 #		else:
 #			sax=self.getProjectObj(self.configMap[ConfigNames._shortaxis])
-#			regobj=self.ImgAlign.createTimeRegStack(template,sax)
+#			regobj=self.CardiacMotion.createTimeRegStack(template,sax)
 #
 #			self.mgr.addFuncTask(lambda:self.configMap.update({ConfigNames._saxtimereg:regobj().getName()}))
 
@@ -897,17 +897,17 @@ class AlignProject(Project):
 		if not saxname: # and not timeregname:
 			self.mgr.showMsg('A short axis stack must be loaded first.','Cannot Create Segmentation')
 		else:
-			self.ImgAlign.createSegObject(saxname,SegmentTypes.LV)
+			self.CardiacMotion.createSegObject(saxname,SegmentTypes.LV)
 
 	def _rigidRegButton(self):
 		regnames=[str(i.text()) for i in self.alignprop.regList.selectedItems()]
 		if len(regnames)>0:
-			self.ImgAlign.rigidRegisterStackList(self.configMap[ConfigNames._regsubject],self.configMap[ConfigNames._regintermed],regnames)
+			self.CardiacMotion.rigidRegisterStackList(self.configMap[ConfigNames._regsubject],self.configMap[ConfigNames._regintermed],regnames)
 
 	def _cropSeries(self):
 		seriesname=str(self.alignprop.mCropSeriesBox.currentText())
 		threshold=self.alignprop.cropThresholdBox.value()
-		self.ImgAlign.motionCropObject(seriesname,threshold)
+		self.CardiacMotion.motionCropObject(seriesname,threshold)
 
 	def _cropBoundBox(self):
 		srcname=str(self.alignprop.bbCropSrcBox.currentText())
@@ -916,34 +916,34 @@ class AlignProject(Project):
 		my=self.alignprop.bbYBox.value()
 		mz=self.alignprop.bbZBox.value()
 
-		self.ImgAlign.refImageCrop(srcname,refname,mx,my,mz)
+		self.CardiacMotion.refImageCrop(srcname,refname,mx,my,mz)
 
 	def _cropEmpty(self):
 		srcname=str(self.alignprop.emptyCropImgBox.currentText())
-		self.ImgAlign.emptyCropObject(srcname)
+		self.CardiacMotion.emptyCropObject(srcname)
 
 	def _loadCineSeries(self):
-		series=self.ImgAlign.Dicom.openChooseSeriesDialog(subject='CINE')
+		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE')
 		if len(series)>0:
-			objs=[self.ImgAlign.Dicom.loadSeries(s) for s in series]
+			objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
 			self._readDicomHeartRate(series[0])
-			filenames=self.ImgAlign.saveToNifti(objs)
-			self.ImgAlign.loadNiftiFiles(filenames)
+			filenames=self.CardiacMotion.saveToNifti(objs)
+			self.CardiacMotion.loadNiftiFiles(filenames)
 
 	def _loadMorphoSeries(self):
 		param=ParamDef('tsOffset','Timestep Offset',ParamType._int,40,-300,300,10)
 		results={}
 
-		series=self.ImgAlign.Dicom.openChooseSeriesDialog(allowMultiple=False,params=([param],lambda n,v:results.update({n:v})),subject='Morphology')
+		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(allowMultiple=False,params=([param],lambda n,v:results.update({n:v})),subject='Morphology')
 		if len(series)>0:
 			ts=results.get('tsOffset',40)
 			suffix='_offset%i'%ts
 
-			sobj=self.ImgAlign.Dicom.loadSeries(series[0])
+			sobj=self.CardiacMotion.Dicom.loadSeries(series[0])
 			self._readDicomHeartRate(series[0])
-			filenames=self.ImgAlign.saveToNifti([sobj])
-			obj=self.ImgAlign.loadNiftiFiles(filenames)
-			self.mgr.addFuncTask(lambda:self.ImgAlign.offsetTimesteps(obj()[0],suffix,ts))
+			filenames=self.CardiacMotion.saveToNifti([sobj])
+			obj=self.CardiacMotion.loadNiftiFiles(filenames)
+			self.mgr.addFuncTask(lambda:self.CardiacMotion.offsetTimesteps(obj()[0],suffix,ts))
 
 	def _load3DTagSeries(self):
 		params=[
@@ -952,27 +952,27 @@ class AlignProject(Project):
 			ParamDef('loadPlanes','Include Plane-aligned Images',ParamType._bool,False)
 		]
 		results={}
-		series=self.ImgAlign.Dicom.openChooseSeriesDialog(allowMultiple=False,params=(params,lambda n,v:results.update({n:v})),subject='3D Tag')
+		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(allowMultiple=False,params=(params,lambda n,v:results.update({n:v})),subject='3D Tag')
 
 		if len(series)>0:
-			obj=self.ImgAlign.Dicom.loadSeries(series[0])
+			obj=self.CardiacMotion.Dicom.loadSeries(series[0])
 			self._readDicomHeartRate(series[0])
 			makeProspective=results.get('makeProspective',True)
 			loadPlanes=results.get('loadPlanes',False)
 			makeDetag=results.get('makeDetag',True)
 
-			f=self.ImgAlign.load3DTagSeries(obj,makeProspective,loadPlanes,makeDetag)
+			f=self.CardiacMotion.load3DTagSeries(obj,makeProspective,loadPlanes,makeDetag)
 			self.mgr.checkFutureResult(f)
 
 	def _loadMagFlow(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Par filename',filterstr='Par Files (*.par *.PAR)',chooseMultiple=False)
 		if filename:
-			self.ImgAlign.loadMagPhaseParRec(filename)
+			self.CardiacMotion.loadMagPhaseParRec(filename)
 
 	def _loadVTKFile(self):
 		filename=self.mgr.win.chooseFileDialog('Choose VTK Mesh filename',filterstr='VTK Files (*.vtk *.vtu)',chooseMultiple=False)
 		if filename:
-			f=self.ImgAlign.loadVTKFile(filename)
+			f=self.CardiacMotion.loadVTKFile(filename)
 			self.mgr.checkFutureResult(f)
 
 	def _loadCHeartFiles(self):
@@ -980,7 +980,7 @@ class AlignProject(Project):
 		params=d.getParams()
 
 		if params:
-			self.ImgAlign.loadCHeartMesh(*params)
+			self.CardiacMotion.loadCHeartMesh(*params)
 			
 	def _setTimestep(self):
 		objname=str(self.alignprop.tsSetObjBox.currentText())
@@ -988,13 +988,13 @@ class AlignProject(Project):
 		step=self.alignprop.tsStepBox.value()
 		
 		if objname:
-			self.ImgAlign.setObjectTimestep(objname,start,step)
+			self.CardiacMotion.setObjectTimestep(objname,start,step)
 
 	def _invertOrder(self):
 		manipname=str(self.alignprop.manipImgBox.currentText())
 		msg='This operation will invert the order of timesteps for this image, are you sure?'
 		if manipname:
-			self.mgr.win.chooseYesNoDialog(msg,'Timestep Ordering',lambda:self.ImgAlign.invertTimesteps(manipname))
+			self.mgr.win.chooseYesNoDialog(msg,'Timestep Ordering',lambda:self.CardiacMotion.invertTimesteps(manipname))
 
 	def _offsetTimestep(self):
 		offsetname=str(self.alignprop.manipImgBox.currentText())
@@ -1002,17 +1002,17 @@ class AlignProject(Project):
 		suffix='_offset%i'%ts
 		msg='This operation will add the given value to the timesteps for this image, are you sure?'
 		if offsetname:
-			self.mgr.win.chooseYesNoDialog(msg,'Timestep Ordering',lambda:self.ImgAlign.offsetTimesteps(offsetname,suffix,ts))
+			self.mgr.win.chooseYesNoDialog(msg,'Timestep Ordering',lambda:self.CardiacMotion.offsetTimesteps(offsetname,suffix,ts))
 
 	def _prospTimestep(self):
 		offsetname=str(self.alignprop.manipImgBox.currentText())
 		msg='This operation will convert the timesteps for this image into prospective times, are you sure?'
 		if offsetname:
-			self.mgr.win.chooseYesNoDialog(msg,'Timestep Ordering',lambda:self.ImgAlign.offsetTimesteps(offsetname,'_prospective',0,True))
+			self.mgr.win.chooseYesNoDialog(msg,'Timestep Ordering',lambda:self.CardiacMotion.offsetTimesteps(offsetname,'_prospective',0,True))
 
 	def _reorderMulticycle(self):
 		name=str(self.alignprop.reorderSrcBox.currentText())
-		self.ImgAlign.reorderMulticycleImage(name,self.imgalignprop.reorderStartBox.value(),self.imgalignprop.reorderStepBox.value())
+		self.CardiacMotion.reorderMulticycleImage(name,self.imgalignprop.reorderStartBox.value(),self.imgalignprop.reorderStepBox.value())
 
 	def _chooseParamFile(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Parameter file')
@@ -1037,7 +1037,7 @@ class AlignProject(Project):
 
 		if not os.path.isfile(paramfile):
 			self.mgr.showMsg('Cannot file param file %r, using default file'%paramfile,'File Not Found')
-			paramfile=self.ImgAlign.patient1e6 if isTagCheck else self.ImgAlign.patient1e4
+			paramfile=self.CardiacMotion.patient1e6 if isTagCheck else self.CardiacMotion.patient1e4
 			self.configMap[ConfigNames._paramfile]=paramfile
 
 		if 'tagged' in trackimg and not isTagCheck:
@@ -1046,7 +1046,7 @@ class AlignProject(Project):
 		if maskimg in ('','None'):
 			maskimg=None
 
-		response=self.ImgAlign.startMotionTrackJob(trackimg,maskimg,dirname,adaptive,paramfile)
+		response=self.CardiacMotion.startMotionTrackJob(trackimg,maskimg,dirname,adaptive,paramfile)
 
 		@taskroutine('Checking Motion Track Job')
 		def _checkJob(task):
@@ -1068,13 +1068,13 @@ class AlignProject(Project):
 		jids=self.configMap[ConfigNames._jobids]
 		assert jids!=None
 
-		if checkActive and not self.ImgAlign.isServerAlive():
+		if checkActive and not self.CardiacMotion.isServerAlive():
 			self.mgr.callThreadSafe(fillList,self.alignprop.jobList,['MotionTrackServer not active.'])
 			#self.mgr.showMsg('MotionTrackServer not active.','Server Check',False)
 		else:
 			@self.mgr.addFuncTask
 			def _updateList():
-				msgs,deadjobs=self.ImgAlign.checkMotionTrackJobs(jids)
+				msgs,deadjobs=self.CardiacMotion.checkMotionTrackJobs(jids)
 				self.mgr.callThreadSafe(fillList,self.alignprop.jobList,msgs)
 				self.numUnknownJobs=len(deadjobs)
 				for d in deadjobs:
@@ -1087,15 +1087,15 @@ class AlignProject(Project):
 		maskname=str(self.alignprop.maskNregBox.currentText())
 		trackname=str(self.alignprop.trackingNregName.text())
 		paramfile=str(self.alignprop.paramNRegEdit.text())
-		f=self.ImgAlign.startGPUNRegMotionTrack(imgname,maskname,trackname,paramfile)
+		f=self.CardiacMotion.startGPUNRegMotionTrack(imgname,maskname,trackname,paramfile)
 		self.mgr.checkFutureResult(f)
 
 	def _killJob(self):
 		ind=self.alignprop.jobList.currentRow()
-		if ind>=0 and self.ImgAlign.isServerAlive():
+		if ind>=0 and self.CardiacMotion.isServerAlive():
 			def _killSelected():
 				jid=self.configMap[ConfigNames._jobids][ind-self.numUnknownJobs]
-				name,msg=self.ImgAlign.sendServerMsg(ServerMsgs._Kill,(jid,))
+				name,msg=self.CardiacMotion.sendServerMsg(ServerMsgs._Kill,(jid,))
 				self._checkMotionJob()
 
 			self.mgr.win.chooseYesNoDialog('Kill the selected running motion tracking job?','Kill',_killSelected)
@@ -1109,23 +1109,23 @@ class AlignProject(Project):
 		if srcname=='None':
 			srcname=None
 
-		f=self.ImgAlign.applyMotionTrack(objname,srcname,trackname,isFrameByFrame)
+		f=self.CardiacMotion.applyMotionTrack(objname,srcname,trackname,isFrameByFrame)
 		self.mgr.checkFutureResult(f)
 
 	def _resampleImage(self):
 		objname=str(self.alignprop.resampleSrcBox.currentText())
 		tmpltname=str(self.alignprop.resampleTmpltBox.currentText())
 		isIso=self.alignprop.resampleIsoCheck.isChecked()
-		f=self.ImgAlign.resampleObject(objname,tmpltname,isIso)
+		f=self.CardiacMotion.resampleObject(objname,tmpltname,isIso)
 		self.mgr.checkFutureResult(f)
 
 	def _extractTimesteps(self):
 		objname=str(self.alignprop.tsExtrSrcBox.currentText())
-		self.ImgAlign.extractTimestepsToObject(objname,[self.alignprop.tsExtrChooseBox.currentIndex()])
+		self.CardiacMotion.extractTimestepsToObject(objname,[self.alignprop.tsExtrChooseBox.currentIndex()])
 
 	def _createGridButton(self):
 		name=str(self.alignprop.gridImgBox.currentText())
-		self.ImgAlign.createImageGrid(name,self.alignprop.gridW.value(),self.alignprop.gridH.value(),self.alignprop.gridD.value())
+		self.CardiacMotion.createImageGrid(name,self.alignprop.gridW.value(),self.alignprop.gridH.value(),self.alignprop.gridD.value())
 
 	def _createIsoImage(self):
 		name=str(self.alignprop.isoCreateBox.currentText())
@@ -1133,27 +1133,27 @@ class AlignProject(Project):
 		cropEmpty=self.alignprop.emptyCropBox.isChecked()
 
 		#if cropEmpty:
-		#	name=self.ImgAlign.emptyCropObject(name,False)
+		#	name=self.CardiacMotion.emptyCropObject(name,False)
 
-		f=self.ImgAlign.createIsotropicObject(name,cropEmpty)
+		f=self.CardiacMotion.createIsotropicObject(name,cropEmpty)
 		self.mgr.checkFutureResult(f)
 
 	def _calculateThicknessButton(self):
 		objname=str(self.alignprop.thickMeshBox.currentText())
 		fieldname=str(self.alignprop.thickFieldBox.currentText())
 		percentThickness=self.alignprop.percentThickBox.isChecked()
-		self.ImgAlign.calculateMeshRegionThickness(objname,fieldname,percentThickness)
+		self.CardiacMotion.calculateMeshRegionThickness(objname,fieldname,percentThickness)
 
 	def _calculateAvgDispButton(self):
 		objname=str(self.alignprop.dispMeshBox.currentText())
 		fieldname=str(self.alignprop.dispFieldBox.currentText())
-		self.ImgAlign.calculateMeshRegionAvgDisp(objname,fieldname)
+		self.CardiacMotion.calculateMeshRegionAvgDisp(objname,fieldname)
 
 	def _calculateVolumeButton(self):
 		objname=str(self.alignprop.volMeshBox.currentText())
 		fieldname=str(self.alignprop.volFieldBox.currentText())
 		heartrate=self.alignprop.bpmBox.value()
-		f=self.ImgAlign.calculateMeshRegionVolume(objname,fieldname,heartrate)
+		f=self.CardiacMotion.calculateMeshRegionVolume(objname,fieldname,heartrate)
 		self.mgr.checkFutureResult(f)
 
 	def _calculateStrainButton(self):
@@ -1162,7 +1162,7 @@ class AlignProject(Project):
 		spacing=self.alignprop.strainSpacingBox.value()
 		trackname=str(self.alignprop.strainTrackBox.currentText())
 		griddims=(self.alignprop.strainWBox.value(),self.alignprop.strainHBox.value(),self.alignprop.strainDBox.value())
-		self.ImgAlign.calculateImageStrainField(name,srcname,griddims,spacing,trackname)
+		self.CardiacMotion.calculateImageStrainField(name,srcname,griddims,spacing,trackname)
 
 	def _calculateStrainMeshButton(self):
 		objname=str(self.alignprop.strainMeshBox.currentText())
@@ -1171,19 +1171,19 @@ class AlignProject(Project):
 		ahafieldname=str(self.alignprop.strainMeshAHABox.currentText())
 		trackname=str(self.alignprop.strainMeshTrackBox.currentText())
 		spacing=self.alignprop.strainSpacingMeshBox.value()
-		self.ImgAlign.calculateMeshStrainField(objname,imgname,radialfieldname,ahafieldname,spacing,trackname)
+		self.CardiacMotion.calculateMeshStrainField(objname,imgname,radialfieldname,ahafieldname,spacing,trackname)
 
 	def _calculateKineticEnergyButton(self):
 		maskname=str(self.alignprop.keMaskBox.currentText())
 		phaseXname=str(self.alignprop.phaseXBox.currentText())
 		phaseYname=str(self.alignprop.phaseYBox.currentText())
 		phaseZname=str(self.alignprop.phaseZBox.currentText())
-		self.ImgAlign.calculatePhaseKineticEnergy(maskname,phaseXname,phaseYname,phaseZname)
+		self.CardiacMotion.calculatePhaseKineticEnergy(maskname,phaseXname,phaseYname,phaseZname)
 
 	def _tagCheckBox(self,isChecked):
 		paramfile=str(self.alignprop.paramEdit.text())
-		p1e4=self.ImgAlign.patient1e4
-		p1e6=self.ImgAlign.patient1e6
+		p1e4=self.CardiacMotion.patient1e4
+		p1e6=self.CardiacMotion.patient1e6
 		if paramfile in (None,'','<<Use Default>>',p1e4,p1e6):
 			paramfile=p1e6 if isChecked else p1e4
 			self.alignprop.paramEdit.setText(paramfile)
@@ -1192,9 +1192,9 @@ class AlignProject(Project):
 
 
 
-class ImageAlignPlugin(ImageScenePlugin,IRTKPluginMixin):
+class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 	def __init__(self):
-		ImageScenePlugin.__init__(self,'ImgAlign')
+		ImageScenePlugin.__init__(self,'CardiacMotion')
 		self.project=None
 
 	def init(self,plugid,win,mgr):
@@ -1202,11 +1202,11 @@ class ImageAlignPlugin(ImageScenePlugin,IRTKPluginMixin):
 		IRTKPluginMixin.init(self,plugid,win,mgr)
 		self.ParRec=self.mgr.getPlugin('ParRec')
 		if self.win!=None:
-			self.win.addMenuItem('Project','ImageAlignProj'+str(plugid),'&Image Align Project',self._newProjDialog)
+			self.win.addMenuItem('Project','CardMotionProj'+str(plugid),'&Cardiac Motion Project',self._newProjDialog)
 
-	def createAlignProject(self,name,parentdir):
+	def createProject(self,name,parentdir):
 		if self.mgr.project==None:
-			self.mgr.createProjectObj(name,parentdir,AlignProject)
+			self.mgr.createProjectObj(name,parentdir,CardiacMotionProject)
 
 	def getCWD(self):
 		return self.project.getProjectDir()
@@ -1240,7 +1240,7 @@ class ImageAlignPlugin(ImageScenePlugin,IRTKPluginMixin):
 		def chooseProjDir(name):
 			newdir=self.win.chooseDirDialog('Choose Project Root Directory')
 			if len(newdir)>0:
-				self.mgr.createProjectObj(name,newdir,AlignProject)
+				self.mgr.createProjectObj(name,newdir,CardiacMotionProject)
 
 		self.win.chooseStrDialog('Choose Project Name','Project',chooseProjDir)
 
@@ -1857,4 +1857,4 @@ class ImageAlignPlugin(ImageScenePlugin,IRTKPluginMixin):
 		return self.mgr.runTasks(_calcEnergy(mask,phasex,phasey,phasez,maskval))
 
 
-addPlugin(ImageAlignPlugin())
+addPlugin(CardiacMotionPlugin())

@@ -35,7 +35,7 @@ import PlotPlugin
 import SegmentPlugin
 import ReportCardPlugin
 import MeasurementPlugin
-import ImageAlignPlugin
+import CardiacMotionPlugin
 
 
 if __name__ == '__main__': # needed for Windows multiprocessing (unless you want fork bombs)
