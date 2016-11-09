@@ -8,6 +8,8 @@ See INSTALLATION.md for details on how to run Eidolon. The code includes precomp
 To clone the included **EidolonLibs** submodule which contains shared libraries needed to run, use this command within the cloned Eidolon directory:
 
     git submodule update EidolonLibs
+    
+Eidolon releases will include pre-built application packages, see the release notes for details.
 
 ## Building
 
