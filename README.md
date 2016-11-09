@@ -67,4 +67,19 @@ Copyright (c) 2000-2015 Torus Knot Software Ltd
 
 Cython is available under the open source Apache License v2.
 
+#### IRTK
+
+The Image Registration Toolkit was used under Licence from Ixico Ltd. 
+
+The image registration software itself has been written by
+
+Daniel Rueckert
+
+Visual Information Processing Group Department of Computing Imperial College London London SW7 2BZ, United Kingdom
+
+The image processing library used by the registration software has been written by
+
+Daniel Rueckert Julia Schnabel
+
+See the COPYRIGHT file in the IRTK repository at https://github.com/BioMedIA/IRTK for more information on the copyright and license agreement for the software.
 
