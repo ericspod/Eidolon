@@ -365,7 +365,7 @@ class SceneManager(object):
 		self.player=threading.Thread(target=self._playerThread)
 		self.player.daemon=True
 		self.player.start()
-
+		
 		def exception_hook(exctype, value, tb):
 			msg='\n'.join(traceback.format_exception(exctype, value, tb))
 			self.showExcept(msg,str(value),'Unhandled Exception')
@@ -602,37 +602,40 @@ class SceneManager(object):
 		updatethread.start() # also a daemon
 
 		while True:
-			# remove the first task, using tasklock to prevent interference while doing so
-			with self.tasklock:
-				if len(self.tasklist)>0:
-					self.currentTask=self.tasklist.pop(0)
-
-			# attempt to run the task by calling its start() method, on exception report and clear the queue
 			try:
-				if self.currentTask:
-					self.currentTask.start()
-					self.finishedtasks.append(self.currentTask)
-				else:
-					time.sleep(0.1)
-			except FutureError as fe:
-				exc=fe.exc_value
-				while exc!=fe and isinstance(exc,FutureError):
-					exc=exc.exc_value
-					
-				self.showExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
-				self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-			except Exception as e:
-				if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
-					self.showExcept(e,'Exception from queued task '+self.currentTask.getLabel())
-					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-			finally:
-				# set the current task to None, using tasklock to prevent inconsistency with updatethread
+				# remove the first task, using tasklock to prevent interference while doing so
 				with self.tasklock:
-					# clear the queue if there's a task and it wants to remove all current tasks
-					if self.currentTask!=None and self.currentTask.flushQueue:
-						self.tasklist=[]
-
-					self.currentTask=None
+					if len(self.tasklist)>0:
+						self.currentTask=self.tasklist.pop(0)
+	
+				# attempt to run the task by calling its start() method, on exception report and clear the queue
+				try:
+					if self.currentTask:
+						self.currentTask.start()
+						self.finishedtasks.append(self.currentTask)
+					else:
+						time.sleep(0.1)
+				except FutureError as fe:
+					exc=fe.exc_value
+					while exc!=fe and isinstance(exc,FutureError):
+						exc=exc.exc_value
+						
+					self.showExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
+					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+				except Exception as e:
+					if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
+						self.showExcept(e,'Exception from queued task '+self.currentTask.getLabel())
+						self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+				finally:
+					# set the current task to None, using tasklock to prevent inconsistency with updatethread
+					with self.tasklock:
+						# clear the queue if there's a task and it wants to remove all current tasks
+						if self.currentTask!=None and self.currentTask.flushQueue:
+							self.tasklist=[]
+	
+						self.currentTask=None
+			except:
+				pass # ignore errors during shutdown 
 
 	def getCurrentTask(self):
 		'''Returns the current Task object if called within the task execution thread, None otherwise.'''
