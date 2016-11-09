@@ -18,7 +18,10 @@ For building the EidolonLibs objects, see the README.md file in that submodule.
 
 ## Documentation
 
-The wiki https://github.com/ericspod/Eidolon/wiki is the main source of documentation for now. Online documentation at runtime for Python code can be seen through the console using the **help** command.
+Doxygen Documentation:[![Documentation](https://codedocs.xyz/ericspod/Eidolon.svg)](https://codedocs.xyz/ericspod/Eidolon/)
+
+The wiki https://github.com/ericspod/Eidolon/wiki is the main source of usage documentation. 
+Online documentation at runtime for Python code can be seen through the console using the **help** command.
 
 ## Authors
 
