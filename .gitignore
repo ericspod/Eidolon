@@ -9,4 +9,3 @@ eidolon.log
 src/renderer/Renderer.cpp
 src/eidolon/*.cpp
 src/eidolon/*.so
-
