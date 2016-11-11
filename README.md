@@ -101,6 +101,6 @@ See the COPYRIGHT file in the IRTK repository at https://github.com/BioMedIA/IRT
 
 #### GPU_Nreg
 
-GPU_Nreg is provided by Dr Wenjia Bai, Imperial College London.
+GPU_Nreg is provided by Dr Wenjia Bai, Imperial College London (http://wp.doc.ic.ac.uk/wbai/).
 
 
