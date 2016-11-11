@@ -83,3 +83,8 @@ Daniel Rueckert Julia Schnabel
 
 See the COPYRIGHT file in the IRTK repository at https://github.com/BioMedIA/IRTK for more information on the copyright and license agreement for the software.
 
+#### GPU_Nreg
+
+GPU_Nreg is provided by Dr Wenjia Bai, Imperial College London.
+
+
