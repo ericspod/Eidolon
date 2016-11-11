@@ -23,9 +23,25 @@ Doxygen Documentation:[![Documentation](https://codedocs.xyz/ericspod/Eidolon.sv
 The wiki https://github.com/ericspod/Eidolon/wiki is the main source of usage documentation. 
 Online documentation at runtime for Python code can be seen through the console using the **help** command.
 
-## Authors
+## Authors/Acknowledgements
 
-Eidolon is developed and maintained by Eric Kerfoot <eric.kerfoot@kcl.ac.uk>.
+Eidolon is developed and maintained by Eric Kerfoot, King's College London <eric.kerfoot@kcl.ac.uk>.
+
+If any publications are made with the help of Eidolon it would be appreciated if an acknowledgement is included recognizing the author and KCL.
+
+The main citation for Eidolon:
+
+    @InProceedings{kerfoot2016miar,
+      author =    {Kerfoot, E. and Fovargue, L. and Rivolo, S. and Shi, W. and Rueckert, D. and Nordsletten, D. and Lee, J. and Chabiniok, R. and Razavi, R.},
+      title =     {Eidolon: Visualization and Computational Framework for Multi-Modal Biomedical Data Analysis},
+      booktitle = {LNCS 9805, Medical Imaging and Augmented Reality 2016 (MIAR 2016)},
+      year =      {2016},
+      journal =   {Lecture Notes in Computer Science},
+      volume =    {9805},
+      doi =       {10.1007/978-3-319-43775-0},
+      url =       {http://www.springer.com/gb/book/9783319437743},
+      publisher = {Springer}
+    }
 
 ## License
 
