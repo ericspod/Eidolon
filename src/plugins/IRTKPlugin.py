@@ -420,7 +420,7 @@ class IRTKPluginMixin(object):
 
 				# create a detagged version of the tag image
 				if makeDetag:
-					detag=tag.clone(detagged)
+					detag=tag.plugin.clone(tag,detagged)
 					detagImage(detag,coresize) # turn the tag image into a detagged image
 					saveobjs.append(detag)
 					loadnames.append(self.getNiftiFile(detagged))
