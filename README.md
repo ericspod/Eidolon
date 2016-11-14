@@ -3,13 +3,19 @@ Eidolon biomedical visualization and analysis framework.
 
 ## Installation
 
-See INSTALLATION.md for details on how to run Eidolon. The code includes precompiled libraries and executables so compilation shouldn't be necessary unless your platform is not supported. Eidolon itself does not need to be installed in any particular location nor require permissions.
+See INSTALLATION.md for details on how to run Eidolon. 
 
-To clone the included **EidolonLibs** submodule which contains shared libraries needed to run, use this command within the cloned Eidolon directory:
+To initialize the included **EidolonLibs** submodule which contains shared libraries needed to run, use the **--recursive** option when cloning:
+
+    git clone --recursive https://github.com/ericspod/Eidolon.git
+
+The submodule can otherwise be initialized within the cloned Eidolon directory with this command:
 
     git submodule update EidolonLibs
     
-Eidolon releases will include pre-built application packages, see the release notes for details.
+The code includes precompiled libraries and executables so compilation shouldn't be necessary unless your platform is not supported. 
+Eidolon itself does not need to be installed in any particular location nor require permissions.
+Releases include pre-built application packages, see the release notes for details.
 
 ## Building
 
