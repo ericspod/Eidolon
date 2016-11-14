@@ -31,9 +31,9 @@ Online documentation at runtime for Python code can be seen through the console 
 
 ## Authors/Acknowledgements
 
-Eidolon is developed and maintained by Eric Kerfoot, King's College London <eric.kerfoot@kcl.ac.uk>.
+Eidolon is developed and maintained by Eric Kerfoot, King's College London <eric.kerfoot@kcl.ac.uk> with the support of the National Institute for Health Research (NIHR) Biomedical Research Centre (BRC) at KCL.
 
-If any publications are made with the help of Eidolon it would be appreciated if an acknowledgement is included recognizing the author and KCL.
+If any publications are made with the help of Eidolon it would be appreciated if an acknowledgement is included recognizing the author, KCL, and BRC.
 
 The main citation for Eidolon:
 
@@ -68,7 +68,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along
 with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-## Used/Included Library Copyrights
+## Used/Included Library Copyrights and Acknowledgements
 
 #### Python
 
