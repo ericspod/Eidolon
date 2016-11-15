@@ -938,9 +938,9 @@ class IRTKPluginMixin(object):
 
 		return self.mgr.runTasks([_crop(imgname,refname)],f)
 		
-	def extendImageStack(self,stackname,mx=0,my=0,mz=0,value=0):
-		obj=self.findObject(stackname)
-		ext=extendImage(obj,self.getUniqueShortName(stackname,'Ext'),mx,my,mz,value)
+	def extendImageStack(self,stack,mx=0,my=0,mz=0,value=0):
+		obj=self.findObject(stack)
+		ext=extendImage(obj,self.getUniqueShortName(obj.getName(),'Ext'),mx,my,mz,value)
 		return ext,self.saveToNifti([ext],True)
 
 	def applyMotionTrack(self,objname,srcname,trackname,isFrameByFrame=False):
