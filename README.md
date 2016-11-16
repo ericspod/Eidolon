@@ -1,6 +1,17 @@
 # Eidolon
 Eidolon biomedical visualization and analysis framework.
 
+Features include:
+ * Combined visualization environment providing the combined rendering of time-dependent mesh and image data in 2D and 3D views
+ * Concurrent algorithms for processing and generating data
+ * Python-based framework with compiled code extensions for renderer and data structures
+ * Interactive access to running application code through built-in Python console
+ * Plugin-oriented architecture, script interface, and Python console allowing easy user-extension
+ * Integration with Python scientific libraries including numpy and scipy
+ * Multi-platform support, including Windows, OSX, Ubuntu 12/14
+ * Project-oriented architecture helps organize data and extension features
+ * Image processing, registration, and motion tracking provided through IRTK routines
+
 ## Installation
 
 See INSTALLATION.md for details on how to run Eidolon. 
@@ -24,7 +35,7 @@ For building the EidolonLibs objects, see the README.md file in that submodule.
 
 ## Documentation
 
-Doxygen Documentation:[![Documentation](https://codedocs.xyz/ericspod/Eidolon.svg)](https://codedocs.xyz/ericspod/Eidolon/)
+Doxygen Documentation: [![Documentation](https://codedocs.xyz/ericspod/Eidolon.svg)](https://codedocs.xyz/ericspod/Eidolon/)
 
 The wiki https://github.com/ericspod/Eidolon/wiki is the main source of usage documentation. 
 Online documentation at runtime for Python code can be seen through the console using the **help** command.
