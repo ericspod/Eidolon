@@ -198,7 +198,6 @@ class IRTKPluginMixin(object):
 		self.transformation=self.irtkpath('transformation')
 		self.ptransformation=self.irtkpath('ptransformation')
 		self.region=self.irtkpath('region')
-		#self.mcubes=self.irtkpath('mcubes')
 		self.nreg=self.irtkpath('nreg')
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
 
