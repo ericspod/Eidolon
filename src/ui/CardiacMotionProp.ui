@@ -45,7 +45,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>516</width>
+        <width>434</width>
         <height>224</height>
        </rect>
       </property>
@@ -202,7 +202,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>516</width>
+        <width>351</width>
         <height>480</height>
        </rect>
       </property>
@@ -444,7 +444,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>516</width>
+        <width>499</width>
         <height>888</height>
        </rect>
       </property>
@@ -870,7 +870,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>516</width>
+        <width>485</width>
         <height>1218</height>
        </rect>
       </property>
@@ -1579,7 +1579,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-154</y>
         <width>516</width>
         <height>1364</height>
        </rect>
@@ -1793,23 +1793,6 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
             <item>
              <widget class="QSpinBox" name="bbYBox">
-              <property name="minimum">
-               <number>-99</number>
-              </property>
-              <property name="value">
-               <number>10</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_34">
-              <property name="text">
-               <string>Z</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="bbZBox">
               <property name="minimum">
                <number>-99</number>
               </property>

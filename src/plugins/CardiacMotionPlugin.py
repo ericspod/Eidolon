@@ -914,9 +914,8 @@ class CardiacMotionProject(Project):
 		refname=str(self.alignprop.bbCropRefBox.currentText())
 		mx=self.alignprop.bbXBox.value()
 		my=self.alignprop.bbYBox.value()
-		mz=self.alignprop.bbZBox.value()
 
-		self.CardiacMotion.refImageCrop(srcname,refname,mx,my,mz)
+		self.CardiacMotion.refImageCrop(srcname,refname,mx,my)
 
 	def _cropEmpty(self):
 		srcname=str(self.alignprop.emptyCropImgBox.currentText())

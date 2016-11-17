@@ -193,7 +193,6 @@ class IRTKPluginMixin(object):
 		self.computetsffd=self.irtkpath('computeTSFFD')
 		self.transformation=self.irtkpath('transformation')
 		self.ptransformation=self.irtkpath('ptransformation')
-		self.region=self.irtkpath('region')
 		self.nreg=self.irtkpath('nreg')
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
 
@@ -903,35 +902,40 @@ class IRTKPluginMixin(object):
 		else:
 			return ff
 
-	def refImageCrop(self,imgname,refname,mx,my,mz):
+	def refImageCrop(self,imgname,refname,mx,my):
 		f=Future()
 		@taskroutine('Boundbox-cropping Image Object')
-		def _crop(imgname,refname,task):
+		def _crop(imgname,refname,mx,my,task):
 			with f:
-				logfile1=self.getLogFile('region.log')
-				cwd=self.getCWD()
-				isExtended=mx!=0 or my!=0 or mz!=0
-
+#				logfile1=self.getLogFile('region.log')
+#				cwd=self.getCWD()
+#				isExtended=mx!=0 or my!=0 or mz!=0
+#
 				cropname=self.getUniqueShortName(imgname,'Crop',complen=20)
+#
+#				imgfile=self.getNiftiFile(imgname)
+#				reffile=self.getNiftiFile(refname)
+#				outfile=self.getNiftiFile(cropname)
+#
+#				if isExtended:
+#					reffile=self.extendImageStack(refname,mx,my,mz)[1][0]
+#
+#				ff=self.mgr.execBatchProgramTask(self.region,imgfile,outfile,'-ref',reffile,logfile=logfile1,cwd=cwd)
+#				self._checkProgramTask(ff)
+#
+#				if isExtended:
+#					self.removeFilesTask(reffile)
+#
+#				self.correctNiftiParams(imgfile,outfile)
+			
+				imgobj=self.findObject(imgname)
+				ref=self.findObject(refname)
+				cropobj=cropRefImage(imgobj,ref,cropname,mx,my)
+				self.addObject(cropobj)
+				
+				f.setObject(self.saveToNifti([cropobj],True))
 
-				imgfile=self.getNiftiFile(imgname)
-				reffile=self.getNiftiFile(refname)
-				outfile=self.getNiftiFile(cropname)
-
-				if isExtended:
-					reffile=self.extendImageStack(refname,mx,my,mz)[1][0]
-
-				ff=self.mgr.execBatchProgramTask(self.region,imgfile,outfile,'-ref',reffile,logfile=logfile1,cwd=cwd)
-				self._checkProgramTask(ff)
-
-				if isExtended:
-					self.removeFilesTask(reffile)
-
-				self.correctNiftiParams(imgfile,outfile)
-
-				f.setObject(self.loadNiftiFiles([outfile]))
-
-		return self.mgr.runTasks([_crop(imgname,refname)],f)
+		return self.mgr.runTasks([_crop(imgname,refname,mx,my)],f)
 		
 	def extendImageStack(self,stack,mx=0,my=0,mz=0,value=0):
 		obj=self.findObject(stack)

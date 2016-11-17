@@ -757,12 +757,13 @@ def cropRefImage(obj,ref,name,marginx=0,marginy=0):
 	maxcols=obj.maxcols
 	maxrows=obj.maxrows
 	
-	corners=listSum(i.getCorners() for i in obj.images)
-		
+	corners=listSum(i.getCorners() for i in ref.images)
 	aabb=BoundBox([tinv*c for c in corners])
 	
 	minx=clamp(aabb.minv.x()*maxcols-marginx,0,maxcols-1)
 	maxx=clamp(aabb.maxv.x()*maxcols+marginx,0,maxcols-1)
 	miny=clamp(aabb.minv.y()*maxrows-marginy,0,maxrows-1)
 	maxy=clamp(aabb.maxv.y()*maxrows+marginy,0,maxrows-1)
+	
+	return obj.plugin.cropXY(obj,name,int(minx),int(miny),int(maxx),int(maxy))
 	

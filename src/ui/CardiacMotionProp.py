@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/CardiacMotionProp.ui'
 #
-# Created: Wed Nov  9 15:44:52 2016
+# Created: Thu Nov 17 17:22:40 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -40,7 +40,7 @@ class Ui_CardiacMotionProp(object):
         self.toolBox.setFrameShape(QtGui.QFrame.StyledPanel)
         self.toolBox.setObjectName(_fromUtf8("toolBox"))
         self.page = QtGui.QWidget()
-        self.page.setGeometry(QtCore.QRect(0, 0, 516, 224))
+        self.page.setGeometry(QtCore.QRect(0, 0, 434, 224))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -102,7 +102,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_8.addWidget(self.groupBox)
         self.toolBox.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 516, 480))
+        self.page_2.setGeometry(QtCore.QRect(0, 0, 351, 480))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -225,7 +225,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_9.addWidget(self.groupBox_5)
         self.toolBox.addItem(self.page_2, _fromUtf8(""))
         self.page_3 = QtGui.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 516, 888))
+        self.page_3.setGeometry(QtCore.QRect(0, 0, 499, 888))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -444,7 +444,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_10.addWidget(self.groupBox_7)
         self.toolBox.addItem(self.page_3, _fromUtf8(""))
         self.page_5 = QtGui.QWidget()
-        self.page_5.setGeometry(QtCore.QRect(0, 0, 516, 1218))
+        self.page_5.setGeometry(QtCore.QRect(0, 0, 485, 1218))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -836,7 +836,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_12.addWidget(self.groupBox_10)
         self.toolBox.addItem(self.page_5, _fromUtf8(""))
         self.page_4 = QtGui.QWidget()
-        self.page_4.setGeometry(QtCore.QRect(0, 0, 516, 1364))
+        self.page_4.setGeometry(QtCore.QRect(0, -154, 516, 1364))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -962,14 +962,6 @@ class Ui_CardiacMotionProp(object):
         self.bbYBox.setProperty("value", 10)
         self.bbYBox.setObjectName(_fromUtf8("bbYBox"))
         self.horizontalLayout_2.addWidget(self.bbYBox)
-        self.label_34 = QtGui.QLabel(self.groupBox_9)
-        self.label_34.setObjectName(_fromUtf8("label_34"))
-        self.horizontalLayout_2.addWidget(self.label_34)
-        self.bbZBox = QtGui.QSpinBox(self.groupBox_9)
-        self.bbZBox.setMinimum(-99)
-        self.bbZBox.setProperty("value", 10)
-        self.bbZBox.setObjectName(_fromUtf8("bbZBox"))
-        self.horizontalLayout_2.addWidget(self.bbZBox)
         spacerItem4 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem4)
         self.formLayout_9.setLayout(2, QtGui.QFormLayout.FieldRole, self.horizontalLayout_2)
@@ -1421,7 +1413,6 @@ class Ui_CardiacMotionProp(object):
         self.label_31.setText(_translate("CardiacMotionProp", "Margins", None))
         self.label_32.setText(_translate("CardiacMotionProp", "X", None))
         self.label_33.setText(_translate("CardiacMotionProp", "Y", None))
-        self.label_34.setText(_translate("CardiacMotionProp", "Z", None))
         self.bbCropButton.setText(_translate("CardiacMotionProp", "Crop", None))
         self.groupBox_11.setTitle(_translate("CardiacMotionProp", "Empty Space Crop", None))
         self.label_44.setText(_translate("CardiacMotionProp", "Source Series", None))
