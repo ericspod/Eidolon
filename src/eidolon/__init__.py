@@ -43,8 +43,5 @@ __version__='%i.%i.%i'%__version_info__
 __author__='Eric Kerfoot'
 __copyright__="Copyright (c) 2016 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
 
-VIZDIRVAR='VIZDIR'
-RESDIRVAR='RESDIR'
-SHMDIRVAR='SHMDIR'
-APPDIR='APPDIR'
-LIBSDIR='EidolonLibs'
+APPDIRVAR='APPDIR' # environment variable defining the application's directory, set by the start up script and is needed at init time
+LIBSDIR='EidolonLibs' # directory name containing the application's libraries

@@ -27,6 +27,7 @@ import shutil
 import argparse
 import ConfigParser
 
+import __init__
 import SceneManager
 import VisualizerUI
 import Utils
@@ -34,15 +35,16 @@ import Concurrency
 from SceneUtils import cleanupMatrices
 from ImageAlgorithms import hounsfieldToUnit
 
-from __init__ import __version__
+from __init__ import __version__, APPDIRVAR
 
+from SceneManager import ConfVars
 
 conffilename='config.ini'
 
 
 def readConfig(configfile,conf):
 	'''Read configuration ini file `configfile' and store values in Config object `conf'.'''
-	conf.set(platformID,'configfile',configfile)
+	conf.set(platformID,ConfVars.configfile,configfile)
 	cparser=ConfigParser.SafeConfigParser()
 	cparser.optionxform=str
 	results=cparser.read(configfile)
@@ -56,7 +58,7 @@ def readConfig(configfile,conf):
 			conf.set(s,n,v)
 
 	if cparser.has_section('Shaders'):
-		conf.set(platformID,'shaders',','.join(str(n) for n,_ in cparser.items('Shaders')))
+		conf.set(platformID,ConfVars.shaders,','.join(str(n) for n,_ in cparser.items('Shaders')))
 
 	# copy values from the 'All' section into the platform-specific section which haven't already been set
 	if 'All' in cparser.sections():
@@ -76,18 +78,18 @@ def generateConfig(inargs):
 	parsed and its values inserted. 
 	'''
 	
-	vizdir=Utils.getVizDir()
+	vizdir=Utils.getAppDir()
 	prog='run.bat' if platformID=='Windows' else 'run.sh'
 	conf=Config()
 	configfile=''
 
 	# set configuration default values for the current platform, these are overridden below when the config file is read
-	conf.set(platformID,Utils.VIZDIRVAR,vizdir) # store Eidolon's root directory, this is './' if the global variable isn't present
-	conf.set(platformID,Utils.RESDIRVAR,vizdir+'/res/') # store the resource directory
-	conf.set(platformID,Utils.SHMDIRVAR,'/dev/shm' if platformID=='Linux' else vizdir+'/.shm/') # store shared memory segment ref count file directory
-	conf.set(platformID,'rtt_preferred_mode','FBO') # PBO, PBuffer, Copy
-	conf.set(platformID,'vsync','true')
-	conf.set(platformID,'rendersystem','OpenGL') # OpenGL, D3D9, D3D10, D3D11
+	conf.set(platformID,ConfVars.appdatadir,vizdir) # store Eidolon's root directory, this is './' if the global variable isn't present
+	conf.set(platformID,ConfVars.resdir,vizdir+'/res/') # store the resource directory
+	conf.set(platformID,ConfVars.shmdir,'/dev/shm' if platformID=='Linux' else vizdir+'/.shm/') # store shared memory segment ref count file directory
+	conf.set(platformID,ConfVars.rtt_preferred_mode,'FBO') # PBO, PBuffer, Copy
+	conf.set(platformID,ConfVars.vsync,'true')
+	conf.set(platformID,ConfVars.rendersystem,'OpenGL') # OpenGL, D3D9, D3D10, D3D11
 
 	# define a help action that prints the normal help plus the help texts from loaded plugins
 	class HelpAction(argparse.Action):
@@ -123,7 +125,8 @@ def generateConfig(inargs):
 		configfile=os.path.join(vizdir,conffilename)
 		readConfig(configfile,conf)
 
-	appdir=os.path.expanduser(conf.get(platformID,Utils.APPDIR))
+	appdir=os.path.expanduser(conf.get(platformID,ConfVars.appdatadir))
+	conf.set(platformID,ConfVars.appdatadir,appdir)
 	
 	# read the config file specified on the command line, or if not given read appdir/config.ini if present, and override current values in conf with these
 	if args.config:
@@ -158,14 +161,14 @@ def generateConfig(inargs):
 		ii=i.split('=',1)
 		conf.set('args',ii[0],ii[-1])
 
-	# if the logfile is present and is just the filename, put it in the eidolon directory
-	logfile=os.path.split(conf.get(platformID,'logfile'))
+	# if the logfile is present and is just the filename, put it in the user data directory
+	logfile=os.path.split(conf.get(platformID,ConfVars.logfile))
 	if len(logfile)>0 and logfile[0].strip()=='':
-		conf.set(platformID,'logfile',os.path.join(vizdir,logfile[1]))
+		conf.set(platformID,ConfVars.logfile,os.path.join(appdir,logfile[1]))
 
 	# if "preloadscripts" is specified in the config file, prepend the given values to the config value for command line files
-	if conf.get(platformID,'preloadscripts'):
-		preloadscripts=conf.get(platformID,'preloadscripts').split(',')
+	if conf.get(platformID,ConfVars.preloadscripts):
+		preloadscripts=conf.get(platformID,ConfVars.preloadscripts).split(',')
 		for i,p in enumerate(preloadscripts):
 			if p.startswith('./') and configfile:
 				preloadscripts[i]=os.path.join(os.path.dirname(configfile),p)
@@ -183,16 +186,16 @@ def initDefault(conf):
 	Initialize the default components of Eidolon. This sets up tracing, concurrency, inits the UI, sets the
 	style sheet, creates the main window, and finally creates the SceneManager. Returns the main window and manager.
 	'''
-	appdir=os.path.expanduser(conf.get(platformID,Utils.APPDIR))
-	vizdir=conf.get(platformID,Utils.VIZDIRVAR)
-		
+	appdir=conf.get(platformID,ConfVars.appdatadir)
+	vizdir=conf.get(platformID,APPDIRVAR)
+	
 	if not os.path.exists(appdir):
-		Utils.printFlush('Creating user directory ~/.eidolon')
+		Utils.printFlush('Creating user directory %r'%appdir)
 		os.mkdir(appdir,0700)
 		shutil.copy(os.path.join(vizdir,conffilename),os.path.join(appdir,conffilename))
 		
 	if conf.hasValue('args','l'):
-		Utils.setLogging(conf.get(platformID,'logfile'))
+		Utils.setLogging(conf.get(platformID,ConfVars.logfile))
 
 	if conf.hasValue('args','t'):
 		Utils.setTrace()
@@ -200,25 +203,29 @@ def initDefault(conf):
 	# cleanup matrices in shared memory to make sure we've got enough room in Linux
 	cleanupMatrices()
 
+	# change the shm directory location to be the per-user application data directory
+	if platformID!='Linux':
+		conf.set(platformID,ConfVars.shmdir,appdir+'/shm/') 
+
 	# nominate shared memory directory to store ref count files
-	initSharedDir(conf.get(platformID,Utils.SHMDIRVAR))
+	initSharedDir(conf.get(platformID,ConfVars.shmdir))
 
 	# initialize the singleton instance of the ProcessServer type using the specified CPU count or the actual count if not present
-	Concurrency.ProcessServer.createGlobalServer(int(conf.get(platformID,'maxprocs') or Concurrency.cpu_count()))
+	Concurrency.ProcessServer.createGlobalServer(int(conf.get(platformID,ConfVars.maxprocs) or Concurrency.cpu_count()))
 
 	# initialize the UI, for Qt this is creating the QApplication object
 	app=VisualizerUI.initUI()
 
-	if conf.hasValue(platformID,'uistyle'):
-		app.setStyle(conf.get(platformID,'uistyle'))
+	if conf.hasValue(platformID,ConfVars.uistyle):
+		app.setStyle(conf.get(platformID,ConfVars.uistyle))
 
-	# If a stylesheet is specified, try to find it relative to the VIZDIR directory if it isn't an absolute path,
+	# If a stylesheet is specified, try to find it relative to the APPDIR directory if it isn't an absolute path,
 	# either way use it as the application-wide stylesheet.
-	if conf.hasValue(platformID,'stylesheet'):
-		sheet=conf.get(platformID,'stylesheet')
+	if conf.hasValue(platformID,ConfVars.stylesheet):
+		sheet=conf.get(platformID,ConfVars.stylesheet)
 		try:
 			if not os.path.isabs(sheet):
-				sheet=os.path.join(conf.get(platformID,Utils.VIZDIRVAR),sheet)
+				sheet=os.path.join(conf.get(platformID,APPDIRVAR),sheet)
 
 			with open(sheet) as s:
 				app.setStyleSheet(s.read())
@@ -227,7 +234,7 @@ def initDefault(conf):
 
 	# attempt to set the window size based on config values, default to 1200x800 if the format is wrong
 	try:
-		size=conf.get(platformID,'winsize').split()
+		size=conf.get(platformID,ConfVars.winsize).split()
 		width=int(size[0])
 		height=int(size[1])
 	except:
@@ -249,20 +256,20 @@ def initDefaultAssets(mgr):
 	mgr.setAmbientLight(color(0.5,0.5,0.5))
 	mgr.setBackgroundColor(color(0.3515625,0.3515625,0.3515625))
 
-	if mgr.conf.get(platformID,'camerazlock').lower()=='false':
+	if mgr.conf.get(platformID,ConfVars.camerazlock).lower()=='false':
 		mgr.setCameraZLocked(False)
 
 	# create a default directional light that follows the camera
 	cl=mgr.createLight(SceneManager.LightType._cdir,'Camera Light')
 	cl.setColor(color(0.25,0.25,0.25))
 
-	res=mgr.conf.get(platformID,Utils.RESDIRVAR)
+	res=mgr.conf.get(platformID,ConfVars.resdir)
 	
 	mgr.scene.addResourceDir(res)
 	mgr.scene.initializeResources()
 
 	# load shaders/fragment programs
-	for s in mgr.conf.get(platformID,'shaders').split(','):
+	for s in mgr.conf.get(platformID,ConfVars.shaders).split(','):
 		spec=mgr.conf.get('Shaders',s).split(',')
 		ptype=PT_FRAGMENT if spec[0]=='fragment' else PT_VERTEX
 		profiles=spec[1] if len(spec)>1 else None

@@ -1,6 +1,6 @@
 @ECHO off
 
-SET VIZDIR=%~dp0
+SET APPDIR=%~dp0
 
 :: Pull out the Python install path we're using from the registry, if this gets the wrong value when there's multiple
 :: Python installs, you'll have to set InstallPath manually
@@ -12,13 +12,13 @@ IF "%InstallPath%" == "" FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY HKLM\SOFTW
 :: Choose a default value if neither registry key is present
 IF [%InstallPath%] == [] SET InstallPath=C:\Python27\
 
-SET PATH=%InstallPath%\Lib\site-packages\PyQt4;%VIZDIR%EidolonLibs\win64_mingw\bin;%PATH%
-SET PYTHONPATH=%VIZDIR%src;%VIZDIR%src\eidolon;%VIZDIR%src\plugins;%VIZDIR%src\ui
+SET PATH=%InstallPath%\Lib\site-packages\PyQt4;%APPDIR%EidolonLibs\win64_mingw\bin;%PATH%
+SET PYTHONPATH=%APPDIR%src;%APPDIR%src\eidolon;%APPDIR%src\plugins;%APPDIR%src\ui
 
-%InstallPath%\python.exe "%VIZDIR%main.py" %*
+%InstallPath%\python.exe "%APPDIR%main.py" %*
 
 :: Alternative way of starting Eidolon without a script window hanging around 
-:: START %InstallPath%\pythonw.exe %VIZDIR%main.py %*
+:: START %InstallPath%\pythonw.exe %APPDIR%main.py %*
 :: EXIT
 
 

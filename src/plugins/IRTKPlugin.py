@@ -162,8 +162,8 @@ class IRTKPluginMixin(object):
 		self.Plot=mgr.getPlugin('Plot')
 		self.Segment=mgr.getPlugin('Segment')
 
-		self.serverdir=os.path.join(getVizDir(),'motion')
-		self.irtkdir=os.path.join(getVizDir(),'EidolonLibs','IRTK')
+		self.serverdir=self.mgr.getUserAppDir()
+		self.irtkdir=os.path.join(getAppDir(),LIBSDIR,'IRTK')
 
 		self.fixshort=os.path.join(self.irtkdir,'fixshort.txt')
 		self.tsffd=os.path.join(self.irtkdir,'tsffd.par')
@@ -182,7 +182,7 @@ class IRTKPluginMixin(object):
 		localirtkpath=lambda i:os.path.join(self.irtkdir,i)+self.exesuffix
 		self.irtkpath=localirtkpath
 		
-		# if the system-installed IRTK is present, use it instead if present
+		# if the system-installed IRTK is present, use it instead 
 		if isLinux and mgr.conf.get(platformID,'usesystemirtk').lower()!='false' and os.path.exists('/usr/bin/irtk-rreg'):
 			self.irtkpath=lambda i:('/usr/bin/irtk-'+i) if os.path.exists('/usr/bin/irtk-'+i) else localirtkpath(i)
 
@@ -1101,7 +1101,7 @@ class IRTKPluginMixin(object):
 
 		if startserver: # if we can't find a server run by the current user, start one locally
 			scriptfile=inspect.getfile(inspect.currentframe())
-			logfile=os.path.join(getVizDir(),'motionserver.log')
+			logfile=self.mgr.getUserAppFile('motionserver.log')
 			args=[sys.executable,'-s',scriptfile,self.serverdir,str(newport),self.motiontrack,self.computetsffd]
 			proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout=open(logfile,'w'), close_fds=not isWindows)
 			time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
@@ -1310,7 +1310,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		self.setupUi(self)
 		self.setWindowTitle('%s (Port: %i)'%(self.windowTitle(),serverport))
 		self.serverdir=serverdir
-		self.jidfile=os.path.join(self.serverdir,'jid.txt')
+		self.jidfile=os.path.join(self.serverdir,'motion_jid.txt')
 		self.serverport=serverport
 		self.motiontrackpath=motiontrackpath
 		self.tsffdpath=tsffdpath

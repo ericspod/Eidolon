@@ -54,12 +54,6 @@ epsilon=1.0e-8
 
 logFilename=None
 
-VIZDIRVAR='VIZDIR'
-RESDIRVAR='RESDIR'
-SHMDIRVAR='SHMDIR'
-APPDIR='APPDIR'
-LIBSDIR='EidolonLibs'
-
 isDarwin=platform.system().lower()=='darwin'
 isWindows=platform.system().lower()=='windows'
 isLinux=platform.system().lower()=='linux'
@@ -448,16 +442,17 @@ def setTrace():
 	sys.settrace(trace)
 
 
-def getVizDir():
-	'''Returns the application's directory as stored in the VIZDIRVAR environment variable.'''
-	return os.path.abspath(os.getenv(VIZDIRVAR,'./'))
+def getAppDir():
+	import __init__ 
+	'''Returns the application's directory as stored in the APPDIRVAR environment variable.'''
+	return os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
 
 
 def setLogging(logfile='eidolon.log',filemode='a'):
 	'''Enables logging to the given file (by default same file as the renderer writes to) with the given filemode.'''
 
 	if os.path.split(logfile)[0].strip()=='': # if the logfile is a relative path, put it in Eidolon directory
-		logfile=os.path.join(getVizDir(),logfile)
+		logfile=os.path.join(getAppDir(),logfile)
 
 	global logFilename
 
@@ -476,8 +471,9 @@ def setLogging(logfile='eidolon.log',filemode='a'):
 
 
 def addLibraryEgg(egg):
-	'''Add the nominated egg file to the front of the system path, assuming this is found in ${VIZDIR}/Libs/python.'''
-	sys.path.insert(0,os.path.join(getVizDir(),LIBSDIR,'python',ensureExt(egg,'.egg')))
+	'''Add the nominated egg file to the front of the system path, assuming this is found in ${APPDIR}/Libs/python.'''
+	import __init__
+	sys.path.insert(0,os.path.join(getAppDir(),__init__.LIBSDIR,'python',ensureExt(egg,'.egg')))
 
 
 def processExists(pid):

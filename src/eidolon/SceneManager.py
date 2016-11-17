@@ -29,9 +29,19 @@ from ScenePlugin import *
 from Camera2DView import *
 
 import gc
+import tempfile
+import atexit
+import shutil
 
 globalMgr=None
 globalPlugins=[]
+
+
+ConfVars=enum(
+	'shaders', 'resdir', 'shmdir', 'appdatadir', 'logfile', 'preloadscripts', 'uistyle', 'stylesheet',
+	'winsize', 'camerazlock', 'maxprocs', 'configfile', 'rtt_preferred_mode', 'vsync', 'rendersystem',
+	desc='Variables in the Config object, these should be present and keyed to platformID group'
+)
 
 
 def createSceneMgr(win,conf=None):
@@ -836,6 +846,20 @@ class SceneManager(object):
 
 		if self.win and updateLocals:
 			self.win.console.updateLocals(self.scriptlocals)
+			
+	def getUserAppDir(self):
+		'''Returns the per-user application directory as defined by ConfVars.appdatadir in the config object.'''
+		appdir= self.conf.get(platformID,ConfVars.appdatadir)
+		assert os.path.isdir(appdir)
+		return appdir
+		
+	def getUserAppFile(self,filename):
+		return os.path.join(self.getAppDir(),filename)
+		
+	def getUserTempDir(self,dirname):
+		tempdir=tempfile.mkdtemp(prefix=dirname+'_',dir=self.getAppDir())
+		atexit.register(shutil.rmtree,tempdir)
+		return tempdir
 
 	def quit(self):
 		'''Quit the program after all tasks have completed. Ensures thread-safety with the UI thread.'''
