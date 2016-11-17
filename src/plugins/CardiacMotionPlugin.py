@@ -1334,7 +1334,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		@timing
 		def _load(filename,task):
 			with f:
-				basename=splitPathExt(filename)[1]
+				basename=self.getUniqueObjName(splitPathExt(filename)[1])
 				vobj=self.VTK.loadFile(filename)
 				vobj.datasets[0].getNodes().mul(trans)
 				#convert=lambda:self.CHeart.saveSceneObject(self.getLocalFile(basename),vobj,setObjArgs=True)

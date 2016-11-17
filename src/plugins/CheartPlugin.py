@@ -576,7 +576,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 		indexnames={} # maps the old names of topologies to their new names
 		xfiles,tfile,typename,loadSeq,loadTS,initXfile=obj.kwargs[CheartKeywords._loadargs]
 		fields=list(obj.kwargs.get(CheartKeywords._datafieldargs,[]))
-
+		
 		def _moveFile(f):
 			if f==None or not os.path.isfile(f):
 				return None # if there's no filename or actual file, return None which indicates a file isn't used for a particular purpose
@@ -898,27 +898,30 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 					prefixdir,prefixname=os.path.split(prefixpath)
 
 				dds=obj.datasets
-				
-				# get the spatial topology, this either the topology named by `indsname' or the largest one stored in dds[0]
-				if indsname:
-					inds=obj.getIndexSet(indsname) # choose the named index
-				else:
-					# choose the largest spatial index, this is a kludge and obviously can cause problems
-					inds=max(filter(isSpatialIndex,dds[0].indices.values()),key=len)
-
-				# names of topologies and the files they get stored in must match so change the topology names in each of dds
-				indsname=inds.getName()
-				for ds in dds:
-					if not any(n.startswith(prefixname) for n in ds.getIndexNames()):
-						ds.renameIndexSet(indsname,prefixname)
-
-				loadargs[1]=prefixpath+'.T'
-				loadargs[2]=inds.getType()
+				inds=None
 
 				if len(dds)==1:
 					dslist=[(prefixpath,dds[0])]
 				else:
 					dslist=[('%s%.4i'%(prefixpath,i),ds) for i,ds in enumerate(dds)]
+				
+				# get the spatial topology, this either the topology named by `indsname' or the largest one stored in dds[0]
+				if indsname:
+					inds=obj.getIndexSet(indsname) # choose the named index
+					
+				if not inds:
+					# choose the largest spatial index, this is a kludge and obviously can cause problems
+					inds=max(filter(isSpatialIndex,dds[0].indices.values()),key=len)
+					indsname=inds.getName()
+
+				# names of topologies and the files they get stored in must match so change the topology names in each of dds
+#				for ds in dds:
+#					if not any(n.startswith(prefixname) for n in ds.getIndexNames()):
+#						ds.renameIndexSet(indsname,prefixname)
+
+				indsname=inds.getName()
+				loadargs[1]=prefixpath+'.T'
+				loadargs[2]=inds.getType()
 
 				# write out topology
 				writeCheartBuffer(prefixpath+'.T',[inds.n(),dds[0].getNodes().n()],inds,1) # 1-based

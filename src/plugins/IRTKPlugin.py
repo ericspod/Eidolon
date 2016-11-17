@@ -191,7 +191,6 @@ class IRTKPluginMixin(object):
 		self.headertool=self.irtkpath('headertool')
 		self.motiontrack=self.irtkpath('motiontrackmultimage')
 		self.computetsffd=self.irtkpath('computeTSFFD')
-		self.enlarge=self.irtkpath('enlarge_image')
 		self.transformation=self.irtkpath('transformation')
 		self.ptransformation=self.irtkpath('ptransformation')
 		self.region=self.irtkpath('region')
@@ -1194,8 +1193,9 @@ class IRTKPluginMixin(object):
 
 				trackname=self.getUniqueObjName(getValidFilename(trackname))
 				trackdir=self.getLocalFile(trackname)
+				maskfile=None
 				
-				if maskname:
+				if maskname and maskname!='None':
 					mask=self.findObject(maskname)
 					maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
 					resampleImage(mask,maski)
@@ -1226,7 +1226,7 @@ class IRTKPluginMixin(object):
 				for i,(img1,img2) in enumerate(successive(names)):
 					logfile=os.path.join(trackdir,'%.4i.log'%i)
 					args=[img1,img2,'-parin',paramfile,'-dofout','%.4i.dof.gz'%i]
-					if os.path.isfile(maskfile):
+					if maskfile and os.path.isfile(maskfile):
 						args+=['-mask',maskfile]
 					r=execBatchProgram(self.gpu_nreg,*args,cwd=trackdir,logfile=logfile)
 					results.append(r)

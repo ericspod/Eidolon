@@ -751,3 +751,18 @@ def extendImage(obj,name,mx,my,mz,fillVal=0,numProcs=0,task=None):
 	return obj.plugin.createSceneObject(name,images,obj.source,obj.isTimeDependent)
 	
 	
+def cropRefImage(obj,ref,name,marginx=0,marginy=0):
+	trans=obj.getVolumeTransform()
+	tinv=trans.inverse()
+	maxcols=obj.maxcols
+	maxrows=obj.maxrows
+	
+	corners=listSum(i.getCorners() for i in obj.images)
+		
+	aabb=BoundBox([tinv*c for c in corners])
+	
+	minx=clamp(aabb.minv.x()*maxcols-marginx,0,maxcols-1)
+	maxx=clamp(aabb.maxv.x()*maxcols+marginx,0,maxcols-1)
+	miny=clamp(aabb.minv.y()*maxrows-marginy,0,maxrows-1)
+	maxy=clamp(aabb.maxv.y()*maxrows+marginy,0,maxrows-1)
+	

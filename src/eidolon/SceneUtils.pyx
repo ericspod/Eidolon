@@ -294,7 +294,7 @@ class PyDataSet(object):
 			field=self.getDataField(n)
 			self.removeDataField(n)
 			field.setName(n.replace(oldname,newname,1))
-			self.setDatafield(field)
+			self.setDataField(field)
 
 	def enumIndexSets(self):
 		return iter(self.indices.values())
