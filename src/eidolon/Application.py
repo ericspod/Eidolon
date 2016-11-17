@@ -78,15 +78,15 @@ def generateConfig(inargs):
 	parsed and its values inserted. 
 	'''
 	
-	vizdir=Utils.getAppDir()
+	appdir=Utils.getAppDir()
 	prog='run.bat' if platformID=='Windows' else 'run.sh'
 	conf=Config()
 	configfile=''
 
 	# set configuration default values for the current platform, these are overridden below when the config file is read
-	conf.set(platformID,ConfVars.appdatadir,vizdir) # store Eidolon's root directory, this is './' if the global variable isn't present
-	conf.set(platformID,ConfVars.resdir,vizdir+'/res/') # store the resource directory
-	conf.set(platformID,ConfVars.shmdir,'/dev/shm' if platformID=='Linux' else vizdir+'/.shm/') # store shared memory segment ref count file directory
+	conf.set(platformID,APPDIRVAR,appdir) # store Eidolon's root directory, this is './' if the global variable isn't present
+	conf.set(platformID,ConfVars.resdir,appdir+'/res/') # store the resource directory
+	conf.set(platformID,ConfVars.shmdir,'/dev/shm' if platformID=='Linux' else appdir+'/.shm/') # store shared memory segment ref count file directory
 	conf.set(platformID,ConfVars.rtt_preferred_mode,'FBO') # PBO, PBuffer, Copy
 	conf.set(platformID,ConfVars.vsync,'true')
 	conf.set(platformID,ConfVars.rendersystem,'OpenGL') # OpenGL, D3D9, D3D10, D3D11
@@ -121,19 +121,19 @@ def generateConfig(inargs):
 	args,unknown=parser.parse_known_args(inargs) # parse arguments after setting up config in case we quit (ie. --help) and cleanupMatrices gets called
 	
 	# load the config file in the Eidolon's directory if it exists
-	if os.path.isfile(os.path.join(vizdir,conffilename)):
-		configfile=os.path.join(vizdir,conffilename)
+	if os.path.isfile(os.path.join(appdir,conffilename)):
+		configfile=os.path.join(appdir,conffilename)
 		readConfig(configfile,conf)
 
-	appdir=os.path.expanduser(conf.get(platformID,ConfVars.appdatadir))
-	conf.set(platformID,ConfVars.appdatadir,appdir)
+	userappdir=os.path.expanduser(conf.get(platformID,ConfVars.userappdir))
+	conf.set(platformID,ConfVars.userappdir,userappdir)
 	
-	# read the config file specified on the command line, or if not given read appdir/config.ini if present, and override current values in conf with these
+	# read the config file specified on the command line, or if not given read userappdir/config.ini if present, and override current values in conf with these
 	if args.config:
 		configfile=args.config
 		readConfig(configfile,conf)
-	elif appdir and os.path.isfile(os.path.join(appdir,conffilename)):
-		configfile=os.path.join(appdir,conffilename)
+	elif userappdir and os.path.isfile(os.path.join(userappdir,conffilename)):
+		configfile=os.path.join(userappdir,conffilename)
 		readConfig(configfile,conf)
 
 	# override loaded settings with those specified on the command line
@@ -164,7 +164,7 @@ def generateConfig(inargs):
 	# if the logfile is present and is just the filename, put it in the user data directory
 	logfile=os.path.split(conf.get(platformID,ConfVars.logfile))
 	if len(logfile)>0 and logfile[0].strip()=='':
-		conf.set(platformID,ConfVars.logfile,os.path.join(appdir,logfile[1]))
+		conf.set(platformID,ConfVars.logfile,os.path.join(userappdir,logfile[1]))
 
 	# if "preloadscripts" is specified in the config file, prepend the given values to the config value for command line files
 	if conf.get(platformID,ConfVars.preloadscripts):
@@ -186,13 +186,13 @@ def initDefault(conf):
 	Initialize the default components of Eidolon. This sets up tracing, concurrency, inits the UI, sets the
 	style sheet, creates the main window, and finally creates the SceneManager. Returns the main window and manager.
 	'''
-	appdir=conf.get(platformID,ConfVars.appdatadir)
-	vizdir=conf.get(platformID,APPDIRVAR)
+	userappdir=conf.get(platformID,ConfVars.userappdir)
+	appdir=conf.get(platformID,APPDIRVAR)
 	
-	if not os.path.exists(appdir):
-		Utils.printFlush('Creating user directory %r'%appdir)
-		os.mkdir(appdir,0700)
-		shutil.copy(os.path.join(vizdir,conffilename),os.path.join(appdir,conffilename))
+	if not os.path.exists(userappdir):
+		Utils.printFlush('Creating user directory %r'%userappdir)
+		os.mkdir(userappdir,0700)
+		shutil.copy(os.path.join(appdir,conffilename),os.path.join(userappdir,conffilename))
 		
 	if conf.hasValue('args','l'):
 		Utils.setLogging(conf.get(platformID,ConfVars.logfile))
@@ -205,7 +205,7 @@ def initDefault(conf):
 
 	# change the shm directory location to be the per-user application data directory
 	if platformID!='Linux':
-		conf.set(platformID,ConfVars.shmdir,appdir+'/shm/') 
+		conf.set(platformID,ConfVars.shmdir,userappdir+'/shm/') 
 
 	# nominate shared memory directory to store ref count files
 	initSharedDir(conf.get(platformID,ConfVars.shmdir))

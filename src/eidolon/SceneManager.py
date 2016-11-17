@@ -38,7 +38,7 @@ globalPlugins=[]
 
 
 ConfVars=enum(
-	'shaders', 'resdir', 'shmdir', 'appdatadir', 'logfile', 'preloadscripts', 'uistyle', 'stylesheet',
+	'shaders', 'resdir', 'shmdir', 'appdir', 'userappdir','logfile', 'preloadscripts', 'uistyle', 'stylesheet',
 	'winsize', 'camerazlock', 'maxprocs', 'configfile', 'rtt_preferred_mode', 'vsync', 'rendersystem',
 	desc='Variables in the Config object, these should be present and keyed to platformID group'
 )
@@ -848,8 +848,8 @@ class SceneManager(object):
 			self.win.console.updateLocals(self.scriptlocals)
 			
 	def getUserAppDir(self):
-		'''Returns the per-user application directory as defined by ConfVars.appdatadir in the config object.'''
-		appdir= self.conf.get(platformID,ConfVars.appdatadir)
+		'''Returns the per-user application directory as defined by ConfVars.userappdir in the config object.'''
+		appdir= self.conf.get(platformID,ConfVars.userappdir)
 		assert os.path.isdir(appdir)
 		return appdir
 		
