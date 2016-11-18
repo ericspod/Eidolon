@@ -208,25 +208,31 @@ class AlgorithmProcess(Process):
 		processes by incrementing the shared counter value `syncCounter'. Each process calls 'sync()' and is forced to wait
 		until all other processes have done the same. This essentially functions as a concurrent checkpointing mechanism.
 		If one process throws an exception then `syncCounter' is set to a negative value to indicate this, causing any proc
-		which calls sync() in this case to throw an exception as well.
+		which calls sync() in this case to throw an exception as well. If self.syncEvent is None then this method exits
+		without doing anything, allowing it to be safely called in single-process operation.
 		'''
 		if self.syncEvent!=None:
 			with self.syncLock:
-				if self.syncCounter.value==0: # first process to call sync() clears the event
-					self.syncEvent.clear() # reset the block
-
-				self.syncCounter.value+=1
-				dowait=self.syncCounter.value<self.total
-				if not dowait: # only true when the calling process is the last to call sync()
-					self.syncEvent.set() # tell all the other processes to continue
-					self.syncCounter.value=0
+				if self.syncCounter.value<0: # if another process has thrown an exception, don't attempt to sync
+					dowait=False
+				else:
+					if self.syncCounter.value==0: # first process to call sync() clears the event
+						self.syncEvent.clear() # reset the block
+	
+					self.syncCounter.value+=1
+					dowait=self.syncCounter.value<self.total
+					if not dowait: # only true when the calling process is the last to call sync()
+						self.syncEvent.set() # tell all the other processes to continue
+						self.syncCounter.value=0
 
 			# wait() must be called outside the 'with' block otherwise everyone will deadlock
 			# dowait is true when the calling process is not the last to call sync()
 			while dowait and self._continueRunning():
 				dowait=not self.syncEvent.wait(0.01) and self.syncCounter.value>=0
 			
-			# swap sync events so that the process doesn't attempt to resync using the same event which leads to deadlock
+			# Swap sync events so that the process doesn't attempt to resync using the same event. 
+			# If this did occur, other processes still waiting in the above loop for self.syncEvent.wait() to let 
+			# them go will wait forever because self.syncEvent.clear() will get called beforehand, causing deadlock. 
 			self.syncEvent2,self.syncEvent=self.syncEvent,self.syncEvent2
 			
 			if self.syncCounter.value<0:
