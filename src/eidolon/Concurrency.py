@@ -30,7 +30,7 @@ import time
 import errno
 
 from Queue import Queue
-from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock
+from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock,Semaphore
 from multiprocessing import Event as MPEvent
 
 
@@ -152,11 +152,12 @@ class AlgorithmProcess(Process):
 	This object represents a separate process as well as the mechanisms for sharing objects between them and
 	synchronization. It is used by 'concurrentAlgorithm' and 'concurrent', and should not be instantiated separately.
 	'''
-	def __init__(self,index,total,syncEvent,syncCounter,syncLock,sharer,progress,stopEvent,parentPID):
+	def __init__(self,index,total,syncEvent,syncEvent2,syncCounter,syncLock,sharer,progress,stopEvent,parentPID):
 		Process.__init__(self)
 		self.index=index # which proc this is, 0<=index<total
 		self.total=total # how many procs there are total
 		self.syncEvent=syncEvent # synchronizaing event procs wait on in sync()
+		self.syncEvent2=syncEvent2
 		self.syncCounter=syncCounter # synchronizing counter value shared between procs
 		self.syncLock=syncLock # shared lock object controlling access to syncCounter
 		self.sharer=sharer # object sharer shared amongst all procs
@@ -224,7 +225,10 @@ class AlgorithmProcess(Process):
 			# dowait is true when the calling process is not the last to call sync()
 			while dowait and self._continueRunning():
 				dowait=not self.syncEvent.wait(0.01) and self.syncCounter.value>=0
-
+			
+			# swap sync events so that the process doesn't attempt to resync using the same event which leads to deadlock
+			self.syncEvent2,self.syncEvent=self.syncEvent,self.syncEvent2
+			
 			if self.syncCounter.value<0:
 				raise Exception,'Sibling process encountered exception'
 
@@ -304,6 +308,7 @@ class ProcessServer(Thread):
 		self.procs=[]
 		self.sharer=ObjectSharer()
 		self.syncEvent=MPEvent()
+		self.syncEvent2=MPEvent()
 		self.syncCounter=Value('i',0)
 		self.syncLock=Lock()
 		self.jobqueue=Queue()
@@ -342,7 +347,7 @@ class ProcessServer(Thread):
 		# start all the processes
 		for i in range(self.realnumprocs):
 			psharer=self.objsrv.getProxy(self.sharer)
-			p=AlgorithmProcess(i,self.realnumprocs,self.syncEvent,self.syncCounter,self.syncLock,psharer,self.progress,self.stopEvent,os.getpid())
+			p=AlgorithmProcess(i,self.realnumprocs,self.syncEvent,self.syncEvent2,self.syncCounter,self.syncLock,psharer,self.progress,self.stopEvent,os.getpid())
 			p.start()
 			self.procs.append(p)
 
@@ -365,7 +370,7 @@ class ProcessServer(Thread):
 				if numprocs==1: # if we are to use only one process execute locally instead of 1 concurrent process
 					try:
 						# construct a local process, passing None for parameters clues it in to not try using concurrency features like syncing
-						localproc=AlgorithmProcess(0,1,None,None,None,None,task,None,0)
+						localproc=AlgorithmProcess(0,1,None,None,None,None,None,task,None,0)
 						localproc.endval=valrange
 						localproc.maxval=valrange
 
@@ -471,6 +476,9 @@ def concurrencyTestRange(process,values):
 	for i in process.prange():
 		printFlush(process.index,i,values[i])
 		result.append(i)
+			
+		if (i-process.startval)%process.total==0:
+			process.sync()
 
 	return result
 

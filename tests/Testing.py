@@ -3,9 +3,8 @@
 from eidolon import *
 
 @timing
-def generateTestMeshDS(etname,refine):
+def generateTestMeshDS(etname,refine,pt=vec3(0.25)):
 	et=ElemType[etname]
-	pt=vec3(0.25)
 
 	if et.geom in (GeomType._Hex, GeomType._Tet):
 		dividefunc=divideHextoTet if et.geom==GeomType._Tet else divideHextoHex
@@ -14,13 +13,15 @@ def generateTestMeshDS(etname,refine):
 
 		nodes,ninds,_=reduceMesh(listToMatrix([vec3(*n) for n in nodes],'nodes'),[listToMatrix(inds,'inds',etname)])
 		dist=[nodes.getAt(n).distTo(pt) for n in xrange(nodes.n())]
+		diff=[tuple(nodes.getAt(n)-pt) for n in xrange(nodes.n())]
 
 	elif et.geom == GeomType._Tri:
 		nodes,inds=generateSphere(refine)
 		dist=[n.distTo(pt) for n in nodes]
+		diff=[tuple(n-pt) for n in nodes.n()]
 		ninds=[('inds',ElemType._Tri1NL,inds)]
 
-	ds=PyDataSet('TestDS',nodes,ninds,[('dist',dist,'inds')])
+	ds=PyDataSet('TestDS',nodes,ninds,[('dist',dist,'inds'),('diff',diff,'inds')])
 	ds.validateDataSet()
 	return ds
 

@@ -681,12 +681,12 @@ class VTKPlugin(MeshScenePlugin):
 			if nodefields:
 				with xmltag(xo,'PointData') as xo1:
 					for df in nodefields:
-						writeArray(xo1,df, type="Float32", Name=df.getName(), Format="ascii")
+						writeArray(xo1,df, type="Float32", Name=df.getName(),NumberOfComponents=df.m(), Format="ascii")
 						
 			if cellfields:
 				with xmltag(xo,'CellData') as xo1:
 					for df in cellfields:
-						writeArray(xo1,df, type="Float32", Name=df.getName(), Format="ascii")
+						writeArray(xo1,df, type="Float32", Name=df.getName(),NumberOfComponents=df.m(), Format="ascii")
 		
 		f=Future()
 		@taskroutine('Saving VTK XML File')
