@@ -490,7 +490,7 @@ def processExists(pid):
 		if handle == 0:
 			return False
 
-		# If the process exited recently, a pid may still exist for the handle. So, check if we can get the exit code.
+		# If the process exited recently, a handle may still exist for the pid. So, check if we can get the exit code.
 		exitcode = ctypes.wintypes.DWORD()
 		result = kernel32.GetExitCodeProcess(handle, ctypes.byref(exitcode)) # returns 0 if failed
 		kernel32.CloseHandle(handle)

@@ -21,8 +21,6 @@
 Eidolon is the experimental medical imaging visualization framework.
 '''
 
-import os,sys
-
 from Renderer import *
 
 from VisualizerUI import *

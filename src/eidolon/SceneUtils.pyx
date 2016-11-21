@@ -406,10 +406,7 @@ def LineDataSet(name,nodes,inds=None,fields=[]):
 	Generate a dataset for a line mesh defined by the given name, nodes, and indices. If indices is None, the node
 	list is treated like a list of independent lines with no shared vertices and an index set is generated for such.
 	'''
-	if inds==None:
-		nlen=nodes.n() if isinstance(nodes,Vec3Matrix) else len(nodes)
-		inds=[(i,i+1) for i in xrange(0,nlen,2)]
-
+	inds=inds or [(i,i+1) for i in xrange(0,len(nodes),2)]
 	return PyDataSet(name,nodes,[(name+MatrixType.lines[1],ElemType._Line1NL,inds)],fields)
 
 

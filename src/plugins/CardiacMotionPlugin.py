@@ -20,7 +20,7 @@ from eidolon import *
 
 import gzip
 
-from IRTKPlugin import IRTKPluginMixin,InterpTypes,ServerMsgs,applyMotionTrackTask
+from IRTKPlugin import IRTKPluginMixin,ServerMsgs,applyMotionTrackTask
 from SegmentPlugin import SegSceneObject,SegmentTypes
 from VTKPlugin import DatasetTypes
 from CheartPlugin import LoadDialog
@@ -38,48 +38,99 @@ def avgDevRange(vals,stddevDist=1.0):
 	return avg(v for v in vals if abs(v-a)<=sd)
 
 
+#@timing
+#def calculateRadialField(ds,indmat):
+#	'''
+#	Calculate a field of radial vectors for the surface of the mesh defined by index matrix `indmat' using nodes and
+#	other data from dataset `ds'.
+#	'''
+#	calculateElemExtAdj(ds)
+#
+#	result=calculateMeshSurfNormals(ds.getNodes(),indmat,ds.getIndexSet(indmat.getName()+MatrixType.external[1]))
+#	radialf=RealMatrix('radial',0,3)
+#	for i in xrange(result.n()):
+#		radialf.append(*result.getAt(i))
+#
+#	radialf.meta(StdProps._topology,indmat.getName())
+#	radialf.meta(StdProps._spatial,indmat.getName())
+#	radialf.meta(StdProps._timecopy,'True')
+#	ds.setDataField(radialf)
+#	return radialf
+#
+#
+#@timing
+#def calculateLVDirectionalFields(ds,radialfield,longaxis,longname,circumname):
+#	'''
+#	Given the dataset `ds' and radial vector field `radialfield', calculate the logitudinal and circumferential fields
+#	using LV centerline axis direction `longaxis'. The names of the returned matrices are `longname' and `circumname'.
+#	'''
+#	length=radialfield.n()
+#	longmat=RealMatrix(longname,length,3)
+#	circummat=RealMatrix(circumname,length,3)
+#
+#	for n in xrange(length):
+#		longmat.setRow(n,*longaxis)
+#		circummat.setRow(n,*longaxis.cross(vec3(*radialfield.getRow(n))))
+#
+#	longmat.meta(StdProps._topology,radialfield.meta(StdProps._topology))
+#	longmat.meta(StdProps._spatial,radialfield.meta(StdProps._spatial))
+#	longmat.meta(StdProps._timecopy,'True')
+#	circummat.meta(StdProps._topology,radialfield.meta(StdProps._topology))
+#	circummat.meta(StdProps._spatial,radialfield.meta(StdProps._spatial))
+#	circummat.meta(StdProps._timecopy,'True')
+#
+#	return longmat,circummat
+	
+	
 @timing
-def calculateRadialField(ds,indmat):
-	'''
-	Calculate a field of radial vectors for the surface of the mesh defined by index matrix `indmat' using nodes and
-	other data from dataset `ds'.
-	'''
-	calculateElemExtAdj(ds)
-
-	result=calculateMeshSurfNormals(ds.getNodes(),indmat,ds.getIndexSet(indmat.getName()+MatrixType.external[1]))
-	radialf=RealMatrix('radial',0,3)
-	for i in xrange(result.n()):
-		radialf.append(*result.getAt(i))
-
-	radialf.meta(StdProps._topology,indmat.getName())
-	radialf.meta(StdProps._spatial,indmat.getName())
-	radialf.meta(StdProps._timecopy,'True')
-	ds.setDataField(radialf)
-	return radialf
-
-
-@timing
-def calculateLVDirectionalFields(ds,radialfield,longaxis,longname,circumname):
-	'''
-	Given the dataset `ds' and radial vector field `radialfield', calculate the logitudinal and circumferential fields
-	using LV centerline axis direction `longaxis'. The names of the returned matrices are `longname' and `circumname'.
-	'''
-	length=radialfield.n()
+def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
+	
+	spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
+	indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
+	indname=indmat.getName()
+	
+	nodes=ds.getNodes().clone()
+	length=nodes.n()
+	orient=rotator(longaxis,vec3(0,0,1))
+	orienttrans=transform(-BoundBox(nodes).center,vec3(1),orient) # transforms the mesh so that the centerline is Z axis
+	nodes.mul(orienttrans) # transform the nodes
+	minz,maxz=minmax([n.z() for n in nodes]) # determing the min and max distance from the origin in the Z dimension, ie. height
+	
 	longmat=RealMatrix(longname,length,3)
+	radialmat=RealMatrix(radialname,length,3)
 	circummat=RealMatrix(circumname,length,3)
 
+	# calculate the bound boxes of the nodes near the mitral plane and apex
+	mitralaabb=BoundBox([n for n in nodes if n.z()<(minz+(maxz-minz)*0.1)])
+	apexaabb=BoundBox([n for n in nodes if n.z()>(minz+(maxz-minz)*0.9)])
+	
+	# `longaxis' is pointing from apex to mitral so reverse it, this assumes apex is small which may be wrong
+	if mitralaabb.radius<apexaabb.radius:
+		longaxis=-longaxis
+		mitralaabb,apexaabb=apexaabb,mitralaabb
+	
+	#apexray=Ray(mitralaabb.center,orient*longaxis)
+	apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
+	
 	for n in xrange(length):
+		node=nodes[n]
+		d=apexray.distTo(node)*0.9 # scale the distance along the ray so that apex directions are more rounded
+		rad=orient/(node-apexray.getPosition(d)).norm()
+		radialmat.setRow(n,*rad)
 		longmat.setRow(n,*longaxis)
-		circummat.setRow(n,*longaxis.cross(vec3(*radialfield.getRow(n))))
+		circummat.setRow(n,*(longaxis.cross(rad)))
 
-	longmat.meta(StdProps._topology,radialfield.meta(StdProps._topology))
-	longmat.meta(StdProps._spatial,radialfield.meta(StdProps._spatial))
+	longmat.meta(StdProps._topology,indname)
+	longmat.meta(StdProps._spatial,indname)
 	longmat.meta(StdProps._timecopy,'True')
-	circummat.meta(StdProps._topology,radialfield.meta(StdProps._topology))
-	circummat.meta(StdProps._spatial,radialfield.meta(StdProps._spatial))
+	circummat.meta(StdProps._topology,indname)
+	circummat.meta(StdProps._spatial,indname)
 	circummat.meta(StdProps._timecopy,'True')
+	radialmat.meta(StdProps._topology,indname)
+	radialmat.meta(StdProps._spatial,indname)
+	radialmat.meta(StdProps._timecopy,'True')
 
-	return longmat,circummat
+	return radialmat,longmat,circummat
 
 
 def createStrainGrid(nodes,toRefSpace,toImgSpace,h):
@@ -1170,7 +1221,9 @@ class CardiacMotionProject(Project):
 		ahafieldname=str(self.alignprop.strainMeshAHABox.currentText())
 		trackname=str(self.alignprop.strainMeshTrackBox.currentText())
 		spacing=self.alignprop.strainSpacingMeshBox.value()
-		self.CardiacMotion.calculateMeshStrainField(objname,imgname,radialfieldname,ahafieldname,spacing,trackname)
+		f=self.CardiacMotion.calculateMeshStrainField(objname,imgname,radialfieldname,ahafieldname,spacing,trackname)
+		self.mgr.addFuncTask(lambda:printFlush(f()))
+		self.mgr.checkFutureResult(f)
 
 	def _calculateKineticEnergyButton(self):
 		maskname=str(self.alignprop.keMaskBox.currentText())
@@ -1609,8 +1662,9 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 			with fstrainnodes:
 				longaxis=img.getVolumeTransform().getRotation()*vec3(0,0,1)
 
-				radialf1=radialf or calculateRadialField(ds,indmat)
-				longf,circumf=calculateLVDirectionalFields(ds,radialf1,longaxis,'longitudinal','circumferential')
+				#radialf1=radialf or calculateRadialField(ds,indmat)
+				#longf,circumf=calculateLVDirectionalFields(ds,radialf1,longaxis,'longitudinal','circumferential')
+				radialf1,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
 
 				for d in obj.datasets:
 					d.setDataField(radialf1)
@@ -1625,6 +1679,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				fstrainnodes.setObject(strainnodes)
 
 		@taskroutine('Calculating Strains')
+		@timing
 		def _calcStrains(task):
 			'''Calculates the strain fields for each timestep.'''
 			with f:
@@ -1753,7 +1808,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				f.setObject((p1,p2,p3,p4))
 
 		tasks=[_calcField(), applyMotionTrackTask(self.ptransformation,trackdir,False,filelists), _calcStrains()]
-		self.mgr.runTasks(tasks,f)
+		return self.mgr.runTasks(tasks,f)
 
 	def calculateImageStrainField(self,objname,srcname,griddims,spacing,trackname):
 		obj=self.findObject(objname)

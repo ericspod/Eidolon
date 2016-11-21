@@ -30,7 +30,7 @@ import time
 import errno
 
 from Queue import Queue
-from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock,Semaphore
+from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock
 from multiprocessing import Event as MPEvent
 
 
@@ -209,7 +209,8 @@ class AlgorithmProcess(Process):
 		until all other processes have done the same. This essentially functions as a concurrent checkpointing mechanism.
 		If one process throws an exception then `syncCounter' is set to a negative value to indicate this, causing any proc
 		which calls sync() in this case to throw an exception as well. If self.syncEvent is None then this method exits
-		without doing anything, allowing it to be safely called in single-process operation.
+		without doing anything, allowing it to be safely called in single-process operation. All processes MUST call
+		this method at the same point in code otherwise deadlock will result.
 		'''
 		if self.syncEvent!=None:
 			with self.syncLock:
