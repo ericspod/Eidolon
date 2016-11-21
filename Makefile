@@ -30,7 +30,8 @@ else ifeq ($(KERNEL_NAME),Darwin)
 else ifeq ($(findstring MINGW,$(KERNEL_NAME)),MINGW)
 	PLAT=win64_mingw
 else ifeq ($(findstring CYGWIN,$(KERNEL_NAME)),CYGWIN)
-	PLAT=win64_cygwin
+	#PLAT=win64_cygwin
+	PLAT=win64_mingw
 endif
 
 LIB_HOME = ./EidolonLibs/$(PLAT)
@@ -44,9 +45,10 @@ PYTHON=python
 PYTHON_VERNAME=python2.7
 PYUIC=pyuic4
 PYRCC=pyrcc4
+PYINST=pyinstaller
 
 # find the path to the python exe using the registry
-ifeq ($(PLAT),win64_cygwin)
+ifeq ($(PLAT),win64_mingw)
 	REG="$(shell cat /proc/registry/HKEY_CURRENT_USER/Software/Python/PythonCore/2.7/InstallPath/@ 2>/dev/null)"
 	ifeq ($(REG),"")
 		REG="$(shell cat /proc/registry/HKEY_LOCAL_MACHINE/SOFTWARE/Python/PythonCore/2.7/InstallPath/@ 2>/dev/null)"
@@ -120,6 +122,12 @@ appfile: # creates the OS X .app directory with path DISTNAME.app
 	tar czf $(DISTNAME).tgz $(DISTNAME).app
 	#diutil create -volname $(DISTNAME) -srcfolder $(DISTNAME).app -ov -format UDZO -imagekey zlib-level=9 $(DISTNAME).dmg
 	rm -rf $(DISTNAME).app
+	
+pyinstaller:
+ifeq ($(PLAT),win64_mingw)
+#	$(PYINST) -n $(DISTNAME) --clean --add-binary "$(LIB_HOME)/bin/OgreMain.dll;bin" --add-data "tutorial;tutorial" --hiddenimport numpy --hiddenimport scipy -p src main.py 
+	$(PYINST) --clean pyinstaller.spec
+endif
 
 package:
 	git pull
@@ -129,13 +137,14 @@ ifeq ($(PLAT),osx)
 	make appfile DISTNAME=Eidolon_Mac_$(shell ./run.sh --version 2>&1)
 else
 	make distfile DISTNAME=Eidolon_All_$(shell ./run.sh --version 2>&1)
+	#make pyinstaller DISTNAME=Eidolon_All_$(shell ./run.sh --version 2>&1)
 endif
 
 tutorialfile:
 	tar czf Tutorials.tgz tutorial
 
 clean:
-ifeq ($(PLAT),win64_cygwin)
+ifeq ($(PLAT),win64_mingw)
 	rm -rf $(SRC)/*/*.pyd
 else ifeq ($(PLAT),osx)
 	rm -rf $(SRC)/*/*.dylib 

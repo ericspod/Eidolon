@@ -27,7 +27,6 @@ import atexit
 import os
 import glob
 import compiler
-import sip
 
 import Renderer
 cimport Renderer
