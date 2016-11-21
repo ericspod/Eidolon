@@ -787,23 +787,19 @@ class IRTKPluginMixin(object):
 	def offsetTimesteps(self,sourceobj,suffix,value,makeProspective=False):
 		sourceobj=self.findObject(sourceobj)
 
-		#if not sourceobj.isTimeDependent:
-		#	return sourceobj
-
 		if makeProspective:
 			timesteps=sourceobj.getTimestepList()
-			avgdiff=avgspan(timesteps) #avg(j-i for i,j in zip(timesteps,timesteps[1:]))
+			avgdiff=avgspan(timesteps) 
 			value=avgdiff/2
 
 		for i in sourceobj.images:
 			i.timestep+=value
 
 		sourceobj.setName(sourceobj.getName()+suffix)
-		sourceobj.source=None
+		sourceobj.source=None # prevent the project from asking whether to delete this file
 
 		self.mgr.removeSceneObject(sourceobj)
 		self.saveToNifti([sourceobj])
-		#self.addObject(sourceobj)
 
 		return self.loadNiftiFiles([self.getNiftiFile(sourceobj.getName())])
 

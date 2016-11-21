@@ -854,10 +854,10 @@ class SceneManager(object):
 		return appdir
 		
 	def getUserAppFile(self,filename):
-		return os.path.join(self.getAppDir(),filename)
+		return os.path.join(self.getUserAppDir(),filename)
 		
 	def getUserTempDir(self,dirname):
-		tempdir=tempfile.mkdtemp(prefix=dirname+'_',dir=self.getAppDir())
+		tempdir=tempfile.mkdtemp(prefix=dirname+'_',dir=self.getUserAppDir())
 		atexit.register(shutil.rmtree,tempdir)
 		return tempdir
 
