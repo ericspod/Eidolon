@@ -74,7 +74,10 @@ class NiftiPlugin(ImageScenePlugin):
 			return []
 			
 	def getObjFiles(self,obj):
-		return [obj.source['filename']]
+		if obj.source and 'filename' in obj.source:
+			return [obj.source['filename']]
+		else:
+			return []
 		
 	def renameObjFiles(self,obj,oldname,overwrite=False):
 		assert isinstance(obj,SceneObject) and obj.plugin==self
