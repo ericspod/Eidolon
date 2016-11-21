@@ -788,7 +788,7 @@ class LVSeg2DMixin(DrawContourMixin):
 		self.uiobj=Seg2DWidget()
 		self.uiobj.segBox.setParent(None)
 		layout.addWidget(self.uiobj.segBox)
-		self.handleNames={} # index -> (name,timestep) for each index in self.handles which is a contour handle (not all handles are contour handles)
+		self.contourNames={} # index -> (name,timestep) for each index in self.handles which is a contour handle (not all handles are contour handles)
 		self.segobj=None
 		self.handlecol=color(1,0,0)
 		self.handleradius=5.0
@@ -824,10 +824,10 @@ class LVSeg2DMixin(DrawContourMixin):
 
 	def setSegObject(self,segobj):
 		self.segobj=segobj
-		for i,ind in enumerate(sorted(self.handleNames)): # remove contours only, leave other handles alone
+		for i,ind in enumerate(sorted(self.contourNames)): # remove contours only, leave other handles alone
 			self.removeHandle(ind-i)
 
-		self.handleNames={}
+		self.contourNames={}
 
 		numnodes=0
 		for contour in self.segobj.enumContours():
@@ -842,10 +842,10 @@ class LVSeg2DMixin(DrawContourMixin):
 				self.segobj.filename=self.segobj.plugin.getSegFilename(False)
 
 			self.segobj.clearContours()
-			for i,(name,ts) in self.handleNames.items():
+			for i,(name,ts) in self.contourNames.items():
 				nodes=self.handles[i].getNodes()
 				name=self.segobj.addContour(nodes,name,ts) # names may need changing to be acceptable in the stored file
-				self.handleNames[i]=(name,ts)
+				self.contourNames[i]=(name,ts)
 
 			self.segobj.save()
 
@@ -855,7 +855,7 @@ class LVSeg2DMixin(DrawContourMixin):
 			with signalBlocker(self.uiobj.numCtrlBox):
 				self.uiobj.numCtrlBox.setValue(n)
 
-			for i in self.handleNames:
+			for i in self.contourNames:
 				self.handles[i].setNumNodes(n)
 
 		self._repaintDelay()
@@ -866,35 +866,35 @@ class LVSeg2DMixin(DrawContourMixin):
 		self.addContour(wnodes)
 
 	def addContour(self,nodes,name=None,timestep=None):
-		name=uniqueStr(name or 'contour',['contour']+[n for n,_ in self.handleNames.values()])
+		name=uniqueStr(name or 'contour',['contour']+[n for n,_ in self.contourNames.values()])
 
 		timestep=self.mgr.timestep if timestep==None else timestep
 		h=PolyHandle2D(self,[vec3(*n) for n in nodes],True,self.handlecol,ElemType.Line1PCR,self.handleradius)
 		self.addHandle(h)
-		self.handleNames[len(self.handles)-1]=(name,timestep)
+		self.contourNames[len(self.handles)-1]=(name,timestep)
 		h.setVisible3D(self.isContoursVisible())
 		self.setActiveContour(name)
 		return name
 
 	def removeContour(self,name):
-		self.removeHandle(first(i for i,(n,_) in self.handleNames.items() if n==name))
+		self.removeHandle(first(i for i,(n,_) in self.contourNames.items() if n==name))
 
 	def removeHandle(self,index):
 		if index!=None:
-			for i in sorted(self.handleNames.keys()):
+			for i in sorted(self.contourNames.keys()):
 				if i==index: # remove the entry for this handle
-					self.handleNames.pop(index)
+					self.contourNames.pop(index)
 				elif i>index: # move entries indexed above this handle down 1
-					self.handleNames[i-1]=self.handleNames.pop(i)
+					self.contourNames[i-1]=self.contourNames.pop(i)
 
 			Camera2DView.removeHandle(self,index)
 
 	def removeHandles(self):
 		Camera2DView.removeHandles(self)
-		self.handleNames={}
+		self.contourNames={}
 
 	def setActiveContour(self,name):
-		for i,(n,ts) in self.handleNames.items():
+		for i,(n,ts) in self.contourNames.items():
 			self.handles[i].setActive(n==name)
 
 		listitem=first(self.uiobj.contourList.findItems(name+' @ ',Qt.MatchStartsWith))
@@ -905,10 +905,13 @@ class LVSeg2DMixin(DrawContourMixin):
 		self._repaintDelay()
 		
 	def handleSelected(self,handle):
-		self.setActiveContour(self.handleNames[self.handles.index(handle)][0])
+		index=self.handles.index(handle)
+		if index in self.contourNames:
+			namets=self.contourNames[index]
+			self.setActiveContour(namets[0])
 
 	def getActiveIndex(self):
-		return first(i for i in self.handleNames if i<len(self.handles) and self.handles[i].isActive())
+		return first(i for i in self.contourNames if i<len(self.handles) and self.handles[i].isActive())
 
 	def isContoursVisible(self):
 		return self.uiobj.showContoursBox.isChecked()
@@ -916,14 +919,14 @@ class LVSeg2DMixin(DrawContourMixin):
 	def setContoursVisible(self,isVisible):
 		setChecked(isVisible,self.uiobj.showContoursBox)
 
-		for i in self.handleNames:
+		for i in self.contourNames:
 			self.handles[i].setVisible3D(isVisible)
 
 		self.mgr.repaint(False)
 
 	def updateView(self):
 		# fill the handles list, selecting the active handle
-		handles=self.handleNames.items()
+		handles=self.contourNames.items()
 		contours=['%s @ %.3f'%hn for i,hn in handles]
 		selected=self.getActiveIndex()
 		fillList(self.uiobj.contourList,contours,selected if selected!=None else -1,None,True)
@@ -934,7 +937,7 @@ class LVSeg2DMixin(DrawContourMixin):
 		mintimeind=minmaxIndices(abs(ts-curtime) for ts in tslist)[0] if rep else -1
 
 		# only handles for the current timestep should be visible
-		for i,(n,ts) in self.handleNames.items():
+		for i,(n,ts) in self.contourNames.items():
 			curtimeind=minmaxIndices(abs(ts1-ts) for ts1 in tslist)[0] if rep else -2
 			self.handles[i].setVisible(self.handles[i].isVisible() and curtimeind==mintimeind)
 
@@ -985,7 +988,7 @@ class LVSeg2DMixin(DrawContourMixin):
 	def _setContourTS(self):
 		i=self.getActiveIndex()
 		if i!=None:
-			self.handleNames[i]=(self.handleNames[i][0],self.mgr.timestep)
+			self.contourNames[i]=(self.contourNames[i][0],self.mgr.timestep)
 			self._repaintDelay()
 
 	def _cloneContour(self):
@@ -997,7 +1000,7 @@ class LVSeg2DMixin(DrawContourMixin):
 				x,y,_=self.getScreenPosition(nodes[n])
 				nodes[n]=self.getWorldPosition(x,y)
 
-			self.addContour(nodes,None,self.handleNames[i][1])
+			self.addContour(nodes,None,self.contourNames[i][1])
 
 
 class LVSegView(LVSeg2DMixin,PointChooseMixin,Camera2DView):
@@ -1283,6 +1286,11 @@ class SegmentPlugin(ScenePlugin):
 		name=name or splitPathExt(filename)[1]
 		obj=SegSceneObject(name,filename,self)
 		obj.load()
+		
+		if not obj.get(DatafileParams.srcimage):
+			fstimg=first(o.getName() for o in self.mgr.objs if isinstance(o,ImageSceneObject))
+			obj.set(DatafileParams.srcimage,fstimg)
+			
 		return obj
 
 	def createHemisphereMesh(self,segobj,name,refine,reinterpolateVal=20,calcAHA=False,isVolume=False,inner=True,plugin=None):
