@@ -21,23 +21,23 @@ import eidolon
 import multiprocessing
 
 # necessary for now to include plugins here for multiprocessing
-#import CheartPlugin
-#import DicomPlugin
-#import NiftiPlugin
-#import MetaImagePlugin
-#import VTKPlugin
-#import MeditPlugin
-#import STLPlugin
-#import NRRDPlugin
-#import ParRecPlugin
-#import ImageStackPlugin
-#import SlicePlugin
-#import PlotPlugin
-#import SegmentPlugin
-#import ReportCardPlugin
-#import MeasurementPlugin
-#import CardiacMotionPlugin
-#import ImageAlignPlugin
+import CheartPlugin
+import DicomPlugin
+import NiftiPlugin
+import MetaImagePlugin
+import VTKPlugin
+import MeditPlugin
+import STLPlugin
+import NRRDPlugin
+import ParRecPlugin
+import ImageStackPlugin
+import SlicePlugin
+import PlotPlugin
+import SegmentPlugin
+import ReportCardPlugin
+import MeasurementPlugin
+import CardiacMotionPlugin
+import ImageAlignPlugin
 
 if __name__ == '__main__': # needed for Windows multiprocessing (unless you want fork bombs)
 	multiprocessing.freeze_support()
