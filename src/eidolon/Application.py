@@ -81,8 +81,10 @@ def generateConfig(inargs):
 		if getattr(sys,'_MEIPASS',None):
 			os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
 			
-			if Utils.isWindows:
-				os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'win64_mingw','bin')
+			# the PATH variable is used by Ogre to search for plugin shared libraries
+			os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'bin')
+			#if Utils.isWindows:
+			#	os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'win64_mingw','bin')
 		else:
 			scriptdir= os.path.dirname(os.path.abspath(__file__))
 			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
@@ -198,7 +200,7 @@ def initDefault(conf):
 	userappdir=conf.get(platformID,ConfVars.userappdir)
 	appdir=conf.get(platformID,APPDIRVAR)
 	
-	if not os.path.exists(userappdir):
+	if userappdir and not os.path.exists(userappdir):
 		Utils.printFlush('Creating user directory %r'%userappdir)
 		os.mkdir(userappdir,0700)
 		shutil.copy(os.path.join(appdir,conffilename),os.path.join(userappdir,conffilename))

@@ -21,15 +21,15 @@
 
 from eidolon import *
 
-addLibraryEgg('pydicom-1.0.0-py2.7')
+addLibraryEgg('pydicom-1.0.0-py2.7') # PyDicom: https://github.com/darcymason/pydicom
 
-# PyDicom: https://github.com/darcymason/pydicom
+
 from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary
 from pydicom.errors import InvalidDicomError
 from pydicom.tag import Tag
 from pydicom.dataset import Dataset,FileDataset
-
+	
 import os
 import sys
 import pickle

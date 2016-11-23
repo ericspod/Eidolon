@@ -22,18 +22,17 @@ Eidolon is the experimental medical imaging visualization framework.
 '''
 
 from renderer.Renderer import *
-
-from .VisualizerUI import *
-from .Utils import *
-from .Concurrency import *
-from .SceneUtils import *
-from .MeshAlgorithms import *
-from .ImageObject import *
-from .MathDef import *
-from .SceneManager import *
-from .SceneObject import *
-from .ScenePlugin import *
-from .Application import *
+from eidolon.VisualizerUI import *
+from eidolon.Utils import *
+from eidolon.Concurrency import *
+from eidolon.SceneUtils import *
+from eidolon.MeshAlgorithms import *
+from eidolon.ImageObject import *
+from eidolon.MathDef import *
+from eidolon.SceneManager import *
+from eidolon.SceneObject import *
+from eidolon.ScenePlugin import *
+from eidolon.Application import *
 
 __appname__='Eidolon Biomedical Framework'
 __version_info__=(0,1,0) # global application version, major/minor/patch

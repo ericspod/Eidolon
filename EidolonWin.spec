@@ -6,14 +6,17 @@ block_cipher = None
 a = Analysis(['main.py'],
              pathex=['src','src/eidolon','src/renderer','src/ui','src/plugins'],
              binaries=[
-                ('EidolonLibs/win64_mingw/bin/cg.dll','bin'),
-                #('EidolonLibs/win64_mingw/bin/OgreMain.dll','bin'),
-                #('EidolonLibs/win64_mingw/bin/OgreOverlay.dll','bin'),
-                ('EidolonLibs/win64_mingw/bin/Plugin_CgProgramManager.dll','bin'),
-                ('EidolonLibs/win64_mingw/bin/RenderSystem_GL.dll','bin')
+                ('EidolonLibs/win64_mingw/bin/cg.dll','EidolonLibs/bin'),
+                ('EidolonLibs/win64_mingw/bin/Plugin_CgProgramManager.dll','EidolonLibs/bin'),
+                ('EidolonLibs/win64_mingw/bin/RenderSystem_GL.dll','EidolonLibs/bin')
              ],
-             datas=[('res','res')],
-             hiddenimports=['numpy', 'scipy','Queue'],
+             datas=[
+                ('res','res'),
+                ('config.ini','.'),
+                ('EidolonLibs/IRTK','EidolonLibs/IRTK'),
+                ('EidolonLibs/python','EidolonLibs/python')
+             ],
+             hiddenimports=['numpy', 'scipy','PyQt4.uic'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],

@@ -125,8 +125,13 @@ appfile: # creates the OS X .app directory with path DISTNAME.app
 	
 pyinstaller:
 ifeq ($(PLAT),win64_mingw)
-#	$(PYINST) -n $(DISTNAME) --clean --add-binary "$(LIB_HOME)/bin/OgreMain.dll;bin" --add-data "tutorial;tutorial" --hiddenimport numpy --hiddenimport scipy -p src main.py 
-	$(PYINST) --clean pyinstaller.spec
+	cp $(LIB_HOME)/bin/*.dll src/renderer
+	rm -rf dist
+	$(PYINST) EidolonWin.spec
+	rm -rf src/renderer/*.dll build
+	rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
+	rm dist/Eidolon/EidolonLibs/IRTK/*.bin
+	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 endif
 
 package:
