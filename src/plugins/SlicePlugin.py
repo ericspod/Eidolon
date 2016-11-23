@@ -20,7 +20,7 @@
 from eidolon import *
 from eidolon.VisualizerUI import addCustomUIRow
 
-from SliceObjProp import Ui_SliceObjProp
+from ui.SliceObjProp import Ui_SliceObjProp
 
 sliceObjMatName='SliceObj'
 

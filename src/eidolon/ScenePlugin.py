@@ -17,11 +17,11 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from SceneObject import *
-from ImageObject import *
-from ImageAlgorithms import *
-from VisualizerUI import *
-from SceneComponents import *
+from .SceneObject import *
+from .ImageObject import *
+from .ImageAlgorithms import *
+from .VisualizerUI import *
+from .SceneComponents import *
 
 
 class PluginError(Exception):

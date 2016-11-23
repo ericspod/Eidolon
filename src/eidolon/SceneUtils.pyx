@@ -28,18 +28,18 @@ import os
 import glob
 import compiler
 
-import Renderer
-cimport Renderer
+import renderer.Renderer as ren
+cimport renderer.Renderer as ren
 
-from Renderer import vec3,transform,rotator,color,Vec3Matrix,RealMatrix,IndexMatrix,ColorMatrix,getSharedDir,unlinkShared,PyVertexBuffer,PyIndexBuffer
-from Renderer cimport vec3,transform,rotator,color,Vec3Matrix,RealMatrix,IndexMatrix,ColorMatrix,getSharedDir,unlinkShared,PyVertexBuffer,PyIndexBuffer
+from renderer.Renderer import vec3,transform,rotator,color,Vec3Matrix,RealMatrix,IndexMatrix,ColorMatrix
+from renderer.Renderer cimport vec3,transform,rotator,color,Vec3Matrix,RealMatrix,IndexMatrix,ColorMatrix
 
 import numpy as np
 cimport numpy as np
 
-from Utils import *
-from Concurrency import *
-from MathDef import GeomType,ElemType
+from .Utils import *
+from .Concurrency import *
+from .MathDef import GeomType,ElemType
 
 
 # Types for additional index matrices: description, IndexMatrix name suffix, # of components
@@ -363,7 +363,7 @@ class PyDataSet(object):
 		#cdef RealMatrix field
 
 		for ind in self.indices.values():
-			mini,maxi=Renderer.minmaxMatrixIndex(ind)
+			mini,maxi=ren.minmaxMatrixIndex(ind)
 			if isSpatialIndex(ind) and (mini>=numnodes or mini<0 or maxi>=numnodes or maxi<0):
 				errors.append('Invalid index %r value range: should be within [0,%i), is actually [%i,%i)'%(ind.getName(),numnodes,mini,maxi))
 
@@ -540,7 +540,7 @@ cdef class BoundBox(object):
 
 	def __init__(self,vecs=None):
 		if isinstance(vecs,Vec3Matrix):
-			vecs=Renderer.calculateBoundBox(vecs)
+			vecs=ren.calculateBoundBox(vecs)
 
 		self.addVecIter(vecs or [vec3()])
 
@@ -599,7 +599,7 @@ cdef class BoundBox(object):
 		'''
 		cdef list nodes=self.getCorners()
 		cdef list heights=[n.planeDist(pt,norm) for n in nodes]
-		cdef list intersects=[nodes[i].lerp(lerpval,nodes[j]) for i,j,lerpval in Renderer.calculateHexValueIntersects(0,*heights)]
+		cdef list intersects=[nodes[i].lerp(lerpval,nodes[j]) for i,j,lerpval in ren.calculateHexValueIntersects(0,*heights)]
 		if intersects:
 			center=avg(intersects,vec3())
 			return center, math.sqrt(max(center.distToSq(i) for i in intersects))
@@ -860,7 +860,7 @@ def cleanupMatrices():
 	of open shared memory segments as file names.
 	'''
 	pid=os.getpid()
-	shmdir=getSharedDir()
+	shmdir=ren.getSharedDir()
 	if not shmdir:
 		return
 
@@ -883,7 +883,7 @@ def cleanupMatrices():
 			fpid=int(open(f).read())
 			# remove f if this process created it or the creator doesn't exist
 			if fpid==pid or not processExists(fpid):
-				unlinkShared(os.path.split(f)[1])
+				ren.unlinkShared(os.path.split(f)[1])
 				os.remove(f)
 
 
@@ -1288,7 +1288,7 @@ def calculateHexIsosurf(fieldvals,fieldtype,elemtype,val,refine=0):
 		nodevals=fieldvals
 
 	assert len(nodevals)==len(xis),str(len(nodevals))
-	intersects=[xis[i].lerp(lerpval,xis[j]) for i,j,lerpval in Renderer.calculateHexValueIntersects(val,*nodevals)]
+	intersects=[xis[i].lerp(lerpval,xis[j]) for i,j,lerpval in ren.calculateHexValueIntersects(val,*nodevals)]
 
 	if len(intersects)>0:
 		invplane=rotator(intersects[0].planeNorm(intersects[1],intersects[2]),vec3(0,0,1))
@@ -1933,15 +1933,15 @@ def findIndexSets(dataset,acceptFunc=isSpatialIndex):
 def fillCircleFigure(fig,radius,col,spokes=12):
 	nodes,inds=generateCircle(spokes,radius)
 	n=len(nodes)
-	vbuf=PyVertexBuffer(nodes,[vec3(0,0,1)]*n,[col]*n)
-	ibuf=PyIndexBuffer(inds+[(i,k,j) for i,j,k in inds])
+	vbuf=ren.PyVertexBuffer(nodes,[vec3(0,0,1)]*n,[col]*n)
+	ibuf=ren.PyIndexBuffer(inds+[(i,k,j) for i,j,k in inds])
 	fig.fillData(vbuf,ibuf)
 
 
 def fillPolyFigure(fig,nodes,col,isClosed=True):
 	n=len(nodes)
-	vbuf=PyVertexBuffer(nodes,[vec3(0,0,1)]*n,[col]*n)
-	ibuf=PyIndexBuffer(list(successive(xrange(n),2,isClosed)))
+	vbuf=ren.PyVertexBuffer(nodes,[vec3(0,0,1)]*n,[col]*n)
+	ibuf=ren.PyIndexBuffer(list(successive(xrange(n),2,isClosed)))
 	fig.fillData(vbuf,ibuf)
 
 
@@ -1949,8 +1949,8 @@ def fillSphereFigure(fig,radius,refine,col):
 	nodes,inds=generateSphere(refine)
 	norms=generateTriNormals(nodes,inds)
 	n=len(nodes)
-	vbuf=PyVertexBuffer([nn*radius for nn in nodes],norms,[col]*n)
-	ibuf=PyIndexBuffer(inds+[(i,k,j) for i,j,k in inds])
+	vbuf=ren.PyVertexBuffer([nn*radius for nn in nodes],norms,[col]*n)
+	ibuf=ren.PyIndexBuffer(inds+[(i,k,j) for i,j,k in inds])
 	fig.fillData(vbuf,ibuf)
 
 

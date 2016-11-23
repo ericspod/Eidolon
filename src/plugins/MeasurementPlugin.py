@@ -19,10 +19,10 @@
 
 from eidolon import *
 
-from Measure2DView import Ui_Measure2DView
-from MeasureObjProp import Ui_MeasureObjProp
-from SegmentPlugin import triangulateContour
-from PlotPlugin import TimePlotWidget
+from ui.Measure2DView import Ui_Measure2DView
+from ui.MeasureObjProp import Ui_MeasureObjProp
+from .SegmentPlugin import triangulateContour
+from .PlotPlugin import TimePlotWidget
 import itertools
 
 

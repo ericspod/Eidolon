@@ -18,10 +18,10 @@
 
 from eidolon import *
 
-from VTKPlugin import DatasetTypes,VTKProps
-from SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
+from .VTKPlugin import DatasetTypes,VTKProps
+from .SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 
-from mtServerForm import Ui_mtServerForm
+from ui.mtServerForm import Ui_mtServerForm
 import sys
 import glob
 import subprocess

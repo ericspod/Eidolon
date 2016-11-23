@@ -43,9 +43,9 @@ from random import randint
 
 import numpy as np
 
-from SeriesProp import Ui_ObjProp
-from ChooseSeries import Ui_ChooseSeriesDialog
-from Dicom2DView import Ui_Dicom2DView
+from ui.SeriesProp import Ui_ObjProp
+from ui.ChooseSeries import Ui_ChooseSeriesDialog
+from ui.Dicom2DView import Ui_Dicom2DView
 
 AssetType.append('dcm','Dicom Sources','Dicom Datasets (Directory References)') # adds the DICOM directory asset type to the asset panel
 

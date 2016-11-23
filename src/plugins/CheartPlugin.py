@@ -24,9 +24,9 @@ from struct import unpack
 from PyQt4 import QtGui
 from eidolon import *
 
-from cheartload import Ui_ObjDialog
-from cheartdataload import Ui_DataDialog
-from chearttdload import Ui_TDDialog
+from ui.cheartload import Ui_ObjDialog
+from ui.cheartdataload import Ui_DataDialog
+from ui.chearttdload import Ui_TDDialog
 
 
 CheartKeywords=enum(

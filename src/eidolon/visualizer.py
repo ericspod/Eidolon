@@ -19,16 +19,16 @@
 
 '''This is a backwards-compatibility namespace and contains the same imports as __init__.py.'''
 
-from Renderer import *
+from renderer.Renderer import *
 
-from VisualizerUI import *
-from Utils import *
-from Concurrency import *
-from SceneUtils import *
-from MeshAlgorithms import *
-from ImageObject import *
-from MathDef import *
-from SceneManager import *
-from SceneObject import *
-from ScenePlugin import *
-from Application import *
+from .VisualizerUI import *
+from .Utils import *
+from .Concurrency import *
+from .SceneUtils import *
+from .MeshAlgorithms import *
+from .ImageObject import *
+from .MathDef import *
+from .SceneManager import *
+from .SceneObject import *
+from .ScenePlugin import *
+from .Application import *

@@ -17,9 +17,9 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from Renderer import *
-from SceneUtils import *
-from SceneObject import SceneObject, SceneObjectRepr,ReprType,ModifierBufferGenerator
+from renderer.Renderer import *
+from .SceneUtils import *
+from .SceneObject import SceneObject, SceneObjectRepr,ReprType,ModifierBufferGenerator
 
 
 #ImageType=enum(

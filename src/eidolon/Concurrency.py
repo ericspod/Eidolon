@@ -22,14 +22,14 @@ created a initialization time (specifically before the UI is instantiated) using
 Any concurrent jobs must be run through this object which the `concurrent' function decorator does. This module uses pure
 Python and so should be portable.
 '''
-from Utils import *
+from .Utils import *
 
 import atexit
 import gc
 import time
 import errno
+import Queue
 
-from Queue import Queue
 from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock
 from multiprocessing import Event as MPEvent
 
@@ -318,7 +318,7 @@ class ProcessServer(Thread):
 		self.syncEvent2=MPEvent()
 		self.syncCounter=Value('i',0)
 		self.syncLock=Lock()
-		self.jobqueue=Queue()
+		self.jobqueue=Queue.Queue()
 		self.progress=Array('l',self.realnumprocs)
 		self.objsrv=ObjectServer()
 		self.stopEvent=MPEvent()

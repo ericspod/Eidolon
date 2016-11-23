@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from ImageObject import *
+from .ImageObject import *
 
 import scipy.ndimage
 import scipy.signal

@@ -35,22 +35,22 @@ from PyQt4.QtCore import Qt
 import sip
 
 import eidolon
-import Utils
-from Utils import EventType, ParamType
+import eidolon.Utils as Utils
+from eidolon.Utils import EventType, ParamType
 
-from Renderer import getRenderAdapter,RenderParamGroup
+from renderer.Renderer import getRenderAdapter,RenderParamGroup
 
-from MainWindow import Ui_MainWindow,_fromUtf8
-from ProjProp import Ui_ProjProp
-from ObjReprProp import Ui_ObjReprProp
-from ObjProp import Ui_ObjProp
-from MatProp import Ui_matProp
-from LightProp import Ui_LightProp
-from GPUProp import Ui_gpuProp
-from loadGPUScript import Ui_gpuDialog
-from Draw2DView import Ui_Draw2DView
-from ScreenshotForm import Ui_ScreenshotForm
-from ShowMsg import Ui_ShowMsg
+from ui.MainWindow import Ui_MainWindow,_fromUtf8
+from ui.ProjProp import Ui_ProjProp
+from ui.ObjReprProp import Ui_ObjReprProp
+from ui.ObjProp import Ui_ObjProp
+from ui.MatProp import Ui_matProp
+from ui.LightProp import Ui_LightProp
+from ui.GPUProp import Ui_gpuProp
+#from ui.loadGPUScript import Ui_gpuDialog # TODO implement dialog
+from ui.Draw2DView import Ui_Draw2DView
+from ui.ScreenshotForm import Ui_ScreenshotForm
+from ui.ShowMsg import Ui_ShowMsg
 
 globalApp=None # Global QApplication object, there must only be one of these
 globalWin=None # Global VisualizerWindow instance, there should really only be one of these but that could be changed

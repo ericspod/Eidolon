@@ -17,10 +17,10 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from SceneComponents import *
-from ImageObject import *
-from ImageAlgorithms import *
-from VisualizerUI import *
+from .SceneComponents import *
+from .ImageObject import *
+from .ImageAlgorithms import *
+from .VisualizerUI import *
 
 
 class BaseCamera2DWidget(Base2DWidget):

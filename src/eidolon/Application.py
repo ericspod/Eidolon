@@ -19,7 +19,7 @@
 
 '''This defines the default application setup by setting configuration values, creating default materials, and creating the manager and UI.'''
 
-from Renderer import vec3,color,initSharedDir,Config,platformID,PT_FRAGMENT,PT_VERTEX
+from renderer.Renderer import vec3,color,initSharedDir,Config,platformID,PT_FRAGMENT,PT_VERTEX
 
 import sys
 import os
@@ -27,17 +27,16 @@ import shutil
 import argparse
 import ConfigParser
 
-import __init__
 import SceneManager
 import VisualizerUI
 import Utils
 import Concurrency
-from SceneUtils import cleanupMatrices
-from ImageAlgorithms import hounsfieldToUnit
+from .SceneUtils import cleanupMatrices
+from .ImageAlgorithms import hounsfieldToUnit
 
-from __init__ import __version__, APPDIRVAR
+from .__init__ import __version__, APPDIRVAR, LIBSDIR
 
-from SceneManager import ConfVars
+from .SceneManager import ConfVars
 
 conffilename='config.ini'
 
@@ -78,6 +77,16 @@ def generateConfig(inargs):
 	parsed and its values inserted. 
 	'''
 	
+	if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
+		if getattr(sys,'_MEIPASS',None):
+			os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
+			
+			if Utils.isWindows:
+				os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'win64_mingw','bin')
+		else:
+			scriptdir= os.path.dirname(os.path.abspath(__file__))
+			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
+			
 	appdir=Utils.getAppDir()
 	prog='run.bat' if platformID=='Windows' else 'run.sh'
 	conf=Config()

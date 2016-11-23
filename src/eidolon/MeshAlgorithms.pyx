@@ -25,21 +25,21 @@ tuple.
 
 from codeop import CommandCompiler
 
-from Utils import *
-from Concurrency import concurrent,chooseProcCount,cpu_count,checkResultMap
-from MathDef import GeomType,ElemType
+from .Utils import *
+from .Concurrency import concurrent,chooseProcCount,cpu_count,checkResultMap
+from .MathDef import GeomType,ElemType
 
 import cython
 cimport cython
 
-from Renderer import IndexMatrix,RealMatrix,Vec3Matrix,ColorMatrix,vec3,color
-from Renderer cimport IndexMatrix,RealMatrix,Vec3Matrix,ColorMatrix,vec3,color
+from renderer.Renderer import IndexMatrix,RealMatrix,Vec3Matrix,ColorMatrix,vec3,color
+from renderer.Renderer cimport IndexMatrix,RealMatrix,Vec3Matrix,ColorMatrix,vec3,color
 
 import SceneUtils
 cimport SceneUtils
 
-from SceneUtils import PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix
-from SceneUtils cimport PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix
+from .SceneUtils import PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix
+from .SceneUtils cimport PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix
 
 
 def unitfuncLin(x):

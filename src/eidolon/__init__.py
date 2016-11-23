@@ -21,25 +21,26 @@
 Eidolon is the experimental medical imaging visualization framework.
 '''
 
-from Renderer import *
+from renderer.Renderer import *
 
-from VisualizerUI import *
-from Utils import *
-from Concurrency import *
-from SceneUtils import *
-from MeshAlgorithms import *
-from ImageObject import *
-from MathDef import *
-from SceneManager import *
-from SceneObject import *
-from ScenePlugin import *
-from Application import *
+from .VisualizerUI import *
+from .Utils import *
+from .Concurrency import *
+from .SceneUtils import *
+from .MeshAlgorithms import *
+from .ImageObject import *
+from .MathDef import *
+from .SceneManager import *
+from .SceneObject import *
+from .ScenePlugin import *
+from .Application import *
 
 __appname__='Eidolon Biomedical Framework'
 __version_info__=(0,1,0) # global application version, major/minor/patch
 __version__='%i.%i.%i'%__version_info__
 __author__='Eric Kerfoot'
 __copyright__="Copyright (c) 2016 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
+__website__="https://github.com/ericspod/Eidolon"
 
 APPDIRVAR='APPDIR' # environment variable defining the application's directory, set by the start up script and is needed at init time
 LIBSDIR='EidolonLibs' # directory name containing the application's libraries

@@ -18,8 +18,8 @@
 
 
 from eidolon import *
-from Seg2DView import Ui_Seg2DView
-from SegObjProp import Ui_SegObjProp
+from ui.Seg2DView import Ui_Seg2DView
+from ui.SegObjProp import Ui_SegObjProp
 
 
 DatafileParams=enum('name','title','type','srcimage')

@@ -58,7 +58,7 @@ import compiler
 import re
 import math
 
-from Utils import enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,assertMatDim,mulsum,lerpXi,epsilon,isInEpsilonRange
+from .Utils import enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,assertMatDim,mulsum,lerpXi,epsilon,isInEpsilonRange
 
 
 GeomType=enum(
@@ -424,7 +424,7 @@ def nodalLagrangeType(geom,desc,order):
 	values, where X is least significant and Z most, but with the vertices coming first before medial nodes.
 	'''
 	
-	from SceneUtils import pointSearchElem # needed here to get around circular dependency issue with SceneUtils
+	from .SceneUtils import pointSearchElem # needed here to get around circular dependency issue with SceneUtils
 	
 	dim=GeomType[geom][1]
 	isSimplex=GeomType[geom][2] 

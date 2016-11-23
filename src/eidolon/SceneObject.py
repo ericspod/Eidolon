@@ -22,9 +22,9 @@ This defines the SceneObject and SceneObjectRepr objects and derivatives. These 
 representations of that data respectively.
 '''
 
-from Renderer import *
-from SceneUtils import *
-from MeshAlgorithms import *
+from renderer.Renderer import *
+from .SceneUtils import *
+from .MeshAlgorithms import *
 
 # Known representation types: description, generator function, FigureType, is Point type, is Polygon type
 ReprType=enum(

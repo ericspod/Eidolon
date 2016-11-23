@@ -24,9 +24,9 @@ Plugins objectsare also defined which implement basic behaviour for scene object
 by plugin libraries to include new functionality into Eidolon.
 '''
 
-from SceneComponents import *
-from ScenePlugin import *
-from Camera2DView import *
+from .SceneComponents import *
+from .ScenePlugin import *
+from .Camera2DView import *
 
 import gc
 import tempfile
