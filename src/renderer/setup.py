@@ -153,5 +153,6 @@ setup(ext_modules = cythonize(extension))
 
 os.remove('./Renderer.cpp')
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
-#shutil.move('Renderer.pyd' if isWindows else 'Renderer.so',destfile)
+if isLinux:
+	shutil.move('Renderer.so','Renderer.so.%s'%platdir)
 

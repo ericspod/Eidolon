@@ -18,7 +18,7 @@ function getFileDir() {
 export APPDIR=$(getFileDir "${BASH_SOURCE[0]}")
 export LIBSDIR=$APPDIR/EidolonLibs
 
-export PYTHONPATH=$APPDIR/src:$APPDIR/src/eidolon:$APPDIR/src/plugins:$APPDIR/src/ui
+export PYTHONPATH=$APPDIR/src
 if [ "$(uname -o 2>/dev/null)" == "Cygwin" ]
 then
 	$APPDIR/run.bat $@
@@ -33,7 +33,7 @@ then
 else
 	PLAT=ubuntu$(lsb_release -sr | head -c 2)
 	# symlink every compiled library for this platform to the correct name
-	for i in $APPDIR/src/eidolon/*.so.$PLAT; do ln -fs $i ${i%.so.$PLAT}.so;done
+	for i in $APPDIR/src/*/*.so.$PLAT; do ln -fs $i ${i%.so.$PLAT}.so;done
 	
 	export LD_LIBRARY_PATH=$LIBSDIR/$PLAT/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
