@@ -1,12 +1,12 @@
 # Eidolon
-Eidolon biomedical visualization and analysis framework.
+Eidolon is a biomedical visualization and analysis framework designed to render spatial biomedical data (images and meshes) and provide facilities for image reconstruction, analysis, and computation.
 
 Features include:
- * Combined visualization environment providing the combined rendering of time-dependent mesh and image data in 2D and 3D views
+ * Visualization environment providing the combined rendering of time-dependent mesh and image data in 2D and 3D views
  * Concurrent algorithms for processing and generating data
- * Python-based framework with compiled code extensions for renderer and data structures
+ * Python-based framework with compiled code extensions for renderer, algorithms, and data structures
  * Interactive access to running application code through built-in Python console
- * Plugin-oriented architecture, script interface, and Python console allowing easy user-extension
+ * Plugin-oriented architecture, script interface, and console allow easy user-extension to code 
  * Integration with Python scientific libraries including numpy and scipy
  * Multi-platform support, including Windows, OSX, Ubuntu 12/14
  * Project-oriented architecture helps organize data and extension features
@@ -14,7 +14,9 @@ Features include:
 
 ## Installation
 
-See INSTALLATION.md for details on how to run Eidolon. 
+The most current release will include zip files containing the code as well as standalone applications for Windows and OSX. 
+These apps do not require anything to be installed, however to run the application from a checkout Python and the necessary components need to be installed.
+See INSTALLATION.md for details on how to run Eidolon from a git checkout. 
 
 To initialize the included **EidolonLibs** submodule which contains shared libraries needed to run, use the **--recursive** option when cloning:
 

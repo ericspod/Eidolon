@@ -1,7 +1,7 @@
 # Installation Requirements
 
-These are the instructions for installing the necessary components to run Eidolong from a git checkout.
-Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubuntu 12.\*, 14.\*), and OS X 10.8+. iOS and Android are tentative possibilities.
+These are the instructions for installing the necessary components to run Eidolon from a git checkout.
+Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubuntu 12.\*, 14.\*), and OS X 10.8+. 
 
 For all platforms it requires:
  * Python 2.7
