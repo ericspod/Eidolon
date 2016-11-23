@@ -132,6 +132,7 @@ ifeq ($(PLAT),win64_mingw)
 	rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
 	rm dist/Eidolon/EidolonLibs/IRTK/*.bin
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
+	cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 package:
@@ -140,9 +141,10 @@ package:
 	./run.sh --version
 ifeq ($(PLAT),osx)
 	make appfile DISTNAME=Eidolon_Mac_$(shell ./run.sh --version 2>&1)
+else ifeq ($(PLAT),win64_mingw)
+	make pyinstaller DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
 else
 	make distfile DISTNAME=Eidolon_All_$(shell ./run.sh --version 2>&1)
-	#make pyinstaller DISTNAME=Eidolon_All_$(shell ./run.sh --version 2>&1)
 endif
 
 tutorialfile:
