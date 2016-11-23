@@ -77,7 +77,7 @@ libraries=['OgreMain','OgreOverlay']
 extra_compile_args=['-w','-O3']
 extra_link_args=[]
 define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None)]
-destfile='../eidolon/Renderer.'
+destfile='./Renderer.'
 
 cpptime=max(map(os.path.getmtime,glob.glob('*.cpp')))
 htime=max(map(os.path.getmtime,glob.glob('*.h')))
@@ -153,6 +153,6 @@ setup(ext_modules = cythonize(extension))
 
 os.remove('./Renderer.cpp')
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
-if isLinux:
-	shutil.move('Renderer.so','Renderer.so.%s'%platdir)
+if not isWindows:
+	shutil.move('Renderer.so',destfile)
 

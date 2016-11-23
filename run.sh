@@ -17,8 +17,8 @@ function getFileDir() {
 # directory of this script
 export APPDIR=$(getFileDir "${BASH_SOURCE[0]}")
 export LIBSDIR=$APPDIR/EidolonLibs
-
 export PYTHONPATH=$APPDIR/src
+
 if [ "$(uname -o 2>/dev/null)" == "Cygwin" ]
 then
 	$APPDIR/run.bat $@
@@ -26,7 +26,7 @@ then
 elif [ "$(uname)" == "Darwin" ]
 then
 	# symlink each compiled library for OSX to the correct name
-	for i in $APPDIR/src/eidolon/*.dylib; do ln -fs $i ${i%.dylib}.so;done
+	for i in $APPDIR/src/*/*.dylib; do ln -fs $i ${i%.dylib}.so;done
 	
 	export DYLD_LIBRARY_PATH=$LIBSDIR/osx/bin
 	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin:/Library/Frameworks
