@@ -17,18 +17,8 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-'''This is a backwards-compatibility namespace and contains the same imports as __init__.py.'''
+'''This is a backwards-compatibility namespace and contains the same imports as eidolon.__init__.py.'''
 
 from renderer.Renderer import *
 
-from .VisualizerUI import *
-from .Utils import *
-from .Concurrency import *
-from .SceneUtils import *
-from .MeshAlgorithms import *
-from .ImageObject import *
-from .MathDef import *
-from .SceneManager import *
-from .SceneObject import *
-from .ScenePlugin import *
-from .Application import *
+from eidolon import *

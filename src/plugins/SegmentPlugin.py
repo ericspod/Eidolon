@@ -592,7 +592,14 @@ def generateDefaultHemisphereMesh(refine,center,scale,outerrad,innerrad,numctrls
 
 		ctrls+=[[inner,outer]]
 
-	return generatePCRTetHemisphere(zip(*ctrls),refine)
+	ctrls=map(list,zip(*ctrls))
+	
+	_,apexctrls1=generateApexContours(ctrls[0],0.25)
+	_,apexctrls2=generateApexContours(ctrls[1],0.5)
+	ctrls[0]+=apexctrls1[:1]
+	ctrls[1]+=apexctrls2[:1]
+	
+	return generatePCRTetHemisphere(ctrls,refine)
 
 
 @timing

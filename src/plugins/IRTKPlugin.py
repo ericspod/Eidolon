@@ -37,6 +37,40 @@ from contextlib import closing
 
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
 
+InterpTypes=enum(
+	('Linear','-linear'),
+	('Bezier Spline','-bspline'),
+	('Cubic Spline','-cspline'),
+	('Truncated Sinc','-sinc'),
+	('Shape Based','-sbased'),
+	('Gaussian','-gaussian sigma')
+)
+
+
+ServerMsgs=enum(
+	('OK',(),'OK Server Response; no values'),
+	('Except',(Exception,str),'Exception from Server; exception value, stack trace string info'),
+	('Stat',(int,),'Status Request for Job; Job ID value'),
+	('RStat',(int,int,int,str),'Status Response; process exit code (None if still running), # of files so far, total # of files, job dir'),
+	('StartMotionTrack',(bool,str,str,str,str,float,int,str),'Sending motion track job to server;true if data is file path, file blob otherwise, track file,mask file, param filename, directory name, adaptive, # of TS, root directory'),
+	('StartTSFFD',(str,str,str,str),'Sending compute TSFFD job to server; track directory, track filename (not used), mask filename, par file'),
+	('RStart',(int,),'Job Send Response; Job ID value'),
+	('GetResult',(int,bool),'Get job results; job ID value, true if absolute file paths are requested'),
+	('RGetResult',(list,),'Returned job results; list of file paths or file data blobs'),
+	('Check',(),'Request the username of whoever started the server; empty'),
+	('RCheck',(str,),'Username response; username string'),
+	('Kill',(int,),'Job kill command; Job ID value'),
+	('RKill',(bool,),'Job kill response; True if successful, False if job was not running'),
+	valtype=(tuple,str),
+	doc='Server request and response messages, containing the types of the arguments and a description'
+)
+
+
+JobMetaValues=enum('pid','rootdir','numtimesteps','trackfile','maskfile','paramfile','adaptive','resultcode','startdate')
+
+
+trackconfname='track.ini'
+
 
 def isPositiveDefinite(mat):
 	'''Returns True if `mat' is a positive definite matrix (ie. all positive eigenvalues).'''
@@ -118,37 +152,6 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists):
 def applyMotionTrackTask(exefile,cwd,isInvert,filelists,task=None):
 	results=applyMotionTrackRange(len(filelists),0,task,exefile,cwd,isInvert,filelists,partitionArgs=(filelists,))
 	checkResultMap(results)
-
-InterpTypes=enum(
-	('Linear','-linear'),
-	('Bezier Spline','-bspline'),
-	('Cubic Spline','-cspline'),
-	('Truncated Sinc','-sinc'),
-	('Shape Based','-sbased'),
-	('Gaussian','-gaussian sigma')
-)
-
-
-ServerMsgs=enum(
-	('OK',(),'OK Server Response; no values'),
-	('Except',(Exception,str),'Exception from Server; exception value, stack trace string info'),
-	('Stat',(int,),'Status Request for Job; Job ID value'),
-	('RStat',(int,int,int,str),'Status Response; process exit code (None if still running), # of files so far, total # of files, job dir'),
-	('StartMotionTrack',(bool,str,str,str,str,float,int,str),'Sending motion track job to server;true if data is file path, file blob otherwise, track file,mask file, param filename, directory name, adaptive, # of TS, root directory'),
-	('StartTSFFD',(str,str,str,str),'Sending compute TSFFD job to server; track directory, track filename (not used), mask filename, par file'),
-	('RStart',(int,),'Job Send Response; Job ID value'),
-	('GetResult',(int,bool),'Get job results; job ID value, true if absolute file paths are requested'),
-	('RGetResult',(list,),'Returned job results; list of file paths or file data blobs'),
-	('Check',(),'Request the username of whoever started the server; empty'),
-	('RCheck',(str,),'Username response; username string'),
-	('Kill',(int,),'Job kill command; Job ID value'),
-	('RKill',(bool,),'Job kill response; True if successful, False if job was not running'),
-	valtype=(tuple,str),
-	doc='Server request and response messages, containing the types of the arguments and a description'
-)
-
-
-JobMetaValues=enum('pid','rootdir','numtimesteps','trackfile','maskfile','paramfile','adaptive','resultcode','startdate')
 
 
 class IRTKPluginMixin(object):
@@ -741,6 +744,7 @@ class IRTKPluginMixin(object):
 #
 #				if tempNii:
 #					self.removeFilesTask(infile)
+
 				isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso')
 				resampleImage(obj,isoobj)
 				isoobj.plugin.saveObject(isoobj,outfile,setFilenames=True)

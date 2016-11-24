@@ -1212,7 +1212,9 @@ class CardiacMotionProject(Project):
 		spacing=self.alignprop.strainSpacingBox.value()
 		trackname=str(self.alignprop.strainTrackBox.currentText())
 		griddims=(self.alignprop.strainWBox.value(),self.alignprop.strainHBox.value(),self.alignprop.strainDBox.value())
-		self.CardiacMotion.calculateImageStrainField(name,srcname,griddims,spacing,trackname)
+		
+		f=self.CardiacMotion.calculateImageStrainField(name,srcname,griddims,spacing,trackname)
+		self.mgr.checkFutureResult(f)
 
 	def _calculateStrainMeshButton(self):
 		objname=str(self.alignprop.strainMeshBox.currentText())
@@ -1221,8 +1223,8 @@ class CardiacMotionProject(Project):
 		ahafieldname=str(self.alignprop.strainMeshAHABox.currentText())
 		trackname=str(self.alignprop.strainMeshTrackBox.currentText())
 		spacing=self.alignprop.strainSpacingMeshBox.value()
+		
 		f=self.CardiacMotion.calculateMeshStrainField(objname,imgname,radialfieldname,ahafieldname,spacing,trackname)
-		self.mgr.addFuncTask(lambda:printFlush(f()))
 		self.mgr.checkFutureResult(f)
 
 	def _calculateKineticEnergyButton(self):
@@ -1696,16 +1698,19 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				tensors0=listToMatrix([(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0)]*nodes.n(),'tensors')
 				# initial strain field
 				strain0=RealMatrix('maxstrain',nodes.n())
-				strain0.fill(0)
 				# initial direction strain fields are just the directional fields scaled by `spacing'
-				radstrain0=radialf1.clone('radstrain')
-				longstrain0=longf.clone('longstrain')
-				circstrain0=circumf.clone('circstrain')
+				radstrain0=RealMatrix('radstrain',nodes.n(),3) #radialf1.clone('radstrain')
+				longstrain0=RealMatrix('longstrain',nodes.n(),3) #longf.clone('longstrain')
+				circstrain0=RealMatrix('circstrain',nodes.n(),3) #circumf.clone('circstrain')
 
 				# scale the vectors to be as long as the spacing value, assuming they were unit length vectors initially
-				radstrain0.mul(spacing)
-				longstrain0.mul(spacing)
-				circstrain0.mul(spacing)
+#				radstrain0.mul(spacing)
+#				longstrain0.mul(spacing)
+#				circstrain0.mul(spacing)
+				strain0.fill(0)
+				radstrain0.fill(0)
+				longstrain0.fill(0)
+				circstrain0.fill(0)
 
 				_setMeta(tensors0)
 				_setMeta(strain0)
@@ -1778,7 +1783,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					ravgstrains.append(map(avg,ravgstrain))
 					cavgstrains.append(map(avg,cavgstrain))
 
-					task.setProgress(i)
+					task.setProgress(i+1)
 
 				#self.CHeart.saveSceneObject(self.project.getProjectFile(obj.getName()),obj,setObjArgs=True)
 				obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
@@ -1807,7 +1812,12 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				self.project.save()
 				f.setObject((p1,p2,p3,p4))
 
-		tasks=[_calcField(), applyMotionTrackTask(self.ptransformation,trackdir,False,filelists), _calcStrains()]
+		if ds.getDataField('Radial') is None:
+			tasks=[_calcField()]
+		else:
+			tasks=[]
+			
+		tasks+=[applyMotionTrackTask(self.ptransformation,trackdir,False,filelists), _calcStrains()]
 		return self.mgr.runTasks(tasks,f)
 
 	def calculateImageStrainField(self,objname,srcname,griddims,spacing,trackname):
@@ -1864,7 +1874,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 						dds[-1].setDataField(strain.clone('strain0'))
 
 					dds.append(ds)
-					task.setProgress(i)
+					task.setProgress(i+1)
 
 				nobj=MeshSceneObject(self.mgr.getUniqueObjName(obj.getName()+'Strain'),dds)
 				nobj.timestepList=timesteps
