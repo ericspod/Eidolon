@@ -2512,7 +2512,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 			callback(str(text))
 
 	@signalmethod
-	def chooseListItemsDialog(self,title,msg,items,selected,callback):
+	def chooseListItemsDialog(self,title,msg,items,callback,selected=[],multiSelect=False):
 		d=QtGui.QDialog(self)
 		d.setWindowTitle(title)
 		d.resize(400, Utils.clamp(len(items)*10,200,800))
@@ -2521,7 +2521,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		d.label.setText(msg)
 		d.verticalLayout.addWidget(d.label)
 		d.listWidget = QtGui.QListWidget(d)
-		d.listWidget.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
+		d.listWidget.setSelectionMode(QtGui.QAbstractItemView.MultiSelection if multiSelect else QtGui.QAbstractItemView.SingleSelection )
 		d.listWidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
 		d.verticalLayout.addWidget(d.listWidget)
 

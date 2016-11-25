@@ -19,6 +19,7 @@
 from eidolon import *
 
 import gzip
+from glob import glob
 
 from .IRTKPlugin import IRTKPluginMixin,ServerMsgs,applyMotionTrackTask
 from .SegmentPlugin import SegSceneObject,SegmentTypes
@@ -870,6 +871,7 @@ class CardiacMotionProject(Project):
 		return first(obj for obj in self.memberObjs if obj.getName()==self.name and isinstance(obj,ReportCardSceneObject))
 
 	def checkIncludeObject(self,obj):
+		'''Check whether the given object should be added to the project or not.'''
 		# if this isn't a scene object, ignore
 		if not isinstance(obj,SceneObject) or obj in self.memberObjs:
 			return
@@ -907,6 +909,17 @@ class CardiacMotionProject(Project):
 		if not files or any(not f.startswith(pdir) for f in files):
 			msg="Do you want to add %r to the project? This requires saving/copying the object's file data into the project directory."%(obj.getName())
 			self.mgr.win.chooseYesNoDialog(msg,'Adding Object',lambda:self.mgr.addTasks(_copy()))
+			
+	def _checkTrackDirs(self):
+		# all directories containing dof files
+		dirs=[d for d in glob(self.getProjectFile('*/')) if glob(os.path.join(d,'*.dof.gz'))]
+
+		sceneimgs=[o.getName() for o in self.memberObjs if isinstance(o,ImageSceneObject)]
+		
+		for d in dirs:
+			jfile=os.path.join(d,'job.ini')
+			if os.path.isfile(jfile):
+				jdata=readBasicConfig(jfile)
 
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)

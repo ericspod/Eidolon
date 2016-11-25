@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>531</width>
+    <width>530</width>
     <height>868</height>
    </rect>
   </property>
@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>4</number>
+      <number>3</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -45,7 +45,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>434</width>
+        <width>528</width>
         <height>224</height>
        </rect>
       </property>
@@ -202,7 +202,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>351</width>
+        <width>528</width>
         <height>480</height>
        </rect>
       </property>
@@ -444,7 +444,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>499</width>
+        <width>515</width>
         <height>888</height>
        </rect>
       </property>
@@ -869,9 +869,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
-        <width>485</width>
-        <height>1218</height>
+        <y>-363</y>
+        <width>515</width>
+        <height>1185</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1241,14 +1241,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QLabel" name="label_59">
+           <widget class="QLabel" name="label_53">
             <property name="text">
-             <string>Radial Vector Field</string>
+             <string>AHA Field</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QComboBox" name="vectorFieldBox">
+           <widget class="QComboBox" name="strainMeshAHABox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -1257,14 +1257,31 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_54">
+            <property name="text">
+             <string>Track Data</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="strainMeshTrackBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
            <widget class="QLabel" name="label_56">
             <property name="text">
              <string>Spacing</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
+          <item row="5" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_12">
             <property name="bottomMargin">
              <number>0</number>
@@ -1272,7 +1289,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             <item>
              <widget class="QDoubleSpinBox" name="strainSpacingMeshBox">
               <property name="decimals">
-               <number>3</number>
+               <number>4</number>
               </property>
               <property name="minimum">
                <double>-99.989999999999995</double>
@@ -1281,7 +1298,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
                <double>0.100000000000000</double>
               </property>
               <property name="value">
-               <double>0.100000000000000</double>
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -1307,7 +1324,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
            </layout>
           </item>
-          <item row="9" column="1">
+          <item row="8" column="1">
            <widget class="QPushButton" name="strainMeshButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1317,40 +1334,6 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
             <property name="text">
              <string>Calculate</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_53">
-            <property name="text">
-             <string>AHA Field</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QComboBox" name="strainMeshAHABox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_54">
-            <property name="text">
-             <string>Track Data</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QComboBox" name="strainMeshTrackBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
             </property>
            </widget>
           </item>
@@ -1579,8 +1562,8 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-154</y>
-        <width>516</width>
+        <y>-581</y>
+        <width>515</width>
         <height>1364</height>
        </rect>
       </property>
