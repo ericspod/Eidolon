@@ -705,7 +705,6 @@ class CardiacMotionProject(Project):
 		fillFieldBox(self.alignprop.dispMeshBox,self.alignprop.dispFieldBox)
 		fillFieldBox(self.alignprop.volMeshBox,self.alignprop.volFieldBox)
 
-		fillFieldBox(self.alignprop.strainMeshBox,self.alignprop.vectorFieldBox,True)
 		fillFieldBox(self.alignprop.strainMeshBox,self.alignprop.strainMeshAHABox)
 
 		#fillList(self.alignprop.interpTypeBox,['None']+[i.replace('_',' ') for i,j in InterpTypes])
@@ -1223,12 +1222,11 @@ class CardiacMotionProject(Project):
 	def _calculateStrainMeshButton(self):
 		objname=str(self.alignprop.strainMeshBox.currentText())
 		imgname=str(self.alignprop.strainImgBox.currentText())
-		radialfieldname=str(self.alignprop.vectorFieldBox.currentText())
 		ahafieldname=str(self.alignprop.strainMeshAHABox.currentText())
 		trackname=str(self.alignprop.strainMeshTrackBox.currentText())
 		spacing=self.alignprop.strainSpacingMeshBox.value()
 		
-		f=self.CardiacMotion.calculateMeshStrainField(objname,imgname,radialfieldname,ahafieldname,spacing,trackname)
+		f=self.CardiacMotion.calculateMeshStrainField(objname,imgname,ahafieldname,spacing,trackname)
 		self.mgr.checkFutureResult(f)
 
 	def _calculateKineticEnergyButton(self):
@@ -1395,14 +1393,9 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				basename=self.getUniqueObjName(splitPathExt(filename)[1])
 				vobj=self.VTK.loadFile(filename)
 				vobj.datasets[0].getNodes().mul(trans)
-				#convert=lambda:self.CHeart.saveSceneObject(self.getLocalFile(basename),vobj,setObjArgs=True)
-				#self.win.chooseYesNoDialog('Convert mesh to CHeart?','Conversion',convert)
 				
 				savecheart=self.project.configMap[ConfigNames._savecheart].lower()=='true'
 				
-				#yesno=Future()
-				#self.win.getYesNoDialogValue('Convert mesh to CHeart?','Conversion',yesno)
-				#if yesno(None):
 				if savecheart:
 					self.CHeart.saveObject(vobj,self.getLocalFile(basename),setFilenames=True)
 				else:
@@ -1447,8 +1440,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				results=calculateRegionThicknesses(obj.datasets,regionfield,range(1,18),stddevRange,task)
 
-				#if obj.plugin==self.CHeart:
-				#	self.CHeart.saveSceneObject(self.project.getProjectFile(obj.getName()),obj,setObjArgs=True)
 				obj.plugin.saveObject(obj,self.project.getProjectFile(obj.getName()),setFilenames=True)
 				
 				if percentThickness:
@@ -1472,7 +1463,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					rc.setValue(objname,'Max Thickness %s'%value, maxthick)
 					rc.save()
 					
-#				self._removeNamedObjs(plotname)
 				self.mgr.addSceneObject(plot)
 				self.project.addObject(plot)
 				self.project.save()
@@ -1494,9 +1484,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				results=calculateAvgDisplacement(obj.datasets,regionfield,range(1,18),stddevRange,task)
 
-				#if obj.plugin==self.CHeart:
-				#	self.CHeart.saveSceneObject(self.project.getProjectFile(obj.getName()),obj,setObjArgs=True)
-					
 				obj.plugin.saveObject(obj,self.project.getProjectFile(obj.getName()),setFilenames=True)
 
 				plotname=self.getUniqueObjName(objname+'_displace')
@@ -1513,7 +1500,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					rc.setValue(objname,'Max Avg Displacement', maxdisp)
 					rc.save()
 
-#				self._removeNamedObjs(plotname)
 				self.mgr.addSceneObject(plot)
 				self.project.addObject(plot)
 				self.project.save()
@@ -1541,8 +1527,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				minv,maxv=minmax(totals)
 				assert minv<maxv,repr(totals)
 
-				#ejectfrac=(1.0-(minv/maxv))*100.0 # calculate ejection fraction percentage
-				ejectfrac=(maxv-minv)*(100.0/maxv)
+				ejectfrac=(maxv-minv)*(100.0/maxv) # calculate ejection fraction percentage
 				mincc=minv
 				maxcc=maxv
 				
@@ -1592,9 +1577,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				self.project.addObject(plot1)
 				self.project.save()
 
-#				msg='Total Volume Min: %.2fcc\nTotal Volume Max: %.2fcc\nEstimated Eject Fraction: %.2f%%'%(mincc,maxcc,ejectfrac)
-#				self.mgr.showMsg(msg,'Volume Analysis Results')
-				
 				rc=self.mgr.project.getReportCard()
 				if rc:
 					for n,v in resultItems:
@@ -1606,7 +1588,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		return self.mgr.runTasks(_calcVolume(objname,regionfieldname,heartrate,regionrange),f)
 
-	def calculateMeshStrainField(self,objname, imgname,radialfieldname,ahafieldname,spacing,trackname):
+	def calculateMeshStrainField(self,objname, imgname,ahafieldname,spacing,trackname):
 		
 		if not ahafieldname:
 			raise ValueError,'Need to provide an AHA field name'''
@@ -1626,7 +1608,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		ds=obj.datasets[0]
 		nodes=ds.getNodes()
-		radialf=ds.getDataField(radialfieldname)
 		aha=ds.getDataField(ahafieldname)
 		spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
 		indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
@@ -1661,27 +1642,21 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		@taskroutine('Calculating strain field')
 		def _calcField(task):
-			'''
-			Calculates the longitudinal and circumferential vector fields, plus radial if `radialf' is not given,
-			then calculates the strain nodes and save them to the path infile.
-			'''
+			'''Calculates the 3 directional vector fields, then calculates the strain field and saves it to `infile'.'''
 			with fstrainnodes:
 				longaxis=img.getVolumeTransform().getRotation()*vec3(0,0,1)
 
-				#radialf1=radialf or calculateRadialField(ds,indmat)
-				#longf,circumf=calculateLVDirectionalFields(ds,radialf1,longaxis,'longitudinal','circumferential')
-				radialf1,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
+				radialf,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
 
 				for d in obj.datasets:
-					d.setDataField(radialf1)
+					d.setDataField(radialf)
 					d.setDataField(longf)
 					d.setDataField(circumf)
 
-				strainnodes=createStrainField(nodes,radialf1,longf,circumf,spacing)
+				strainnodes=createStrainField(nodes,radialf,longf,circumf,spacing)
 				strainnodes.setM(1)
 
-				vecfunc=lambda v:(-v.x(),-v.y(),v.z())
-				self.VTK.saveLegacyFile(infile,PyDataSet('DS',strainnodes),datasettype=DatasetTypes._POLYDATA,writeFields=False,vecfunc=vecfunc)
+				self.writePolyNodes(infile,strainnodes)
 				fstrainnodes.setObject(strainnodes)
 
 		@taskroutine('Calculating Strains')
@@ -1694,7 +1669,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				task.setMaxProgress(len(outfiles))
 
 				objds=obj.datasets[0]
-				radialf1=radialf or objds.getDataField('radial')
+				radialf=objds.getDataField('radial')
 				longf=objds.getDataField('longitudinal')
 				circumf=objds.getDataField('circumferential')
 
@@ -1703,14 +1678,11 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				# initial strain field
 				strain0=RealMatrix('maxstrain',nodes.n())
 				# initial direction strain fields are just the directional fields scaled by `spacing'
-				radstrain0=RealMatrix('radstrain',nodes.n(),3) #radialf1.clone('radstrain')
-				longstrain0=RealMatrix('longstrain',nodes.n(),3) #longf.clone('longstrain')
-				circstrain0=RealMatrix('circstrain',nodes.n(),3) #circumf.clone('circstrain')
+				radstrain0=RealMatrix('radstrain',nodes.n(),3) 
+				longstrain0=RealMatrix('longstrain',nodes.n(),3) 
+				circstrain0=RealMatrix('circstrain',nodes.n(),3)
 
 				# scale the vectors to be as long as the spacing value, assuming they were unit length vectors initially
-#				radstrain0.mul(spacing)
-#				longstrain0.mul(spacing)
-#				circstrain0.mul(spacing)
 				strain0.fill(0)
 				radstrain0.fill(0)
 				longstrain0.fill(0)
@@ -1736,16 +1708,13 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				for i,o in enumerate(outfiles):
 					objds=obj.datasets[i+1]
-					ds=self.readIRTKPolydata(os.path.join(trackdir,o))
-					inodes=ds.getNodes()
-					inodes.mul(vec3(-1,-1,1))
-					inodes.sub(firstnodes)
+					inodes,_=self.readPolyNodes(os.path.join(trackdir,o))
 					inodes.setM(7)
 
 					tensors=calculateStrainTensors(inodes,spacing)
 					strain=calculateTensorIndicatorEigen(tensors)
 					longstrain=calculateTensorMul(tensors,longf,'longstrain')
-					radstrain=calculateTensorMul(tensors,radialf1,'radstrain')
+					radstrain=calculateTensorMul(tensors,radialf,'radstrain')
 					circstrain=calculateTensorMul(tensors,circumf,'circstrain')
 
 					_setMeta(tensors)
@@ -1789,7 +1758,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 					task.setProgress(i+1)
 
-				#self.CHeart.saveSceneObject(self.project.getProjectFile(obj.getName()),obj,setObjArgs=True)
 				obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
 
 				p1=_makePlot('_maxstrain',' Region Average of Maximal Strain',mavgstrains)
@@ -1847,9 +1815,8 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		strainnodes=createStrainGrid(nodes,transform(),trans,spacing)
 		strainnodes.setM(1)
 
-		vecfunc=lambda v:(-v.x(),-v.y(),v.z())
-		self.VTK.saveLegacyFile(infile,PyDataSet('DS',strainnodes),datasettype=DatasetTypes._POLYDATA,writeFields=False,vecfunc=vecfunc)
-
+		self.writePolyNodes(infile,strainnodes)
+		
 		filelists=[('in.vtk','out%.4i.vtk'%i,dof) for i,dof in enumerate(trackfiles)]
 		self.mgr.runTasks(applyMotionTrackTask(self.ptransformation,trackdir,False,filelists))
 
@@ -1861,8 +1828,9 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				task.setMaxProgress(len(outfiles))
 				dds=[initds]
 				for i,o in enumerate(outfiles):
-					ds=self.readIRTKPolydata(os.path.join(trackdir,o))
-					nodes=ds.getNodes()
+					#ds=self.readIRTKPolydata(os.path.join(trackdir,o))
+					#nodes=ds.getNodes()
+					nodes,_=self.VTK.loadPolydataNodes(os.path.join(trackdir,o))
 					nodes.mul(vec3(-1,-1,1))
 					nodes.setM(7)
 					tensors=calculateStrainTensors(nodes,spacing)
@@ -1870,9 +1838,10 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					strain.meta(StdProps._topology,indmat.getName())
 					strain.meta(StdProps._spatial,indmat.getName())
 
-					ds.setIndexSet(indmat)
-					ds.setDataField(strain)
-					ds.setNodes(nodes.subMatrix(nodes.getName(),nodes.n()))
+					ds=PyDataSet(o+'DS',nodes.subMatrix(nodes.getName(),nodes.n()),[indmat],[strain])
+#					ds.setIndexSet(indmat)
+#					ds.setDataField(strain)
+#					ds.setNodes(nodes.subMatrix(nodes.getName(),nodes.n()))
 
 					if i==0:
 						dds[-1].setDataField(strain.clone('strain0'))

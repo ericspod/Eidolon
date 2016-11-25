@@ -681,11 +681,14 @@ class IRTKPluginMixin(object):
 		fresult.append(self.loadNiftiFiles(filenames))
 		return fresult
 
-	def readIRTKPolydata(self,filename):
+	def readPolyNodes(self,filename):
 		nodes,header=self.VTK.loadPolydataNodes(filename)
-		ds=PyDataSet(os.path.basename(filename)+'DS',nodes)
-		ds.meta(VTKProps._header,'\n'.join(header))
-		return ds
+		nodes.mul(vec3(-1,-1,1))
+		return nodes,header
+		
+	def writePolyNodes(self,filename,nodes):
+		vecfunc=lambda v:(-v.x(),-v.y(),v.z())
+		return self.VTK.saveLegacyFile(filename,PyDataSet('DS',nodes),datasettype=DatasetTypes._POLYDATA,writeFields=False,vecfunc=vecfunc)
 
 	def createImageGrid(self,obj,w,h,d):
 		f=Future()
@@ -702,7 +705,7 @@ class IRTKPluginMixin(object):
 				ds.getNodes().mul(obj.getVolumeTransform())
 
 				obj= MeshSceneObject(name,ds,self.VTK,filename=filename)
-				self.VTK.saveLegacyFile(filename,obj)
+				self.VTK.saveObject(obj,filename)
 				self.addObject(obj)
 				f.setObject(obj)
 
@@ -977,8 +980,7 @@ class IRTKPluginMixin(object):
 
 			assert len(timesteps)==len(trackfiles)+1,'%i != %i'%(len(timesteps),len(trackfiles)+1)
 
-			vecfunc=lambda v:(-v.x(),-v.y(),v.z())
-			self.VTK.saveLegacyFile(os.path.join(trackdir,'in.vtk'),obj,datasettype=DatasetTypes._POLYDATA,writeFields=False,vecfunc=vecfunc)
+			self.writePolyNodes(os.path.join(trackdir,'in.vtk'),obj.datasets[0].getNodes())
 
 			filelists=[('in.vtk','out%.4i.vtk'%i,dof,times[i]) for i,dof in enumerate(trackfiles)]
 			self.mgr.runTasks(applyMotionTrackTask(self.ptransformation,trackdir,False,filelists))
@@ -996,8 +998,7 @@ class IRTKPluginMixin(object):
 					fields=list(dds[0].enumDataFields())
 
 					for i,ff in enumerate(filenames):
-						nodes,_=self.VTK.loadPolydataNodes(ff)
-						nodes.mul(vec3(-1,-1,1))
+						nodes,_=self.readPolyNodes(ff)
 						dds.append(PyDataSet('%sclone%i'%(objds.getName(),i+1),nodes,indices,fields))
 						
 					# if the dofs are frame-by-frame transformations, rejig the node data to reflect this transformation
