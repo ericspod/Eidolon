@@ -956,7 +956,7 @@ class MeshScenePlugin(ScenePlugin):
 		refine=int(prop.refineBox.value())
 		params=prop.getParamPanel()
 		conf=params.getParamMap() if params else {}
-
+		
 		return [reprtype,refine],conf
 
 	def _setReprInternalCheckbox(self,rep):

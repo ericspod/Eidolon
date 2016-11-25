@@ -109,13 +109,13 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 		longaxis=-longaxis
 		mitralaabb,apexaabb=apexaabb,mitralaabb
 	
-	#apexray=Ray(mitralaabb.center,orient*longaxis)
-	apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
+	#apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
 	
 	for n in xrange(length):
 		node=nodes[n]
-		d=apexray.distTo(node)*0.9 # scale the distance along the ray so that apex directions are more rounded
-		rad=orient/(node-apexray.getPosition(d)).norm()
+		#d=apexray.distTo(node)*0.9 # scale the distance along the ray so that apex directions are more rounded
+		#rad=orient/(node-apexray.getPosition(d)).norm()
+		rad=orient/(node*vec3(1,1,0)).norm()
 		radialmat.setRow(n,*rad)
 		longmat.setRow(n,*longaxis)
 		circummat.setRow(n,*(longaxis.cross(rad)))
@@ -187,13 +187,17 @@ def strainTensor(px,mx,py,my,pz,mz,hh):
 	g,h,i=(pz-mz)*hh2
 
 	# unrolled equivalent of 0.5*(F.T*F-np.eye(3)) where F=G+np.eye(3)
-	E1=0.5*(a**2 + 2.0*a + d**2 + g**2)
-	E2=0.5*(a*b + b + d*e + d + g*h)
-	E3=0.5*(a*c + c + d*f + g*i + g)
-	E5=0.5*(b**2 + e**2 + 2.0*e + h**2)
-	E6=0.5*(b*c + e*f + f + h*i + h)
-	E9=0.5*(c**2 + f**2 + i**2 + 2.0*i)
-	return E1,E2,E3,E2,E5,E6,E3,E6,E9
+#	E1=0.5*(a**2 + 2.0*a + d**2 + g**2)
+#	E2=0.5*(a*b + b + d*e + d + g*h)
+#	E3=0.5*(a*c + c + d*f + g*i + g)
+#	E5=0.5*(b**2 + e**2 + 2.0*e + h**2)
+#	E6=0.5*(b*c + e*f + f + h*i + h)
+#	E9=0.5*(c**2 + f**2 + i**2 + 2.0*i)
+#	return E1,E2,E3,E2,E5,E6,E3,E6,E9
+
+	F=np.asarray([[a,b,c],[d,e,f],[g,h,i]],dtype=float)
+	T=0.5*(np.dot(F.T,F)-np.eye(3))
+	return T.flatten().tolist()
 
 
 def tensorMul(E,v):
