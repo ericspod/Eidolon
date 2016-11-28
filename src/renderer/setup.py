@@ -92,7 +92,7 @@ if isDarwin:
 	libraries=[] # linking with frameworks and not libraries
 
 	# add frameworks to link with
-	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay','-framework', 'Python'] 
+	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay']
 
 elif isWindows:
 	platdir='win64_mingw'

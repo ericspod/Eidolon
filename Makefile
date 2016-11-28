@@ -41,7 +41,7 @@ PYSRC=$(SRC)/eidolon
 PLUGINS=$(SRC)/plugins
 UI=$(SRC)/ui
 
-PYTHON=python
+PYTHON=$(shell which python)
 PYTHON_VERNAME=python2.7
 PYUIC=pyuic4
 PYRCC=pyrcc4
@@ -79,10 +79,10 @@ resource:
 	$(PYRCC) res/Resources.qrc -o $(SRC)/ui/Resources_rc.py
 
 renderer:
-	cd $(RESRC) && python setup.py build_ext --inplace
+	cd $(RESRC) && $(PYTHON) setup.py build_ext --inplace
 
 pyxlibs:
-	cd $(PYSRC) && python setup.py build_ext --inplace
+	cd $(PYSRC) && $(PYTHON) setup.py build_ext --inplace
 	rm -f $(patsubst %.pyx,%.cpp,$(wildcard $(PYSRC)/*.pyx))
 
 distfile: # creates the universal distributable .tgz file with path DISTNAME.tgz
@@ -178,5 +178,6 @@ header:
 	@echo " CYTHONVER   : $(CYTHONVER)      "
 	@echo " PYUIC       : $(PYUIC)          "
 	@echo " PYRCC       : $(PYRCC)          "
+	@echo " QTDIR       : $(QTDIR)          "
 	@echo "---------------------------------"
 
