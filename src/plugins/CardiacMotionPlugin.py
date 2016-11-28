@@ -92,16 +92,16 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 	
 	nodes=ds.getNodes().clone()
 	length=nodes.n()
-	orient=rotator(longaxis,vec3(0,0,1))
-	orienttrans=transform(-BoundBox(nodes).center,vec3(1),orient) # transforms the mesh so that the centerline is Z axis
-	nodes.mul(orienttrans) # transform the nodes
-	minz,maxz=minmax([n.z() for n in nodes]) # determing the min and max distance from the origin in the Z dimension, ie. height
-	
+
 	longmat=RealMatrix(longname,length,3)
 	radialmat=RealMatrix(radialname,length,3)
 	circummat=RealMatrix(circumname,length,3)
 
+	orient=rotator(longaxis,vec3(0,0,1))
+	nodes.mul(transform(-BoundBox(nodes).center,vec3(1),orient))  # transforms the mesh so that the centerline is Z axis
+	
 	# calculate the bound boxes of the nodes near the mitral plane and apex
+	minz,maxz=minmax([n.z() for n in nodes]) # determine the min and max distance from the origin in the Z dimension, ie. height
 	mitralaabb=BoundBox([n for n in nodes if n.z()<(minz+(maxz-minz)*0.1)])
 	apexaabb=BoundBox([n for n in nodes if n.z()>(minz+(maxz-minz)*0.9)])
 	
@@ -109,14 +109,17 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 	if mitralaabb.radius<apexaabb.radius:
 		longaxis=-longaxis
 		mitralaabb,apexaabb=apexaabb,mitralaabb
+		
+	#nodes.sub(apexaabb.center*vec3(1,1,0)) # try to center on the apex
 	
-	#apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
+	apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
 	
 	for n in xrange(length):
 		node=nodes[n]
-		#d=apexray.distTo(node)*0.9 # scale the distance along the ray so that apex directions are more rounded
-		#rad=orient/(node-apexray.getPosition(d)).norm()
-		rad=orient/(node*vec3(1,1,0)).norm()
+		d=apexray.distTo(node) #*0.9 # scale the distance along the ray so that apex directions are more rounded
+		rad=orient/((node-apexray.getPosition(d))*vec3(1,1,0)).norm()
+		#rad=orient/(node*vec3(1,1,0)).norm()
+		
 		radialmat.setRow(n,*rad)
 		longmat.setRow(n,*longaxis)
 		circummat.setRow(n,*(longaxis.cross(rad)))
