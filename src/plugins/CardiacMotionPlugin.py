@@ -1612,7 +1612,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		obj=self.findObject(objname)
 		img=self.findObject(imgname)
 		trackdir=self.project.getProjectFile(trackname)
-		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof.gz')))
+		trackfiles=sorted(glob(os.path.join(trackdir,'*.dof.gz')))
 		filelists=[('in.vtk','out%.4i.vtk'%i,dof,-1) for i,dof in enumerate(trackfiles)]
 		infile=os.path.join(trackdir,'in.vtk')
 		timesteps=obj.getTimestepList()
@@ -1809,7 +1809,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		obj=self.findObject(objname)
 		srcobj=self.findObject(srcname)
 		trackdir=self.project.getProjectFile(trackname)
-		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof.gz')))
+		trackfiles=sorted(glob(os.path.join(trackdir,'*.dof.gz')))
 		infile=os.path.join(trackdir,'in.vtk')
 		timesteps=srcobj.getTimestepList() if srcobj else range(len(trackfiles))
 
