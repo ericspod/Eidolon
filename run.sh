@@ -28,8 +28,7 @@ then
 	# symlink each compiled library for OSX to the correct name
 	for i in $APPDIR/src/*/*.dylib; do ln -fs $i ${i%.dylib}.so;done
 	
-	export DYLD_LIBRARY_PATH=$LIBSDIR/osx/bin
-	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin:/Library/Frameworks
+	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
 else
 	PLAT=ubuntu$(lsb_release -sr | head -c 2)
 	# symlink every compiled library for this platform to the correct name

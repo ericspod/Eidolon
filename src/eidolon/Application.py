@@ -74,17 +74,19 @@ def generateConfig(inargs):
 	and its values are inserted into the Config object. If a configuration file is specified on the command line or
 	otherwise there is one in the app directory, this is loaded and its values override those already loaded. Any
 	arguments defined on the command line are then inserted into the object, and the "var" argument if present is then
-	parsed and its values inserted. 
+	parsed and its values inserted. The environment variable specified by APPDIRVAR is read as the application directory,
+	if this isn't given then the directory of this script file is used to find it or the variable _MEIPASS is used if
+	present (ie. when loading with pyinstaller).
 	'''
 	
 	if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
 		if getattr(sys,'_MEIPASS',None):
+			Utils.printFlush(sys._MEIPASS)
 			os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
 			
 			# the PATH variable is used by Ogre to search for plugin shared libraries
 			os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'bin')
-			#if Utils.isWindows:
-			#	os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'win64_mingw','bin')
+			os.environ['LD_LIBRARY_PATH']=os.path.join(sys._MEIPASS,LIBSDIR,'bin')
 		else:
 			scriptdir= os.path.dirname(os.path.abspath(__file__))
 			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')

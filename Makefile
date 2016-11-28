@@ -124,23 +124,31 @@ appfile: # creates the OS X .app directory with path DISTNAME.app
 	rm -rf $(DISTNAME).app
 	
 pyinstaller:
+	rm -rf dist
 ifeq ($(PLAT),win64_mingw)
 	cp $(LIB_HOME)/bin/*.dll src/renderer
-	rm -rf dist
 	$(PYINST) EidolonWin.spec
 	rm -rf src/renderer/*.dll build
 	rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
 	rm dist/Eidolon/EidolonLibs/IRTK/*.bin
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 	cd dist && zip -r ../$(DISTNAME).zip Eidolon
+else ifeq ($(PLAT),osx)
+	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean EidolonOSX.spec
+	rm -rf build 
+	#rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
+	#rm dist/Eidolon/EidolonLibs/IRTK/*.bin
+	#rm dist/Eidolon/EidolonLibs/IRTK/*.exe
+	#rm dist/Eidolon/EidolonLibs/IRTK/*.dll	
+	#cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 package:
-	git pull
-	$(MAKE)
-	./run.sh --version
+	#git pull
+	#$(MAKE)
+	#./run.sh --version
 ifeq ($(PLAT),osx)
-	make appfile DISTNAME=Eidolon_Mac_$(shell ./run.sh --version 2>&1)
+	make pyinstaller DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
 else ifeq ($(PLAT),win64_mingw)
 	make pyinstaller DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
 else
