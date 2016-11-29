@@ -230,8 +230,13 @@ class TimePlotWidget(BasePlotWidget):
 			self.autoRange()
 				
 	def setPlotObjectData(self,obj):
-		dataseries=list(toIterable(obj.get(DatafileParams._matrix)))
-		labels=obj.get(DatafileParams._labels) or map(str,range(1,len(dataseries)+1)) 
+		mat=obj.get(DatafileParams._matrix)
+		if isinstance(mat,dict):
+			labels,dataseries=zip(*[(k,list(v)) for k,v in mat.items()])
+		else:
+			dataseries=list(toIterable(obj.get(DatafileParams._matrix)))
+			labels=obj.get(DatafileParams._labels) or map(str,range(1,len(dataseries)+1)) 
+			
 		self.setData(dataseries,obj.get(DatafileParams._timesteps),labels)
 		
 	def setData(self,dataseries,timesteps,labels,timeMin=0,timeMax=0):
