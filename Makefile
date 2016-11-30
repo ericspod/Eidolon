@@ -135,7 +135,9 @@ ifeq ($(PLAT),win64_mingw)
 	cd dist && zip -r ../$(DISTNAME).zip Eidolon
 else ifeq ($(PLAT),osx)
 	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean EidolonOSX.spec
-	rm -rf build 
+	rm -rf build
+	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon/Contents/Frameworks/RenderSystem_GL.framework/RenderSystem_GL
+	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon/Contents/Frameworks/Plugin_CgProgramManager.framework/Plugin_CgProgramManager
 	#rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
 	#rm dist/Eidolon/EidolonLibs/IRTK/*.bin
 	#rm dist/Eidolon/EidolonLibs/IRTK/*.exe

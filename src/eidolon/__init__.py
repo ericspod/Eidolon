@@ -43,3 +43,4 @@ __website__="https://github.com/ericspod/Eidolon"
 
 APPDIRVAR='APPDIR' # environment variable defining the application's directory, set by the start up script and is needed at init time
 LIBSDIR='EidolonLibs' # directory name containing the application's libraries
+CONFIGFILE='config.ini'

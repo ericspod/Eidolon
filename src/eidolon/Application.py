@@ -34,12 +34,26 @@ import Concurrency
 from .SceneUtils import cleanupMatrices
 from .ImageAlgorithms import hounsfieldToUnit
 
-from .__init__ import __version__, APPDIRVAR, LIBSDIR
+from .__init__ import __version__, APPDIRVAR, LIBSDIR,CONFIGFILE
 
 from .SceneManager import ConfVars
 
-conffilename='config.ini'
 
+def configEnviron():
+	'''
+	Set the APPDIR environment variable to the application directory if not set. This uses the sys._MEIPASS member
+	defined by PyInstaller if present, otherwise use the filename of this script to work it out. 
+	'''
+	if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
+		if getattr(sys,'_MEIPASS',None):
+			os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
+			
+			# the PATH variable is used by Ogre to search for plugin shared libraries
+			os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'bin')
+		else:
+			scriptdir= os.path.dirname(os.path.abspath(__file__))
+			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
+			
 
 def readConfig(configfile,conf):
 	'''Read configuration ini file `configfile' and store values in Config object `conf'.'''
@@ -70,27 +84,13 @@ def generateConfig(inargs):
 	'''
 	Setup and return a Config object based on the environment and provided command line arguments `inargs'. This will
 	parse the values in `inargs' according to the in-built command line argument specification, and store the results
-	in the "args" group of the returned Config object. The configuration file in the Eidolon directory is the loaded
-	and its values are inserted into the Config object. If a configuration file is specified on the command line or
-	otherwise there is one in the app directory, this is loaded and its values override those already loaded. Any
-	arguments defined on the command line are then inserted into the object, and the "var" argument if present is then
-	parsed and its values inserted. The environment variable specified by APPDIRVAR is read as the application directory,
-	if this isn't given then the directory of this script file is used to find it or the variable _MEIPASS is used if
-	present (ie. when loading with pyinstaller).
+	in the "args" group of the returned Config object. The configuration file in the Eidolon directory (defined by
+	the environment variable named by APPDIRVAR) is the loaded and its values are inserted into the Config object. If 
+	a configuration file is specified on the command line or otherwise there is one in the app directory, this is loaded 
+	and its values override those already loaded. Any arguments defined on the command line are then inserted into the 
+	object, and the "var" argument if present is then parsed and its values inserted.
 	'''
 	
-	if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
-		if getattr(sys,'_MEIPASS',None):
-			Utils.printFlush(sys._MEIPASS)
-			os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
-			
-			# the PATH variable is used by Ogre to search for plugin shared libraries
-			os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'bin')
-			os.environ['LD_LIBRARY_PATH']=os.path.join(sys._MEIPASS,LIBSDIR,'bin')
-		else:
-			scriptdir= os.path.dirname(os.path.abspath(__file__))
-			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
-			
 	appdir=Utils.getAppDir()
 	prog='run.bat' if platformID=='Windows' else 'run.sh'
 	conf=Config()
@@ -134,8 +134,8 @@ def generateConfig(inargs):
 	args,unknown=parser.parse_known_args(inargs) # parse arguments after setting up config in case we quit (ie. --help) and cleanupMatrices gets called
 	
 	# load the config file in the Eidolon's directory if it exists
-	if os.path.isfile(os.path.join(appdir,conffilename)):
-		configfile=os.path.join(appdir,conffilename)
+	if os.path.isfile(os.path.join(appdir,CONFIGFILE)):
+		configfile=os.path.join(appdir,CONFIGFILE)
 		readConfig(configfile,conf)
 
 	userappdir=os.path.expanduser(conf.get(platformID,ConfVars.userappdir))
@@ -145,8 +145,8 @@ def generateConfig(inargs):
 	if args.config:
 		configfile=args.config
 		readConfig(configfile,conf)
-	elif userappdir and os.path.isfile(os.path.join(userappdir,conffilename)):
-		configfile=os.path.join(userappdir,conffilename)
+	elif userappdir and os.path.isfile(os.path.join(userappdir,CONFIGFILE)):
+		configfile=os.path.join(userappdir,CONFIGFILE)
 		readConfig(configfile,conf)
 
 	# override loaded settings with those specified on the command line
@@ -205,7 +205,7 @@ def initDefault(conf):
 	if userappdir and not os.path.exists(userappdir):
 		Utils.printFlush('Creating user directory %r'%userappdir)
 		os.mkdir(userappdir,0700)
-		shutil.copy(os.path.join(appdir,conffilename),os.path.join(userappdir,conffilename))
+		shutil.copy(os.path.join(appdir,CONFIGFILE),os.path.join(userappdir,CONFIGFILE))
 		
 	if conf.hasValue('args','l'):
 		Utils.setLogging(conf.get(platformID,ConfVars.logfile))
