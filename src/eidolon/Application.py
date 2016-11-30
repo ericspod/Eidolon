@@ -47,9 +47,6 @@ def configEnviron():
 	if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
 		if getattr(sys,'_MEIPASS',None):
 			os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
-			
-			# the PATH variable is used by Ogre to search for plugin shared libraries
-			os.environ['PATH']=os.environ.get('PATH','')+os.pathsep+os.path.join(sys._MEIPASS,LIBSDIR,'bin')
 		else:
 			scriptdir= os.path.dirname(os.path.abspath(__file__))
 			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')

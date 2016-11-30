@@ -6,9 +6,9 @@ block_cipher = None
 a = Analysis(['main.py'],
              pathex=['src','src/eidolon','src/renderer','src/ui','src/plugins'],
              binaries=[
-                ('EidolonLibs/win64_mingw/bin/cg.dll','EidolonLibs/bin'),
-                ('EidolonLibs/win64_mingw/bin/Plugin_CgProgramManager.dll','EidolonLibs/bin'),
-                ('EidolonLibs/win64_mingw/bin/RenderSystem_GL.dll','EidolonLibs/bin')
+                ('EidolonLibs/win64_mingw/bin/cg.dll','.'),
+                ('EidolonLibs/win64_mingw/bin/Plugin_CgProgramManager.dll','.'),
+                ('EidolonLibs/win64_mingw/bin/RenderSystem_GL.dll','.')
              ],
              datas=[
                 ('res','res'),
