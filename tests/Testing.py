@@ -12,13 +12,13 @@ def generateTestMeshDS(etname,refine,pt=vec3(0.25)):
 		inds=list(group(range(len(nodes)),len(et.xis)))
 
 		nodes,ninds,_=reduceMesh(listToMatrix([vec3(*n) for n in nodes],'nodes'),[listToMatrix(inds,'inds',etname)])
-		dist=[nodes.getAt(n).distTo(pt) for n in xrange(nodes.n())]
-		diff=[tuple(nodes.getAt(n)-pt) for n in xrange(nodes.n())]
+		dist=[nodes.getAt(n).distTo(pt) for n in xrange(len(nodes))]
+		diff=[tuple(nodes.getAt(n)-pt) for n in xrange(len(nodes))]
 
 	elif et.geom == GeomType._Tri:
 		nodes,inds=generateSphere(refine)
 		dist=[n.distTo(pt) for n in nodes]
-		diff=[tuple(n-pt) for n in nodes.n()]
+		diff=[tuple(n-pt) for n in nodes]
 		ninds=[('inds',ElemType._Tri1NL,inds)]
 
 	ds=PyDataSet('TestDS',nodes,ninds,[('dist',dist,'inds'),('diff',diff,'inds')])
