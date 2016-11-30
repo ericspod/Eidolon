@@ -1902,7 +1902,7 @@ public:
 	void append(const T& t,sval m=0) throw(MemException)
 	{
 		addRows(1);
-		setAt(t,_n-1,m);
+		at(_n-1,m)=t;
 	}
 
 	void removeRow(sval n) throw(MemException,IndexException)

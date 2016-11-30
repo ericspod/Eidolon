@@ -199,9 +199,18 @@ def strainTensor(px,mx,py,my,pz,mz,hh):
 #	E9=0.5*(c**2 + f**2 + i**2 + 2.0*i)
 #	return E1,E2,E3,E2,E5,E6,E3,E6,E9
 
-	F=np.asarray([[a,b,c],[d,e,f],[g,h,i]],dtype=float)
-	T=0.5*(np.dot(F.T,F)-np.eye(3))
-	return T.flatten().tolist()
+	#F=np.asarray([[a,b,c],[d,e,f],[g,h,i]],dtype=float)
+	#T=0.5*(np.dot(F.T,F)-np.eye(3))
+	#return T.flatten().tolist()
+
+	x0 = 0.5*a
+	x1 = 0.5*d
+	x2 = 0.5*g
+	x3 = b*x0 + e*x1 + h*x2
+	x4 = c*x0 + f*x1 + i*x2
+	x5 = 0.5*b*c + 0.5*e*f + 0.5*h*i
+	
+	return 0.5*a**2 + 0.5*d**2 + 0.5*g**2 - 0.5, x3, x4, x3, 0.5*b**2 + 0.5*e**2 + 0.5*h**2 - 0.5, x5, x4, x5, 0.5*c**2 + 0.5*f**2 + 0.5*i**2 - 0.5
 
 
 def tensorMul(E,v):
@@ -226,18 +235,20 @@ def calculateStrainTensors(nodes_t,h):
 
 
 @timing
-def calculateTensorIndicatorEigen(tensors,isMax=True):
-	'''Calculate a strain indicator (maximal or minimal eigenvalue depending on `isMax') for each tensor matrix in `tensors.'''
-	result=RealMatrix('maxstrain',0)
-	result.reserveRows(tensors.n())
+def calculateTensorIndicatorEigen(tensors):
+	'''Calculate the maximal and minimal eigenvalue for each tensor matrix in `tensors.'''
+	maxeig=RealMatrix('maxstrain',0)
+	maxeig.reserveRows(tensors.n())
+	mineig=RealMatrix('maxstrain',0)
+	mineig.reserveRows(tensors.n())
 
 	for n in xrange(tensors.n()):
 		E=np.matrix(tensors.getRow(n)).reshape(3,3)
 		eigvals,reigvals=np.linalg.eig(E)
-		val=np.max(eigvals) if isMax else np.min(eigvals)
-		result.append(val)
+		maxeig.append(np.max(eigvals))
+		mineig.append(np.min(eigvals))
 
-	return result
+	return maxeig,mineig
 
 
 @timing
@@ -1629,22 +1640,26 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
 
 		ahaindices=dict((v,i) for i,v in enumerate(range(1,18))) # map regions to 0-based indices used to index in lists
+		
+		printFlush(ahaindices)
 
 		# create a matrix assigning an AHA region to each node
-		nodeaha=RealMatrix('nodeaha',nodes.n(),1)
+		nodeaha=IndexMatrix('nodeaha',nodes.n(),1)
 		nodeaha.fill(0) # assumes 0 is never used for a region number
 		for n in xrange(indmat.n()):
-			elemaha=aha.getAt(n) # AHA region for element n
+			elemaha=int(aha.getAt(n)) # AHA region for element n
 			# for each node of element n, assign it to region elemaha if it hasn't been already assigned
 			for ind in indmat.getRow(n):
 				nodeaha.setAt(nodeaha.getAt(ind) or elemaha,ind) # choose the first AHA region encountered for each node
-
-		def _setMeta(m):
-			'''Set default metadata values for matrix `m'.'''
-			m.meta(StdProps._topology,indmat.getName())
-			m.meta(StdProps._spatial,indmat.getName())
-			m.meta(StdProps._timecopy,'False')
-
+			
+		def _addFields(ds,*fields):
+			'''Add the matrices `fields' as fields of `ds' with metadat values set.'''
+			for f in fields:
+				f.meta(StdProps._topology,indmat.getName())
+				f.meta(StdProps._spatial,indmat.getName())
+				f.meta(StdProps._timecopy,'False')
+				ds.setDataField(f)
+				
 		def _makePlot(suffix,titlesuffix,values):
 			'''Create a AHA Plot object for the given region values.'''
 			plotname=self.mgr.getUniqueObjName(objname+suffix)
@@ -1691,36 +1706,35 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				# initial tensor field
 				tensors0=listToMatrix([(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0)]*nodes.n(),'tensors')
-				# initial strain field
-				strain0=RealMatrix('maxstrain',nodes.n())
+				# initial strain fields
+				maxeig0=RealMatrix('maxstrain',nodes.n())
+				mineig0=RealMatrix('minstrain',nodes.n())
 				# initial direction strain fields are just the directional fields scaled by `spacing'
 				radstrain0=RealMatrix('radstrain',nodes.n(),3) 
 				longstrain0=RealMatrix('longstrain',nodes.n(),3) 
 				circstrain0=RealMatrix('circstrain',nodes.n(),3)
 
 				# scale the vectors to be as long as the spacing value, assuming they were unit length vectors initially
-				strain0.fill(0)
+				maxeig0.fill(0)
 				radstrain0.fill(0)
 				longstrain0.fill(0)
 				circstrain0.fill(0)
-
-				_setMeta(tensors0)
-				_setMeta(strain0)
-				_setMeta(radstrain0)
-				_setMeta(longstrain0)
-				_setMeta(circstrain0)
-				objds.setDataField(tensors0)
-				objds.setDataField(strain0)
-				objds.setDataField(radstrain0)
-				objds.setDataField(longstrain0)
-				objds.setDataField(circstrain0)
+				
+				_addFields(objds,tensors0,maxeig0,mineig0,radstrain0,longstrain0,circstrain0)
 
 				# These matrices will contain one row per timestep, each row will have an averaged value for each
 				# region, thus the matrices are indexed by timestep then region
 				mavgstrains=[[0]*len(ahaindices)] # averages of maximal eigenvalue strain
+				minavgstrains=[[0]*len(ahaindices)] # averages of minimal eigenvalue strain
 				lavgstrains=[[0]*len(ahaindices)] # averages of longitudinal strain
 				ravgstrains=[[0]*len(ahaindices)] # averages of radial strain
 				cavgstrains=[[0]*len(ahaindices)] # averages of circumferential strain
+				
+				globalmavgstrains=[0]
+				globalminavgstrains=[0]
+				globallavgstrains=[0]
+				globalravgstrains=[0]
+				globalcavgstrains=[0]
 
 				for i,o in enumerate(outfiles):
 					objds=obj.datasets[i+1]
@@ -1728,49 +1742,52 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					inodes.setM(7)
 
 					tensors=calculateStrainTensors(inodes,spacing)
-					strain=calculateTensorIndicatorEigen(tensors)
+					maxeig,mineig=calculateTensorIndicatorEigen(tensors)
 					longstrain=calculateTensorMul(tensors,longf,'longstrain')
 					radstrain=calculateTensorMul(tensors,radialf,'radstrain')
 					circstrain=calculateTensorMul(tensors,circumf,'circstrain')
 
-					_setMeta(tensors)
-					_setMeta(strain)
-					_setMeta(longstrain)
-					_setMeta(radstrain)
-					_setMeta(circstrain)
-					objds.setDataField(tensors)
-					objds.setDataField(strain)
-					objds.setDataField(longstrain)
-					objds.setDataField(radstrain)
-					objds.setDataField(circstrain)
+					_addFields(objds,tensors,maxeig,mineig,radstrain,longstrain,circstrain)
 
 					# create lists with one empty list for each region
 					mavgstrain=[list() for x in xrange(len(ahaindices))]
+					minavgstrain=[list() for x in xrange(len(ahaindices))]
 					lavgstrain=[list() for x in xrange(len(ahaindices))]
 					ravgstrain=[list() for x in xrange(len(ahaindices))]
 					cavgstrain=[list() for x in xrange(len(ahaindices))]
 
 					# Go through each value in the strain fields, if their associated nodes are in a region of interest
 					# add the value to the appropriate sublist in the one the above list, otherwise zero the value out
-					for n in xrange(strain.n()):
+					for n in xrange(maxeig.n()):
 						region=nodeaha.getAt(n)
 						if region in ahaindices: # if the node is in a region of interest, add its strain values to the lists
 							index=ahaindices[region]
-							mavgstrain[index].append(strain.getAt(n))
+							mavgstrain[index].append(maxeig.getAt(n))
+							minavgstrain[index].append(mineig.getAt(n))
 							lavgstrain[index].append(longstrain.getAt(n))
 							ravgstrain[index].append(radstrain.getAt(n))
 							cavgstrain[index].append(circstrain.getAt(n))
 						else: # otherwise zero out its entries so that strain outside the regions of interest are not stored
-							strain.setAt(0,n)
-							longstrain.setRow(0,0,0,0)
-							radstrain.setRow(0,0,0,0)
-							circstrain.setRow(0,0,0,0)
+							printFlush(region)
+							maxeig.setAt(0,n)
+							mineig.setAt(0,n)
+							longstrain.setRow(n,0,0,0)
+							radstrain.setRow(n,0,0,0)
+							circstrain.setRow(n,0,0,0)
 
 					# store the averages of the per-region lists in the total average lists
 					mavgstrains.append(map(avg,mavgstrain))
+					minavgstrains.append(map(avg,minavgstrain))
 					lavgstrains.append(map(avg,lavgstrain))
 					ravgstrains.append(map(avg,ravgstrain))
 					cavgstrains.append(map(avg,cavgstrain))
+					
+					# global average strains minus last region (17)
+					globalmavgstrains.append(avg(matIter(mavgstrain[:-1]))) 
+					globalminavgstrains.append(avg(matIter(minavgstrain[:-1])))
+					globallavgstrains.append(avg(matIter(lavgstrain[:-1])))
+					globalravgstrains.append(avg(matIter(ravgstrain[:-1])))
+					globalcavgstrains.append(avg(matIter(cavgstrain[:-1])))
 
 					task.setProgress(i+1)
 
@@ -1781,24 +1798,47 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				p3=_makePlot('_radstrain',' Region Average of Magnitude of Radial Strain',ravgstrains)
 				p4=_makePlot('_circstrain',' Region Average of Magnitude of Circumferential Strain',cavgstrains)
 				
+				plotname=self.mgr.getUniqueObjName(objname+'_globalstrain')
+				plottitle=objname+' Global Average Strain'
+				plotfilename=self.project.getProjectFile(plotname+'.plot')
+				results=(globalmavgstrains,globalminavgstrains,globallavgstrains,globalravgstrains,globalcavgstrains)
+				labels=('Global Maximal Strain','Global Minimal Strain','Global Longitudinal Strain','Global Radial Strain','Global Circumferential Strain')
+				gplot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,timesteps,self.Plot.TimePlotWidget,obj,labels=labels)
+				gplot.save()
+
+				self.mgr.addSceneObject(gplot)
+				self.project.addObject(gplot)
+				
 				rc=self.mgr.project.getReportCard()
 				if rc:
-					minm,maxm=minmax(listSum(mavgstrains))
+					minm,maxm=minmax(matIter(mavgstrains))
 					rc.setValue(objname,'Min Avg Strain', minm)
 					rc.setValue(objname,'Max Avg Strain',maxm)
-					minm,maxm=minmax(listSum(lavgstrains))
+					minm,maxm=minmax(matIter(lavgstrains))
 					rc.setValue(objname,'Min Avg Longitudinal Strain', minm)
 					rc.setValue(objname,'Max Avg Longitudinal Strain',maxm)
-					minm,maxm=minmax(listSum(ravgstrains))
+					minm,maxm=minmax(matIter(ravgstrains))
 					rc.setValue(objname,'Min Avg Radial Strain', minm)
 					rc.setValue(objname,'Max Avg Radial Strain',maxm)
-					minm,maxm=minmax(listSum(cavgstrains))
+					minm,maxm=minmax(matIter(cavgstrains))
 					rc.setValue(objname,'Min Avg Circumferential Strain', minm)
 					rc.setValue(objname,'Max Avg Circumferential Strain',maxm)
+					
+					maxvt=max(zip(map(abs,globalmavgstrains),timesteps))
+					rc.setValue(objname,'Maximal Global Strain Peak (value,time)', maxvt)
+					minvt=max(zip(map(abs,globalminavgstrains),timesteps))
+					rc.setValue(objname,'Minimal Global Strain Peak (value,time)', minvt)
+					lvt=max(zip(map(abs,globallavgstrains),timesteps))
+					rc.setValue(objname,'Minimal Longitudinal Strain Peak (value,time)', lvt)
+					rvt=max(zip(map(abs,globalravgstrains),timesteps))
+					rc.setValue(objname,'Minimal Radial Strain Peak (value,time)', rvt)
+					cvt=max(zip(map(abs,globalcavgstrains),timesteps))
+					rc.setValue(objname,'Minimal Circumferential Strain Peak (value,time)', cvt)
+					
 					rc.save()
 
 				self.project.save()
-				f.setObject((p1,p2,p3,p4))
+				f.setObject((p1,p2,p3,p4,gplot))
 
 		if ds.getDataField('Radial') is None:
 			tasks=[_calcField()]
@@ -1850,7 +1890,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					nodes.mul(vec3(-1,-1,1))
 					nodes.setM(7)
 					tensors=calculateStrainTensors(nodes,spacing)
-					strain=calculateTensorIndicatorEigen(tensors)
+					strain,_=calculateTensorIndicatorEigen(tensors)
 					strain.meta(StdProps._topology,indmat.getName())
 					strain.meta(StdProps._spatial,indmat.getName())
 
