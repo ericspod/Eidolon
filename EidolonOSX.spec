@@ -3,8 +3,12 @@
 block_cipher = None
 
 from PyInstaller import compat
+from glob import glob
 
-binaries=[(compat.base_prefix+'/lib/libmkl*.dylib','')]
+binaries=[]
+
+#if glob(compat.base_prefix+'/lib/libmkl*.dylib'):
+#	binaries=[(compat.base_prefix+'/lib/libmkl*.dylib','')]
 
 #binaries+=[
 #('EidolonLibs/osx/bin/Ogre.framework/Ogre','EidolonLibs/bin'),
@@ -17,6 +21,8 @@ binaries=[(compat.base_prefix+'/lib/libmkl*.dylib','')]
 datas=[
 	('res','res'),
 	('config.ini','.'),
+	('tests','tests'),
+	('tutorial','tutorial'),
 	('EidolonLibs/IRTK','EidolonLibs/IRTK'),
 	('EidolonLibs/python','EidolonLibs/python'),
 	('EidolonLibs/osx/bin/Ogre.framework','Contents/Frameworks/Ogre.framework'),
@@ -26,12 +32,15 @@ datas=[
 	('EidolonLibs/osx/bin/RenderSystem_GL.framework','Contents/Frameworks/RenderSystem_GL.framework')
 ]
 
+hiddenimports=['numpy', 'scipy','PyQt4.uic','appdirs','packaging']
+
+hiddenimports+=['packaging.version','packaging.specifiers','packaging.requirements','packaging.utils','cProfile']
 
 a = Analysis(['main.py'],
              pathex=['src','src/eidolon','src/renderer','src/ui','src/plugins'],
              binaries=binaries,
              datas=datas,
-             hiddenimports=['numpy', 'scipy','PyQt4.uic'],
+             hiddenimports=hiddenimports,
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -54,4 +63,4 @@ coll = COLLECT(exe,
                a.datas,
                strip=False,
                upx=True,
-               name='Eidolon')
+               name='Eidolon.app')

@@ -427,25 +427,25 @@ cdef class IndexMatrix:
 
 	def add(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,IndexMatrix):
-			self.mat.add(deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.add[iIndexMatrix](deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.add[indexval](<indexval>t,minrow,mincol,maxrow,maxcol)
 
 	def sub(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,IndexMatrix):
-			self.mat.sub(deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.sub[iIndexMatrix](deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.sub[indexval](<indexval>t,minrow,mincol,maxrow,maxcol)
 
 	def mul(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,IndexMatrix):
-			self.mat.mul(deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.mul[iIndexMatrix](deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.mul[indexval](<indexval>t,minrow,mincol,maxrow,maxcol)
 
 	def div(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,IndexMatrix):
-			self.mat.div(deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.div[iIndexMatrix](deref((<IndexMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.div[indexval](<indexval>t,minrow,mincol,maxrow,maxcol)
 

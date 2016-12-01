@@ -45,7 +45,7 @@ PYTHON=$(shell which python)
 PYTHON_VERNAME=python2.7
 PYUIC=pyuic4
 PYRCC=pyrcc4
-PYINST=pyinstaller
+PYINST?=pyinstaller
 
 # find the path to the python exe using the registry
 ifeq ($(PLAT),win64_mingw)
@@ -120,7 +120,7 @@ appfile: # creates the OS X .app directory with path DISTNAME.app
 	find $(DISTNAME) -name \*.pickle -delete
 	mv $(DISTNAME) $(DISTNAME).app
 	tar czf $(DISTNAME).tgz $(DISTNAME).app
-	#diutil create -volname $(DISTNAME) -srcfolder $(DISTNAME).app -ov -format UDZO -imagekey zlib-level=9 $(DISTNAME).dmg
+	#hdiutil create -volname $(DISTNAME) -srcfolder $(DISTNAME).app -ov -format UDZO -imagekey zlib-level=9 $(DISTNAME).dmg
 	rm -rf $(DISTNAME).app
 	
 pyinstaller:
@@ -134,15 +134,16 @@ ifeq ($(PLAT),win64_mingw)
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 	cd dist && zip -r ../$(DISTNAME).zip Eidolon
 else ifeq ($(PLAT),osx)
-	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean EidolonOSX.spec
+	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean -F EidolonOSX.spec
 	rm -rf build
-	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon/Contents/Frameworks/RenderSystem_GL.framework/RenderSystem_GL
-	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon/Contents/Frameworks/Plugin_CgProgramManager.framework/Plugin_CgProgramManager
-	#rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
-	#rm dist/Eidolon/EidolonLibs/IRTK/*.bin
-	#rm dist/Eidolon/EidolonLibs/IRTK/*.exe
-	#rm dist/Eidolon/EidolonLibs/IRTK/*.dll	
-	#cd dist && zip -r ../$(DISTNAME).zip Eidolon
+	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon.app/Contents/Frameworks/RenderSystem_GL.framework/RenderSystem_GL
+	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon.app/Contents/Frameworks/Plugin_CgProgramManager.framework/Plugin_CgProgramManager
+	install_name_tool -change @executable_path/../Frameworks/Cg.framework/Cg @executable_path/Contents/Frameworks/Cg.framework/Cg dist/Eidolon.app/Contents/Frameworks/Plugin_CgProgramManager.framework/Plugin_CgProgramManager
+	rm dist/Eidolon.app/EidolonLibs/IRTK/*.so.1
+	rm dist/Eidolon.app/EidolonLibs/IRTK/*.bin
+	rm dist/Eidolon.app/EidolonLibs/IRTK/*.exe
+	rm dist/Eidolon.app/EidolonLibs/IRTK/*.dll
+	#cd dist && hdiutil create -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
 endif
 
 package:

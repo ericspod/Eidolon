@@ -35,7 +35,7 @@ from eidolon.ScenePlugin import *
 from eidolon.Application import *
 
 __appname__='Eidolon Biomedical Framework'
-__version_info__=(0,1,0) # global application version, major/minor/patch
+__version_info__=(0,1,99) # global application version, major/minor/patch
 __version__='%i.%i.%i'%__version_info__
 __author__='Eric Kerfoot'
 __copyright__="Copyright (c) 2016 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
@@ -43,4 +43,5 @@ __website__="https://github.com/ericspod/Eidolon"
 
 APPDIRVAR='APPDIR' # environment variable defining the application's directory, set by the start up script and is needed at init time
 LIBSDIR='EidolonLibs' # directory name containing the application's libraries
-CONFIGFILE='config.ini'
+CONFIGFILE='config.ini' # config file name
+
