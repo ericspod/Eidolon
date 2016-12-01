@@ -5,7 +5,7 @@ Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubu
 
 For all platforms it requires:
  * Python 2.7
- * PyQt 4.10.4+ (earlier 4.* versions may work, 5 will not for now)
+ * PyQt 4.10.4+ (earlier 4.\* versions may work, 5 will not for now)
  * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
  * SciPy 0.13.3+ (earlier versions may work)
 
@@ -22,7 +22,7 @@ Install the Anaconda Python 2.7 64bit Graphical installer: http://continuum.io/d
 The more recent versions of Anaconda come with PyQt5 so we'll have to swap these out.
 Go into the **Anaconda Navigator**, select **Environments** and type **pyqt** into the search box on the right
 Clicking on the checkbox next to **pyqt** gives you the option to swap versions, select the most recent 4 version.
-Alternatively an older version of Anaconda, such as 3.0, works and would be easier.
+Alternatively an older version of Anaconda, such as 4.1, works and would be easier.
 
 ### Manual Python Install
 
@@ -37,7 +37,16 @@ If you don't want to use Anaconda then you'll need to install the following:
 
 ## OS X
 
-Follow the instructions above for Windows, installing Anaconda or a manual Python install.
+Follow the instructions above for Windows, installing Anaconda or a manual Python install. (NOTE: Anaconda may have issues on OSX with multiprocessing, using the prebuilt app or installing manually may be necessary)
+
+Installing Python manually is easiest with MacPorts (https://www.macports.org/):
+
+    sudo port install python27 py27-numpy py27-scipy py27-pyqt4
+
+A few other things may need to be installed if packages are missing:
+
+    sudo port install py27-pip py27-cython py27-appdirs py27-pyqtgraph py27-matplotlib py27-nose py27-pip
+    sudo pip install nose-cprof packaging
 
 ----
 ## Linux
