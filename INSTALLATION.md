@@ -37,11 +37,16 @@ If you don't want to use Anaconda then you'll need to install the following:
 
 ## OS X
 
-Follow the instructions above for Windows, installing Anaconda or a manual Python install.
+Follow the instructions above for Windows, installing Anaconda or a manual Python install. (NOTE: Anaconda may have issues on OSX with multiprocessing, using the prebuilt app or installing manually may be necessary)
 
 Installing Python manually is easiest with MacPorts (https://www.macports.org/):
 
     sudo port install python27 py27-numpy py27-scipy py27-pyqt4
+
+A few other things may need to be installed if packages are missing:
+
+    sudo port install py27-pip py27-cython py27-appdirs py27-pyqtgraph py27-matplotlib py27-nose py27-pip
+    sudo pip install nose-cprof packaging
 
 ----
 ## Linux
