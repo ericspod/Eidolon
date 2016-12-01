@@ -7,8 +7,8 @@ For all platforms the following are required either separately, as included with
 
  * Ogre3D Development Files
  * PyQt Development Tools
- * Cython
- * g++
+ * Cython (specifically 0.24.1 for now)
+ * g++/clang
  * make
  * git
 
@@ -26,7 +26,11 @@ Additionally for either platform, **g++** and **make** are needed to build the l
 
 ### OS X
 
-OS X must be setup with the necessary Python frameworks, download and install the following:
+OS X must be setup with Xcode and the necessary Python frameworks, follow the instructions for installing on OSX using MacPorts and pip then the following:
+
+    sudo pip install Cython
+
+You will otherwise have to download and install the following:
 
  1. Download and install Python2.7: http://www.python.org/download/ (most recent 2.* 64bit version)
  2. Download and build PyQt: http://www.riverbankcomputing.co.uk/software/pyqt/download (source release)
@@ -65,7 +69,7 @@ Building in Windows is the same as the above using **Cygwin** as the environment
 
 ### Building Ogre with MinGW 64-bit Supplied with Anaconda
 
-Building Ogre with the MinGW specified above requires a few code tweaks.
+Building Ogre with the MinGW specified above may require a few code tweaks.
 Read the following, the first is a step guide and the second is the changes to Ogre code necessary to get MinGW to work:
  * http://www.ogre3d.org/tikiwiki/tiki-index.php?page=Building+Ogre+with+boost+1.50+upwards+and+MinGW
  * http://www.ogre3d.org/tikiwiki/tiki-index.php?page=TDM+MinGW64+build+guide
