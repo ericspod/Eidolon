@@ -45,8 +45,8 @@ Installing Python manually is easiest with MacPorts (https://www.macports.org/):
 
 A few other things may need to be installed if packages are missing:
 
-    sudo port install py27-pip py27-cython py27-appdirs py27-pyqtgraph py27-matplotlib py27-nose py27-pip
-    sudo pip install nose-cprof packaging
+    sudo port install py27-pip py27-appdirs py27-pyqtgraph py27-matplotlib py27-nose py27-pip
+    sudo pip install nose-cprof packaging Cython
 
 ----
 ## Linux
