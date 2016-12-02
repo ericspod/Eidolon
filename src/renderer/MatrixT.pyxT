@@ -428,25 +428,25 @@ cdef class {N}Matrix:
 
 	def add(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.add(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.addm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.add[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
 	def sub(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.sub(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.subm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.sub[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
 	def mul(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.mul(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.mulm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.mul[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
 	def div(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.div(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.divm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.div[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
@@ -481,25 +481,25 @@ cdef class {N}Matrix:
 
 	def add(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.add(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.addm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.add[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
 	def sub(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.sub(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.subm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.sub[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
 	def mul(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.mul(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.mulm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.mul[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
 	def div(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.div(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.divm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.div[{T}](<{T}>t,minrow,mincol,maxrow,maxcol)
 
@@ -537,7 +537,7 @@ cdef class {N}Matrix:
 
 	def add(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.add(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.addm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,(int,long,float)):
 			self.mat.add[real](<real>t,minrow,mincol,maxrow,maxcol)
 		else:
@@ -545,7 +545,7 @@ cdef class {N}Matrix:
 
 	def sub(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.sub(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.subm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,(int,long,float)):
 			self.mat.sub[real](<real>t,minrow,mincol,maxrow,maxcol)
 		else:
@@ -553,7 +553,7 @@ cdef class {N}Matrix:
 
 	def mul(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.mul(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.mulm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,rotator):
 			self.mat.mul[irotator]((<rotator>t).val,minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,transform):
@@ -565,7 +565,7 @@ cdef class {N}Matrix:
 
 	def div(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,{N}Matrix):
-			self.mat.div(deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.divm[{T}](deref((<{N}Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,(int,long,float)):
 			self.mat.div[real](<real>t,minrow,mincol,maxrow,maxcol)
 		else:

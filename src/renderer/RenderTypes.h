@@ -1802,25 +1802,25 @@ public:
 	}
 	
 	/// Add every cell from (minrow,mincol) to (maxrow-1,maxcol-1) in `mat' to the same cell in the matrix
-	template<typename R> void add(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
+	template<typename R> void addm(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
 	{
 		return matop<R,AddOp<T,T,R> >(mat,minrow,mincol,maxrow,maxcol);
 	}
 	
 	/// Subtract every cell from (minrow,mincol) to (maxrow-1,maxcol-1) in `mat' from the same cell in the matrix
-	template<typename R> void sub(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
+	template<typename R> void subm(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
 	{
 		return matop<R,SubOp<T,T,R> >(mat,minrow,mincol,maxrow,maxcol);
 	}
 	
 	/// Multiply every cell from (minrow,mincol) to (maxrow-1,maxcol-1) in the matrix by the same in `mat'
-	template<typename R> void mul(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
+	template<typename R> void mulm(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
 	{
 		return matop<R,MulOp<T,T,R> >(mat,minrow,mincol,maxrow,maxcol);
 	}
 	
 	/// Divide every cell from (minrow,mincol) to (maxrow-1,maxcol-1) in the matrix by the same in `mat'
-	template<typename R> void div(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
+	template<typename R> void divm(const Matrix<R>& mat,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
 	{
 		return matop<R,DivOp<T,T,R> >(mat,minrow,mincol,maxrow,maxcol);
 	}

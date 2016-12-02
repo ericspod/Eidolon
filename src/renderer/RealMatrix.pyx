@@ -428,25 +428,25 @@ cdef class RealMatrix:
 
 	def add(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,RealMatrix):
-			self.mat.madd[real](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.addm[real](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.add[real](<real>t,minrow,mincol,maxrow,maxcol)
 
 	def sub(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,RealMatrix):
-			self.mat.sub[iRealMatrix](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.subm[real](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.sub[real](<real>t,minrow,mincol,maxrow,maxcol)
 
 	def mul(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,RealMatrix):
-			self.mat.mul[iRealMatrix](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.mulm[real](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.mul[real](<real>t,minrow,mincol,maxrow,maxcol)
 
 	def div(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,RealMatrix):
-			self.mat.div[iRealMatrix](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.divm[real](deref((<RealMatrix>t).mat),minrow,mincol,maxrow,maxcol)
 		else:
 			self.mat.div[real](<real>t,minrow,mincol,maxrow,maxcol)
 

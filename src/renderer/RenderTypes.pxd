@@ -361,10 +361,10 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 		void mul[R](const R& t,sval minrow,sval mincol,sval maxrow,sval maxcol)
 		void div[R](const R& t,sval minrow,sval mincol,sval maxrow,sval maxcol)
 
-		void add(const Matrix[T]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
-		void sub(const Matrix[T]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
-		void mul(const Matrix[T]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
-		void div(const Matrix[T]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
+		void addm[R](const Matrix[R]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
+		void subm[R](const Matrix[R]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
+		void mulm[R](const Matrix[R]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
+		void divm[R](const Matrix[R]& v,sval minrow,sval mincol,sval maxrow,sval maxcol)
 
 #		void reorderColumns(const sval *orderinds) except +IndexError # unused? dangerous anyway
 		void swapEndian()

@@ -10,3 +10,4 @@ src/renderer/Renderer.cpp
 src/renderer/Renderer.so
 src/eidolon/*.cpp
 src/eidolon/*.so
+dist

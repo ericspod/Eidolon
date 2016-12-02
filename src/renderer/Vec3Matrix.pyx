@@ -430,7 +430,7 @@ cdef class Vec3Matrix:
 
 	def add(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,Vec3Matrix):
-			self.mat.add[iVec3Matrix](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.addm[ivec3](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,(int,long,float)):
 			self.mat.add[real](<real>t,minrow,mincol,maxrow,maxcol)
 		else:
@@ -438,7 +438,7 @@ cdef class Vec3Matrix:
 
 	def sub(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,Vec3Matrix):
-			self.mat.sub[iVec3Matrix](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.subm[ivec3](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,(int,long,float)):
 			self.mat.sub[real](<real>t,minrow,mincol,maxrow,maxcol)
 		else:
@@ -446,7 +446,7 @@ cdef class Vec3Matrix:
 
 	def mul(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,Vec3Matrix):
-			self.mat.mul[iVec3Matrix](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.mulm[ivec3](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,rotator):
 			self.mat.mul[irotator]((<rotator>t).val,minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,transform):
@@ -458,7 +458,7 @@ cdef class Vec3Matrix:
 
 	def div(self,t,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1):
 		if isinstance(t,Vec3Matrix):
-			self.mat.div[iVec3Matrix](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
+			self.mat.divm[ivec3](deref((<Vec3Matrix>t).mat),minrow,mincol,maxrow,maxcol)
 		elif isinstance(t,(int,long,float)):
 			self.mat.div[real](<real>t,minrow,mincol,maxrow,maxcol)
 		else:

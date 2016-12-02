@@ -127,18 +127,20 @@ pyinstaller:
 	rm -rf dist
 ifeq ($(PLAT),win64_mingw)
 	cp $(LIB_HOME)/bin/*.dll src/renderer
-	$(PYINST) EidolonWin.spec
+	$(PYINST) PyInstaller.spec
 	rm -rf src/renderer/*.dll build
+	rm dist/Eidolon/res/*.png
 	rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
 	rm dist/Eidolon/EidolonLibs/IRTK/*.bin
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
-	cd dist && zip -r ../$(DISTNAME).zip Eidolon
+	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 else ifeq ($(PLAT),osx)
-	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean -F EidolonOSX.spec
+	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean -F PyInstaller.spec
 	rm -rf build
 	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon.app/Contents/Frameworks/RenderSystem_GL.framework/RenderSystem_GL
 	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon.app/Contents/Frameworks/Plugin_CgProgramManager.framework/Plugin_CgProgramManager
 	install_name_tool -change @executable_path/../Frameworks/Cg.framework/Cg @executable_path/Contents/Frameworks/Cg.framework/Cg dist/Eidolon.app/Contents/Frameworks/Plugin_CgProgramManager.framework/Plugin_CgProgramManager
+	rm dist/Eidolon.app/res/*.png
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.so.1
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.bin
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.exe

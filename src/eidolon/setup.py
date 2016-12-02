@@ -83,6 +83,8 @@ for i in glob.glob('./*.pyx'):
 
 setup(ext_modules=cythonize(extensions,include_path=['.','../renderer']))
 
+shutil.rmtree('build')
+
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 if not isWindows:
 	for i in glob.glob('./*.pyx'):
