@@ -142,7 +142,6 @@ extension=Extension(
 	define_macros=define_macros,
 	include_dirs=includedirs,
 	library_dirs=[library_dir],
-	runtime_library_dirs=[shared_dir],
 	libraries=libraries,
 	extra_compile_args=extra_compile_args,
 	extra_link_args=extra_link_args,
