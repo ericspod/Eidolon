@@ -18,8 +18,6 @@
 
 
 from setuptools import setup,Extension
-#from distutils.core import setup
-#from distutils.extension import Extension
 from distutils import sysconfig
 
 from Cython.Build import cythonize
@@ -93,6 +91,7 @@ if isDarwin:
 
 	# add frameworks to link with
 	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay']
+	extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
 
 elif isWindows:
 	platdir='win64_mingw'

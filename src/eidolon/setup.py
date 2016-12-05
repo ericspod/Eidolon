@@ -44,6 +44,7 @@ sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 
 if isDarwin:
 	platdir='osx'
+	extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
 elif isWindows:
 	platdir='win64_mingw'
 	sys.argv.append('--compiler=mingw32') # force the use of mingw, there must be a proper programmatic way
