@@ -25,6 +25,12 @@ import platform
 import sys,os,shutil,numpy,glob
 
 def generateMatrix(prefix,ttype,ptype=None,tofunc='',fromfunc=''):
+	'''
+	Generate pyx files for each of the matrix types. The file MatrixT.pyxT is a pseudo-template definition containing patterns
+	for replacing type names for each of the matrix types as well as type specific methods. This allows templating essentially
+	so that the matrix Cython interface only has to be written once. The generated files do need to be included in the correct
+	place in Renderer.pyx.
+	'''
 	ptype=ptype or ttype
 	infile='MatrixT.pyxT'
 	outfile='{}Matrix.pyx'.format(prefix)
@@ -86,7 +92,8 @@ if htime>cpptime:
 
 if isDarwin:
 	platdir='osx'
-	destfile+='dylib'
+	#destfile+='dylib'
+	destfile+='so.%s'%platdir
 	libraries=[] # linking with frameworks and not libraries
 
 	# add frameworks to link with

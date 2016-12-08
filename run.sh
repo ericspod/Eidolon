@@ -26,7 +26,7 @@ then
 elif [ "$(uname)" == "Darwin" ]
 then
 	# symlink each compiled library for OSX to the correct name
-	for i in $APPDIR/src/*/*.dylib; do ln -fs $i ${i%.dylib}.so;done
+	for i in $APPDIR/src/*/*.so.osx; do ln -fs $i ${i%.so.osx}.so;done
 	
 	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
 else

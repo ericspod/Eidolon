@@ -2040,6 +2040,7 @@ class ScreenshotDialog(QtGui.QDialog,Ui_ScreenshotForm):
 
 		self.setTimestepValues(start,end,fps,steps)
 		self._chooseSource(0)
+		self._choosePath()
 
 	def setDimensionValues(self,width,height):
 		self.widthBox.setValue(width)
@@ -2057,8 +2058,8 @@ class ScreenshotDialog(QtGui.QDialog,Ui_ScreenshotForm):
 	def getTimestepValues(self):
 		return self.startBox.value(),self.endBox.value(),self.fpsBox.value(),self.stepsBox.value()
 
-	def showEvent(self,e):
-		self._choosePath()
+	#def showEvent(self,e):
+	#	self._choosePath()
 
 	def _choosePath(self):
 		savename=self.win.chooseFileDialog('Choose Screenshot filename',filterstr='Image Files (*.png *.jpg)',isOpen=False)

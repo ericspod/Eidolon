@@ -145,11 +145,10 @@ else ifeq ($(PLAT),osx)
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.bin
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.exe
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.dll
-	#cd dist && hdiutil create -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
+	cd dist && hdiutil create -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
 endif
 
 package:
-	#git pull
 	#$(MAKE)
 	#./run.sh --version
 ifeq ($(PLAT),osx)

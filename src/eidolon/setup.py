@@ -90,5 +90,5 @@ shutil.rmtree('build')
 if not isWindows:
 	for i in glob.glob('./*.pyx'):
 		i=os.path.splitext(i)[0]
-		dest='%s.so.%s'%(i,platdir) if isLinux else i+'.dylib'
+		dest='%s.so.%s'%(i,platdir) #if isLinux else i+'.dylib'
 		shutil.move(i+'.so',dest)

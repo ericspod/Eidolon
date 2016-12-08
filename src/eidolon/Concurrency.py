@@ -351,12 +351,14 @@ class ProcessServer(Thread):
 		'''Run the server, reading messages from the job queue and sending them to the work processes.'''
 		atexit.register(self.stop)
 
-		# start all the processes
-		for i in range(self.realnumprocs):
-			psharer=self.objsrv.getProxy(self.sharer)
-			p=AlgorithmProcess(i,self.realnumprocs,self.syncEvent,self.syncEvent2,self.syncCounter,self.syncLock,psharer,self.progress,self.stopEvent,os.getpid())
-			p.start()
-			self.procs.append(p)
+		# do not create processes if the number of procs is 1, this forces single process mode
+		if self.realnumprocs>1:
+			# start all the processes
+			for i in range(self.realnumprocs):
+				psharer=self.objsrv.getProxy(self.sharer)
+				p=AlgorithmProcess(i,self.realnumprocs,self.syncEvent,self.syncEvent2,self.syncCounter,self.syncLock,psharer,self.progress,self.stopEvent,os.getpid())
+				p.start()
+				self.procs.append(p)
 
 		# continually read items from `self.jobqueue' and send the execution requests to the processes
 		while not self.stopEvent.is_set():
@@ -374,7 +376,7 @@ class ProcessServer(Thread):
 				task.setMaxProgress(valrange)
 
 			with result:
-				if numprocs==1: # if we are to use only one process execute locally instead of 1 concurrent process
+				if numprocs==1 or not self.procs: # if we are to use only one process execute locally instead of 1 concurrent process
 					try:
 						# construct a local process, passing None for parameters clues it in to not try using concurrency features like syncing
 						localproc=AlgorithmProcess(0,1,None,None,None,None,None,task,None,0)
