@@ -117,8 +117,8 @@ def generateConfig(inargs):
 			sys.exit(0)
 
 	# define the parser for the fixed arguments, this will parse those stated below and leave others for plugins to pick up later
-	parser=argparse.ArgumentParser(prog=prog,description='Eidolon',add_help=False)
-	parser.add_argument('--version', action='version', version=str(__version__))
+	parser=argparse.ArgumentParser(prog=prog,description='Eidolon v%s'%__version__,add_help=False)
+	parser.add_argument('--version', action='version', version=__version__)
 	parser.add_argument('--config',help='Specify configuration file',dest='config',metavar='FILE',nargs=1)
 	parser.add_argument('--var',help='Provide script string variables',dest='var',metavar='NAME,VAL,...',nargs=1,action='append')
 	parser.add_argument('--setting',help='Override a config setting value',dest='setting',metavar='VAL',nargs=2,action='append')

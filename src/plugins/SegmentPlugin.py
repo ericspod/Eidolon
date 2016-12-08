@@ -186,7 +186,7 @@ def sortContours(contours,startdir=None):
 	the center of the contour in the direction of `startdir'. If this argument isn't given then this sorting isn't done.
 	The resulting contour 2D matrix contains vec3 objects.
 	'''
-	assert len(contours)>1, 'Must have more than 1 contour'
+	#assert len(contours)>1, 'Must have more than 1 contour'
 
 	downvec=None
 	sortorder=None
@@ -1397,6 +1397,10 @@ class SegmentPlugin(ScenePlugin):
 			self.mgr.addSceneObjectTask(f)
 
 	def _generateMaskButton(self,prop,obj):
+		w=obj.getWidget()
+		if w:
+			w.save()
+			
 		conmap=mapContoursToPlanes(obj.enumContours())
 		lens=map(len,conmap.values())
 		msg=None
@@ -1419,7 +1423,7 @@ class SegmentPlugin(ScenePlugin):
 			if prop.hemMaskButton.isChecked():
 				maskfunc='1 if len(contours)==1 else 0' # hemisphere mask, only put down a pixel if within 1 contour only
 			elif prop.cavMaskButton.isChecked():
-				maskfunc='1 if len(contours)==2 else 0' # cavity mask, only put down a pixel if within 2 contours at once
+				maskfunc='1 if len(contours)==%i else 0'%lens[0] # cavity mask, only put down a pixel if within all contoursat once
 			elif prop.hemcavButton.isChecked():
 				maskfunc='1'  # hemisphere+cavity mask, only put down a pixel if within any contours
 			else:

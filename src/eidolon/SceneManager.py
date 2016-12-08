@@ -113,9 +113,10 @@ class Project(object):
 		self.checkboxMap={} # maps QTableWidgetItem to scene object names
 		self.prop=None
 		self.header='\nif mgr.project==None:\n  mgr.createProjectObj(%r,%r,Project)\n' %(self.name,self.parentdir)
-		self.backDir=self.getProjectFile('')
+		self.backDir=self.getProjectDir()
 
 		assert os.path.isdir(self.parentdir)
+		self.mgr.win.dialogDir=self.getProjectDir()
 
 	def addHandlers(self):
 		'''Call this in the constructor to add event handlers to capture relevant events.'''

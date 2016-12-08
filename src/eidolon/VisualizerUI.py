@@ -2152,7 +2152,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
 		setCollapsibleGroupbox(self.treeGroup)
 
-		# reset self.viz to use Eidolon widget
+		# reset self.viz to use Eidolon renderer widget
 		self.mainLayout.removeWidget(self.viz)
 		self.viz=VisualizerWidget(conf,self)
 		self.mainLayout.addWidget(self.viz)
