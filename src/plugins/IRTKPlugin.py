@@ -18,8 +18,8 @@
 
 from eidolon import *
 
-from .VTKPlugin import DatasetTypes,VTKProps
-from .SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
+from plugins.VTKPlugin import DatasetTypes,VTKProps
+from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 
 from ui.mtServerForm import Ui_mtServerForm
 import sys
@@ -52,7 +52,7 @@ ServerMsgs=enum(
 	('Except',(Exception,str),'Exception from Server; exception value, stack trace string info'),
 	('Stat',(int,),'Status Request for Job; Job ID value'),
 	('RStat',(int,int,int,str),'Status Response; process exit code (None if still running), # of files so far, total # of files, job dir'),
-	('StartMotionTrack',(bool,str,str,str,str,float,str,str),'Sending motion track job to server;true if data is file path, file blob otherwise, track file,mask file, param filename, directory name, adaptive, timestep list string, root directory'),
+	('StartMotionTrack',(bool,str,str,str,str,str,float,list,str),'Sending motion track job to server;true if data is file path, file blob otherwise, track file,mask file, param filename, directory name, adaptive, timestep list string, root directory'),
 	('StartTSFFD',(str,str,str,str,str),'Sending compute TSFFD job to server; track directory, track filename (not used), mask filename, timestep list string, par file'),
 	('RStart',(int,),'Job Send Response; Job ID value'),
 	('GetResult',(int,bool),'Get job results; job ID value, true if absolute file paths are requested'),
@@ -1144,7 +1144,7 @@ class IRTKPluginMixin(object):
 				#if dirname:
 				#	dirname=self.getUniqueObjName(dirname)
 
-				msg=[True,trackfile,maskfile,paramfile,dirname,adaptive,timesteps,self.getCWD()]
+				msg=[True,None,trackfile,maskfile,paramfile,dirname,adaptive,timesteps,self.getCWD()]
 
 				self.startMotionTrackServer()
 
@@ -1484,7 +1484,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 
 		wfile.write(pickle.dumps(response))
 
-	def startMotionTrack(self,isPaths,trackfile,maskfile,paramfile,dirname,adaptive,timesteps,rootdir):
+	def startMotionTrack(self,isPaths,blob,trackfile,maskfile,paramfile,dirname,adaptive,timesteps,rootdir):
 		rootdir=rootdir or self.serverdir
 
 		# calculate the job ID (jid) from the max of the stored jid value and the max numbered motiontrack directory in rootdir
@@ -1507,7 +1507,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		trackname=trackfile
 		maskname=maskfile
 		paramname=paramfile
-		timesteps=eval(timesteps)
+		#timesteps=eval(timesteps)
 
 		if not isPaths: # if the file data objects not paths, copy the data into local files
 			trackname=os.path.join(jobdir,'track.nii')
