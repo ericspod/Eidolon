@@ -275,7 +275,7 @@ def estimateHemiThickness(contours):
 		r2=BoundBox(c2).radius
 		radii.append(abs(r1-r2))
 		
-	return avg(radii,vec3())
+	return avg(radii)
 	
 
 def getHemiAxis(contours):
