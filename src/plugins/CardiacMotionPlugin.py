@@ -19,9 +19,10 @@
 from eidolon import *
 
 import gzip
+import textwrap
 from glob import glob
 
-from .IRTKPlugin import IRTKPluginMixin,ServerMsgs,applyMotionTrackTask
+from .IRTKPlugin import IRTKPluginMixin,ServerMsgs,applyMotionTrackTask,TrackTypes,JobMetaValues,trackconfname
 from .SegmentPlugin import SegSceneObject,SegmentTypes
 from .VTKPlugin import DatasetTypes
 from .CheartPlugin import LoadDialog
@@ -733,6 +734,8 @@ class CardiacMotionProject(Project):
 				fillList(self.alignprop.tsExtrChooseBox,['Step %i @ Time %i'%its for its in enumerate(o.getTimestepList())])
 
 		self.alignprop.tsExtrSrcBox.activated.connect(_fillTS)
+		
+		self.mgr.addFuncTask(self._checkTrackDirs)
 
 		return prop
 
@@ -925,15 +928,23 @@ class CardiacMotionProject(Project):
 			self.mgr.win.chooseYesNoDialog(msg,'Adding Object',lambda:self.mgr.addTasks(_copy()))
 			
 	def _checkTrackDirs(self):
-		# all directories containing dof files
-		dirs=[d for d in glob(self.getProjectFile('*/')) if glob(os.path.join(d,'*.dof.gz'))]
-
-		sceneimgs=[o.getName() for o in self.memberObjs if isinstance(o,ImageSceneObject)]
+		sceneimgs=[o.getName() for o in self.memberObjs if isinstance(o,ImageSceneObject) and o.isTimeDependent]+["Don't know"]
 		
-		for d in dirs:
+		def _fixDir(d,index):
+			index=index[0]
 			jfile=os.path.join(d,'job.ini')
-			if os.path.isfile(jfile):
-				jdata=readBasicConfig(jfile)
+			tfile=os.path.join(d,trackconfname)
+			jdata=readBasicConfig(jfile) if os.path.isfile(jfile) else {}
+			printFlush(d,index,sceneimgs[index])
+			
+		for d in glob(self.getProjectFile('*/')):
+			if not os.path.isfile(os.path.join(d,trackconfname)) and glob(os.path.join(d,'*.dof.gz')):
+				msg='''
+					Due to developer oversight, the source image of tracking directories wasn't saved.
+					Please select which object was tracked in directory %r
+				'''%os.path.basename(d)
+				self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,lambda i:_fixDir(d,i))
+				
 
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)
