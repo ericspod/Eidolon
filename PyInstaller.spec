@@ -8,7 +8,7 @@ import platform
 
 pathex=['src']
 binaries=[]
-hiddenimports=['numpy', 'scipy','PyQt4.uic']
+hiddenimports=['numpy', 'scipy','PyQt4.uic','_struct']
 outname='Eidolon'
 datas=[
 	('res','res'), 
