@@ -137,7 +137,7 @@ if isLinux:
 	includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
 
 # add numpy include directory, this will vary by platform
-includedirs.append(numpy.get_include())
+#includedirs.append(numpy.get_include())
 
 if isDarwin: # add the directory to search for frameworks in
 	extra_link_args+=['-F'+shared_dir] 

@@ -127,7 +127,7 @@ pyinstaller:
 	rm -rf dist
 ifeq ($(PLAT),win64_mingw)
 	cp $(LIB_HOME)/bin/*.dll src/renderer
-	$(PYINST) PyInstaller.spec
+	$(PYINST) --clean PyInstaller.spec
 	rm -rf src/renderer/*.dll build
 	rm dist/Eidolon/res/*.png
 	rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
@@ -162,7 +162,7 @@ package:
 ifeq ($(PLAT),osx)
 	make pyinstaller DISTNAME=Eidolon_Win64_$(shell ./run.sh --version 2>&1)
 else ifeq ($(PLAT),win64_mingw)
-	make pyinstaller DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
+	make pyinstaller DISTNAME=Eidolon_OSX64_$(shell ./run.sh --version 2>&1)
 else
 	make pyinstaller DISTNAME=Eidolon_Linux64_$(shell ./run.sh --version 2>&1)
 endif
