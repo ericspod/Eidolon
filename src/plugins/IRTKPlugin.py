@@ -52,8 +52,8 @@ ServerMsgs=enum(
 	('Except',(Exception,str),'Exception from Server; exception value, stack trace string info'),
 	('Stat',(int,),'Status Request for Job; Job ID value'),
 	('RStat',(int,int,int,str),'Status Response; process exit code (None if still running), # of files so far, total # of files, job dir'),
-	('StartMotionTrack',(bool,str,str,str,str,str,float,list,str),'Sending motion track job to server;true if data is file path, file blob otherwise, track file,mask file, param filename, directory name, adaptive, timestep list string, root directory'),
-	('StartTSFFD',(str,str,str,str,str),'Sending compute TSFFD job to server; track directory, track filename (not used), mask filename, timestep list string, par file'),
+	('StartMotionTrack',(bool,str,str,str,str,str,float,dict,str),'Sending motion track job to server;true if data is file path, file blob otherwise, track file,mask file, param filename, directory name, adaptive, config values dict, root directory'),
+#	('StartTSFFD',(str,str,str,str,str,dict),'Sending compute TSFFD job to server; track directory, track filename (not used), mask filename, timestep list string, par file, config values dict'),
 	('RStart',(int,),'Job Send Response; Job ID value'),
 	('GetResult',(int,bool),'Get job results; job ID value, true if absolute file paths are requested'),
 	('RGetResult',(list,),'Returned job results; list of file paths or file data blobs'),
@@ -66,7 +66,7 @@ ServerMsgs=enum(
 )
 
 
-JobMetaValues=enum('pid','rootdir','numtimesteps','timesteps','tracktype','trackfile','maskfile','paramfile','adaptive','resultcode','startdate')
+JobMetaValues=enum('pid','rootdir','numtimesteps','timesteps','tracktype','trackfile','maskfile','paramfile','adaptive','resultcode','startdate','transform','pixdim')
 
 
 trackconfname='track.ini'
@@ -169,7 +169,7 @@ class IRTKPluginMixin(object):
 		self.irtkdir=os.path.join(getAppDir(),LIBSDIR,'IRTK')
 
 		self.fixshort=os.path.join(self.irtkdir,'fixshort.txt')
-		self.tsffd=os.path.join(self.irtkdir,'tsffd.par')
+		#self.tsffd=os.path.join(self.irtkdir,'tsffd.par')
 		self.patient1e4=os.path.join(self.irtkdir,'patient_lambda1-1e-4.txt')
 		self.patient1e6=os.path.join(self.irtkdir,'patient_lambda1-1e-6.txt')
 		self.nreg_default=os.path.join(self.irtkdir,'nreg_default.txt')
@@ -193,7 +193,7 @@ class IRTKPluginMixin(object):
 		self.rreg=self.irtkpath('rreg')
 		self.headertool=self.irtkpath('headertool')
 		self.motiontrack=self.irtkpath('motiontrackmultimage')
-		self.computetsffd=self.irtkpath('computeTSFFD')
+#		self.computetsffd=self.irtkpath('computeTSFFD')
 		self.transformation=self.irtkpath('transformation')
 		self.ptransformation=self.irtkpath('ptransformation')
 		self.nreg=self.irtkpath('nreg')
@@ -1103,7 +1103,7 @@ class IRTKPluginMixin(object):
 		if startserver: # if we can't find a server run by the current user, start one locally
 			scriptfile=inspect.getfile(inspect.currentframe())
 			logfile=self.mgr.getUserAppFile('motionserver.log')
-			args=[sys.executable,'-s',scriptfile,self.serverdir,str(newport),self.motiontrack,self.computetsffd]
+			args=[sys.executable,'-s',scriptfile,self.serverdir,str(newport),self.motiontrack]
 			proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout=open(logfile,'w'), close_fds=not isWindows)
 			time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
 			return proc
@@ -1152,33 +1152,33 @@ class IRTKPluginMixin(object):
 
 		return self.mgr.runTasks(_startJob(trackname,maskname,dirname,adaptive,chosenparam),f,False)
 
-	def startTSFFDJob(self,trackname,maskname,paramfile):
-		f=Future()
-		@taskroutine('Starting TSFFD Track Job')
-		def _startJob(trackname,maskname,paramfile,task):
-			with f:
-				trackobj=self.mgr.findObject(trackname)
-				trackdir=self.getLocalFile(self.getUniqueObjName('tsffdtrack'))
-				indices=trackobj.getTimestepIndices()
-				paramfile=paramfile or self.tsffd
-				timesteps=trackobj.getTimestepList()
-
-				os.mkdir(trackdir)
-
-				self.startMotionTrackServer()
-
-				for i,tsinds in enumerate(indices):
-					name='image%.4i'%i
-					subobj=ImageSceneObject(name,trackobj.source,indexList(tsinds[1],trackobj.images),trackobj.plugin,False)
-					self.Nifti.saveImage(os.path.join(trackdir,name+'.nii'),subobj)
-
-				with open(os.path.join(trackdir,'times.txt'),'w') as o:
-					for i in range(len(indices)):
-						o.write(str(float(i)/len(indices))+'\n')
-
-				f.setObject(self.sendServerMsg(ServerMsgs._StartTSFFD,[trackdir,trackname+'.nii',maskname+'.nii',repr(timesteps),paramfile]))
-
-		return self.mgr.runTasks(_startJob(trackname,maskname,paramfile),f,False)
+#	def startTSFFDJob(self,trackname,maskname,paramfile):
+#		f=Future()
+#		@taskroutine('Starting TSFFD Track Job')
+#		def _startJob(trackname,maskname,paramfile,task):
+#			with f:
+#				trackobj=self.mgr.findObject(trackname)
+#				trackdir=self.getLocalFile(self.getUniqueObjName('tsffdtrack'))
+#				indices=trackobj.getTimestepIndices()
+#				paramfile=paramfile or self.tsffd
+#				timesteps=trackobj.getTimestepList()
+#
+#				os.mkdir(trackdir)
+#
+#				self.startMotionTrackServer()
+#
+#				for i,tsinds in enumerate(indices):
+#					name='image%.4i'%i
+#					subobj=ImageSceneObject(name,trackobj.source,indexList(tsinds[1],trackobj.images),trackobj.plugin,False)
+#					self.Nifti.saveImage(os.path.join(trackdir,name+'.nii'),subobj)
+#
+#				with open(os.path.join(trackdir,'times.txt'),'w') as o:
+#					for i in range(len(indices)):
+#						o.write(str(float(i)/len(indices))+'\n')
+#
+#				f.setObject(self.sendServerMsg(ServerMsgs._StartTSFFD,[trackdir,trackname+'.nii',maskname+'.nii',repr(timesteps),paramfile]))
+#
+#		return self.mgr.runTasks(_startJob(trackname,maskname,paramfile),f,False)
 
 	def startGPUNRegMotionTrack(self,imgname,maskname,trackname,paramfile):
 		f=Future()
@@ -1321,7 +1321,7 @@ class IRTKPluginMixin(object):
 
 
 class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
-	def __init__(self,serverdir,serverport,motiontrackpath,tsffdpath):
+	def __init__(self,serverdir,serverport,motiontrackpath):
 		QtGui.QMainWindow.__init__(self)
 		self.setupUi(self)
 		self.setWindowTitle('%s (Port: %i)'%(self.windowTitle(),serverport))
@@ -1329,7 +1329,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		self.jidfile=os.path.join(self.serverdir,'motion_jid.txt')
 		self.serverport=serverport
 		self.motiontrackpath=motiontrackpath
-		self.tsffdpath=tsffdpath
+#		self.tsffdpath=tsffdpath
 		self.username=getUsername()
 		self.runningProcs=[] # list of (Subprocess,jid,directory) triples
 
@@ -1438,9 +1438,9 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 				jid=self.startMotionTrack(*args)
 				response=(ServerMsgs._RStart,(jid,))
 
-			elif msg==ServerMsgs._StartTSFFD:
-				jid=self.startComputeTSFFD(*args) # start a TSFFD job
-				response=(ServerMsgs._RStart,(jid,))
+#			elif msg==ServerMsgs._StartTSFFD:
+#				jid=self.startComputeTSFFD(*args) # start a TSFFD job
+#				response=(ServerMsgs._RStart,(jid,))
 
 			elif msg==ServerMsgs._Stat: # get job status
 				jid=args[0]
@@ -1484,7 +1484,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 
 		wfile.write(pickle.dumps(response))
 
-	def startMotionTrack(self,isPaths,blob,trackfile,maskfile,paramfile,dirname,adaptive,timesteps,rootdir):
+	def startMotionTrack(self,isPaths,blob,trackfile,maskfile,paramfile,dirname,adaptive,conf,rootdir):
 		rootdir=rootdir or self.serverdir
 
 		# calculate the job ID (jid) from the max of the stored jid value and the max numbered motiontrack directory in rootdir
@@ -1507,7 +1507,6 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		trackname=trackfile
 		maskname=maskfile
 		paramname=paramfile
-		#timesteps=eval(timesteps)
 
 		if not isPaths: # if the file data objects not paths, copy the data into local files
 			trackname=os.path.join(jobdir,'track.nii')
@@ -1531,50 +1530,48 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 
 		proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout = open(logfile,'w'),cwd=jobdir,close_fds=not isWindows)
 
-		conf={
+		conf.update({
 			JobMetaValues._pid         :int(proc.pid),
 			JobMetaValues._resultcode  :None,
-			JobMetaValues._numtimesteps:len(timesteps)-1,
-			JobMetaValues._timesteps   :repr(timesteps),
 			JobMetaValues._tracktype   :'motiontrack',
 			JobMetaValues._trackfile   :trackfile,
 			JobMetaValues._maskfile    :maskfile,
 			JobMetaValues._paramfile   :paramfile,
 			JobMetaValues._adaptive    :float(adaptive),
 			JobMetaValues._startdate   :time.asctime()
-		}
+		})
 
 		storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
 		self.runningProcs.append((proc,jid,jobdir))
 		return jid
 
-	def startComputeTSFFD(self,jobdir,trackfile,maskfile,timesteps,paramfile):
-		filejid=self.getJID()
-		jid=filejid+1
-
-		self.setJID(jid)
-
-		images=sorted(glob.glob(os.path.join(jobdir,'*.nii')))
-		logfile=os.path.join(jobdir,'output.log')
-
-		args=[self.tsffdpath,images[0],str(len(images))]+images+['times.txt','-parin',paramfile,'-dofout','out.dof.gz']
-		proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout = open(logfile,'w'),cwd=jobdir,close_fds=not isWindows)
-
-		conf={
-			JobMetaValues._pid         :int(proc.pid),
-			JobMetaValues._resultcode  :None,
-			JobMetaValues._numtimesteps:1,
-			JobMetaValues._tracktype   :'tsffd',
-			JobMetaValues._timesteps   :timesteps,
-			JobMetaValues._trackfile   :trackfile,
-			JobMetaValues._paramfile   :paramfile,
-			JobMetaValues._maskfile    :maskfile,
-			JobMetaValues._startdate   :time.asctime()
-		}
-
-		storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
-		self.runningProcs.append((proc,jid,jobdir))
-		return jid
+#	def startComputeTSFFD(self,jobdir,trackfile,maskfile,timesteps,paramfile,conf):
+#		filejid=self.getJID()
+#		jid=filejid+1
+#
+#		self.setJID(jid)
+#
+#		images=sorted(glob.glob(os.path.join(jobdir,'*.nii')))
+#		logfile=os.path.join(jobdir,'output.log')
+#
+#		args=[self.tsffdpath,images[0],str(len(images))]+images+['times.txt','-parin',paramfile,'-dofout','out.dof.gz']
+#		proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout = open(logfile,'w'),cwd=jobdir,close_fds=not isWindows)
+#
+#		conf={
+#			JobMetaValues._pid         :int(proc.pid),
+#			JobMetaValues._resultcode  :None,
+#			JobMetaValues._numtimesteps:1,
+#			JobMetaValues._tracktype   :'tsffd',
+#			JobMetaValues._timesteps   :timesteps,
+#			JobMetaValues._trackfile   :trackfile,
+#			JobMetaValues._paramfile   :paramfile,
+#			JobMetaValues._maskfile    :maskfile,
+#			JobMetaValues._startdate   :time.asctime()
+#		}
+#
+#		storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
+#		self.runningProcs.append((proc,jid,jobdir))
+#		return jid
 
 
 if __name__ == '__main__': # run the server program

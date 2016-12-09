@@ -36,7 +36,7 @@ elif compat.is_darwin:
 		('EidolonLibs/osx/bin/Plugin_CgProgramManager.framework','Contents/Frameworks/Plugin_CgProgramManager.framework'),
 		('EidolonLibs/osx/bin/RenderSystem_GL.framework','Contents/Frameworks/RenderSystem_GL.framework')
 	]
-else:
+elif compat.is_linux:
 	d,v,_=platform.linux_distribution()
 	assert d.lower()=='ubuntu'
 	libs='EidolonLibs/ubuntu%s/bin'%v[:2]
