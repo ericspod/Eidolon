@@ -4,6 +4,7 @@ block_cipher = None
 
 from PyInstaller import compat
 from glob import glob
+import platform
 
 pathex=['src']
 binaries=[]
@@ -29,14 +30,17 @@ elif compat.is_darwin:
 	outname+='.app'
 	hiddenimports+=['appdirs','packaging','packaging.version','packaging.specifiers','packaging.requirements','packaging.utils','cProfile']	
 	datas+=[
-		('EidolonLibs/IRTK','EidolonLibs/IRTK'),
-		('EidolonLibs/python','EidolonLibs/python'),
 		('EidolonLibs/osx/bin/Ogre.framework','Contents/Frameworks/Ogre.framework'),
 		('EidolonLibs/osx/bin/OgreOverlay.framework','Contents/Frameworks/OgreOverlay.framework'),
 		('EidolonLibs/osx/bin/Cg.framework','Contents/Frameworks/Cg.framework'),
 		('EidolonLibs/osx/bin/Plugin_CgProgramManager.framework','Contents/Frameworks/Plugin_CgProgramManager.framework'),
 		('EidolonLibs/osx/bin/RenderSystem_GL.framework','Contents/Frameworks/RenderSystem_GL.framework')
 	]
+else:
+	d,v,_=platform.linux_distribution()
+	assert d.lower()=='ubuntu'
+	libs='EidolonLibs/ubuntu%s/bin'%v[:2]
+	binaries+=[(f,'.') for f in glob(libs+'/*')]
 	
 
 a = Analysis(['main.py'],

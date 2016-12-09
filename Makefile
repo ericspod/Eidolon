@@ -146,17 +146,25 @@ else ifeq ($(PLAT),osx)
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.exe
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.dll
 	cd dist && hdiutil create -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
+else
+	LD_LIBRARY_PATH=$(LIB_HOME)/bin $(PYINST) --clean PyInstaller.spec
+	rm -rf build
+	rm dist/Eidolon/res/*.png
+	rm dist/Eidolon/EidolonLibs/IRTK/*.exe
+	rm dist/Eidolon/EidolonLibs/IRTK/*.dll
+	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
+	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 package:
 	#$(MAKE)
 	#./run.sh --version
 ifeq ($(PLAT),osx)
-	make pyinstaller DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
+	make pyinstaller DISTNAME=Eidolon_Win64_$(shell ./run.sh --version 2>&1)
 else ifeq ($(PLAT),win64_mingw)
 	make pyinstaller DISTNAME=Eidolon_$(shell ./run.sh --version 2>&1)
 else
-	make distfile DISTNAME=Eidolon_All_$(shell ./run.sh --version 2>&1)
+	make pyinstaller DISTNAME=Eidolon_Linux64_$(shell ./run.sh --version 2>&1)
 endif
 
 tutorialfile:
