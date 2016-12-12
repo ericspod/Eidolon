@@ -102,10 +102,82 @@ def vecfuncY(vals):
 def vecfuncZ(vals):
 	return vec3(1,1,valuefuncMag(vals))
 
+#UnitFunc=enum(
+#	('Linear','x'),
+#	('InvLinear','1.0-x'),
+#	('One','1.0'),
+#	('Zero','0.0'),
+#	('sin(x*(pi/2))','math.sin(0.5*x*math.pi)'),
+#	('1-cos(x*(pi/2))','1-math.cos(0.5*x*math.pi)'),
+#	('(1-cos(x*pi))/2','(1-math.cos(x*math.pi))/2'),
+#	doc='Functions for mapping one scalar unit value (0<=x<=1) to another, used for fitting data values to curves and alpha calculations.',
+#	valtype=(str,),
+#)
+
+## Functions for fitting raw field values to a scalar value
+#ValueFunc=enum(
+#	('Average','avg(vals)'),
+#	('Magnitude','mag(vals)'),
+#	('Column 1','vals[0]'),
+#	('Column 2','vals[1]'),
+#	('Column 3','vals[2]'),
+#	('Column 4','vals[3]'),
+#	('Column 5','vals[4]'),
+#	valtype=(str,),
+#)
+
+#VecFunc=enum(
+#	('Zero','vec3()'),
+#	('Linear','vec3(*vals)'),
+#	('Magnitude','vec3(mag(vals))'),
+#	('XAxis','vec3(mag(vals),1,1)'),
+#	('YAxis','vec3(1,mag(vals),1)'),
+#	('ZAxis','vec3(1,1,mag(vals))'),
+#	valtype=(str,),
+#)
+
+UnitFunc=enum(
+	('Linear',unitfuncLin),
+	('InvLinear',unitfuncInv),
+	('One',unitfuncOne),
+	('Zero',unitfuncZero),
+	('sin(x*(pi/2))',unitfuncSin),
+	('1-cos(x*(pi/2))',unitfuncCos1),
+	('(1-cos(x*pi))/2',unitfuncCos2),
+	doc='Functions for mapping one scalar unit value (0<=x<=1) to another, used for fitting data values to curves and alpha calculations.',
+	valtype=(object,),
+)
+
+# Functions for fitting raw field values to a scalar value
+ValueFunc=enum(
+	('Average',valuefuncAvg),
+	('Magnitude',valuefuncMag),
+	('Column 1',valuefuncCol0),
+	('Column 2',valuefuncCol1),
+	('Column 3',valuefuncCol2),
+	('Column 4',valuefuncCol3),
+	('Column 5',valuefuncCol4),
+	doc="Functions for mapping a field row `vals' to a scalar value.",
+	valtype=(object,),
+)
+
+VecFunc=enum(
+	('Zero',vecfuncZero),
+	('Linear',vecfuncLinear),
+	('Magnitude',vecfuncMag),
+	('XAxis',vecfuncX),
+	('YAxis',vecfuncY),
+	('ZAxis',vecfuncZ),
+	doc="Functions for mapping a field row `vals' to a vec3 value.",
+	valtype=(object,),
+)
+
 
 def createUnitFunc(unitfunc,label):
 	if not unitfunc:
 		return unitfuncLin
+	elif unitfunc in UnitFunc:
+		return UnitFunc[unitfunc]
 	elif not isinstance(unitfunc,str):
 		return unitfunc
 	else:
@@ -117,6 +189,8 @@ def createUnitFunc(unitfunc,label):
 def createValFunc(valfunc,label):
 	if not valfunc:
 		return avg
+	elif valfunc in ValueFunc:
+		return ValueFunc[valfunc]
 	elif not isinstance(valfunc,str):
 		return valfunc
 	else:
@@ -135,6 +209,8 @@ def createVec3Func(vecfunc,label,dim):
 			vecfunc='vec3(vals[0],vals[1],0)'
 		else:
 			vecfunc='vec3(vals[0],vals[1],vals[2])'
+	elif vecfunc in VecFunc:
+		return VecFunc[vecfunc]
 	elif not isinstance(vecfunc,str):
 		return vecfunc
 

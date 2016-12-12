@@ -735,7 +735,7 @@ class CardiacMotionProject(Project):
 
 		self.alignprop.tsExtrSrcBox.activated.connect(_fillTS)
 		
-		self.mgr.addFuncTask(self._checkTrackDirs)
+		self.mgr.addFuncTask(self._checkTrackDirs) # check directories after everything else has loaded
 
 		return prop
 
@@ -928,23 +928,59 @@ class CardiacMotionProject(Project):
 			self.mgr.win.chooseYesNoDialog(msg,'Adding Object',lambda:self.mgr.addTasks(_copy()))
 			
 	def _checkTrackDirs(self):
-		sceneimgs=[o.getName() for o in self.memberObjs if isinstance(o,ImageSceneObject) and o.isTimeDependent]+["Don't know"]
-		
-		def _fixDir(d,index):
+		'''
+		Check tracking directories for track.ini, this should appear in tracking directories made later and will 
+		contain more information than the original job.ini files. If track.ini is missing, create it based on the
+		source image chosen by the user if there is a choice, guess otherwise. 
+		'''
+		def _fixDir(sceneimgs,d,index):
 			index=index[0]
 			jfile=os.path.join(d,'job.ini')
 			tfile=os.path.join(d,trackconfname)
 			jdata=readBasicConfig(jfile) if os.path.isfile(jfile) else {}
-			printFlush(d,index,sceneimgs[index])
+			imgobj=self.mgr.findObject(sceneimgs[index])
 			
-		for d in glob(self.getProjectFile('*/')):
-			if not os.path.isfile(os.path.join(d,trackconfname)) and glob(os.path.join(d,'*.dof.gz')):
-				msg='''
-					Due to developer oversight, the source image of tracking directories wasn't saved.
-					Please select which object was tracked in directory %r
-				'''%os.path.basename(d)
-				self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,lambda i:_fixDir(d,i))
+			if imgobj:
+				name=imgobj.getName()
+				timesteps=imgobj.getTimestepList()
+				trans=tuple(imgobj.getVolumeTransform())
+				vox=tuple(imgobj.getVoxelSize())
+			else:
+				name='UNKNOWN'
+				timesteps=range(len(glob(os.path.join(d,'*.dof.gz')))+1)
+				trans=(0,0,0,1,1,1,0,0,0,False)
+				vox=(1,1,1)
 				
+			jdata.update({
+				JobMetaValues._trackobj     :name,
+				JobMetaValues._numtrackfiles:len(timesteps)-1,
+				JobMetaValues._tracktype    :TrackTypes._motiontrackmultimage if jdata else TrackTypes._gpunreg,
+				JobMetaValues._timesteps    :timesteps,
+				JobMetaValues._transform    :trans,
+				JobMetaValues._pixdim       :vox,
+			})
+			
+			printFlush('Writing %r with data from %r'%(tfile,name))
+			storeBasicConfig(tfile,jdata)
+			
+		imgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
+		
+		for d in glob(self.getProjectFile('*/')):
+			numdofs=len(glob(os.path.join(d,'*.dof.gz')))
+			if not os.path.isfile(os.path.join(d,trackconfname)) and numdofs:
+				dd=d[:-1] # remove trailing / and create free variable
+				# choose correct length images
+				sceneimgs=[o.getName() for o in imgs if len(o.getTimestepList())==(numdofs+1)]+["Don't know"] 
+				
+				if len(sceneimgs)<=2: # 0 or 1 possible images, choose first option
+					_fixDir(sceneimgs,dd,[0])
+				else:
+					msg='''
+					Due to developer oversight, the source image of tracking directories wasn't saved.
+					Please select which object was tracked in directory %r:
+					'''%os.path.basename(dd)
+					
+					self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,lambda i:_fixDir(sceneimgs,dd,i))
 
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)

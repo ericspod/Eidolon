@@ -15,7 +15,7 @@ Features include:
 ## Installation
 
 The most current release will include zip files containing the code as well as standalone applications for Windows and OSX. 
-These apps do not require anything to be installed, however to run the application from a checkout Python and the necessary components need to be installed.
+These apps do not require anything to be installed, however to run the application from the zip or a checkout, Python and the necessary components need to be installed.
 See INSTALLATION.md for details on how to run Eidolon from a git checkout. 
 
 To initialize the included **EidolonLibs** submodule which contains shared libraries needed to run, use the **--recursive** option when cloning:
@@ -41,6 +41,12 @@ Doxygen Documentation: [![Documentation](https://codedocs.xyz/ericspod/Eidolon.s
 
 The wiki https://github.com/ericspod/Eidolon/wiki is the main source of usage documentation. 
 Online documentation at runtime for Python code can be seen through the console using the **help** command.
+
+## Notifications
+
+Watch this repository to receive notifications for new releases, or subscribe to the Google Group for announcements:
+
+    eidolon-users+subscribe@googlegroups.com
 
 ## Authors/Acknowledgements
 
