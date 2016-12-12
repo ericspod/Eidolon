@@ -85,47 +85,24 @@ pyxlibs:
 	cd $(PYSRC) && $(PYTHON) setup.py build_ext --inplace
 	rm -f $(patsubst %.pyx,%.cpp,$(wildcard $(PYSRC)/*.pyx))
 
-distfile: # creates the universal distributable .tgz file with path DISTNAME.tgz
+distfile: # creates the universal distributable .tgz file with path DISTNAME.zip
+	$(eval DISTNAME?=Eidolon_All_$(shell ./run.sh --version 2>&1))
 	mkdir $(DISTNAME)
-	cp -Rf src EidolonLibs tutorial res $(DISTNAME)
-	cp main.py run.sh run.bat config.ini $(DISTNAME)
-	rm -rf $(DISTNAME)/src/renderer $(DISTNAME)/src/*/*.ui $(DISTNAME)/src/*/*.o $(DISTNAME)/res/*.qrc
-	rm -rf $(DISTNAME)/EidolonLibs/*/include $(DISTNAME)/EidolonLibs/*/*/*.a  
-	rm -rf $(DISTNAME)/EidolonLibs/osx/bin/*.framework/Versions/*/Headers
-	rm -rf $(DISTNAME)/EidolonLibs/win64_msvc $(DISTNAME)/src/*/build
-	find $(DISTNAME)/EidolonLibs -name \*.lib  -delete
-	find $(DISTNAME)/EidolonLibs -name \*.a -delete
+	cp -Rf src EidolonLibs tutorial tests res $(DISTNAME)
+	cp main.py run.sh run.bat config.ini *.md *.txt *.spec $(DISTNAME)
 	find $(DISTNAME) -name .DS_Store -delete
 	find $(DISTNAME) -name \*~ -delete
-	#find $(DISTNAME) -name \*.pyc -delete
-	find $(DISTNAME) -name \*.pxd -delete
 	find $(DISTNAME) -name \*.pickle -delete
-	-find $(DISTNAME) -name .svn -exec rm -rf '{}' ';' >/dev/null 2>&1
-	tar czf $(DISTNAME).tgz $(DISTNAME)
+	find $(DISTNAME) -name \*.pyc -delete
+	zip czf $(DISTNAME).zip $(DISTNAME)
 	rm -rf $(DISTNAME)
-
-appfile: # creates the OS X .app directory with path DISTNAME.app
-	cp -R $(LIB_HOME)/Eidolon.app $(DISTNAME)
-	cp -R main.py config.ini res src tutorial $(DISTNAME)/Contents/Resources
-	rm -rf $(DISTNAME)/Contents/Resources/src/renderer $(DISTNAME)/Contents/Resources/src/*/build
-	mkdir $(DISTNAME)/Contents/Resources/EidolonLibs
-	cp -R ./EidolonLibs/python ./EidolonLibs/IRTK $(DISTNAME)/Contents/Resources/EidolonLibs
-	mkdir $(DISTNAME)/Contents/Frameworks
-	cp -R $(LIB_HOME)/bin/*.framework /Library/Frameworks/Python.framework $(DISTNAME)/Contents/Frameworks
-	cp -R /Library/Frameworks/QtCore.framework /Library/Frameworks/QtGui.framework /Library/Frameworks/QtSvg.framework $(DISTNAME)/Contents/Frameworks
-	rm -rf $(DISTNAME)/Contents/Frameworks/*/Headers $(DISTNAME)/Contents/Frameworks/*/Versions/Current/Headers
-	-find $(DISTNAME) -name .git -exec rm -rf '{}' ';' >/dev/null 2>&1
-	find $(DISTNAME)/Contents/Resources -name \*.ui -delete
-	find $(DISTNAME) -name \*~ -delete
-	find $(DISTNAME) -name \*.pickle -delete
-	mv $(DISTNAME) $(DISTNAME).app
-	tar czf $(DISTNAME).tgz $(DISTNAME).app
-	#hdiutil create -volname $(DISTNAME) -srcfolder $(DISTNAME).app -ov -format UDZO -imagekey zlib-level=9 $(DISTNAME).dmg
-	rm -rf $(DISTNAME).app
 	
-pyinstaller:
+app:
+	#$(MAKE)
+	#./run.sh --version
 	rm -rf dist
 ifeq ($(PLAT),win64_mingw)
+	$(eval DISTNAME?=Eidolon_Win64_$(shell ./run.sh --version 2>&1))
 	cp $(LIB_HOME)/bin/*.dll src/renderer
 	$(PYINST) --clean PyInstaller.spec
 	rm -rf src/renderer/*.dll build
@@ -135,6 +112,7 @@ ifeq ($(PLAT),win64_mingw)
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 else ifeq ($(PLAT),osx)
+	$(eval DISTNAME?=Eidolon_OSX64_$(shell ./run.sh --version 2>&1))
 	DYLD_FRAMEWORK_PATH=$(LIB_HOME)/bin $(PYINST) --clean -F PyInstaller.spec
 	rm -rf build
 	install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @executable_path/Ogre dist/Eidolon.app/Contents/Frameworks/RenderSystem_GL.framework/RenderSystem_GL
@@ -147,6 +125,7 @@ else ifeq ($(PLAT),osx)
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.dll
 	cd dist && hdiutil create -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
 else
+	$(eval DISTNAME?=Eidolon_Linux64_$(shell ./run.sh --version 2>&1))
 	LD_LIBRARY_PATH=$(LIB_HOME)/bin $(PYINST) --clean PyInstaller.spec
 	rm -rf build
 	rm dist/Eidolon/res/*.png
@@ -156,17 +135,6 @@ else
 	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
-package:
-	#$(MAKE)
-	#./run.sh --version
-ifeq ($(PLAT),osx)
-	make pyinstaller DISTNAME=Eidolon_Win64_$(shell ./run.sh --version 2>&1)
-else ifeq ($(PLAT),win64_mingw)
-	make pyinstaller DISTNAME=Eidolon_OSX64_$(shell ./run.sh --version 2>&1)
-else
-	make pyinstaller DISTNAME=Eidolon_Linux64_$(shell ./run.sh --version 2>&1)
-endif
-
 tutorialfile:
 	tar czf Tutorials.tgz tutorial
 
@@ -174,9 +142,9 @@ clean:
 ifeq ($(PLAT),win64_mingw)
 	rm -rf $(SRC)/*/*.pyd
 else ifeq ($(PLAT),osx)
-	rm -rf $(SRC)/*/*.dylib 
+	rm -rf $(SRC)/*/*.so.osx
 else
-	rm -rf $(SRC)/*/*.so.* 
+	rm -rf $(SRC)/*/*.so.ubuntu* 
 endif
 
 clean_gen:
