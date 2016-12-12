@@ -99,7 +99,7 @@ distfile: # creates the universal distributable .tgz file with path DISTNAME.zip
 	
 app:
 	#$(MAKE)
-	#./run.sh --version
+	./run.sh --version
 	rm -rf dist
 ifeq ($(PLAT),win64_mingw)
 	$(eval DISTNAME?=Eidolon_Win64_$(shell ./run.sh --version 2>&1))
