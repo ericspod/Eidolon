@@ -44,9 +44,7 @@ Online documentation at runtime for Python code can be seen through the console 
 
 ## Notifications
 
-Watch this repository to receive notifications for new releases, or subscribe to the Google Group for announcements:
-
-    eidolon-users+subscribe@googlegroups.com
+Watch this repository to receive notifications for new releases, or subscribe to the Google Group for announcements: eidolon-users+subscribe@googlegroups.com
 
 ## Authors/Acknowledgements
 
