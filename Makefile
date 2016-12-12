@@ -94,7 +94,7 @@ distfile: # creates the universal distributable .tgz file with path DISTNAME.zip
 	find $(DISTNAME) -name \*~ -delete
 	find $(DISTNAME) -name \*.pickle -delete
 	find $(DISTNAME) -name \*.pyc -delete
-	zip czf $(DISTNAME).zip $(DISTNAME)
+	zip -r $(DISTNAME).zip $(DISTNAME)
 	rm -rf $(DISTNAME)
 	
 app:
