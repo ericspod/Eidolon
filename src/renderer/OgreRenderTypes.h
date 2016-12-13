@@ -2170,7 +2170,7 @@ public:
 		
 		background->setAmbient(0,0,0);
 		background->setDiffuse(0,0,0,0);
-		background->setSelfIllumination(col.r(),col.g(),col.b());
+		background->setSelfIllumination(convert(col));
 		//background->setLightingEnabled(false);
 		mgr->setSkyBox(enabled,background->getName(),1000);
 	}

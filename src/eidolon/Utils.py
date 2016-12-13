@@ -204,7 +204,7 @@ class Future(object):
 		return self.event.isSet()
 		
 	def isEmpty(self):
-		return not self.obj and not self.event.isSet()
+		return self.obj is None and not self.event.isSet()
 
 	def getObjectWait(self,timeout=10.0):
 		res=self.event.wait(timeout)
