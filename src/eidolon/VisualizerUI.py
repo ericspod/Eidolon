@@ -2058,9 +2058,6 @@ class ScreenshotDialog(QtGui.QDialog,Ui_ScreenshotForm):
 	def getTimestepValues(self):
 		return self.startBox.value(),self.endBox.value(),self.fpsBox.value(),self.stepsBox.value()
 
-	#def showEvent(self,e):
-	#	self._choosePath()
-
 	def _choosePath(self):
 		savename=self.win.chooseFileDialog('Choose Screenshot filename',filterstr='Image Files (*.png *.jpg)',isOpen=False)
 		if savename!='':
