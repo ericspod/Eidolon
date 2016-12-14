@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/ScreenshotForm.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Wed Dec 14 13:46:11 2016
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -25,7 +26,7 @@ except AttributeError:
 class Ui_ScreenshotForm(object):
     def setupUi(self, ScreenshotForm):
         ScreenshotForm.setObjectName(_fromUtf8("ScreenshotForm"))
-        ScreenshotForm.resize(504, 353)
+        ScreenshotForm.resize(659, 408)
         self.verticalLayout = QtGui.QVBoxLayout(ScreenshotForm)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.horizontalGroupBox = QtGui.QGroupBox(ScreenshotForm)
@@ -56,6 +57,9 @@ class Ui_ScreenshotForm(object):
         self.srcBox.setSizePolicy(sizePolicy)
         self.srcBox.setObjectName(_fromUtf8("srcBox"))
         self.verticalLayout_4.addWidget(self.srcBox)
+        self.transBox = QtGui.QCheckBox(self.groupBox_3)
+        self.transBox.setObjectName(_fromUtf8("transBox"))
+        self.verticalLayout_4.addWidget(self.transBox)
         self.verticalLayout.addWidget(self.groupBox_3)
         self.groupBox_2 = QtGui.QGroupBox(ScreenshotForm)
         self.groupBox_2.setObjectName(_fromUtf8("groupBox_2"))
@@ -183,6 +187,7 @@ class Ui_ScreenshotForm(object):
         self.horizontalGroupBox.setTitle(_translate("ScreenshotForm", "Path", None))
         self.pathButton.setText(_translate("ScreenshotForm", "&Choose...", None))
         self.groupBox_3.setTitle(_translate("ScreenshotForm", "Source", None))
+        self.transBox.setText(_translate("ScreenshotForm", "Transparent Background", None))
         self.groupBox_2.setTitle(_translate("ScreenshotForm", "Resolution", None))
         self.label_5.setText(_translate("ScreenshotForm", "Width", None))
         self.label_6.setText(_translate("ScreenshotForm", "Height", None))

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>504</width>
-    <height>353</height>
+    <width>659</width>
+    <height>408</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,6 +52,13 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="transBox">
+        <property name="text">
+         <string>Transparent Background</string>
         </property>
        </widget>
       </item>

@@ -3905,7 +3905,7 @@ public:
 	virtual GPUProgram* createGPUProgram(const char* name,ProgramType ptype,const char* language) throw(RenderException) { return NULL; }
 
 	/// Save a screenshot to the given filename taken from the given camera of the whole 3D window if this isn't provided.
-	virtual void saveScreenshot(const char* filename,Camera* c=NULL,int width=0,int height=0,real stereoOffset=0.0) throw(RenderException) {}
+	virtual void saveScreenshot(const char* filename,Camera* c=NULL,int width=0,int height=0,real stereoOffset=0.0,TextureFormat tf=TF_RGB24) throw(RenderException) {}
 
 	/// Returns the Config object used to define properties for the scene.
 	virtual Config* getConfig() const {return NULL; }

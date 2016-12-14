@@ -2083,8 +2083,8 @@ cdef class RenderScene:
 	def createGPUProgram(self,str name,ProgramType ptype,str language):
 		return GPUProgram._new(self.val.createGPUProgram(name,ptype,language))
 
-	def saveScreenshot(self,str filename,Camera c=None,int width=0,int height=0,real stereoOffset=0.0):
-		self.val.saveScreenshot(filename,c.val,width,height,stereoOffset)
+	def saveScreenshot(self,str filename,Camera c=None,int width=0,int height=0,real stereoOffset=0.0,TextureFormat tf=TF_RGB24):
+		self.val.saveScreenshot(filename,c.val,width,height,stereoOffset,tf)
 
 	def getConfig(self):
 		cdef Config c=Config()

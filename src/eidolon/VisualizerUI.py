@@ -2090,11 +2090,11 @@ class ScreenshotDialog(QtGui.QDialog,Ui_ScreenshotForm):
 		if Utils.checkValidPath(path)!=0:
 			self.win.showMsg('Cannot save screenshot(s) using the specified file','Invalid File Path')
 		else:
-			self.result=[path,self.currentCamera,self.widthBox.value(),self.heightBox.value(),0,0,0]
+			self.result=[path,self.currentCamera,self.widthBox.value(),self.heightBox.value(),0,0,0,self.transBox.isChecked()]
 			if self.multipleRadio.isChecked():
 				start,end,fps,steps=self.getTimestepValues()
 				interval=steps/fps if fps!=0 else 0
-				self.result[4:]=[start,end,interval]
+				self.result[4:7]=[start,end,interval]
 
 			self.close()
 

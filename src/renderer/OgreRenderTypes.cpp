@@ -460,7 +460,7 @@ Camera* OgreRenderScene::createCamera(const char* name, real left, real top, rea
 	}
 }
 
-void OgreRenderScene::saveScreenshot(const char* filename, Camera* c,int width,int height,real stereoOffset) throw(RenderException) 
+void OgreRenderScene::saveScreenshot(const char* filename, Camera* c,int width,int height,real stereoOffset,TextureFormat tf) throw(RenderException) 
 { 
 	std::string fn=filename;
 	if(fn.find_last_of(".")==std::string::npos)
@@ -470,7 +470,7 @@ void OgreRenderScene::saveScreenshot(const char* filename, Camera* c,int width,i
 		if(c==NULL)
 			win->writeContentsToFile(fn);
 		else
-			c->renderToFile(fn,width,height,TF_RGB24,stereoOffset);
+			c->renderToFile(fn,width,height,tf,stereoOffset);
 	}
 	catch(Ogre::Exception &e){
 		THROW_RENDEREX(e);

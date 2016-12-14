@@ -805,7 +805,7 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 		Texture* loadTextureFile(const char* name,const char* absFilename) except+
 		Texture* createTexture(const char* name,sval width, sval height, sval depth, TextureFormat format) except+
 		GPUProgram* createGPUProgram(const char* name,ProgramType ptype,const char* language) except+
-		void saveScreenshot(const char* filename,Camera* c,int width,int height,real stereoOffset) except+
+		void saveScreenshot(const char* filename,Camera* c,int width,int height,real stereoOffset,TextureFormat tf) except+
 		Config* getConfig() const
 
 		void logMessage(const char* msg)

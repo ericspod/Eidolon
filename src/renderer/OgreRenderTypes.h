@@ -2153,7 +2153,7 @@ public:
 	
 	virtual GPUProgram* createGPUProgram(const char* name,ProgramType ptype,const char* language) throw(RenderException);
 	
-	virtual void saveScreenshot(const char* filename,Camera* c=NULL,int width=0,int height=0,real stereoOffset=0.0) throw(RenderException);
+	virtual void saveScreenshot(const char* filename,Camera* c=NULL,int width=0,int height=0,real stereoOffset=0.0,TextureFormat tf=TF_RGB24) throw(RenderException);
 	
 	virtual Config* getConfig() const { return config; }
 	

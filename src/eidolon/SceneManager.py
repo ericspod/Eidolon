@@ -1216,7 +1216,7 @@ class SceneManager(object):
 		self.controller._setCamera()
 		self.repaint()
 
-	def saveScreenshot(self,filename,camera_or_widget=None,width=0,height=0,stereoOffset=0):
+	def saveScreenshot(self,filename,camera_or_widget=None,width=0,height=0,stereoOffset=0,tformat=TF_RGB24):
 		filename=filename.strip()
 		camera_or_widget=camera_or_widget or self.cameras[0]
 
@@ -1226,19 +1226,19 @@ class SceneManager(object):
 		def takeshot():
 			self.repaint(True)
 			if isinstance(camera_or_widget,Camera):
-				self.scene.saveScreenshot(filename,camera_or_widget,width,height,stereoOffset)
+				self.scene.saveScreenshot(filename,camera_or_widget,width,height,stereoOffset,tformat)
 			else:
 				screenshotWidget(camera_or_widget,filename)
 
 		self.callThreadSafe(takeshot)
 
-	def saveTimestepScreenshots(self,fileprefix,stepvalue=1.0,start=0.0,end=None,camera_or_widget=None,width=0,height=0,extension='.png'):
+	def saveTimestepScreenshots(self,fileprefix,stepvalue=1.0,start=0.0,end=None,camera_or_widget=None,width=0,height=0,extension='.png',stereoOffset=0,tformat=TF_RGB24):
 		if end==None:
 			end=self.timestepMax+stepvalue
 
 		for i,ts in enumerate(frange(start,end,stepvalue)):
 			self.setTimestep(ts)
-			self.saveScreenshot('%s%04d%s'%(fileprefix,i,extension),camera_or_widget,width,height)
+			self.saveScreenshot('%s%04d%s'%(fileprefix,i,extension),camera_or_widget,width,height,stereoOffset,tformat)
 
 	def getSceneCode(self):
 		'''Returns the code representation of the current scene as can be constructed by plugins.'''
@@ -1877,12 +1877,13 @@ class SceneManager(object):
 
 	def _saveScreenshotAction(self):
 		@taskroutine('Saving Screenshot(s)')
-		def _save(path,source,width,height,start,end,interval,task=None):
+		def _save(path,source,width,height,start,end,interval,isTrans,task=None):
+			tformat=TF_RGBA32 if isTrans else TF_RGB24
 			if start==end:
-				self.saveScreenshot(path,source,width,height)
+				self.saveScreenshot(path,source,width,height,0,tformat)
 			else:
 				base,ext=os.path.splitext(path)
-				self.saveTimestepScreenshots(base,interval,start,end,source,width,height,ext)
+				self.saveTimestepScreenshots(base,interval,start,end,source,width,height,ext,0,tformat)
 
 		sources=[
 			('Main Camera',self.cameras[0],self.cameras[0].getWidth(),self.cameras[0].getHeight()),
