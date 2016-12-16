@@ -979,14 +979,14 @@ public:
 		real s1s2 = s1*s2;
 		real c1s2 = c1*s2;
 		real s1c2 = s1*c2;
-
+                
 		_w =c1c2*c3 - s1s2*s3;
 		_x =c1c2*s3 + s1s2*c3;
 		_y =s1c2*c3 + c1s2*s3;
 		_z =c1s2*c3 - s1c2*s3;
 
 		// TODO: the above defines ordering of rotations as pitch-yaw-roll, is this correct? This instead perhaps:
-		// set(rotator(rotator(vec3(1,0,0),pitch)*rotator(vec3(0,0,1),yaw)*vec3(0,1,0),roll))
+		//set(rotator(vec3::Z(),yaw)*rotator(vec3::X(),pitch)*rotator(vec3::Y(),roll));
 	}
 	
 	/// Defines a rotation from the significant 3x3 components of a 4x4 rotation matrix

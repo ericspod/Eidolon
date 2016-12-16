@@ -21,7 +21,6 @@ import os.path
 import shutil
 from struct import unpack
 
-from PyQt4 import QtGui
 from eidolon import *
 
 from ui.cheartload import Ui_ObjDialog

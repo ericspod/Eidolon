@@ -27,8 +27,7 @@ import os
 import collections
 import contextlib
 import signal
-
-from codeop import CommandCompiler
+import codeop
 
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -40,7 +39,7 @@ from eidolon.Utils import EventType, ParamType
 
 from renderer.Renderer import getRenderAdapter,RenderParamGroup
 
-from ui.MainWindow import Ui_MainWindow,_fromUtf8
+from ui.MainWindow import Ui_MainWindow
 from ui.ProjProp import Ui_ProjProp
 from ui.ObjReprProp import Ui_ObjReprProp
 from ui.ObjProp import Ui_ObjProp
@@ -93,6 +92,7 @@ IconName=Utils.enum(
 	('Clipboard',':/icons/clipboard.png'),
 	doc='Icon names for the UI, the names refer to resource paths in loaded Qt resource objects'
 )
+
 
 def initUI(args=None):
 	'''Initialize the UI framework.'''
@@ -1259,7 +1259,7 @@ class Draw2DView(Ui_Draw2DView):
 		return self.imageSlider.maximum()
 
 
-class VisualizerWidget(QtGui.QWidget):
+class RenderWidget(QtGui.QWidget):
 	'''
 	This class is used for the actual rendering window. It acquires a RenderAdapter object from the C++ renderer in its
 	constructor and associates it with the `conf' argument. After the object is constructed and placed in a layout,
@@ -1403,7 +1403,7 @@ class ConsoleWidget(QtGui.QTextEdit):
 
 		self.win=win
 		self.locals={'win':self.win}
-		self.comp=CommandCompiler()
+		self.comp=codeop.CommandCompiler()
 		self.inputlines=['']
 		self.linebuffer=[]
 		self.history=[]
@@ -2151,7 +2151,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
 		# reset self.viz to use Eidolon renderer widget
 		self.mainLayout.removeWidget(self.viz)
-		self.viz=VisualizerWidget(conf,self)
+		self.viz=RenderWidget(conf,self)
 		self.mainLayout.addWidget(self.viz)
 		self.viz.initViz()
 
@@ -2419,7 +2419,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		assert menuName in ('File','Import','Export','Create','Project')
 
 		action= QtGui.QAction(self)
-		action.setObjectName(_fromUtf8(objName))
+		action.setObjectName(objName)
 		action.setText(QtGui.QApplication.translate("MainWindow", text, None, QtGui.QApplication.UnicodeUTF8))
 		action.triggered.connect(callback)
 
@@ -2440,16 +2440,16 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 	def addInterfaceTab(self,name,tab):
 		'''Add the widget `tab' to the tab panel in the Scene Elements dock.'''
 		tab.setParent(self)
-		self.interfaceTab.insertTab(0,tab, _fromUtf8(''))
+		self.interfaceTab.insertTab(0,tab, '')
 		ind=self.interfaceTab.indexOf(tab)
-		self.interfaceTab.setTabText(ind, _fromUtf8(name))
+		self.interfaceTab.setTabText(ind, name)
 
 	@signalmethod
 	def createDock(self,name,widg,minw=200,minh=200):
 		'''Add the widget `widg' to the interface in its own docked subwindow with minimum dimensions (minw,minh).'''
 		d = QtGui.QDockWidget(self)
 		d.setFloating(False)
-		d.setWindowTitle(_fromUtf8(Utils.uniqueStr(name,[w.parent().windowTitle() for w in self.dockWidgets],' ')))
+		d.setWindowTitle(Utils.uniqueStr(name,[w.parent().windowTitle() for w in self.dockWidgets],' '))
 		d.setWidget(widg)
 		d.setMinimumWidth(minw*2) # initialize the minimum width to twice given so that the dock starts out larger
 		d.setMinimumHeight(minh)
