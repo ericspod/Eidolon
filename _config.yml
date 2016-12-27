@@ -1,7 +1,0 @@
-theme: jekyll-theme-slate
-
-exclude: [EidolonLibs]
-
-liquid:
-  error_mode: lax
-  
