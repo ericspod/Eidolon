@@ -1,5 +1,5 @@
 theme: jekyll-theme-slate
 
 exclude: 
-  - "EidolonLibs/**"
+  - "EidolonLibs/*"
   - "*.exe"
