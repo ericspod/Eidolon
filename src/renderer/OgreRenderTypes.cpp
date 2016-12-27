@@ -643,8 +643,8 @@ void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,rea
 			height=port->getActualHeight();
 		}
 
-		if(stereoOffset!=0.0) // double width for stereo image rendering
-			width*=2;
+		//if(stereoOffset!=0.0) // double width for stereo image rendering
+		//	width*=2;
 
 		// if there's no stored texture or we're requesting a different dimension/format, create a new texture
 		if(rtt_texture.isNull() || rtt_texture->getWidth()!=width || rtt_texture->getHeight()!=height || rtt_texture->getFormat()!=convert(format)){
@@ -700,22 +700,22 @@ void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,rea
 			camera->setAspectRatio(real(width*0.5)/height); // since width is doubled, set the aspect ratio using half the actual texture width
 
 			// move camera to the left and render into half the texture
-			camera->setOrientation(orient);
-			setLookAt(look);
+			//camera->setOrientation(orient);
+			//setLookAt(look);
 			setPosition(pos-offset);
 			p->setDimensions(0,0,0.5,1.0); // set viewport to cover left half of texture
 			rt->update();
 
 			// move camera to the right and render into half the texture
-			camera->setOrientation(orient);
-			setLookAt(look);
+			//camera->setOrientation(orient);
+			//setLookAt(look);
 			setPosition(pos+offset);
 			p->setDimensions(0.5,0,0.5,1.0);  // set viewport to cover right half of texture
 			rt->update();
 
 			// reset camera to original position
-			camera->setOrientation(orient);
-			setLookAt(look);
+			//camera->setOrientation(orient);
+			//setLookAt(look);
 			setPosition(pos);
 		}
 

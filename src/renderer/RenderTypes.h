@@ -3524,6 +3524,22 @@ public:
 	}
 };
 
+class Image
+{
+public:
+	virtual ~Image() {} 
+
+	virtual TextureFormat getFormat() const { return TF_UNKNOWN; } 
+	virtual sval getWidth() const { return 0; }
+	virtual sval getHeight() const { return 0; }
+	virtual sval getDepth() const { return 0; }
+	virtual size_t getDataSize() const { return 0; }
+	virtual u8* getData() { return 0; }
+	virtual std::string encode(const std::string& format) { return ""; }
+	virtual void fillRealMatrix(RealMatrix* mat) throw(IndexException) {}
+	virtual void fillColorMatrix(ColorMatrix* mat) throw(IndexException) {} 
+};
+
 /**
  * A notional camera in a scene defined by a point in space and the directional vectors describing its orientation. A viewport
  * relates a camera to a render target, in this case a render UI widget. The viewport can be set to only cover some of the 
@@ -3599,6 +3615,8 @@ public:
 	virtual void renderToFile(const std::string& filename,sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException) {}
 	/// Create an offscreen texture, render to it, then blit the contents to `stream', which must be large enough for data of the given texture format.
 	virtual void renderToStream(void* stream,sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException) {}
+	
+	virtual Image* renderToImage(sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException) { return 0; }
 };
 
 /**
@@ -3833,23 +3851,6 @@ private:
 		std::transform(sname.begin(), sname.end(), sname.begin(), ::tolower);
 		return strpair(sgroup,sname);
 	}
-};
-
-class Image
-{
-public:
-	//static Image* loadImageFile(const std::string &filename) throw(RenderException);
-
-	virtual ~Image() {} 
-
-	virtual TextureFormat getFormat() { return TF_UNKNOWN; } 
-	virtual sval getWidth() { return 0; }
-	virtual sval getHeight() { return 0; }
-	virtual sval getDepth() { return 0; }
-	virtual size_t getDataSize() { return 0; }
-	virtual u8* getData() { return 0; }
-	virtual void fillRealMatrix(RealMatrix* mat) throw(IndexException) {}
-	virtual void fillColorMatrix(ColorMatrix* mat) throw(IndexException) {} 
 };
 
 /**

@@ -128,6 +128,64 @@ inline Ogre::RenderOperation::OperationType convert(FigureType type)
 	}
 }
 
+class DLLEXPORT OgreImage : public Image
+{
+	Ogre::Image img;
+public:
+	OgreImage(const Ogre::Image& i) :img(i) {}
+	virtual ~OgreImage() {} 
+
+	virtual TextureFormat getFormat() const { return convert(img.getFormat()); }
+	virtual sval getWidth() const { return sval(img.getWidth()); }
+	virtual sval getHeight() const { return sval(img.getHeight()); }
+	virtual sval getDepth() const { return sval(img.getDepth()); }
+
+	virtual size_t getDataSize() const { return img.getSize(); }
+	virtual u8* getData() { return (u8*)img.getData(); }
+	virtual std::string encode(const std::string& format) 
+	{ 
+		Ogre::DataStreamPtr p= img.encode(format); 
+		return p->getAsString();
+	}
+
+	virtual void fillRealMatrix(RealMatrix* mat) throw(IndexException)
+	{
+		if(getWidth()!=mat->m())
+			throw IndexException("Matrix has incorrect number of columns",mat->m(),getWidth());
+
+		if(getHeight()!=mat->n())
+			throw IndexException("Matrix has incorrect number of rows",mat->n(),getHeight());
+
+		const char* data=(const char*)getData();
+
+		switch(getFormat()){
+		case TF_ALPHA8: 
+		case TF_LUM8: convertUByteStreamToRealMatrix(data,mat);break;
+		case TF_LUM16: convertUShortStreamToRealMatrix(data,mat);break;
+
+		//case TF_RGBA32: convertRGBA32StreamToRealMatrix(data,mat); break;
+		//case TF_RGB24: 
+		//case TF_ALPHALUM8: break;
+
+		default:
+			Ogre::PixelBox pb=img.getPixelBox();
+			sval w=_min<sval>(getWidth(),mat->m());
+			sval h=_min<sval>(getHeight(),mat->n());
+
+			for(sval y=0;y<h;y++)
+				for(sval x=0;x<w;x++){
+					Ogre::ColourValue cv=pb.getColourAt(x,y,0);
+					mat->setAt((cv.r+cv.g+cv.b)/3.0,y,x);
+				}
+
+		}
+	}
+
+	virtual void fillColorMatrix(ColorMatrix* mat) throw(IndexException)
+	{
+	}
+};
+
 class DLLEXPORT OgreCamera: public Camera
 {
 protected:
@@ -327,6 +385,18 @@ public:
 		renderToTexture(width,height,format,stereoOffset);
 		Ogre::PixelBox pb(width,height,1,convert(format),stream);
 		rtt_texture->getBuffer()->blitToMemory(pb);
+	}
+	
+	virtual Image* renderToImage(sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException)
+	{
+		Ogre::Image img;
+		Ogre::PixelFormat pf=convert(format);
+		Ogre::uchar* buf=OGRE_ALLOC_T(Ogre::uchar, Ogre::PixelUtil::getMemorySize(width,height,1,pf), Ogre::MEMCATEGORY_GENERAL);
+		
+		img.loadDynamicImage(buf,width,height,1,pf);
+		renderToStream((u8*)buf,width,height,format,stereoOffset);
+		
+		return new OgreImage(img);
 	}
 
 protected:
@@ -2027,60 +2097,6 @@ public:
 		case PT_GEOMETRY : setProfiles("vp40 arbvp1 vp30 vs_2_x vs_2_0 vs_1_1"); break;
 		case PT_VERTEX   : setProfiles("vp40 arbvp1 vp30 vs_2_x vs_2_0 vs_1_1"); break;
 		}                 
-	}
-};
-
-class DLLEXPORT OgreImage : public Image
-{
-	Ogre::Image img;
-public:
-	//static Image* loadImageFile(const std::string &filename);
-	OgreImage(const Ogre::Image& i) :img(i) {}
-	virtual ~OgreImage() {} 
-
-	virtual TextureFormat getFormat() { return convert(img.getFormat()); }
-	virtual sval getWidth() { return sval(img.getWidth()); }
-	virtual sval getHeight() { return sval(img.getHeight()); }
-	virtual sval getDepth() { return sval(img.getDepth()); }
-
-	virtual size_t getDataSize() { return img.getSize(); }
-	virtual u8* getData() { return (u8*)img.getData(); }
-
-	virtual void fillRealMatrix(RealMatrix* mat) throw(IndexException)
-	{
-		if(getWidth()!=mat->m())
-			throw IndexException("Matrix has incorrect number of columns",mat->m(),getWidth());
-
-		if(getHeight()!=mat->n())
-			throw IndexException("Matrix has incorrect number of rows",mat->n(),getHeight());
-
-		const char* data=(const char*)getData();
-
-		switch(getFormat()){
-		case TF_ALPHA8: 
-		case TF_LUM8: convertUByteStreamToRealMatrix(data,mat);break;
-		case TF_LUM16: convertUShortStreamToRealMatrix(data,mat);break;
-
-		//case TF_RGBA32: convertRGBA32StreamToRealMatrix(data,mat); break;
-		//case TF_RGB24: 
-		//case TF_ALPHALUM8: break;
-
-		default:
-			Ogre::PixelBox pb=img.getPixelBox();
-			sval w=_min<sval>(getWidth(),mat->m());
-			sval h=_min<sval>(getHeight(),mat->n());
-
-			for(sval y=0;y<h;y++)
-				for(sval x=0;x<w;x++){
-					Ogre::ColourValue cv=pb.getColourAt(x,y,0);
-					mat->setAt((cv.r+cv.g+cv.b)/3.0,y,x);
-				}
-
-		}
-	}
-
-	virtual void fillColorMatrix(ColorMatrix* mat) throw(IndexException)
-	{
 	}
 };
 

@@ -32,6 +32,7 @@ import inspect
 import traceback
 import shutil
 import itertools 
+import multiprocessing
 
 from contextlib import closing
 
@@ -1099,13 +1100,18 @@ class IRTKPluginMixin(object):
 		if startserver or newport!=port: # save the address and port if it's changed
 			self.setServerAddrPort('localhost' if startserver else addr,newport)
 
-		if startserver: # if we can't find a server run by the current user, start one locally
-			scriptfile=inspect.getfile(inspect.currentframe())
-			logfile=self.mgr.getUserAppFile('motionserver.log')
-			args=[sys.executable,'-s',scriptfile,self.serverdir,str(newport),self.motiontrack]
-			proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout=open(logfile,'w'), close_fds=not isWindows)
-			time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
-			return proc
+#		if startserver: # if we can't find a server run by the current user, start one locally
+#			scriptfile=inspect.getfile(inspect.currentframe())
+#			logfile=self.mgr.getUserAppFile('motionserver.log')
+#			args=[sys.executable,'-s',scriptfile,self.serverdir,str(newport),self.motiontrack]
+#			proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout=open(logfile,'w'), close_fds=not isWindows)
+#			time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
+#			return proc
+							
+		msp=MotionServerProcess(self.serverdir,newport,self.motiontrack)
+		msp.start()
+		time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
+		return msp
 
 	def startMotionTrackJob(self,trackname,maskname,dirname,adaptive,chosenparam):
 		f=Future()
@@ -1526,8 +1532,22 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		return jid
 
 
-if __name__ == '__main__': # run the server program
-	printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
-	app = QtGui.QApplication(sys.argv)
-	mt=MotionTrackServer(sys.argv[1],int(sys.argv[2]),sys.argv[3])
-	sys.exit(app.exec_())
+class MotionServerProcess(multiprocessing.Process):
+	def __init__(self,serverdir,port,motiontrack):
+		multiprocessing.Process.__init__(self)
+		self.serverdir=serverdir
+		self.port=port
+		self.motiontrack=motiontrack
+		
+	def run(self):
+		printFlush('Starting MotionTrackServer on port',self.port,'using directory',self.serverdir)
+		app = QtGui.QApplication(sys.argv)
+		mt=MotionTrackServer(self.serverdir,self.port,self.motiontrack)
+		sys.exit(app.exec_())
+		
+
+#if __name__ == '__main__': # run the server program
+#	printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
+#	app = QtGui.QApplication(sys.argv)
+#	mt=MotionTrackServer(sys.argv[1],int(sys.argv[2]),sys.argv[3])
+#	sys.exit(app.exec_())

@@ -1436,6 +1436,43 @@ cdef class Light:
 		return self.val.isVisible()
 
 
+cdef class Image:
+	cdef iImage* val
+
+	@staticmethod
+	cdef _new(iImage* val):
+		cdef Image v=Image()
+		v.val=val
+		return v
+
+	def __dealloc__(self):
+		del self.val
+
+	def getFormat(self):
+		return self.val.getFormat()
+
+	def getWidth(self):
+		return self.val.getWidth()
+
+	def getHeight(self):
+		return self.val.getHeight()
+
+	def getDepth(self):
+		return self.val.getDepth()
+		
+	def getData(self):
+		cdef RenderTypes.u8* p=self.val.getData()
+		return <bytes>p[:self.val.getDataSize()]
+		
+	def encode(self,format='png'):
+		return self.val.encode(format)
+
+	def fillRealMatrix(self,RealMatrix mat):
+		self.val.fillRealMatrix(mat.mat)
+
+	def fillColorMatrix(self,ColorMatrix mat):
+		self.val.fillColorMatrix(mat.mat)
+
 
 cdef class Camera:
 	cdef iCamera* val
@@ -1589,7 +1626,11 @@ cdef class Camera:
 		self._checkObjectNull()
 		self.val.renderToStream(<void*>stream,width,height,tformat,stereoOffset)
 
+	def renderToImage(self,sval width,sval height, TextureFormat tformat=TF_RGB24,real stereoOffset=0.0):
+		self._checkObjectNull()
+		return Image._new(self.val.renderToImage(width,height,tformat,stereoOffset))
 
+		
 cdef class Figure:
 	cdef iFigure* val
 
@@ -1999,37 +2040,6 @@ cdef class GPUProgram:
 
 	def setProfiles(self,str profiles):
 		self.val.setProfiles(profiles)
-
-
-cdef class Image:
-	cdef iImage* val
-
-	@staticmethod
-	cdef _new(iImage* val):
-		cdef Image v=Image()
-		v.val=val
-		return v
-
-	def __dealloc__(self):
-		del self.val
-
-	def getFormat(self):
-		return self.val.getFormat()
-
-	def getWidth(self):
-		return self.val.getWidth()
-
-	def getHeight(self):
-		return self.val.getHeight()
-
-	def getDepth(self):
-		return self.val.getDepth()
-
-	def fillRealMatrix(self,RealMatrix mat):
-		self.val.fillRealMatrix(mat.mat)
-
-	def fillColorMatrix(self,ColorMatrix mat):
-		self.val.fillColorMatrix(mat.mat)
 
 
 cdef class RenderScene:

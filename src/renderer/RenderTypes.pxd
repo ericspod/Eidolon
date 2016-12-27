@@ -92,7 +92,6 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 
 
 	cdef enum TextureFormat:
-		TF_UNKNOWN
 		TF_RGB24
 		TF_RGBA32
 		TF_ARGB32
@@ -100,6 +99,7 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 		TF_LUM16
 		TF_ALPHA8
 		TF_ALPHALUM8
+		TF_UNKNOWN
 
 
 	cdef enum ProgramType:
@@ -582,6 +582,18 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 		bint isVisible() const
 
 
+	cdef cppclass Image:
+		TextureFormat getFormat() const
+		sval getWidth() const
+		sval getHeight() const
+		sval getDepth() const
+		size_t getDataSize() const
+		u8* getData() 
+		string encode(const string& format)
+		void fillRealMatrix(RealMatrix* mat) except +IndexError
+		void fillColorMatrix(ColorMatrix* mat) except +IndexError
+
+
 	cdef cppclass Camera:
 		const char* getName() const
 
@@ -628,7 +640,8 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 
 		void renderToFile(const string& filename,sval width,sval height, TextureFormat format,real stereoOffset) except+
 		void renderToStream(void* stream,sval width,sval height, TextureFormat format,real stereoOffset) except+
-
+		Image* renderToImage(sval width,sval height, TextureFormat format,real stereoOffset) except+
+		
 
 	cdef cppclass Figure:
 		const char* getName()
@@ -783,15 +796,6 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 		void setProfiles(const string& profiles)
 
 
-	cdef cppclass Image:
-		TextureFormat getFormat()
-		sval getWidth()
-		sval getHeight()
-		sval getDepth()
-		void fillRealMatrix(RealMatrix* mat) except +IndexError
-		void fillColorMatrix(ColorMatrix* mat) except +IndexError
-
-
 	cdef cppclass RenderScene:
 
 		Camera* createCamera(const char* name,real left,real top,real width,real height) except+
@@ -803,7 +807,7 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 		Light* createLight() except+
 		Image* loadImageFile(const string &filename) except+
 		Texture* loadTextureFile(const char* name,const char* absFilename) except+
-		Texture* createTexture(const char* name,sval width, sval height, sval depth, TextureFormat format) except+
+		Texture* createTexture(const char* name,sval qwidth, sval height, sval depth, TextureFormat format) except+
 		GPUProgram* createGPUProgram(const char* name,ProgramType ptype,const char* language) except+
 		void saveScreenshot(const char* filename,Camera* c,int width,int height,real stereoOffset,TextureFormat tf) except+
 		Config* getConfig() const
