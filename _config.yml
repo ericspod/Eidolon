@@ -2,3 +2,4 @@ theme: jekyll-theme-slate
 
 exclude: 
   - "EidolonLibs/**"
+  - "*.exe"
