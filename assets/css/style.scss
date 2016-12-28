@@ -8,11 +8,14 @@
   background-attachment: fixed;
   background-position: center top;
   
-  h1,h2 { 
-    background-color: rgba(255, 255, 255, 0.2); 
-    display: inline-block;
-  }
-}  
+
+}
+
+.project-name,.project-tagline { 
+  background-color: rgba(255, 255, 255, 0.2); 
+  display: inline-block;
+}
+
 .btn {
   background-color: rgba(255, 255, 255, 0.2);
 }
