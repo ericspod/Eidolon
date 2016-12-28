@@ -10,6 +10,9 @@
   
   h1,h2 { 
     background-color: rgba(255, 255, 255, 0.2); 
-    display: inline;
+    display: inline-block;
   }
 }  
+.btn {
+  background-color: rgba(255, 255, 255, 0.2);
+}
