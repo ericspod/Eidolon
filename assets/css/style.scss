@@ -29,13 +29,14 @@
 
 .main-content {
   max-width: 85rem;
+  table {
+    margin-left:auto; 
+    margin-right:auto;
+  }
+  
+  td {
+    text-align:center;
+    border: 0px;
+  }
 }
 
-table {
-  margin-left:auto; 
-  margin-right:auto;
-}
-
-td {
-  border: 0px;
-}
