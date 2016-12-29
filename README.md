@@ -7,9 +7,6 @@ Render meshes
 multiple lines
 </div>
 
-| Render meshes<br>multiple lines | ![](./mesh2.png) |
+| Meshes<br>![](./mesh2.png) | Images ![](./image1.png) | Combined ![](./meshimage1.png) |
 
-| ![](./image1.png) | Render images|
-
-| Render meshes with images | ![](./meshimage1.png) |
 
