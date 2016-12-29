@@ -1,6 +1,7 @@
 
 Eidolon is a biomedical visualization and analysis framework designed to render spatial biomedical data (images and meshes) and provide facilities for image reconstruction, analysis, and computation.
 
+<img src="./mesh2.png" style="float:left" />Render meshes<br>multiple lines
 
 | Render meshes<br>multiple lines | ![](./mesh2.png) |
 
