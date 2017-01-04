@@ -9,37 +9,114 @@
   background-position: center top;
 }
 
-.project-name,.project-tagline { 
-  background-color: rgba(255, 255, 255, 0); 
+.project-name,.project-tagline,.btn { 
   text-shadow:
-   -1px -1px 0 #000,  
+    -1px -1px 0 #000,  
     1px -1px 0 #000,
     -1px 1px 0 #000,
-     1px 1px 0 #000;
+    1px 1px 0 #000;
+}
+
+.project-name,.project-tagline { 
+  background-color: rgba(255, 255, 255, 0); 
 }
 
 .btn {
   background-color: rgba(255, 255, 255, 0.5);
-  text-shadow:
-   -1px -1px 0 #000,  
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-     1px 1px 0 #000;
 }
 
 .main-content {
-  max-width: 85rem;
+  max-width: 75rem;
   
   table {
-  	width:100%;
-  	
+  	display:table;
     margin-left:auto; 
     margin-right:auto;
   }
   
-  td {
+  table td,table th {
     text-align:center;
-    border: 0px;
+    border: 0px solid black;
+    font-weight: bold;
+  }
+  
+  h1 { 
+  	font-size:0;
+  }
+  
+  td{
+    img {
+      border-radius:10% 10% 10% 10%;
+      border: 1px solid #eff0f1;
+    }
+  }
+  
+  .slide-container {
+  	box-sizing:border-box;
+	display:block;
+	position: relative;
+  	margin-left:auto; 
+    margin-right:auto;
+    width:640px;
+  }
+  
+  .slide-txt{
+  	background-color:rgba(255,255,255,0.75);
+    position:absolute;
+    left:0;
+    bottom:0
+  }
+  
+  .slide-btn{
+    background-color: rgb(97, 97, 97) ;
+    border-radius:30% 30% 30% 30%;
+    box-sizing: border-box ;
+    color: rgb(255, 255, 255) ;
+    cursor: pointer ;
+    display: block ;
+    font-family: Verdana, sans-serif ;
+    font-size: 24px ;
+    height: 30px ;
+    line-height: 30px ;
+    outline-width: 0px ;
+    padding-bottom: 0px ;
+    padding-left: 0px ;
+    padding-right: 0px ;
+    padding-top: 0px ;
+    text-align: center ;
+    width: 30px ;
+  }
+  
+  .slide-btn:hover{
+  	background-color: rgb(10,10,10) ;
+  	cursor: pointer ;
+  	text-decoration: none;
+  }
+  
+  .slide-img {
+    display:table-cell;
+    margin-left:auto; 
+    margin-right:auto;
+  }
+  
+  .display-left{
+    position:absolute;
+    top:50%;
+    left:0%;
+    transform:translate(0%,-50%);
+    -ms-transform:translate(-0%,-50%);
+  }
+  .display-right{
+    position:absolute;
+    top:50%;
+    right:0%;
+    transform:translate(0%,-50%);
+    -ms-transform:translate(0%,-50%);
+  }
+  
+  .slide{
+  	margin-left:auto; 
+    margin-right:auto;
   }
 }
 
