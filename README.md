@@ -32,7 +32,7 @@ Timing information is read from input data to ensure data correlates temporally 
 | Script Interface<br>![](script1.png) | Python Console<br>![](console.png)  | Image Processing Projects<br>![](project.png) |
 
 Eidolon exposes its internal data structures and algorithms to user scripts which can be loaded at runtime.
-This allows custom processing of loaded data to be performed which can import additional libraries.
+This allows custom processing of loaded data to be performed with Numpy, Scipy, or imported additional libraries.
 The runtime Python console allows users to probe and experiment with loaded data, allowing Eidolon to function as a workbench environment.
 Image processing projects expose IRTK/MIRTK functionality for image registration, alignment, motion tracking, and other image processing tasks. 
 
@@ -42,7 +42,7 @@ Image processing projects expose IRTK/MIRTK functionality for image registration
 
 Write custom modules and scripts to extend the capabilities of Eidolon. 
 New user interfaces can be easily imported using PyQt to provide custom interactive components.
-The plugin-oriented architecture allows the extension of virtually all aspects of the platform, permitting new
+The plugin-oriented architecture allows the extension of virtually all aspects of the platform, permitting
 plugins to be created to import file formats, implement algorithms, and process data.
 
 ## Screenshots
@@ -89,6 +89,8 @@ function showDivs(n) {
     x[slideIndex].style.display = "block"; 
 }
 </script>
+
+---
 
 ---
 
