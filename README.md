@@ -90,6 +90,17 @@ function showDivs(n) {
 }
 </script>
 
+## DicomBrowser
+
+![](dicombrowser.png)
+
+Eidolon loads Dicom images into scene objects for rendering in 2D and 3D.
+A simpler tool for viewing Dicom images individually in 2D is [DicomBrowser](https://github.com/ericspod/DicomBrowser), a cross-platform application available for Windows, OSX, and Linux.
+This tool does nothing else but render uncompressed Dicom images in a 2D window with a few simple visualization and analysis functions.
+
+
+Download on Github: https://github.com/ericspod/DicomBrowser/releases
+
 ---
 
 ---
