@@ -581,18 +581,18 @@ def calculateTorsion(datasetlist,longaxis,elemvals,choosevals):
 	nodes=[ds.getNodes().clone() for ds in datasetlist]
 	nodes0=nodes[0]
 	length=nodes0.n()
-	inds=datasetlist[0].getIndexSet(elemvals.meta(StdProps._spatial)) #or first(datasetlist[0].enumIndexSets())
-
+	inds=datasetlist[0].getIndexSet(elemvals.meta(StdProps._spatial)) 
+	
 	assert inds and inds.n()>0,'Cannot find index set with name %r'%elemvals.meta(StdProps._spatial)
 	
 	results=[]
 
+	pos=BoundBox(nodes0).center
 	orient=rotator(longaxis,-vec3.Z())
-	trans=transform(-BoundBox(nodes0).center,vec3(1),orient,True)
+	trans=transform(-pos,vec3(1,1),orient,True)
 	
 	for n in nodes:
-		n.mul(trans)  # transforms the meshes so that the centerline is Z axis
-		n.mul(vec3(1,1,0)) # project all points onto XY plane
+		n.mul(trans)  # transforms the meshes so that the centerline is Z axis and points are projected onto the XY plane
 	
 	for n,ds in zip(nodes,datasetlist):
 		torsion=RealMatrix('PointTorsion',length,1)

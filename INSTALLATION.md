@@ -100,8 +100,8 @@ The Ogre3D library distributed with this version of Ubuntu is needed, so install
 
 ### Manual Python Install
 
-The simplest way to install these on is all together on the command line:
+The simplest way to install the dependencies all together on the command line:
 
-    sudo apt-get install python2.7 python-numpy python-scipy python-qt4 libcg
+    sudo apt-get install python2.7 python-numpy python-scipy python-qt4 libcg libogre-1.9.0
 
 Otherwise use a package manager to install these individually.
