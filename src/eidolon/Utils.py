@@ -212,7 +212,7 @@ class Future(object):
 		if timeout!=None and not res: # if we timed out waiting, return None
 			return None
 
-		# if an exception was raised by raised instead of setting a value, raise it
+		# if an exception was raised instead of setting a value, raise it
 		if isinstance(self.obj,FutureError) and self.obj.exc_value:
 			raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
 		elif isinstance(self.obj,Exception):
@@ -1763,6 +1763,7 @@ def clamp(val,minv,maxv):
 def lerp(val,v1,v2):
 	'''Linearly interpolate between `v1' and `v2', val==0 results in `v1'.'''
 	return v1+(v2-v1)*val
+	
 
 def lerpXi(val,minv,maxv):
 	'''
@@ -2221,74 +2222,4 @@ def mat4Inv(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p):
 	b33 = ( i * s3 - j * s1 + k * s0) * invdet
 
 	return ((b00,b01,b02,b03),(b10,b11,b12,b13),(b20,b21,b22,b23),(b30,b31,b32,b33))
-
-
-def matDet(mat):
-	n=len(mat)
-	assert all(len(m)==n for m in mat)
-
-	if n in (2,3,4):
-		if n==2:
-			det=mat2Det
-		elif n==3:
-			det=mat3Det
-		else:
-			det=mat4Det
-
-		return det(*(mat[i][j] for i,j in itertools.product(range(n),repeat=2)))
-	else:
-		sign=1
-		result=0
-		for j in range(n):
-			result+=sign*mat[0][j]*matDet(matCrossOut(mat,0,j))
-			sign*=-1
-
-		return result
-
-
-def matCrossOut(mat,i,j):
-	'''Returns matrix 'mat' with row 'i' and column 'j' crossed out.'''
-	rows=[]
-	for n in range(len(mat)):
-		if n!=i:
-			rows.append([mat[n][m] for m in xrange(len(mat)) if m!=j])
-
-	return rows
-
-
-def matCoFactors(mat):
-	n=len(mat)
-	cofactors=matZero(n,n)
-
-	for i,j in trange(n,n):
-		cofactors[i][j]=matDet(matCrossOut(mat,i,j))
-		if (i+j)%2==1:
-			cofactors[i][j]*=-1
-
-	return cofactors
-
-
-def matInv(mat):
-	n=len(mat)
-	assert all(len(m)==n for m in mat)
-
-	if n in (2,3,4):
-		if n==2:
-			inv=mat2Inv
-		elif n==3:
-			inv=mat3Inv
-		else:
-			inv=mat4Inv
-
-		return inv(*(mat[i][j] for i,j in itertools.product(range(n),repeat=2)))
-	else:
-		detinv=1.0/matDet(mat)
-		comat=matCoFactors(mat)
-		inv=matZero(n,n)
-
-		for i,j in trange(n,n):
-			inv[i][j]=comat[j][i]*detinv
-
-	return inv
-
 

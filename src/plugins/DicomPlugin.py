@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-#PACS: https://pypi.python.org/pypi/pynetdicom http://www.dicomserver.co.uk/
+#PACS: https://github.com/patmun/pynetdicom http://www.dicomserver.co.uk/
 
 from eidolon import *
 

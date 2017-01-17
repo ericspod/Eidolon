@@ -576,6 +576,54 @@ def calculateLinTetVolume(datasetlist,elemvals,choosevals,task=None):
 	return listSum(results[p] for p in sorted(results))
 
 
+@timing
+def calculateTorsion(datasetlist,longaxis,elemvals,choosevals):
+	nodes=[ds.getNodes().clone() for ds in datasetlist]
+	nodes0=nodes[0]
+	length=nodes0.n()
+	inds=datasetlist[0].getIndexSet(elemvals.meta(StdProps._spatial)) #or first(datasetlist[0].enumIndexSets())
+
+	assert inds and inds.n()>0,'Cannot find index set with name %r'%elemvals.meta(StdProps._spatial)
+	
+	results=[]
+
+	orient=rotator(longaxis,-vec3.Z())
+	trans=transform(-BoundBox(nodes0).center,vec3(1),orient,True)
+	
+	for n in nodes:
+		n.mul(trans)  # transforms the meshes so that the centerline is Z axis
+	
+#	# calculate the bound boxes of the nodes near the mitral plane and apex
+#	minz,maxz=minmax([n.z() for n in nodes0]) # determine the min and max distance from the origin in the Z dimension, ie. height
+#	mitralaabb=BoundBox([n for n in nodes0 if n.z()<lerp(0.1,minz,maxz)])
+#	apexaabb=BoundBox([n for n in nodes0 if n.z()>lerp(0.9,minz,maxz)])
+#	
+#	# `longaxis' is pointing from apex to mitral so reverse it, this assumes apex is small which may be wrong
+#	if mitralaabb.radius<apexaabb.radius:
+#		longaxis=-longaxis
+#		mitralaabb,apexaabb=apexaabb,mitralaabb
+#
+#	apexray=Ray(mitralaabb.center,longaxis)#(apexaabb.center-mitralaabb.center))
+#	
+#	raypoints=listToMatrix([apexray.getPosition(apexray.distTo(n)) for n in nodes0],'raypoints') # projection of each initial node on the ray
+#	nodes0.sub(raypoints)
+	
+	for n,ds in zip(nodes,datasetlist):
+		torsion=RealMatrix('PointTorsion',length,1)
+		torsion.meta(StdProps._spatial,elemvals.meta(StdProps._spatial))
+		torsion.meta(StdProps._topology,elemvals.meta(StdProps._topology))
+		ds.setDataField(torsion)
+		results.append(torsion)
+		
+		#n.sub(raypoints)
+		n.mul(vec3(1,1,0))
+		
+		for i in xrange(length):
+			torsion[i]=nodes0[i].angleTo(n[i])
+			
+	return results
+
+
 class CardiacMotionPropWidget(QtGui.QWidget,Ui_CardiacMotionProp):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
@@ -1722,7 +1770,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		def _calcField(task):
 			'''Calculates the 3 directional vector fields, then calculates the strain field and saves it to `infile'.'''
 			with fstrainnodes:
-				longaxis=img.getVolumeTransform().getRotation()*vec3(0,0,1)
+				longaxis=img.getVolumeTransform().getRotation()*vec3.Z()
 
 				radialf,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
 
