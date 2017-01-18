@@ -996,7 +996,6 @@ class CardiacMotionProject(Project):
 		contain more information than the original job.ini files. If track.ini is missing, create it based on the
 		source image chosen by the user if there is a choice, guess otherwise. 
 		'''
-		@argtiming
 		def _fixDir(sceneimgs,d,index):
 			index=index[0]
 			jfile=os.path.join(d,'job.ini')
