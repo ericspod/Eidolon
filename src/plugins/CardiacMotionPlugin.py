@@ -1026,6 +1026,14 @@ class CardiacMotionProject(Project):
 			printFlush('Writing %r with data from %r'%(tfile,name))
 			storeBasicConfig(tfile,jdata)
 			
+		def _chooseSource(sceneimgs,trackdir):
+			msg='''
+			Due to developer oversight, the source image of tracking directories wasn't saved.
+			Please select which object was tracked in directory %r:
+			'''%os.path.basename(dd)
+			
+			self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,lambda i:_fixDir(sceneimgs,trackdir,i))
+			
 		imgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
 		
 		for d in glob(self.getProjectFile('*/')):
@@ -1038,12 +1046,13 @@ class CardiacMotionProject(Project):
 				if len(sceneimgs)<=2: # 0 or 1 possible images, choose first option
 					_fixDir(sceneimgs,dd,[0])
 				else:
-					msg='''
-					Due to developer oversight, the source image of tracking directories wasn't saved.
-					Please select which object was tracked in directory %r:
-					'''%os.path.basename(dd)
-					
-					self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,(lambda dd:(lambda i:_fixDir(sceneimgs,dd,i)))(dd))
+					_chooseSource(sceneimgs,dd) # otherwise ask user which one to choose
+#					msg='''
+#					Due to developer oversight, the source image of tracking directories wasn't saved.
+#					Please select which object was tracked in directory %r:
+#					'''%os.path.basename(dd)
+#					
+#					self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,(lambda dd:(lambda i:_fixDir(sceneimgs,dd,i)))(dd))
 
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)
