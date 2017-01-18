@@ -18,6 +18,7 @@
 
 from eidolon import *
 
+import math
 import gzip
 import textwrap
 from glob import glob
@@ -577,17 +578,42 @@ def calculateLinTetVolume(datasetlist,elemvals,choosevals,task=None):
 
 
 @timing
-def calculateTorsion(datasetlist,longaxis,elemvals,choosevals):
+def calculateTorsion(datasetlist,aha,choosevals):
 	nodes=[ds.getNodes().clone() for ds in datasetlist]
 	nodes0=nodes[0]
 	length=nodes0.n()
-	inds=datasetlist[0].getIndexSet(elemvals.meta(StdProps._spatial)) 
-	
-	assert inds and inds.n()>0,'Cannot find index set with name %r'%elemvals.meta(StdProps._spatial)
-	
+	inds=datasetlist[0].getIndexSet(aha.meta(StdProps._spatial)) 
 	results=[]
+	
+	assert inds and inds.n()>0,'Cannot find index set with name %r'%aha.meta(StdProps._spatial)
+	
+	apexnodes=set()
+	apexinds=set()
+	basenodes=set()
+	
+	for i in xrange(len(inds)):
+		region=aha[i]
+		if region in range(1,7):
+			for ind in inds[i]:
+				basenodes.add(nodes0[ind])
+		elif region in range(13,17):
+			for ind in inds[i]:
+				apexnodes.add(nodes0[ind])
+		elif region==17:
+			for ind in inds[i]:
+				apexinds.add(ind)
+				
+	for i in xrange(len(inds)):
+		region=aha[i]
+		if region!=17:
+			for ind in inds[i]:
+				if ind in apexinds:
+					apexinds.remove(ind)
+	
+	pos=avg(basenodes)
+	longaxis=(avg(apexnodes)-pos).norm()
 
-	pos=BoundBox(nodes0).center
+	#pos=BoundBox(nodes0).center
 	orient=rotator(longaxis,-vec3.Z())
 	trans=transform(-pos,vec3(1,1),orient,True)
 	
@@ -595,14 +621,20 @@ def calculateTorsion(datasetlist,longaxis,elemvals,choosevals):
 		n.mul(trans)  # transforms the meshes so that the centerline is Z axis and points are projected onto the XY plane
 	
 	for n,ds in zip(nodes,datasetlist):
-		torsion=RealMatrix('PointTorsion',length,1)
-		torsion.meta(StdProps._spatial,elemvals.meta(StdProps._spatial))
-		torsion.meta(StdProps._topology,elemvals.meta(StdProps._topology))
-		ds.setDataField(torsion)
-		results.append(torsion)
+		twist=RealMatrix('PointTwist',length,1)
+		twist.meta(StdProps._spatial,aha.meta(StdProps._spatial))
+		twist.meta(StdProps._topology,aha.meta(StdProps._topology))
+		ds.setDataField(twist)
+		results.append(twist)
 		
 		for i in xrange(length):
-			torsion[i]=nodes0[i].angleTo(n[i])
+			if i not in apexinds:
+				startnode=nodes0[i]
+				stepnode=n[i]
+				cross=startnode.cross(stepnode).z()
+				twist[i]=startnode.angleTo(stepnode)*(1 if cross<0 else -1)
+			else:
+				twist[i]=0
 			
 	return results
 
@@ -964,6 +996,7 @@ class CardiacMotionProject(Project):
 		contain more information than the original job.ini files. If track.ini is missing, create it based on the
 		source image chosen by the user if there is a choice, guess otherwise. 
 		'''
+		@argtiming
 		def _fixDir(sceneimgs,d,index):
 			index=index[0]
 			jfile=os.path.join(d,'job.ini')
@@ -1011,7 +1044,7 @@ class CardiacMotionProject(Project):
 					Please select which object was tracked in directory %r:
 					'''%os.path.basename(dd)
 					
-					self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,lambda i:_fixDir(sceneimgs,dd,i))
+					self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,(lambda dd:(lambda i:_fixDir(sceneimgs,dd,i)))(dd))
 
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)

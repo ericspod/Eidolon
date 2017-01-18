@@ -27,16 +27,10 @@ class CTMotionTrackProject(Project):
 		self.logdir=self.getProjectFile('logs')
 		self.backDir=self.logdir
 		
-#		for n in ConfigNames:
-#			self.configMap[n[0]]=''
-#			
-#		self.configMap[ConfigNames._ctImageStack]=None
-		self.configMap[ConfigNames._paramfile]='' #self.CTMotion.tsffd
-#		self.configMap[ConfigNames._lvtop]=(0,0,0)
-#		self.configMap[ConfigNames._apex]=(0,0,0)
-##		self.configMap[ConfigNames._rvtop]=(0,0,0)
-#		self.configMap[ConfigNames._rvAtop]=(0,0,0)
-#		self.configMap[ConfigNames._rvPtop]=(0,0,0)
+		for n in ConfigNames:
+			self.configMap[n[0]]=''
+			
+#		self.configMap[ConfigNames._paramfile]=self.CTMotion.tsffd
 			
 	def getPropBox(self):
 		prop=Project.getPropBox(self)
@@ -47,27 +41,13 @@ class CTMotionTrackProject(Project):
 		cppdel(prop.chooseLocLabel)
 		
 		self.ctprop=CTmotionProjPropWidget()
-#		setCollapsibleGroupbox(self.ctprop.meshMaskGenGroup,False)
 		prop.verticalLayout.insertWidget(prop.verticalLayout.count()-1,self.ctprop)
 		
 		self.ctprop.ctDicomButton.clicked.connect(self._loadCTButton)
 		self.ctprop.niftiButton.clicked.connect(self._loadNiftiButton)
-#		self.ctprop.resampleButton.clicked.connect(self._resampleButton)
-#		self.ctprop.genMeshButton.clicked.connect(self._generateMeshButton)
 		self.ctprop.chooseParamButton.clicked.connect(self._chooseParamFile)
 		self.ctprop.trackButton.clicked.connect(self._trackButton)
-#		self.ctprop.show3ptButton.clicked.connect(self._show3ptPanel)
-#		self.ctprop.resample3ptButton.clicked.connect(self._resample3ptImage)
-#		self.ctprop.createSegButton.clicked.connect(self._createSegObject)
-#		self.ctprop.genMeshSegButton.clicked.connect(self._genSegMesh)
 		self.ctprop.applyTrackButton.clicked.connect(self._applyTrack)
-#		self.ctprop.squeezeButton.clicked.connect(self._calcSqueeze)
-		
-#		self.ctprop.resampleImgBox.activated.connect(self._setSourceVoxelDims)
-#		self.ctprop.isotropicBox.stateChanged.connect(lambda:self._checkVoxelBoxes(float(self.ctprop.voxXBox.value())))
-#		self.ctprop.voxXBox.valueChanged.connect(self._checkVoxelBoxes)
-#		self.ctprop.voxYBox.valueChanged.connect(self._checkVoxelBoxes)
-#		self.ctprop.voxZBox.valueChanged.connect(self._checkVoxelBoxes)
 		
 		self.ctprop.paramEdit.textChanged.connect(self.updateConfigFromProp)
 		
@@ -89,35 +69,19 @@ class CTMotionTrackProject(Project):
 		Project.updatePropBox(self,proj,prop)
 		
 		self.ctprop.paramEdit.setText(self.configMap[ConfigNames._paramfile])
-#		
+		
 		sceneimgs=filter(lambda o:isinstance(o,ImageSceneObject),self.memberObjs)
-#		scenesegs=filter(lambda o:isinstance(o,SegSceneObject),self.memberObjs)
 		scenemeshes=filter(lambda o:isinstance(o,MeshSceneObject),self.memberObjs)
-#
+
 		names=sorted(o.getName() for o in sceneimgs)
-#		fillList(self.ctprop.resampleImgBox,names)
-#		fillList(self.ctprop.meshMaskBox,names)
 		fillList(self.ctprop.trackImgBox,names)
 		fillList(self.ctprop.trackMaskBox,names,defaultitem='None')
-#		fillList(self.ctprop.choose3ptImgBox,names)
-#		
-#		names=sorted(o.getName() for o in scenesegs)
-#		fillList(self.ctprop.genMeshSegBox,names)
-#		
+
 		names=sorted(o.getName() for o in scenemeshes)
 		fillList(self.ctprop.trackObjBox,names)
-#		
-#		names=sorted(o.getName() for o in scenemeshes if len(o.datasets)>1)
-#		fillList(self.ctprop.meshSqueezeBox,names)
-#
-#		trackdirs=set()
-#		for d in glob.glob(self.getProjectFile('*/*.dof.gz')):
-#			trackdirs.add(os.path.basename(os.path.dirname(d)))
 				
 		trackdirs=map(os.path.basename,self.CTMotion.getTrackingDirs())
 		fillList(self.ctprop.trackDataBox,sorted(trackdirs))
-#		
-#		self._setSourceVoxelDims()
 		
 	def renameObject(self,obj,oldname):
 		newname=getValidFilename(obj.getName())
@@ -157,35 +121,6 @@ class CTMotionTrackProject(Project):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)
 		if len(filenames)>0:
 			self.CTMotion.loadNiftiFiles(filenames)
-			
-#	def _checkVoxelBoxes(self,val=0.0):
-#		if self.ctprop.isotropicBox.isChecked():
-#			with signalBlocker(self.ctprop.voxXBox,self.ctprop.voxYBox,self.ctprop.voxZBox):
-#				self.ctprop.voxXBox.setValue(val)
-#				self.ctprop.voxYBox.setValue(val)
-#				self.ctprop.voxZBox.setValue(val)
-#				
-#	def _setSourceVoxelDims(self,i=None):
-#		name=str(self.ctprop.resampleImgBox.currentText())
-#		obj=self.CTMotion.findObject(name,False)
-#		if obj:
-#			self.ctprop.srcVoxelLabel.setText('Source Voxel Size: %.3f, %.3f, %.3f'%tuple(obj.getVoxelSize()))
-#			
-#	def _resampleButton(self):
-#		name=str(self.ctprop.resampleImgBox.currentText())
-#		x=float(self.ctprop.voxXBox.value())
-#		y=float(self.ctprop.voxYBox.value())
-#		z=float(self.ctprop.voxZBox.value())
-#		self.CTMotion.resampleImage(name,vec3(x,y,z))
-#		
-#	def _generateMeshButton(self):
-#		name=str(self.ctprop.meshMaskBox.currentText())
-#		threshold=float(self.ctprop.thresholdBox.value())
-#		smooth=int(self.ctprop.smoothBox.value())
-#		resample=self.ctprop.resampleCheck.isChecked()
-#		decimate=self.ctprop.decimateCheck.isChecked()
-#		closed=self.ctprop.closedCheck.isChecked()
-#		self.CTMotion.generateMesh(name,threshold,smooth,resample,decimate,closed)
 		
 	def _chooseParamFile(self):					
 		filename=self.mgr.win.chooseFileDialog('Choose Parameter file')
@@ -202,50 +137,6 @@ class CTMotionTrackProject(Project):
 		mask=str(self.ctprop.trackMaskBox.currentText())
 		paramfile=str(self.ctprop.paramEdit.text())
 		self.CTMotion.startMotionTrack(name,mask,paramfile)
-#		
-#	def _show3ptPanel(self):
-#		name=str(self.ctprop.choose3ptImgBox.currentText())
-#		if not name:
-#			self.mgr.showMsg('Must select image series to choose points for','No Image Series Selected')
-#			return
-#			
-#		c=self.mgr.callThreadSafe(self.mgr.create2DView,constr=Camera3PointView)
-#		obj=self.mgr.findObject(name)
-#		rep=first(obj.reprs)
-#		
-#		if rep:
-#			c.setSourceName(rep.getName())
-#		else:
-#			rep=obj.createRepr(ReprType._imgtimevolume)
-#			self.mgr.addFuncTask(lambda:self.mgr.addSceneObjectRepr(rep))
-#			self.mgr.addFuncTask(lambda:c.setSourceName(rep().getName()))
-#		
-#	def _resample3ptImage(self):
-#		name=str(self.ctprop.choose3ptImgBox.currentText())
-#		lvtop=vec3(*self.configMap[ConfigNames._lvtop])
-#		apex=vec3(*self.configMap[ConfigNames._apex])
-#		#rvtop=vec3(*self.configMap[ConfigNames._rvtop])
-#		rvAtop=vec3(*self.configMap[ConfigNames._rvAtop])
-#		rvPtop=vec3(*self.configMap[ConfigNames._rvPtop])
-#		
-#		# choose the rvtop position based on the midpoint between corner nodes and their distance from the lvtop
-#		rvtop=(lerp(0.5,rvAtop,rvPtop)-lvtop).norm()*(1.2*max(rvAtop.distTo(lvtop),rvPtop.distTo(lvtop)))+lvtop
-##		rvtop=vec3(*self.configMap[ConfigNames._rvtop])
-#		
-#		if not name:
-#			self.mgr.showMsg('Must select image series to resample','No Image Series Selected')
-#		elif lvtop.distTo(apex)<epsilon or lvtop.distTo(rvtop)<epsilon or rvtop.distTo(apex)<epsilon:
-#			self.mgr.showMsg('Image 3-points not chosen yet, open point picker first','No Points Selected')
-#		else:
-#			self.CTMotion.resample3ptImage(name,lvtop,apex,rvtop)
-#			
-#	def _createSegObject(self):
-#		self.CTMotion.createSegObject(self.configMap[ConfigNames._resampleStack],SegmentTypes.LVPool)
-#	
-#	def _genSegMesh(self):
-#		name=str(self.ctprop.genMeshSegBox.currentText())
-#		refine=self.ctprop.genMeshRefineBox.value()
-#		self.CTMotion.generateSegMesh(name,refine)
 		
 	def _applyTrack(self):
 		name=str(self.ctprop.trackObjBox.currentText())
