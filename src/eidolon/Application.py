@@ -308,17 +308,16 @@ def initDefaultAssets(mgr):
 	s7=mgr.createSpectrum('EMSpectrum')
 	s7.setSpectrumData([color(0.6,0.0,0.6),color(0.0,1.0,1.0),color(0.0,1.0,0.0),color(1.0,1.0,0.0),color(1.0,0.0,0.0),color(0.3,0.0,0.0)])
 
-	offset=hounsfieldToUnit(0)
 	ctspec=[color(0,0,0),color(1,0,0),color(0.85,0.85,0.5),color(1,1,1)]
-	ctspecpos=[offset+hounsfieldToUnit(-150),offset+hounsfieldToUnit(200),offset+hounsfieldToUnit(400),offset+hounsfieldToUnit(550)]
-	ctalpha=[vec3(offset+hounsfieldToUnit(-425),0),vec3(offset+hounsfieldToUnit(300),0.25),vec3(offset+hounsfieldToUnit(550),1.0),
-										vec3(offset+hounsfieldToUnit(1050),1.0),vec3(offset+hounsfieldToUnit(2000),0.0)]
+	ctspecpos=[hounsfieldToUnit(-150),hounsfieldToUnit(200),hounsfieldToUnit(400),hounsfieldToUnit(550)]
+	ctalpha=[vec3(hounsfieldToUnit(-425),0),vec3(hounsfieldToUnit(300),0.25),vec3(hounsfieldToUnit(550),1.0),
+										vec3(hounsfieldToUnit(1050),1.0),vec3(hounsfieldToUnit(2000),0.0)]
 										
 	s8=mgr.createSpectrum('CardiacCT')
 	s8.setSpectrumData(ctspec,ctspecpos,ctalpha)
 	
 	s9=mgr.createSpectrum('CardiacCT2D')
-	s9.setSpectrumData(ctspec,ctspecpos,[vec3(offset+hounsfieldToUnit(-150),0),vec3(offset+hounsfieldToUnit(-100),1.0)])
+	s9.setSpectrumData(ctspec,ctspecpos,[vec3(hounsfieldToUnit(-150),0),vec3(hounsfieldToUnit(-100),1.0)])
 	
 	# create materials
 

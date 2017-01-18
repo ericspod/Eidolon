@@ -1415,7 +1415,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				objs=[]
 				for filename in filenames:
 					filename=os.path.abspath(filename)
-					if not filename.startswith(self.project.getProjectDir()):
+					if not filename.startswith(self.getCWD()):
 						if filename.endswith('.nii.gz'): # unzip file, compression accomplishes almost nothing for nifti anyway
 							newfilename=self.getUniqueLocalFile(splitPathExt(filename)[1])+'.nii'
 							with gzip.open(filename) as gf:
@@ -1432,6 +1432,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				if isEmpty:
 					self.mgr.callThreadSafe(self.project.updateConfigFromProp)
+					self.project.save()
 
 				f.setObject(objs)
 

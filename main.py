@@ -40,6 +40,7 @@ import plugins.ReportCardPlugin
 import plugins.MeasurementPlugin
 import plugins.CardiacMotionPlugin
 import plugins.ImageAlignPlugin
+import plugins.CTMotionTrackPlugin
 
 if __name__ == '__main__': # needed for Windows multiprocessing (unless you want fork bombs)
 	multiprocessing.freeze_support()

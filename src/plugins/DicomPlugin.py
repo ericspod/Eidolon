@@ -481,7 +481,10 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 		self._setBox(min(minx,maxx),max(minx,maxx),min(miny,maxy),max(miny,maxy))
 
 		self.recthandle.boxcol=color(0,1,0) if start<=current<=end else color(1,0,0)
-		self._updateHandles(self.viewplane)
+		self.recthandle.updateHandle()
+		
+		#self._updateHandles(self.viewplane)
+		#BaseCamera2DWidget.updateView(self)
 		self.setFigTransforms()
 
 	def createImage(self):

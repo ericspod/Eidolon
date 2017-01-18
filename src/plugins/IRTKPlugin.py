@@ -238,6 +238,7 @@ class IRTKPluginMixin(object):
 		pass
 
 	def getUniqueShortName(self,*comps,**kwargs):
+		'''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
 		return self.getUniqueObjName(createShortName(*comps,**kwargs))
 
 	def getUniqueObjName(self,name):
@@ -247,6 +248,7 @@ class IRTKPluginMixin(object):
 		return uniqueStr(name,filenames+objnames)
 		
 	def getUniqueLocalFile(self,name):
+		'''Get a version of the filename `name' which is guarranteed to be unique in the current context.'''
 		_,name,ext=splitPathExt(name)
 		return self.getLocalFile(self.getUniqueObjName(name)+ext)
 
