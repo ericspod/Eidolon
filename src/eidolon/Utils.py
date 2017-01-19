@@ -84,8 +84,8 @@ class enum(object):
 	'''
 	def __init__(self,*vals,**kwargs):
 		if vals and isinstance(vals[0],enum):
-			kwargs['doc']=vals[0].doc
-			kwargs['valtype']=vals[0].valtype
+			kwargs['doc']=kwargs.get('doc',vals[0].doc)
+			kwargs['valtype']=kwargs.get('valtype',vals[0].valtype)
 			vals=list(vals[0])
 			
 		if all(isinstance(v,str) for v in vals):

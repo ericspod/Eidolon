@@ -699,7 +699,7 @@ class CardiacMotionProject(Project):
 			self.reportcard.save()
 			self.mgr.addSceneObjectTask(self.reportcard)
 			self.addObject(self.reportcard)
-			self.save()
+			#self.save()
 		else:
 			pass
 		
@@ -992,14 +992,14 @@ class CardiacMotionProject(Project):
 			
 	def _checkTrackDirs(self):
 		'''
-		Check tracking directories for track.ini, this should appear in tracking directories made later and will 
-		contain more information than the original job.ini files. If track.ini is missing, create it based on the
-		source image chosen by the user if there is a choice, guess otherwise. 
+		Check tracking directories for a file named `trackconfname', this should appear in tracking directories made 
+		later and will contain more information than the original job.ini files. If the file is missing, create it 
+		based on the source image chosen by the user if there is a choice, guess otherwise. 
 		'''
-		def _fixDir(sceneimgs,d,index):
+		def _fixDir(sceneimgs,trackdir,index):
 			index=index[0]
-			jfile=os.path.join(d,'job.ini')
-			tfile=os.path.join(d,trackconfname)
+			jfile=os.path.join(trackdir,'job.ini')
+			tfile=os.path.join(trackdir,trackconfname)
 			jdata=readBasicConfig(jfile) if os.path.isfile(jfile) else {}
 			imgobj=self.mgr.findObject(sceneimgs[index])
 			
@@ -1010,7 +1010,7 @@ class CardiacMotionProject(Project):
 				vox=tuple(imgobj.getVoxelSize())
 			else:
 				name='UNKNOWN'
-				timesteps=range(len(glob(os.path.join(d,'*.dof.gz')))+1)
+				timesteps=range(len(glob(os.path.join(trackdir,'*.dof.gz')))+1)
 				trans=(0,0,0,1,1,1,0,0,0,False)
 				vox=(1,1,1)
 				
@@ -1030,29 +1030,28 @@ class CardiacMotionProject(Project):
 			msg='''
 			Due to developer oversight, the source image of tracking directories wasn't saved.
 			Please select which object was tracked in directory %r:
-			'''%os.path.basename(dd)
+			'''%os.path.basename(trackdir)
 			
-			self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,lambda i:_fixDir(sceneimgs,trackdir,i))
+			callback=lambda i:_fixDir(sceneimgs,trackdir,i)
+			
+			# important: this is called in a function so that `callback' binds with fresh variables
+			self.mgr.win.chooseListItemsDialog('Choose Source Image',textwrap.dedent(msg).strip(),sceneimgs,callback)
 			
 		imgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
 		
-		for d in glob(self.getProjectFile('*/')):
+		for d in glob(self.getProjectFile('*/')): # check each directory `d' to see if it has dof files but no `trackconfname' file
 			numdofs=len(glob(os.path.join(d,'*.dof.gz')))
+			
 			if not os.path.isfile(os.path.join(d,trackconfname)) and numdofs:
-				dd=d[:-1] # remove trailing / and create free variable
+				trackdir=d[:-1] # remove trailing /
+				
 				# choose correct length images
 				sceneimgs=[o.getName() for o in imgs if len(o.getTimestepList())==(numdofs+1)]+["Don't know"] 
 				
-				if len(sceneimgs)<=2: # 0 or 1 possible images, choose first option
-					_fixDir(sceneimgs,dd,[0])
+				if len(sceneimgs)<=2: # 0 or 1 possibilities, choose first option which will be "Don't know" if no suitable images found
+					_fixDir(sceneimgs,trackdir,[0])
 				else:
-					_chooseSource(sceneimgs,dd) # otherwise ask user which one to choose
-#					msg='''
-#					Due to developer oversight, the source image of tracking directories wasn't saved.
-#					Please select which object was tracked in directory %r:
-#					'''%os.path.basename(dd)
-#					
-#					self.mgr.win.chooseListItemsDialog('Choose Source',textwrap.dedent(msg).strip(),sceneimgs,(lambda dd:(lambda i:_fixDir(sceneimgs,dd,i)))(dd))
+					_chooseSource(sceneimgs,trackdir) # otherwise ask user which one to choose
 
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)

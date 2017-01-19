@@ -67,7 +67,11 @@ ServerMsgs=enum(
 
 TrackTypes=enum('motiontrackmultimage','gpunreg')
 
-JobMetaValues=enum('pid','rootdir','numtrackfiles','timesteps','tracktype','trackobj','maskobj','trackfile','maskfile','paramfile','adaptive','resultcode','startdate','transform','pixdim')
+JobMetaValues=enum(
+	'pid','rootdir','numtrackfiles','timesteps','tracktype','trackobj','maskobj','trackfile','maskfile',
+	'paramfile','adaptive','resultcode','startdate','transform','pixdim',
+	doc='Names of fields in job/track ini files storing metadata about the associated operation/job'
+)
 
 
 trackconfname='track.ini'
