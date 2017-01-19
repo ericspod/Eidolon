@@ -574,7 +574,7 @@ def calculateLinTetVolume(datasetlist,elemvals,choosevals,task=None):
 
 	results=calculateLinTetVolumeRange(len(nodelist),0,task,nodelist,fieldlist,inds,elemvals,choosevals,partitionArgs=(nodelist,fieldlist))
 	
-	return listSum(results[p] for p in sorted(results))
+	return sumResultMap(results)
 
 
 @timing
@@ -584,38 +584,60 @@ def calculateTorsion(datasetlist,aha,choosevals):
 	length=nodes0.n()
 	inds=datasetlist[0].getIndexSet(aha.meta(StdProps._spatial)) 
 	results=[]
+	apextwists=[]
+	basetwists=[]
 	
 	assert inds and inds.n()>0,'Cannot find index set with name %r'%aha.meta(StdProps._spatial)
 	
-	apexnodes=set()
+#	apexnodes=set()
+#	apexinds=set()
+#	basenodes=set()
+#	
+#	for i in xrange(len(inds)):
+#		region=aha[i]
+#		if region in range(1,7):
+#			for ind in inds[i]:
+#				basenodes.add(nodes0[ind])
+#		elif region in range(13,17):
+#			for ind in inds[i]:
+#				apexnodes.add(nodes0[ind])
+#		elif region==17:
+#			for ind in inds[i]:
+#				apexinds.add(ind)
+#				
+#	for i in xrange(len(inds)):
+#		region=aha[i]
+#		if region!=17:
+#			for ind in inds[i]:
+#				if ind in apexinds:
+#					apexinds.remove(ind)
+#	
+#	pos=avg(basenodes)
+#	longaxis=(avg(apexnodes)-pos).norm()
+	
+	baseinds=set()
 	apexinds=set()
-	basenodes=set()
+	ignoreinds=set()
 	
 	for i in xrange(len(inds)):
 		region=aha[i]
 		if region in range(1,7):
 			for ind in inds[i]:
-				basenodes.add(nodes0[ind])
+				baseinds.add(ind)
 		elif region in range(13,17):
 			for ind in inds[i]:
-				apexnodes.add(nodes0[ind])
+				apexinds.add(ind)
 		elif region==17:
 			for ind in inds[i]:
-				apexinds.add(ind)
+				ignoreinds.add(ind)
+			
 				
-	for i in xrange(len(inds)):
-		region=aha[i]
-		if region!=17:
-			for ind in inds[i]:
-				if ind in apexinds:
-					apexinds.remove(ind)
-	
-	pos=avg(basenodes)
-	longaxis=(avg(apexnodes)-pos).norm()
+	basepos=avg(nodes0[i] for i in baseinds)
+	apexpos=avg(nodes0[i] for i in apexinds)
+	longaxis=(apexpos-basepos).norm()
 
-	#pos=BoundBox(nodes0).center
 	orient=rotator(longaxis,-vec3.Z())
-	trans=transform(-pos,vec3(1,1),orient,True)
+	trans=transform(-basepos,vec3(1,1),orient,True)
 	
 	for n in nodes:
 		n.mul(trans)  # transforms the meshes so that the centerline is Z axis and points are projected onto the XY plane
@@ -628,15 +650,19 @@ def calculateTorsion(datasetlist,aha,choosevals):
 		results.append(twist)
 		
 		for i in xrange(length):
-			if i not in apexinds:
+			if i not in ignoreinds:
 				startnode=nodes0[i]
 				stepnode=n[i]
 				cross=startnode.cross(stepnode).z()
 				twist[i]=startnode.angleTo(stepnode)*(1 if cross<0 else -1)
 			else:
 				twist[i]=0
+		
+		apextwists.append(avg(math.degrees(twist[i]) for i in apexinds))
+		basetwists.append(avg(math.degrees(twist[i]) for i in baseinds))
+		
 			
-	return results
+	return results,apextwists,basetwists
 
 
 class CardiacMotionPropWidget(QtGui.QWidget,Ui_CardiacMotionProp):

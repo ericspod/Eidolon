@@ -30,10 +30,12 @@ DatafileParams._timeteps must therefore be the same length. The entry DatafilePa
 to create to represent a plot object, this must correspond to the type of data stored. 
 
 A simple graph with two values can be added to the scene as such:
+
 	p=Plot.createPlotObject('test.plot','test','Test Plot',{'foo':(1,2,3),'bar':(2,-1,5)},[],Plot.SimpleGraphWidget)
 	mgr.addSceneObject(p)
 
 A simple time graph plotting two values over time can be added to the scene as such:
+
 	p=Plot.createPlotObject('test.plot','test','Test Plot',[(1,2,3),(2,-1,5)],[10,20,30],Plot.TimePlotWidget)
 	mgr.addSceneObject(p)
 
