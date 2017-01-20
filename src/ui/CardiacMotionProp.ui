@@ -869,9 +869,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-363</y>
+        <y>0</y>
         <width>515</width>
-        <height>1185</height>
+        <height>1320</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1102,26 +1102,27 @@ background-color:rgba(255.0,255.0,255.0,200.0);
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_16">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
+        <widget class="QGroupBox" name="groupBox_21">
          <property name="title">
-          <string>Kinetic Energy Calculation</string>
+          <string>Torsion Analysis</string>
          </property>
-         <layout class="QFormLayout" name="formLayout_16">
+         <layout class="QFormLayout" name="formLayout_20">
           <item row="0" column="0">
-           <widget class="QLabel" name="label_58">
+           <widget class="QLabel" name="label_34">
             <property name="text">
-             <string>Mask Image</string>
+             <string>Mesh</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_55">
+            <property name="text">
+             <string>AHA Field</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QComboBox" name="keMaskBox">
+           <widget class="QComboBox" name="torsionMeshBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -1131,7 +1132,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QComboBox" name="phaseXBox">
+           <widget class="QComboBox" name="torsionFieldBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -1141,48 +1142,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QComboBox" name="phaseYBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="phaseZBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_60">
-            <property name="text">
-             <string>Phase Image X</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_61">
-            <property name="text">
-             <string>Phase Image Y</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_62">
-            <property name="text">
-             <string>Phase Image Z</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QPushButton" name="keCalcButton">
+           <widget class="QPushButton" name="torsionButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -1556,13 +1516,109 @@ background-color:rgba(255.0,255.0,255.0,200.0);
          </layout>
         </widget>
        </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_16">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Kinetic Energy Calculation</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_16">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_58">
+            <property name="text">
+             <string>Mask Image</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="keMaskBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="phaseXBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="phaseYBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="phaseZBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_60">
+            <property name="text">
+             <string>Phase Image X</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_61">
+            <property name="text">
+             <string>Phase Image Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_62">
+            <property name="text">
+             <string>Phase Image Z</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QPushButton" name="keCalcButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Calculate</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="page_4">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-581</y>
+        <y>0</y>
         <width>515</width>
         <height>1364</height>
        </rect>

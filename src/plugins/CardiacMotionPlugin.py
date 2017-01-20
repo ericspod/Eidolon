@@ -589,32 +589,6 @@ def calculateTorsion(datasetlist,aha,choosevals):
 	
 	assert inds and inds.n()>0,'Cannot find index set with name %r'%aha.meta(StdProps._spatial)
 	
-#	apexnodes=set()
-#	apexinds=set()
-#	basenodes=set()
-#	
-#	for i in xrange(len(inds)):
-#		region=aha[i]
-#		if region in range(1,7):
-#			for ind in inds[i]:
-#				basenodes.add(nodes0[ind])
-#		elif region in range(13,17):
-#			for ind in inds[i]:
-#				apexnodes.add(nodes0[ind])
-#		elif region==17:
-#			for ind in inds[i]:
-#				apexinds.add(ind)
-#				
-#	for i in xrange(len(inds)):
-#		region=aha[i]
-#		if region!=17:
-#			for ind in inds[i]:
-#				if ind in apexinds:
-#					apexinds.remove(ind)
-#	
-#	pos=avg(basenodes)
-#	longaxis=(avg(apexnodes)-pos).norm()
-	
 	baseinds=set()
 	apexinds=set()
 	ignoreinds=set()
@@ -634,7 +608,7 @@ def calculateTorsion(datasetlist,aha,choosevals):
 				
 	basepos=avg(nodes0[i] for i in baseinds)
 	apexpos=avg(nodes0[i] for i in apexinds)
-	longaxis=(apexpos-basepos).norm()
+	longaxis=apexpos-basepos
 
 	orient=rotator(longaxis,-vec3.Z())
 	trans=transform(-basepos,vec3(1,1),orient,True)
@@ -644,6 +618,7 @@ def calculateTorsion(datasetlist,aha,choosevals):
 	
 	for n,ds in zip(nodes,datasetlist):
 		twist=RealMatrix('PointTwist',length,1)
+		twist.fill(0)
 		twist.meta(StdProps._spatial,aha.meta(StdProps._spatial))
 		twist.meta(StdProps._topology,aha.meta(StdProps._topology))
 		ds.setDataField(twist)
@@ -653,16 +628,13 @@ def calculateTorsion(datasetlist,aha,choosevals):
 			if i not in ignoreinds:
 				startnode=nodes0[i]
 				stepnode=n[i]
-				cross=startnode.cross(stepnode).z()
-				twist[i]=startnode.angleTo(stepnode)*(1 if cross<0 else -1)
-			else:
-				twist[i]=0
+				crossz=startnode.cross(stepnode).z()
+				twist[i]=math.degrees(startnode.angleTo(stepnode)*(1 if crossz<0 else -1))
 		
-		apextwists.append(avg(math.degrees(twist[i]) for i in apexinds))
-		basetwists.append(avg(math.degrees(twist[i]) for i in baseinds))
-		
+		apextwists.append(avg(twist[i] for i in apexinds))
+		basetwists.append(avg(twist[i] for i in baseinds))
 			
-	return results,apextwists,basetwists
+	return results,apextwists,basetwists,longaxis.len()
 
 
 class CardiacMotionPropWidget(QtGui.QWidget,Ui_CardiacMotionProp):
@@ -792,6 +764,7 @@ class CardiacMotionProject(Project):
 		self.alignprop.volButton.clicked.connect(self._calculateVolumeButton)
 		self.alignprop.strainButton.clicked.connect(self._calculateStrainButton)
 		self.alignprop.strainMeshButton.clicked.connect(self._calculateStrainMeshButton)
+		self.alignprop.torsionButton.clicked.connect(self._calculateTorsionButton)
 
 		self.alignprop.keCalcButton.clicked.connect(self._calculateKineticEnergyButton)
 
@@ -809,6 +782,7 @@ class CardiacMotionProject(Project):
 		fillFieldBox(self.alignprop.thickMeshBox,self.alignprop.thickFieldBox)
 		fillFieldBox(self.alignprop.dispMeshBox,self.alignprop.dispFieldBox)
 		fillFieldBox(self.alignprop.volMeshBox,self.alignprop.volFieldBox)
+		fillFieldBox(self.alignprop.torsionMeshBox,self.alignprop.torsionFieldBox)
 
 		fillFieldBox(self.alignprop.strainMeshBox,self.alignprop.strainMeshAHABox)
 
@@ -890,6 +864,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.strainMeshBox,names)
 		fillList(self.alignprop.dispMeshBox,names)
 		fillList(self.alignprop.volMeshBox,names)
+		fillList(self.alignprop.torsionMeshBox,names)
 
 		names=sorted(o.getName() for o in sceneimgs+scenemeshes if len(o.getTimestepList())>1)
 		fillList(self.alignprop.tsSetObjBox,names)
@@ -899,6 +874,7 @@ class CardiacMotionProject(Project):
 		self.alignprop.dispMeshBox.currentIndexChanged.emit(self.alignprop.dispMeshBox.currentIndex())
 		self.alignprop.volMeshBox.currentIndexChanged.emit(self.alignprop.volMeshBox.currentIndex())
 		self.alignprop.strainMeshBox.currentIndexChanged.emit(self.alignprop.strainMeshBox.currentIndex())
+		self.alignprop.torsionMeshBox.currentIndexChanged.emit(self.alignprop.torsionMeshBox.currentIndex())
 
 		trackdirs=map(os.path.basename,self.CardiacMotion.getTrackingDirs())
 		fillList(self.alignprop.trackDataBox,trackdirs)
@@ -1398,6 +1374,13 @@ class CardiacMotionProject(Project):
 		spacing=self.alignprop.strainSpacingMeshBox.value()
 		
 		f=self.CardiacMotion.calculateMeshStrainField(objname,imgname,ahafieldname,spacing,trackname)
+		self.mgr.checkFutureResult(f)
+		
+	def _calculateTorsionButton(self):
+		objname=str(self.alignprop.torsionMeshBox.currentText())
+		ahafieldname=str(self.alignprop.torsionFieldBox.currentText())
+		
+		f=self.CardiacMotion.calculateTorsion(objname,ahafieldname)
 		self.mgr.checkFutureResult(f)
 
 	def _calculateKineticEnergyButton(self):
@@ -2057,6 +2040,49 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				f.setObject(nobj)
 
 		return self.mgr.runTasks(_calcStrains(initds,[ff[1] for ff in filelists],timesteps,spacing,obj),f)
+		
+	def calculateTorsion(self,objname,fieldname):
+		f=Future()
+		@taskroutine('Calculating Torsion')
+		def _calcTorsion(objname,fieldname,task):
+			with f:
+				obj=self.findObject(objname)
+				timesteps=obj.getTimestepList()
+				sectimesteps=[t/1000.0 for t in timesteps]
+				field=obj.datasets[0].getDataField(fieldname)
+				
+				twists,apextwists,basetwists,axislen=calculateTorsion(obj.datasets,field,range(1,18))
+	
+				twists=[a-b for a,b in zip(apextwists,basetwists)]
+				torsions=[t/axislen for t in twists]
+				
+				results={'Apex Rotation (Degrees)':apextwists,'Base Rotation (Degrees)':basetwists,'Twist (Degrees)':twists}
+				
+				plotname=self.mgr.getUniqueObjName(objname+'_torsion')
+				plottitle=objname+' Average Torsion'
+				plotfilename=self.project.getProjectFile(plotname+'.plot')
+				gplot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,timesteps,self.Plot.TimePlotWidget,obj)
+				gplot.save()
+	
+				self.mgr.addSceneObject(gplot)
+				self.project.addObject(gplot)
+				
+				rc=self.mgr.project.getReportCard()
+				if rc:
+					maxtwist=max(zip(twists,sectimesteps))
+					rc.setValue(objname,'Max Twist (degrees) and Time (seconds)',maxtwist)
+					
+					maxtorsion=max(zip(torsions,sectimesteps))
+					rc.setValue(objname,'Max Torsion (degrees/mm) and Time (seconds)',maxtorsion)
+					
+					rc.save()
+
+				obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
+
+				self.project.save()
+				f.setObject((twists,gplot))
+		
+		return self.mgr.runTasks(_calcTorsion(objname,fieldname),f)
 
 	def calculatePhaseKineticEnergy(self,maskname,phaseXname,phaseYname,phaseZname,maskval=2):
 		mask=self.findObject(maskname)
