@@ -591,7 +591,6 @@ def calculateTorsion(datasetlist,aha,choosevals):
 	
 	baseinds=set()
 	apexinds=set()
-	ignoreinds=set()
 	
 	for i in xrange(len(inds)):
 		region=aha[i]
@@ -601,10 +600,6 @@ def calculateTorsion(datasetlist,aha,choosevals):
 		elif region in range(13,17):
 			for ind in inds[i]:
 				apexinds.add(ind)
-		elif region==17:
-			for ind in inds[i]:
-				ignoreinds.add(ind)
-			
 				
 	basepos=avg(nodes0[i] for i in baseinds)
 	apexpos=avg(nodes0[i] for i in apexinds)
@@ -625,11 +620,10 @@ def calculateTorsion(datasetlist,aha,choosevals):
 		results.append(twist)
 		
 		for i in xrange(length):
-			if i not in ignoreinds:
-				startnode=nodes0[i]
-				stepnode=n[i]
-				crossz=startnode.cross(stepnode).z()
-				twist[i]=math.degrees(startnode.angleTo(stepnode)*(1 if crossz<0 else -1))
+			startnode=nodes0[i]
+			stepnode=n[i]
+			crossz=startnode.cross(stepnode).z()
+			twist[i]=math.degrees(startnode.angleTo(stepnode)*(1 if crossz<0 else -1))
 		
 		apextwists.append(avg(twist[i] for i in apexinds))
 		basetwists.append(avg(twist[i] for i in baseinds))
