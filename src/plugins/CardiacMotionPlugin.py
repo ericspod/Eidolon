@@ -810,13 +810,11 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.bbCropSrcBox,names)
 		fillList(self.alignprop.bbCropRefBox,names)
 		fillList(self.alignprop.emptyCropImgBox,names)
-		fillList(self.alignprop.strainImgBox,names)
 		fillList(self.alignprop.resampleSrcBox,names)
 		fillList(self.alignprop.resampleTmpltBox,names)
 
 		names=sorted(o.getName() for o in sceneimgs if o.isTimeDependent)
 		fillList(self.alignprop.mCropSeriesBox,names)
-		fillList(self.alignprop.trackSrcBox,names,defaultitem='None')
 		fillList(self.alignprop.regInterBox,names,self.configMap[ConfigNames._regintermed],'None')
 		fillList(self.alignprop.tsExtrSrcBox,names)
 
@@ -838,7 +836,6 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.strainROIBox,names)
 		fillList(self.alignprop.trackedNregBox,names)
 		fillList(self.alignprop.maskNregBox,names,defaultitem='None')
-		fillList(self.alignprop.strainSrcBox,names,defaultitem='None')
 
 		fillList(self.alignprop.keMaskBox,names)
 		fillList(self.alignprop.phaseXBox,names)
@@ -1296,14 +1293,9 @@ class CardiacMotionProject(Project):
 
 	def _applyTrackButton(self):
 		objname=str(self.alignprop.trackObjBox.currentText())
-		srcname=str(self.alignprop.trackSrcBox.currentText())
 		trackname=str(self.alignprop.trackDataBox.currentText())
-		isFrameByFrame=self.alignprop.framebyframeCheck.isChecked()
 
-		if srcname=='None':
-			srcname=None
-
-		f=self.CardiacMotion.applyMotionTrack(objname,srcname,trackname,isFrameByFrame)
+		f=self.CardiacMotion.applyMotionTrack(objname,trackname)
 		self.mgr.checkFutureResult(f)
 
 	def _resampleImage(self):
@@ -1352,22 +1344,20 @@ class CardiacMotionProject(Project):
 
 	def _calculateStrainButton(self):
 		name=str(self.alignprop.strainROIBox.currentText())
-		srcname=str(self.alignprop.strainSrcBox.currentText())
 		spacing=self.alignprop.strainSpacingBox.value()
 		trackname=str(self.alignprop.strainTrackBox.currentText())
 		griddims=(self.alignprop.strainWBox.value(),self.alignprop.strainHBox.value(),self.alignprop.strainDBox.value())
 		
-		f=self.CardiacMotion.calculateImageStrainField(name,srcname,griddims,spacing,trackname)
+		f=self.CardiacMotion.calculateImageStrainField(name,griddims,spacing,trackname)
 		self.mgr.checkFutureResult(f)
 
 	def _calculateStrainMeshButton(self):
 		objname=str(self.alignprop.strainMeshBox.currentText())
-		imgname=str(self.alignprop.strainImgBox.currentText())
 		ahafieldname=str(self.alignprop.strainMeshAHABox.currentText())
 		trackname=str(self.alignprop.strainMeshTrackBox.currentText())
 		spacing=self.alignprop.strainSpacingMeshBox.value()
 		
-		f=self.CardiacMotion.calculateMeshStrainField(objname,imgname,ahafieldname,spacing,trackname)
+		f=self.CardiacMotion.calculateMeshStrainField(objname,ahafieldname,spacing,trackname)
 		self.mgr.checkFutureResult(f)
 		
 	def _calculateTorsionButton(self):
@@ -1737,7 +1727,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		return self.mgr.runTasks(_calcVolume(objname,regionfieldname,heartrate,regionrange),f)
 
-	def calculateMeshStrainField(self,objname, imgname,ahafieldname,spacing,trackname):
+	def calculateMeshStrainField(self,objname,ahafieldname,spacing,trackname):
 		
 		if not ahafieldname:
 			raise ValueError,'Need to provide an AHA field name'''
@@ -1746,12 +1736,13 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		fstrainnodes=Future()
 
 		obj=self.findObject(objname)
-		img=self.findObject(imgname)
 		trackdir=self.project.getProjectFile(trackname)
 		trackfiles=sorted(glob(os.path.join(trackdir,'*.dof.gz')))
+		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		filelists=[('in.vtk','out%.4i.vtk'%i,dof,-1) for i,dof in enumerate(trackfiles)]
 		infile=os.path.join(trackdir,'in.vtk')
 		timesteps=obj.getTimestepList()
+		imgtrans=transform(*conf[JobMetaValues._transform])
 
 		assert len(timesteps)==(len(trackfiles)+1),'%i != %i'%(len(timesteps),(len(trackfiles)+1))
 
@@ -1763,8 +1754,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		ahaindices=dict((v,i) for i,v in enumerate(range(1,18))) # map regions to 0-based indices used to index in lists
 		
-		printFlush(ahaindices)
-
 		# create a matrix assigning an AHA region to each node
 		nodeaha=IndexMatrix('nodeaha',nodes.n(),1)
 		nodeaha.fill(0) # assumes 0 is never used for a region number
@@ -1797,7 +1786,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		def _calcField(task):
 			'''Calculates the 3 directional vector fields, then calculates the strain field and saves it to `infile'.'''
 			with fstrainnodes:
-				longaxis=img.getVolumeTransform().getRotation()*vec3.Z()
+				longaxis=imgtrans.getRotation()*vec3.Z()
 
 				radialf,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
 
@@ -1970,13 +1959,13 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		tasks+=[applyMotionTrackTask(self.ptransformation,trackdir,False,filelists), _calcStrains()]
 		return self.mgr.runTasks(tasks,f)
 
-	def calculateImageStrainField(self,objname,srcname,griddims,spacing,trackname):
+	def calculateImageStrainField(self,objname,griddims,spacing,trackname):
 		obj=self.findObject(objname)
-		srcobj=self.findObject(srcname)
 		trackdir=self.project.getProjectFile(trackname)
 		trackfiles=sorted(glob(os.path.join(trackdir,'*.dof.gz')))
+		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		infile=os.path.join(trackdir,'in.vtk')
-		timesteps=srcobj.getTimestepList() if srcobj else range(len(trackfiles))
+		timesteps=conf[JobMetaValues._timesteps]
 
 		#dx,dy,dz=[max(2,int(d/float(spacing))) for d in obj.getVolumeDims()]
 		trans=obj.getVolumeTransform()
@@ -1984,32 +1973,40 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		indmat=listToMatrix(inds,'inds',ElemType._Hex1NL)
 		indmat.meta(StdProps._isspatial,'True')
+		
+		printFlush(griddims,len(nodes),len(inds))
 
 #		strain0=listToMatrix([0.0]*len(nodes),'strain0')
 #		strain0.meta(StdProps._topology,indmat.getName())
 #		strain0.meta(StdProps._spatial,indmat.getName())
-		initds=PyDataSet('initds',[trans*n for n in nodes],[indmat],[('strain0','',[0.0]*len(nodes))])
+		initds=PyDataSet('initds',[trans*n for n in nodes],[indmat],[('strain0',[0.0]*len(nodes),'inds')])
 
 		strainnodes=createStrainGrid(nodes,transform(),trans,spacing)
 		strainnodes.setM(1)
 
 		self.writePolyNodes(infile,strainnodes)
 		
-		filelists=[('in.vtk','out%.4i.vtk'%i,dof) for i,dof in enumerate(trackfiles)]
-		self.mgr.runTasks(applyMotionTrackTask(self.ptransformation,trackdir,False,filelists))
+		filelists=[('in.vtk','out%.4i.vtk'%i,dof,-1) for i,dof in enumerate(trackfiles)]
+		#self.mgr.runTasks(applyMotionTrackTask(self.ptransformation,trackdir,False,filelists))
+		
+		trackobj=self.applyMotionTrack(objname,trackname,False)
 
 		f=Future()
 		@taskroutine('Calculating Strains')
 		def _calcStrains(initds,outfiles,timesteps,spacing,obj,task):
 			with f:
+				trackobj=Future.get(trackobj)
 				indmat=initds.getIndexSet('inds')
 				task.setMaxProgress(len(outfiles))
 				dds=[initds]
-				for i,o in enumerate(outfiles):
+				
+				for i,tds in enumerate(trackobj.datasets[1:]):
 					#ds=self.readIRTKPolydata(os.path.join(trackdir,o))
 					#nodes=ds.getNodes()
-					nodes,_=self.VTK.loadPolydataNodes(os.path.join(trackdir,o))
-					nodes.mul(vec3(-1,-1,1))
+					#nodes,_=self.VTK.loadPolydataNodes(os.path.join(trackdir,o))
+					#nodes.mul(vec3(-1,-1,1))
+				
+					nodes=tds.getNodes()
 					nodes.setM(7)
 					tensors=calculateStrainTensors(nodes,spacing)
 					strain,_=calculateTensorIndicatorEigen(tensors)

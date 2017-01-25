@@ -65,7 +65,7 @@ ServerMsgs=enum(
 	doc='Server request and response messages, containing the types of the arguments and a description'
 )
 
-TrackTypes=enum('motiontrackmultimage','gpunreg')
+TrackTypes=enum('motiontrackmultimage','gpunreg','mirtknreg')
 
 JobMetaValues=enum(
 	'pid','rootdir','numtrackfiles','timesteps','tracktype','trackobj','maskobj','trackfile','maskfile',
@@ -916,26 +916,7 @@ class IRTKPluginMixin(object):
 		@taskroutine('Boundbox-cropping Image Object')
 		def _crop(imgname,refname,mx,my,task):
 			with f:
-#				logfile1=self.getLogFile('region.log')
-#				cwd=self.getCWD()
-#				isExtended=mx!=0 or my!=0 or mz!=0
-#
 				cropname=self.getUniqueShortName(imgname,'Crop',complen=20)
-#
-#				imgfile=self.getNiftiFile(imgname)
-#				reffile=self.getNiftiFile(refname)
-#				outfile=self.getNiftiFile(cropname)
-#
-#				if isExtended:
-#					reffile=self.extendImageStack(refname,mx,my,mz)[1][0]
-#
-#				ff=self.mgr.execBatchProgramTask(self.region,imgfile,outfile,'-ref',reffile,logfile=logfile1,cwd=cwd)
-#				self._checkProgramTask(ff)
-#
-#				if isExtended:
-#					self.removeFilesTask(reffile)
-#
-#				self.correctNiftiParams(imgfile,outfile)
 			
 				imgobj=self.findObject(imgname)
 				ref=self.findObject(refname)
@@ -951,30 +932,22 @@ class IRTKPluginMixin(object):
 		ext=extendImage(obj,self.getUniqueShortName(obj.getName(),'Ext'),mx,my,mz,value)
 		return ext,self.saveToNifti([ext],True)
 
-	def applyMotionTrack(self,objname,srcname,trackname,isFrameByFrame=False):
+	def applyMotionTrack(self,objname,trackname,addObject=True):
 		obj=self.findObject(objname)
-		srcobj=self.findObject(srcname)
 		trackdir=self.getLocalFile(trackname)
+		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
+		timesteps=conf[JobMetaValues._timesteps]
+		isFrameByFrame=conf[JobMetaValues._tracktype]!=TrackTypes._motiontrackmultimage
 		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof.gz')))
 		resultname=self.getUniqueShortName(obj.getName(),'Tracked',trackname)
 		f=Future()
 		
-		if not obj or not trackfiles:
-			return
-
 		assert isinstance(obj,(ImageSceneObject,MeshSceneObject))
-		assert isinstance(obj,(ImageSceneObject,MeshSceneObject))
-		assert not srcobj or isinstance(srcobj,(ImageSceneObject,MeshSceneObject))
-
+		assert trackfiles
+		
 		if isinstance(obj,MeshSceneObject):
-			if srcobj:
-				timesteps=srcobj.getTimestepList()
-			else:
-				timesteps=range(len(trackfiles)+1)
-
 			# single dof file for multiple timesteps rather than on file per step
 			if len(trackfiles)==1:
-				assert srcobj
 				trackfiles=[trackfiles[0]]*(len(timesteps)-1)
 
 			# read the times data so that ptransformation can be set to the right timestep
@@ -1019,14 +992,15 @@ class IRTKPluginMixin(object):
 					result=MeshSceneObject(name,dds,filenames=filenames)
 					result.setTimestepList(timesteps)
 					
+					# attempt to save the object with its own plugin, defaulting to VTK if this doesn't work
 					try:
 						obj.plugin.saveObject(result,self.getLocalFile(name),setFilenames=True)
-					except ValueError:
-						self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
-					except NotImplemented:
+					except ValueError,NotImplemented:
 						self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
 						
-					self.addObject(result)
+					if addObject:
+						self.addObject(result)
+						
 					f.setObject(result)
 
 			return self.mgr.runTasks(_loadSeq(obj,[ff[1] for ff in filelists],timesteps,resultname),f)
@@ -1041,10 +1015,13 @@ class IRTKPluginMixin(object):
 			def _loadSeq(task):
 				with f:
 					objs=[self.Nifti.loadObject(os.path.join(trackdir,fl[1])) for fl in filelists]
-					result=self.Nifti.createSequence(resultname,objs,srcobj.getTimestepList() if srcobj else None)
+					result=self.Nifti.createSequence(resultname,objs,timesteps)
 					self.Nifti.saveObject(result,resultnii,setFilenames=True)
 					self.mgr.addSceneObject(result)
-					self.addObject(result)
+					
+					if addObject:
+						self.addObject(result)
+						
 					f.setObject(result)
 					
 			return self.mgr.runTasks(_loadSeq(),f)

@@ -121,10 +121,18 @@ class NiftiPlugin(ImageScenePlugin):
 				if interval==0.0 and len(img.shape)==4 and img.shape[-1]>1:
 					interval=1.0
 				
-				rot=rotator(-c,b,math.sqrt(max(0,1.0-(b*b+c*c+d*d))),-d)*rotator(vec3(0,0,1),halfpi)
-				position=vec3(-x,-y,z)				
-				spacing=vec3(pixdim[1],pixdim[2],pixdim[0]*pixdim[3])
+				qfac=float(pixdim[0]) or 1.0
+				spacing=vec3(pixdim[1],pixdim[2],qfac*pixdim[3])
 				
+				if int(hdr['qform_code'])>0:
+					position=vec3(-x,-y,z)
+					rot=rotator(-c,b,math.sqrt(max(0,1.0-(b*b+c*c+d*d))),-d)*rotator(vec3.Z(),halfpi)
+				else:				
+					affine=img.get_affine()
+					position=vec3(-affine[0,3],-affine[1,3],affine[2,3])
+					rmat=np.asarray([-affine[0,:3],-affine[1,:3],affine[2,:3]])
+					rot=rotator(*rmat.flatten().tolist())*rotator(vec3.Z(),halfpi)
+					
 				xyzunit=xyzt_units & 0x07 # isolate space units with a bitmask of 7
 				tunit=xyzt_units & 0x38 # isolate time units with a bitmask of 56
 				
