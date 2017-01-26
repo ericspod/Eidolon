@@ -932,8 +932,8 @@ class IRTKPluginMixin(object):
 		ext=extendImage(obj,self.getUniqueShortName(obj.getName(),'Ext'),mx,my,mz,value)
 		return ext,self.saveToNifti([ext],True)
 
-	def applyMotionTrack(self,objname,trackname,addObject=True):
-		obj=self.findObject(objname)
+	def applyMotionTrack(self,obj_or_name,trackname,addObject=True):
+		obj=self.findObject(obj_or_name) 
 		trackdir=self.getLocalFile(trackname)
 		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		timesteps=conf[JobMetaValues._timesteps]
@@ -992,13 +992,13 @@ class IRTKPluginMixin(object):
 					result=MeshSceneObject(name,dds,filenames=filenames)
 					result.setTimestepList(timesteps)
 					
-					# attempt to save the object with its own plugin, defaulting to VTK if this doesn't work
-					try:
-						obj.plugin.saveObject(result,self.getLocalFile(name),setFilenames=True)
-					except ValueError,NotImplemented:
-						self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
-						
 					if addObject:
+						# attempt to save the object with its own plugin, defaulting to VTK if this doesn't work
+						try:
+							obj.plugin.saveObject(result,self.getLocalFile(name),setFilenames=True)
+						except ValueError,NotImplemented:
+							self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
+					
 						self.addObject(result)
 						
 					f.setObject(result)

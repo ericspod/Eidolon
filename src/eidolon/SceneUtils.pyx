@@ -1753,9 +1753,22 @@ def generateHexBox(dimx,dimy,dimz):
 	dimy+=1
 	dimz+=1
 	dimxy=dimx*dimy
+	
 	ind=lambda i,j,k:i+j*dimx+k*dimxy
-
 	hexes=[(ind(i,j,k),ind(i+1,j,k),ind(i,j+1,k),ind(i+1,j+1,k),ind(i,j,k+1),ind(i+1,j,k+1),ind(i,j+1,k+1),ind(i+1,j+1,k+1)) for k,j,i in trange(dimz-1,dimy-1,dimx-1)]
+
+#	# the loop below is equivalent to the above definition of `hexes'
+#	hexes=[]
+#	for k,j,i in trange(dimz-1,dimy-1,dimx-1):
+#		x0 = dimx*j
+#		x2 = k*dimxy
+#		x3 = i + x0 + x2
+#		x4 = dimx*(j + 1)
+#		x5 = i + x2 + x4
+#		x6 = dimxy*(k + 1)
+#		x7 = i + x0 + x6
+#		x8 = i + x4 + x6
+#		hexes.append((x3, x3 + 1, x5, x5 + 1, x7, x7 + 1, x8, x8 + 1))
 
 	return nodes,hexes
 

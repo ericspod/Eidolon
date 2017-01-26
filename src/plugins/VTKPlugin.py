@@ -797,7 +797,7 @@ class VTKPlugin(MeshScenePlugin):
 			namemap=kwargs.get('namemap',{})
 			convertpath=kwargs['convertPath']
 			script=''
-			args={'varname':namemap[obj], 'objname':obj.name}
+			args={'varname':namemap[obj], 'objname':obj.name,'timesteps':obj.getTimestepList()}
 
 			if not configSection:
 				if 'filename' in obj.kwargs:
@@ -806,6 +806,8 @@ class VTKPlugin(MeshScenePlugin):
 				elif 'filenames' in obj.kwargs:
 					args['filenames']=('['+','.join(map(convertpath,obj.kwargs['filenames']))+']')
 					script+='%(varname)s=VTK.loadSequence(%(filenames)s,%(objname)r)'
+			else:
+				script+='%(varname)s.setTimestepList(%(timesteps)r)\n'
 			
 			return setStrIndent(script % args).strip()+'\n'
 		else:

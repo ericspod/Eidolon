@@ -142,22 +142,23 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 def createStrainGrid(nodes,toRefSpace,toImgSpace,h):
 	'''
 	Calculate the 6 point strain node set for each node of `nodes'. Each node from `nodes' is first transformed by
-	`toRefSpace' to place it in reference space, then 6 vectors are calculated by shifting the node by `h' in along
+	`toRefSpace' to place it in reference space, then 6 vectors are calculated by shifting the node by `h' along
 	each axis in the positive and negative directions. All vectors are then transformed by `toImgSpace'. The result
 	is a matrix with 7 columns, the transformed node and its 6 shifted vectors.
 	'''
 	result=Vec3Matrix('straingrid',0,7)
 	result.reserveRows(len(nodes))
 
-	dx=vec3(h,0,0)
-	dy=vec3(0,h,0)
-	dz=vec3(0,0,h)
+	rot=toImgSpace.getRotation()
+	dx=rot*vec3(h,0,0)
+	dy=rot*vec3(0,h,0)
+	dz=rot*vec3(0,0,h)
 
 	for n in xrange(len(nodes)):
-		p=toRefSpace*nodes[n]
+		p=toImgSpace*(toRefSpace*nodes[n])
 		result.append(p,p+dx,p-dx,p+dy,p-dy,p+dz,p-dz)
 
-	result.mul(toImgSpace)
+#	result.mul(toImgSpace)
 
 	return result
 
@@ -217,7 +218,6 @@ def strainTensor(px,mx,py,my,pz,mz,hh):
 
 def tensorMul(E,v):
 	'''Returns Ev.v'''
-	#return (E[0]*v[0]+E[1]*v[1]+E[2]*v[2]),(E[3]*v[0]+E[4]*v[1]+E[5]*v[2]),(E[6]*v[0]+E[7]*v[1]+E[8]*v[2])
 	return (E[0]*v[0]+E[1]*v[1]+E[2]*v[2])*v[0]+(E[3]*v[0]+E[4]*v[1]+E[5]*v[2])*v[1]+(E[6]*v[0]+E[7]*v[1]+E[8]*v[2])*v[2]
 
 @timing
@@ -230,7 +230,7 @@ def calculateStrainTensors(nodes_t,h):
 	result.reserveRows(nodes_t.n())
 
 	for n in xrange(nodes_t.n()):
-		p,px,mx,py,my,pz,mz=nodes_t.getRow(n)
+		_,px,mx,py,my,pz,mz=nodes_t.getRow(n)
 		result.append(*strainTensor(px,mx,py,my,pz,mz,h))
 
 	return result
@@ -1728,50 +1728,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		return self.mgr.runTasks(_calcVolume(objname,regionfieldname,heartrate,regionrange),f)
 
 	def calculateMeshStrainField(self,objname,ahafieldname,spacing,trackname):
-		
-		if not ahafieldname:
-			raise ValueError,'Need to provide an AHA field name'''
-			
-		f=Future()
-		fstrainnodes=Future()
-
-		obj=self.findObject(objname)
-		trackdir=self.project.getProjectFile(trackname)
-		trackfiles=sorted(glob(os.path.join(trackdir,'*.dof.gz')))
-		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
-		filelists=[('in.vtk','out%.4i.vtk'%i,dof,-1) for i,dof in enumerate(trackfiles)]
-		infile=os.path.join(trackdir,'in.vtk')
-		timesteps=obj.getTimestepList()
-		imgtrans=transform(*conf[JobMetaValues._transform])
-
-		assert len(timesteps)==(len(trackfiles)+1),'%i != %i'%(len(timesteps),(len(trackfiles)+1))
-
-		ds=obj.datasets[0]
-		nodes=ds.getNodes()
-		aha=ds.getDataField(ahafieldname)
-		spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
-		indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
-
-		ahaindices=dict((v,i) for i,v in enumerate(range(1,18))) # map regions to 0-based indices used to index in lists
-		
-		# create a matrix assigning an AHA region to each node
-		nodeaha=IndexMatrix('nodeaha',nodes.n(),1)
-		nodeaha.fill(0) # assumes 0 is never used for a region number
-		for n in xrange(indmat.n()):
-			elemaha=int(aha.getAt(n)) # AHA region for element n
-			# for each node of element n, assign it to region elemaha if it hasn't been already assigned
-			for ind in indmat.getRow(n):
-				nodeaha.setAt(nodeaha.getAt(ind) or elemaha,ind) # choose the first AHA region encountered for each node
-			
-		def _addFields(ds,*fields):
-			'''Add the matrices `fields' as fields of `ds' with metadat values set.'''
-			for f in fields:
-				f.meta(StdProps._topology,indmat.getName())
-				f.meta(StdProps._spatial,indmat.getName())
-				f.meta(StdProps._timecopy,'False')
-				ds.setDataField(f)
-				
-		def _makePlot(suffix,titlesuffix,values):
+		def _makePlot(suffix,titlesuffix,values,obj):
 			'''Create a AHA Plot object for the given region values.'''
 			plotname=self.mgr.getUniqueObjName(objname+suffix)
 			plottitle=objname+titlesuffix
@@ -1781,105 +1738,121 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 			self.mgr.addSceneObject(plot)
 			self.project.addObject(plot)
 			return plot
-
-		@taskroutine('Calculating strain field')
-		def _calcField(task):
-			'''Calculates the 3 directional vector fields, then calculates the strain field and saves it to `infile'.'''
-			with fstrainnodes:
-				longaxis=imgtrans.getRotation()*vec3.Z()
-
-				radialf,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
-
-				for d in obj.datasets:
-					d.setDataField(radialf)
-					d.setDataField(longf)
-					d.setDataField(circumf)
-
-				strainnodes=createStrainField(nodes,radialf,longf,circumf,spacing)
-				strainnodes.setM(1)
-
-				self.writePolyNodes(infile,strainnodes)
-				fstrainnodes.setObject(strainnodes)
-
-		@taskroutine('Calculating Strains')
-		@timing
-		def _calcStrains(task):
-			'''Calculates the strain fields for each timestep.'''
+			
+		
+		obj=self.findObject(objname)
+		timesteps=obj.getTimestepList()
+		trackdir=self.project.getProjectFile(trackname)
+		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
+		
+		if not ahafieldname:
+			raise ValueError,'Need to provide an AHA field name'''
+			
+		if len(conf[JobMetaValues._timesteps])!=len(timesteps):
+			raise ValueError,'Mesh object has %i timesteps but tracking data has %i'%(len(timesteps),len(conf[JobMetaValues._timesteps]))
+					
+		f=Future()
+		@taskroutine('Calculating strains')
+		def _calc(task):
 			with f:
-				outfiles=[ff[1] for ff in filelists]
-				firstnodes=fstrainnodes()
-				task.setMaxProgress(len(outfiles))
-
-				objds=obj.datasets[0]
-				radialf=objds.getDataField('radial')
-				longf=objds.getDataField('longitudinal')
-				circumf=objds.getDataField('circumferential')
-
-				# initial tensor field
-				tensors0=listToMatrix([(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0)]*nodes.n(),'tensors')
-				# initial strain fields
-				maxeig0=RealMatrix('maxstrain',nodes.n())
-				mineig0=RealMatrix('minstrain',nodes.n())
-				# initial direction strain fields are just the directional fields scaled by `spacing'
-				radstrain0=RealMatrix('radstrain',nodes.n(),3) 
-				longstrain0=RealMatrix('longstrain',nodes.n(),3) 
-				circstrain0=RealMatrix('circstrain',nodes.n(),3)
-
-				# scale the vectors to be as long as the spacing value, assuming they were unit length vectors initially
-				maxeig0.fill(0)
-				radstrain0.fill(0)
-				longstrain0.fill(0)
-				circstrain0.fill(0)
+				ds=obj.datasets[0]
+				nodes=ds.getNodes()
+				aha=ds.getDataField(ahafieldname)
+				aharegions=range(1,18)
+				imgtrans=transform(*conf[JobMetaValues._transform])
 				
-				_addFields(objds,tensors0,maxeig0,mineig0,radstrain0,longstrain0,circstrain0)
+				task.setMaxProgress(len(timesteps))
+				
+				# get the index matrix defining the topology the AHA field is defined for
+				if ds.hasIndexSet(aha.meta(StdProps._spatial)):
+					indmat=ds.getIndexSet(aha.meta(StdProps._spatial))
+				else:
+					spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
+					indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
+					
+				# create a matrix assigning an AHA region to each node
+				nodeaha=IndexMatrix('nodeaha',nodes.n(),1)
+				nodeaha.fill(0) # assumes 0 is never used for a region number
+				for n in xrange(indmat.n()):
+					elemaha=int(aha.getAt(n)) # AHA region for element n
+					# for each node of element n, assign it to region elemaha if it hasn't been already assigned
+					for ind in indmat.getRow(n):
+						nodeaha.setAt(nodeaha.getAt(ind) or elemaha,ind) # choose the first AHA region encountered for each node
+
+				# calculate directional fields if necessary
+				if not ds.hasDataField('radial'):
+					longaxis=imgtrans.getRotation()*vec3.Z()
+					radialf,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
+		
+					for d in obj.datasets:
+						d.setDataField(radialf)
+						d.setDataField(longf)
+						d.setDataField(circumf)
+				else:
+					radialf=ds.getDataField('radial')
+					longf=ds.getDataField('longitudinal')
+					circumf=ds.getDataField('circumferential')
+						
+				strainnodes=createStrainField(nodes,radialf,longf,circumf,spacing)
+				strainnodes.setM(1) # make the nodes one long column so that they will be tracked like regular nodes
+				
+				# apply motion tracking using a dummy scene object
+				initobj=MeshSceneObject(obj.getName()+'_Strains',PyDataSet('initds',strainnodes,[indmat]))
+				trackobj=self.applyMotionTrack(initobj,trackname,False)
 
 				# These matrices will contain one row per timestep, each row will have an averaged value for each
 				# region, thus the matrices are indexed by timestep then region
-				mavgstrains=[[0]*len(ahaindices)] # averages of maximal eigenvalue strain
-				minavgstrains=[[0]*len(ahaindices)] # averages of minimal eigenvalue strain
-				lavgstrains=[[0]*len(ahaindices)] # averages of longitudinal strain
-				ravgstrains=[[0]*len(ahaindices)] # averages of radial strain
-				cavgstrains=[[0]*len(ahaindices)] # averages of circumferential strain
+				mavgstrains=[[0]*len(aharegions)] # averages of maximal eigenvalue strain
+				minavgstrains=[[0]*len(aharegions)] # averages of minimal eigenvalue strain
+				lavgstrains=[[0]*len(aharegions)] # averages of longitudinal strain
+				ravgstrains=[[0]*len(aharegions)] # averages of radial strain
+				cavgstrains=[[0]*len(aharegions)] # averages of circumferential strain
 				
 				globalmavgstrains=[0]
 				globalminavgstrains=[0]
 				globallavgstrains=[0]
 				globalravgstrains=[0]
 				globalcavgstrains=[0]
-
-				for i,o in enumerate(outfiles):
-					objds=obj.datasets[i+1]
-					inodes,_=self.readPolyNodes(os.path.join(trackdir,o))
+				
+				# for each pairing of a dataset from the original object and from the tracked strain object,
+				# compute the strain from the tracked object's data, storing the results in the original's
+				# dataset and in the arrays of results above from which plots shall be made
+				for i,ods in enumerate(obj.datasets):
+					inodes=trackobj.datasets[i].getNodes()
 					inodes.setM(7)
 
-					tensors=calculateStrainTensors(inodes,spacing)
-					maxeig,mineig=calculateTensorIndicatorEigen(tensors)
-					longstrain=calculateTensorMul(tensors,longf,'longstrain')
+					tensors=calculateStrainTensors(inodes,spacing) # calculate tensor matrices from each set of 7 points
+					maxeig,mineig=calculateTensorIndicatorEigen(tensors) # maximal/minimal eigenvector values
+					# strain in each direction computed by multiplying tensors by directions
+					longstrain=calculateTensorMul(tensors,longf,'longstrain') 
 					radstrain=calculateTensorMul(tensors,radialf,'radstrain')
 					circstrain=calculateTensorMul(tensors,circumf,'circstrain')
 
-					_addFields(objds,tensors,maxeig,mineig,radstrain,longstrain,circstrain)
+					# add each of the fields to the dataset
+					for df in (tensors,maxeig,mineig,radstrain,longstrain,circstrain):
+						df.meta(StdProps._topology,indmat.getName())
+						df.meta(StdProps._spatial,indmat.getName())
+						df.meta(StdProps._timecopy,'False')
+						ods.setDataField(df)
 
 					# create lists with one empty list for each region
-					mavgstrain=[list() for x in xrange(len(ahaindices))]
-					minavgstrain=[list() for x in xrange(len(ahaindices))]
-					lavgstrain=[list() for x in xrange(len(ahaindices))]
-					ravgstrain=[list() for x in xrange(len(ahaindices))]
-					cavgstrain=[list() for x in xrange(len(ahaindices))]
+					mavgstrain=[list() for x in xrange(len(aharegions))]
+					minavgstrain=[list() for x in xrange(len(aharegions))]
+					lavgstrain=[list() for x in xrange(len(aharegions))]
+					ravgstrain=[list() for x in xrange(len(aharegions))]
+					cavgstrain=[list() for x in xrange(len(aharegions))]
 
 					# Go through each value in the strain fields, if their associated nodes are in a region of interest
 					# add the value to the appropriate sublist in the one the above list, otherwise zero the value out
 					for n in xrange(maxeig.n()):
-						region=nodeaha.getAt(n)
-						if region in ahaindices: # if the node is in a region of interest, add its strain values to the lists
-							index=ahaindices[region]
-							mavgstrain[index].append(maxeig.getAt(n))
-							minavgstrain[index].append(mineig.getAt(n))
-							lavgstrain[index].append(longstrain.getAt(n))
-							ravgstrain[index].append(radstrain.getAt(n))
-							cavgstrain[index].append(circstrain.getAt(n))
+						region=nodeaha.getAt(n)-1
+						if region in aharegions: # if the node is in a region of interest, add its strain values to the lists
+							mavgstrain[region].append(maxeig.getAt(n))
+							minavgstrain[region].append(mineig.getAt(n))
+							lavgstrain[region].append(longstrain.getAt(n))
+							ravgstrain[region].append(radstrain.getAt(n))
+							cavgstrain[region].append(circstrain.getAt(n))
 						else: # otherwise zero out its entries so that strain outside the regions of interest are not stored
-							printFlush(region)
 							maxeig.setAt(0,n)
 							mineig.setAt(0,n)
 							longstrain.setRow(n,0,0,0)
@@ -1902,13 +1875,16 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 					task.setProgress(i+1)
 
+				# resave the object using its plugin, which must work otherwise the object couldn't have been saved already
 				obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
 
-				p1=_makePlot('_maxstrain',' Region Average of Maximal Strain',mavgstrains)
-				p2=_makePlot('_longstrain',' Region Average of Magnitude of Longitudinal Strain',lavgstrains)
-				p3=_makePlot('_radstrain',' Region Average of Magnitude of Radial Strain',ravgstrains)
-				p4=_makePlot('_circstrain',' Region Average of Magnitude of Circumferential Strain',cavgstrains)
+				# make bullseye plots of max strain the 3 directional strains
+				p1=_makePlot('_maxstrain',' Region Average of Maximal Strain',mavgstrains,obj)
+				p2=_makePlot('_longstrain',' Region Average of Magnitude of Longitudinal Strain',lavgstrains,obj)
+				p3=_makePlot('_radstrain',' Region Average of Magnitude of Radial Strain',ravgstrains,obj)
+				p4=_makePlot('_circstrain',' Region Average of Magnitude of Circumferential Strain',cavgstrains,obj)
 				
+				# create a graph plot of the global average strain maxima, minima, and average strain in the three directions
 				plotname=self.mgr.getUniqueObjName(objname+'_globalstrain')
 				plottitle=objname+' Global Average Strain'
 				plotfilename=self.project.getProjectFile(plotname+'.plot')
@@ -1917,9 +1893,11 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				gplot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,timesteps,self.Plot.TimePlotWidget,obj,labels=labels)
 				gplot.save()
 
+				# add the plot this way to avoid saving the project multiple times
 				self.mgr.addSceneObject(gplot)
 				self.project.addObject(gplot)
 				
+				# fill in the report card
 				rc=self.mgr.project.getReportCard()
 				if rc:
 					minm,maxm=minmax(matIter(mavgstrains))
@@ -1950,88 +1928,44 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				self.project.save()
 				f.setObject((p1,p2,p3,p4,gplot))
-
-		if ds.getDataField('Radial') is None:
-			tasks=[_calcField()]
-		else:
-			tasks=[]
 			
-		tasks+=[applyMotionTrackTask(self.ptransformation,trackdir,False,filelists), _calcStrains()]
-		return self.mgr.runTasks(tasks,f)
+		return self.mgr.runTasks(_calc(),f)
 
 	def calculateImageStrainField(self,objname,griddims,spacing,trackname):
-		obj=self.findObject(objname)
-		trackdir=self.project.getProjectFile(trackname)
-		trackfiles=sorted(glob(os.path.join(trackdir,'*.dof.gz')))
-		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
-		infile=os.path.join(trackdir,'in.vtk')
-		timesteps=conf[JobMetaValues._timesteps]
-
-		#dx,dy,dz=[max(2,int(d/float(spacing))) for d in obj.getVolumeDims()]
-		trans=obj.getVolumeTransform()
-		nodes,inds=generateHexBox(*griddims)
-
-		indmat=listToMatrix(inds,'inds',ElemType._Hex1NL)
-		indmat.meta(StdProps._isspatial,'True')
-		
-		printFlush(griddims,len(nodes),len(inds))
-
-#		strain0=listToMatrix([0.0]*len(nodes),'strain0')
-#		strain0.meta(StdProps._topology,indmat.getName())
-#		strain0.meta(StdProps._spatial,indmat.getName())
-		initds=PyDataSet('initds',[trans*n for n in nodes],[indmat],[('strain0',[0.0]*len(nodes),'inds')])
-
-		strainnodes=createStrainGrid(nodes,transform(),trans,spacing)
-		strainnodes.setM(1)
-
-		self.writePolyNodes(infile,strainnodes)
-		
-		filelists=[('in.vtk','out%.4i.vtk'%i,dof,-1) for i,dof in enumerate(trackfiles)]
-		#self.mgr.runTasks(applyMotionTrackTask(self.ptransformation,trackdir,False,filelists))
-		
-		trackobj=self.applyMotionTrack(objname,trackname,False)
-
 		f=Future()
 		@taskroutine('Calculating Strains')
-		def _calcStrains(initds,outfiles,timesteps,spacing,obj,task):
+		def _calcStrains(task):
 			with f:
-				trackobj=Future.get(trackobj)
-				indmat=initds.getIndexSet('inds')
-				task.setMaxProgress(len(outfiles))
-				dds=[initds]
+				indname='inds'
+				obj=self.findObject(objname)
 				
-				for i,tds in enumerate(trackobj.datasets[1:]):
-					#ds=self.readIRTKPolydata(os.path.join(trackdir,o))
-					#nodes=ds.getNodes()
-					#nodes,_=self.VTK.loadPolydataNodes(os.path.join(trackdir,o))
-					#nodes.mul(vec3(-1,-1,1))
+				nodes,inds=generateHexBox(*griddims)
+				strainnodes=createStrainGrid(nodes,transform(),obj.getVolumeTransform(),spacing)
+				strainnodes.setM(1)
+				initobj=MeshSceneObject(obj.getName()+'_Grid',PyDataSet('initds',strainnodes,[(indname,ElemType._Hex1NL,inds)]))
+				trackobj=self.applyMotionTrack(initobj,trackname,False)
 				
-					nodes=tds.getNodes()
+				task.setMaxProgress(len(trackobj.datasets))
+				
+				for i,ds in enumerate(trackobj.datasets):
+					nodes=ds.getNodes()
 					nodes.setM(7)
+					
 					tensors=calculateStrainTensors(nodes,spacing)
 					strain,_=calculateTensorIndicatorEigen(tensors)
-					strain.meta(StdProps._topology,indmat.getName())
-					strain.meta(StdProps._spatial,indmat.getName())
-
-					ds=PyDataSet(o+'DS',nodes.subMatrix(nodes.getName(),nodes.n()),[indmat],[strain])
-#					ds.setIndexSet(indmat)
-#					ds.setDataField(strain)
-#					ds.setNodes(nodes.subMatrix(nodes.getName(),nodes.n()))
-
-					if i==0:
-						dds[-1].setDataField(strain.clone('strain0'))
-
-					dds.append(ds)
+					strain.meta(StdProps._topology,indname)
+					strain.meta(StdProps._spatial,indname)
+					ds.setDataField(strain)
+					ds.setNodes(nodes.subMatrix(nodes.getName(),nodes.n()))
+					
 					task.setProgress(i+1)
 
-				nobj=MeshSceneObject(self.mgr.getUniqueObjName(obj.getName()+'Strain'),dds)
-				nobj.timestepList=timesteps
-				self.mgr.addSceneObject(nobj)
-
-				f.setObject(nobj)
-
-		return self.mgr.runTasks(_calcStrains(initds,[ff[1] for ff in filelists],timesteps,spacing,obj),f)
-		
+				self.VTK.saveObject(trackobj,self.getLocalFile(trackobj.getName()),setFilenames=True)
+				self.addObject(trackobj)
+				f.setObject(trackobj)
+			
+		return self.mgr.runTasks(_calcStrains(),f)
+	
 	def calculateTorsion(self,objname,fieldname):
 		f=Future()
 		@taskroutine('Calculating Torsion')

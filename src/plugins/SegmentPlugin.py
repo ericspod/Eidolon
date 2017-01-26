@@ -45,33 +45,6 @@ class Seg2DWidget(QtGui.QWidget,Ui_Seg2DView):
 		self.setupUi(self)
 
 
-#def xiMedian(x1,x2,theshold=0.5):
-#	'''
-#	Get the median xi value between `x1' and `x2'. If any pair of components from these differ by more than `threshold',
-#	1 is subtracted from the smaller of the two before the median value between them is calculated. This ensures that
-#	the correct median value is chosen for xi values on either side of a boundary in a circular xi space.
-#	'''
-#	r=[]
-#	for a,b in zip(x1,x2):
-#		if abs(a-b)>theshold:
-#			if a>b:
-#				a,b=b,a
-#
-#			if a>(1.0-b):
-#				r.append((a+(1.0-b))*0.5)
-#			else:
-#				r.append(b+(a+(1.0-b))*0.5)
-#
-##			if a<b:
-##				a-=1
-##			else:
-##				b-=1
-#		else:
-#			r.append((a+b)/2)
-#
-#	return vec3(*r)
-
-
 def getContourPlane(contour):
 	'''
 	Returns the plane definition for the contour points `contour'. The (center,normal) pair is the barycenter of the
