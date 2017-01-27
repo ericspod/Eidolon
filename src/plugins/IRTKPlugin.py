@@ -213,6 +213,22 @@ class IRTKPluginMixin(object):
 		self.ptransformation=self.irtkpath('ptransformation')
 		self.nreg=self.irtkpath('nreg')
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
+		
+		if isWindows:
+			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTKWin64')
+		elif isLinux:
+			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTKLinux')
+			self.exesuffix=''
+			os.environ['LD_LIBRARY_PATH']='%s:%s'%(os.environ['LD_LIBRARY_PATH'],self.mirtkdir)
+		else:
+			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTKOSX')
+			os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ['DYLD_LIBRARY_PATH'],self.mirtkdir)
+			
+		self.register=os.path.join(self.mirtkdir,'register')+self.exesuffix
+		self.info=os.path.join(self.mirtkdir,'info')+self.exesuffix
+		self.transimage=os.path.join(self.mirtkdir,'transform-image')+self.exesuffix
+		self.transpts=os.path.join(self.mirtkdir,'transform-points')+self.exesuffix
+		self.editimage=os.path.join(self.mirtkdir,'edit-image')+self.exesuffix
 
 	def getCWD(self):
 		'''This method must be overridden to return the current working directory (ie. project directory).'''
