@@ -682,7 +682,8 @@ class IRTKPluginMixin(object):
 
 		for tn in targetnames:
 			finalname=self.getUniqueShortName('RReg',os.path.splitext(tn)[0],'to',os.path.splitext(subjectname)[0])
-			filenames.append(self.getNiftiFile(finalname))
+			finalnii=self.getNiftiFile(finalname)
+			filenames.append(finalnii)
 
 			if doffile==None or intermedname==None:
 				# If there's no intermediate then compute the deformation independently for each image.
@@ -692,7 +693,7 @@ class IRTKPluginMixin(object):
 			else:
 				# If there's an intermediate and it's dof has be determined, apply it to `tn'.
 				# This line is only reached on the second time through the loop with an intermediate.
-				ff=self.applyHeaderTool(tn,finalname,doffile,cwd)
+				ff=self.applyHeaderTool(self.getNiftiFile(tn),finalnii,doffile,cwd)
 
 			fresult.append(ff)
 
