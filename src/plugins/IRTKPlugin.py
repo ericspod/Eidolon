@@ -22,6 +22,7 @@ from plugins.VTKPlugin import DatasetTypes,VTKProps
 from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 
 from ui.mtServerForm import Ui_mtServerForm
+import os
 import sys
 import glob
 import subprocess
@@ -76,6 +77,17 @@ JobMetaValues=enum(
 
 trackconfname='track.ini'
 
+
+def isTrackDir(path):
+	'''Returns True if `path' is the path to a directory containing tracking information.'''
+	if not os.path.isdir(path):
+		return False
+		
+	if not os.path.isfile(os.path.join(path,trackconfname)):
+		return False
+		
+	return len(glob.glob(path+'/*'))>0
+	
 
 def isPositiveDefinite(mat):
 	'''Returns True if `mat' is a positive definite matrix (ie. all positive eigenvalues).'''

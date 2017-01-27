@@ -1158,7 +1158,8 @@ class CardiacMotionProject(Project):
 	def _loadMagFlow(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Par filename',filterstr='Par Files (*.par *.PAR)',chooseMultiple=False)
 		if filename:
-			self.CardiacMotion.loadMagPhaseParRec(filename)
+			f=self.CardiacMotion.loadMagPhaseParRec(filename)
+			self.mgr.checkFutureResult(f)
 
 	def _loadVTKFile(self):
 		filename=self.mgr.win.chooseFileDialog('Choose VTK Mesh filename',filterstr='VTK Files (*.vtk *.vtu)',chooseMultiple=False)
@@ -1171,7 +1172,8 @@ class CardiacMotionProject(Project):
 		params=d.getParams()
 
 		if params:
-			self.CardiacMotion.loadCHeartMesh(*params)
+			f=self.CardiacMotion.loadCHeartMesh(*params)
+			self.mgr.checkFutureResult(f)
 			
 	def _setTimestep(self):
 		objname=str(self.alignprop.tsSetObjBox.currentText())
@@ -1551,12 +1553,12 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		def _load(filename,task):
 			with f:
 				objs=self.ParRec.loadObject(filename)
-				magname=self.getUniqueShortName('Mag',obj.getName())
-				phasename=self.getUniqueShortName('Phase',obj.getName())
 				
 				if len(objs)!=2:
 					raise IOError,'Loaded ParRec does not have 2 orientations, is this mag/phase?'
 					
+				magname=self.getUniqueShortName('Mag',objs[0].getName())
+				phasename=self.getUniqueShortName('Phase',objs[0].getName())
 				self.Nifti.saveObject(objs[0],self.getNiftiFile(magname))
 				self.Nifti.saveObject(objs[1],self.getNiftiFile(phasename))
 
