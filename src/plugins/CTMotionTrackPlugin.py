@@ -136,13 +136,15 @@ class CTMotionTrackProject(Project):
 		name=str(self.ctprop.trackImgBox.currentText())
 		mask=str(self.ctprop.trackMaskBox.currentText())
 		paramfile=str(self.ctprop.paramEdit.text())
-		self.CTMotion.startMotionTrack(name,mask,paramfile)
+		trackname=str(self.ctprop.trackName.text())
+		
+		f=self.CTMotion.startRegisterMotionTrack(name,mask,trackname,paramfile)
+		self.mgr.checkFutureResult(f)
 		
 	def _applyTrack(self):
 		name=str(self.ctprop.trackObjBox.currentText())
 		trackname=str(self.ctprop.trackDataBox.currentText())
-		srcname=first(o.getName() for o in self.memberObjs if isinstance(o,ImageSceneObject))
-		f=self.CTMotion.applyTrackingToMesh(name,srcname,trackname)
+		f=self.CTMotion.applyMotionTrack(name,trackname)
 		self.mgr.checkFutureResult(f)
 	
 
@@ -187,41 +189,16 @@ class CTMotionTrackPlugin(ImageScenePlugin,IRTKPluginMixin):
 		self.project.addObject(obj)
 		self.project.save()
 		
-	def loadNiftiFiles(self,filenames):
-		f=Future()
-		@taskroutine('Loading NIfTI Files')
-		def _loadNifti(filenames,task):
-			with f:
-				isEmpty=len(self.project.memberObjs)==0
-				filenames=Future.get(filenames)
-				objs=[]
-				for filename in filenames:
-					filename=os.path.abspath(filename)
-					if not filename.startswith(self.getCWD()):
-						if filename.endswith('.nii.gz'): # unzip file, compression accomplishes almost nothing for nifti anyway
-							newfilename=self.getUniqueLocalFile(splitPathExt(filename)[1])+'.nii'
-							with gzip.open(filename) as gf:
-								with open(newfilename,'wb') as ff:
-									ff.write(gf.read())
-						else:
-							newfilename=self.getUniqueLocalFile(filename)
-							copyfileSafe(filename,newfilename,True)
-						filename=newfilename
+	@taskmethod('Load Nifti Files')
+	def loadNiftiFiles(self,filenames,task=None):
+		isEmpty=len(self.project.memberObjs)==0
+		objs=IRTKPluginMixin.loadNiftiFiles(self,filenames)
 
-					nobj=self.Nifti.loadObject(filename)
-					self.addObject(nobj)
-					objs.append(nobj)
-
-				if isEmpty:
-					self.mgr.callThreadSafe(self.project.updateConfigFromProp)
-					self.project.save()
-
-				f.setObject(objs)
-				
-		return self.mgr.runTasks(_loadNifti(filenames),f)
-		
-	def startMotionTrack(self,objname,maskname,paramfile):
-		pass
+		if isEmpty:
+			self.mgr.callThreadSafe(self.project.updateConfigFromProp)
+			self.project.save()
+	
+		return objs
 		
 	def applyTrackingToMesh(self,objname,srcname,trackname):
 		f=Future()

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>280</width>
-    <height>401</height>
+    <width>358</width>
+    <height>512</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -110,7 +110,7 @@
         </item>
        </layout>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QPushButton" name="trackButton">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -120,6 +120,34 @@
         </property>
         <property name="text">
          <string>Start Motion Tracking</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_14">
+        <item>
+         <widget class="QLineEdit" name="trackName"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_68">
+          <property name="font">
+           <font>
+            <pointsize>8</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>(blank for default)</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_67">
+        <property name="text">
+         <string>Track Name</string>
         </property>
        </widget>
       </item>

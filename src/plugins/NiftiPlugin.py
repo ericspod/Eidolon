@@ -25,7 +25,7 @@ import nibabel
 from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes
 import os
 import shutil
-
+import gzip
 
 class NiftiPlugin(ImageScenePlugin):
 	def __init__(self):
@@ -87,6 +87,14 @@ class NiftiPlugin(ImageScenePlugin):
 		filename=os.path.join(sdir,os.path.basename(obj.source['filename']))
 		copyfileSafe(obj.source['filename'],filename,overwrite)
 		obj.source['filename']=filename
+		
+	def decompressNifti(self,filename,outdir):
+		newfilename=os.path.join(outdir,splitPathExt(filename,True)[1]+'.nii')
+		with gzip.open(filename) as gf:
+			with open(newfilename,'wb') as ff:
+				ff.write(gf.read())
+				
+		return newfilename
 			
 	def loadImage(self,filename,name=None,imgObj=None):
 		'''Deprecated, for compatibility only.'''

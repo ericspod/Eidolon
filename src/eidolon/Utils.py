@@ -1205,7 +1205,48 @@ def taskroutine(taskLabel=None,selfName='task'):
 		return taskroutinefunc
 
 	return funcwrap
+	
 
+def taskmethod(taskLabel=None,selfName='task'):
+	'''
+	Wraps a given method in code which will execute the method's body in a task and store the result in a returned
+	Future object. This assumes the method's receiver has a member called `mgr' which references the SceneManager
+	object. 
+	
+	For example, the method:
+	
+		def meth(self,*args,**kwargs):
+			f=Future()
+			@taskroutine('msg')
+			def _func(task):
+				with f:
+					f.setObject(doSomething())
+					
+			return self.mgr.runTasks(_func(),f)
+		
+	is equivalent to:
+		
+		@taskmethod('msg')
+		def meth(self,*args,**kwargs):
+			return doSomething()
+	'''
+	
+	def methwrap(meth): # function which returns wrapper method
+		@wraps(meth)
+		def taskmethod(self,*args,**kwargs): # wrapper method which adds the task executing `meth'
+			f=Future()
+			def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
+				with f:
+					kwargs[selfName]=task
+					f.setObject(meth(self,*args,**kwargs))
+				
+			self.mgr.addTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName))
+			return f
+		
+		return taskmethod
+		
+	return methwrap
+	
 
 def partitionSequence(maxval,part,numparts):
 	'''

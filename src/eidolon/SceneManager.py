@@ -668,6 +668,8 @@ class SceneManager(object):
 		all the tasks have been executed, the Future object 'resFuture' is queried for its value, which is returned.
 		If neither condition is true the tasks are added to the task queue instead and `resFuture' is returned. The
 		argument `resFuture' is expected to be a Future object which the tasks will provide an object for, or None.
+		This allows functions to add multiple tasks to the queue and then return a Future object, as well as permit
+		tasks to call such functions and execute tasks immediately and thus avoid deadlock. 
 		'''
 		parentTask=self.getCurrentTask()
 

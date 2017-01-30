@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>2</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -443,9 +443,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-86</y>
         <width>515</width>
-        <height>827</height>
+        <height>855</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -694,7 +694,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <item>
         <widget class="QGroupBox" name="groupBox_19">
          <property name="title">
-          <string>GPU NReg Motion Tracking (Linux only for now)</string>
+          <string>Non-rigid Registration Motion Tracking</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_14">
           <item>
@@ -767,6 +767,13 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
             <item row="1" column="1">
              <widget class="QComboBox" name="maskNregBox"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="QCheckBox" name="gpuNregCheck">
+              <property name="text">
+               <string>GPU Nreg (Linux only)</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -845,7 +852,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-546</y>
+        <y>0</y>
         <width>515</width>
         <height>1287</height>
        </rect>

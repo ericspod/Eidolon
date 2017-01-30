@@ -1049,7 +1049,8 @@ class CardiacMotionProject(Project):
 	def _loadNiftiFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',chooseMultiple=True)
 		if len(filenames)>0:
-			self.CardiacMotion.loadNiftiFiles(filenames)
+			f=self.CardiacMotion.loadNiftiFiles(filenames)
+			self.mgr.checkFutureResult(f)
 
 	def _loadMetaFile(self):
 		filenames=self.mgr.win.chooseFileDialog('Choose MetaImage Header filename',filterstr='Header Files (*.mhd *.mha)',chooseMultiple=True)
@@ -1280,7 +1281,12 @@ class CardiacMotionProject(Project):
 		maskname=str(self.alignprop.maskNregBox.currentText())
 		trackname=str(self.alignprop.trackingNregName.text())
 		paramfile=str(self.alignprop.paramNRegEdit.text())
-		f=self.CardiacMotion.startGPUNRegMotionTrack(imgname,maskname,trackname,paramfile)
+		
+		if self.alignprop.gpuNregCheck.isChecked():
+			f=self.CardiacMotion.startGPUNRegMotionTrack(imgname,maskname,trackname,paramfile)
+		else:
+			f=self.CardiacMotion.startRegisterMotionTrack(imgname,maskname,trackname,paramfile)
+			
 		self.mgr.checkFutureResult(f)
 
 	def _killJob(self):
@@ -1400,6 +1406,14 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		if self.win!=None:
 			self.win.addMenuItem('Project','CardMotionProj'+str(plugid),'&Cardiac Motion Project',self._newProjDialog)
 
+	def _newProjDialog(self):
+		def chooseProjDir(name):
+			newdir=self.win.chooseDirDialog('Choose Project Root Directory')
+			if len(newdir)>0:
+				self.mgr.createProjectObj(name,newdir,CardiacMotionProject)
+
+		self.win.chooseStrDialog('Choose Project Name','Project',chooseProjDir)
+
 	def createProject(self,name,parentdir):
 		if self.mgr.project==None:
 			self.mgr.createProjectObj(name,parentdir,CardiacMotionProject)
@@ -1432,46 +1446,16 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 		self.project.saveConfig()
 
-	def _newProjDialog(self):
-		def chooseProjDir(name):
-			newdir=self.win.chooseDirDialog('Choose Project Root Directory')
-			if len(newdir)>0:
-				self.mgr.createProjectObj(name,newdir,CardiacMotionProject)
+	@taskmethod('Load Nifti Files')
+	def loadNiftiFiles(self,filenames,task=None):
+		isEmpty=len(self.project.memberObjs)==0
+		objs=IRTKPluginMixin.loadNiftiFiles(self,filenames)
 
-		self.win.chooseStrDialog('Choose Project Name','Project',chooseProjDir)
-
-	def loadNiftiFiles(self,filenames):
-		f=Future()
-		@taskroutine('Loading NIfTI Files')
-		def _loadNifti(filenames,task):
-			with f:
-				isEmpty=len(self.project.memberObjs)==0
-				filenames=Future.get(filenames)
-				objs=[]
-				for filename in filenames:
-					filename=os.path.abspath(filename)
-					if not filename.startswith(self.getCWD()):
-						if filename.endswith('.nii.gz'): # unzip file, compression accomplishes almost nothing for nifti anyway
-							newfilename=self.getUniqueLocalFile(splitPathExt(filename)[1])+'.nii'
-							with gzip.open(filename) as gf:
-								with open(newfilename,'wb') as ff:
-									ff.write(gf.read())
-						else:
-							newfilename=self.getUniqueLocalFile(filename)
-							copyfileSafe(filename,newfilename,True)
-						filename=newfilename
-
-					nobj=self.Nifti.loadObject(filename)
-					self.addObject(nobj)
-					objs.append(nobj)
-
-				if isEmpty:
-					self.mgr.callThreadSafe(self.project.updateConfigFromProp)
-					self.project.save()
-
-				f.setObject(objs)
-
-		return self.mgr.runTasks(_loadNifti(filenames),f)
+		if isEmpty:
+			self.mgr.callThreadSafe(self.project.updateConfigFromProp)
+			self.project.save()
+	
+		return objs
 
 	def loadMetaFiles(self,filenames):
 		'''Same thing as loadNiftiFiles() just for MetaImage format.'''
@@ -1528,7 +1512,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 	def loadVTKFile(self,filename,trans=transform()):
 		f=Future()
 		@taskroutine('Loading VTK')
-		@timing
 		def _load(filename,task):
 			with f:
 				basename=self.getUniqueObjName(splitPathExt(filename)[1])

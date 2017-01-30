@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/CTMotionProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Mon Jan 30 15:47:56 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -25,7 +26,7 @@ except AttributeError:
 class Ui_CTMotionProp(object):
     def setupUi(self, CTMotionProp):
         CTMotionProp.setObjectName(_fromUtf8("CTMotionProp"))
-        CTMotionProp.resize(280, 401)
+        CTMotionProp.resize(358, 512)
         self.verticalLayout = QtGui.QVBoxLayout(CTMotionProp)
         self.verticalLayout.setMargin(0)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
@@ -91,7 +92,24 @@ class Ui_CTMotionProp(object):
         sizePolicy.setHeightForWidth(self.trackButton.sizePolicy().hasHeightForWidth())
         self.trackButton.setSizePolicy(sizePolicy)
         self.trackButton.setObjectName(_fromUtf8("trackButton"))
-        self.formLayout_3.setWidget(3, QtGui.QFormLayout.FieldRole, self.trackButton)
+        self.formLayout_3.setWidget(4, QtGui.QFormLayout.FieldRole, self.trackButton)
+        self.horizontalLayout_14 = QtGui.QHBoxLayout()
+        self.horizontalLayout_14.setObjectName(_fromUtf8("horizontalLayout_14"))
+        self.trackName = QtGui.QLineEdit(self.groupBox_2)
+        self.trackName.setObjectName(_fromUtf8("trackName"))
+        self.horizontalLayout_14.addWidget(self.trackName)
+        self.label_68 = QtGui.QLabel(self.groupBox_2)
+        font = QtGui.QFont()
+        font.setPointSize(8)
+        font.setBold(True)
+        font.setWeight(75)
+        self.label_68.setFont(font)
+        self.label_68.setObjectName(_fromUtf8("label_68"))
+        self.horizontalLayout_14.addWidget(self.label_68)
+        self.formLayout_3.setLayout(3, QtGui.QFormLayout.FieldRole, self.horizontalLayout_14)
+        self.label_67 = QtGui.QLabel(self.groupBox_2)
+        self.label_67.setObjectName(_fromUtf8("label_67"))
+        self.formLayout_3.setWidget(3, QtGui.QFormLayout.LabelRole, self.label_67)
         self.verticalLayout.addWidget(self.groupBox_2)
         self.groupBox_6 = QtGui.QGroupBox(CTMotionProp)
         self.groupBox_6.setObjectName(_fromUtf8("groupBox_6"))
@@ -143,6 +161,8 @@ class Ui_CTMotionProp(object):
         self.label_11.setText(_translate("CTMotionProp", "Param File", None))
         self.chooseParamButton.setText(_translate("CTMotionProp", "Choose", None))
         self.trackButton.setText(_translate("CTMotionProp", "Start Motion Tracking", None))
+        self.label_68.setText(_translate("CTMotionProp", "(blank for default)", None))
+        self.label_67.setText(_translate("CTMotionProp", "Track Name", None))
         self.groupBox_6.setTitle(_translate("CTMotionProp", "Apply Tracking", None))
         self.label_12.setText(_translate("CTMotionProp", "Object", None))
         self.applyTrackButton.setText(_translate("CTMotionProp", "Apply Tracking", None))

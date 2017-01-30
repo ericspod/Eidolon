@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/CardiacMotionProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Mon Jan 30 19:46:20 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -224,7 +225,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_9.addWidget(self.groupBox_5)
         self.toolBox.addItem(self.page_2, _fromUtf8(""))
         self.page_3 = QtGui.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 515, 827))
+        self.page_3.setGeometry(QtCore.QRect(0, -86, 515, 855))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -386,6 +387,9 @@ class Ui_CardiacMotionProp(object):
         self.maskNregBox = QtGui.QComboBox(self.groupBox_19)
         self.maskNregBox.setObjectName(_fromUtf8("maskNregBox"))
         self.formLayout_19.setWidget(1, QtGui.QFormLayout.FieldRole, self.maskNregBox)
+        self.gpuNregCheck = QtGui.QCheckBox(self.groupBox_19)
+        self.gpuNregCheck.setObjectName(_fromUtf8("gpuNregCheck"))
+        self.formLayout_19.setWidget(4, QtGui.QFormLayout.FieldRole, self.gpuNregCheck)
         self.verticalLayout_14.addLayout(self.formLayout_19)
         self.startNregButton = QtGui.QPushButton(self.groupBox_19)
         self.startNregButton.setObjectName(_fromUtf8("startNregButton"))
@@ -429,7 +433,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_10.addWidget(self.groupBox_7)
         self.toolBox.addItem(self.page_3, _fromUtf8(""))
         self.page_5 = QtGui.QWidget()
-        self.page_5.setGeometry(QtCore.QRect(0, -546, 515, 1287))
+        self.page_5.setGeometry(QtCore.QRect(0, 0, 515, 1287))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -1275,7 +1279,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_4.addWidget(self.toolBox)
 
         self.retranslateUi(CardiacMotionProp)
-        self.toolBox.setCurrentIndex(3)
+        self.toolBox.setCurrentIndex(2)
         self.toolBox.layout().setSpacing(0)
         QtCore.QMetaObject.connectSlotsByName(CardiacMotionProp)
 
@@ -1339,7 +1343,7 @@ class Ui_CardiacMotionProp(object):
         self.label_14.setText(_translate("CardiacMotionProp", "Active and Completed Jobs", None))
         self.checkButton.setText(_translate("CardiacMotionProp", "Check Job Status", None))
         self.killButton.setText(_translate("CardiacMotionProp", "Kill Job", None))
-        self.groupBox_19.setTitle(_translate("CardiacMotionProp", "GPU NReg Motion Tracking (Linux only for now)", None))
+        self.groupBox_19.setTitle(_translate("CardiacMotionProp", "Non-rigid Registration Motion Tracking", None))
         self.label_66.setText(_translate("CardiacMotionProp", "Tracked Image", None))
         self.label_67.setText(_translate("CardiacMotionProp", "Tracking Name", None))
         self.label_68.setText(_translate("CardiacMotionProp", "(leave blank for default)", None))
@@ -1347,6 +1351,7 @@ class Ui_CardiacMotionProp(object):
         self.paramNRegEdit.setText(_translate("CardiacMotionProp", "<<Use Default>>", None))
         self.chooseNRegParamButton.setText(_translate("CardiacMotionProp", "Choose", None))
         self.label_65.setText(_translate("CardiacMotionProp", "Mask Image", None))
+        self.gpuNregCheck.setText(_translate("CardiacMotionProp", "GPU Nreg (Linux only)", None))
         self.startNregButton.setText(_translate("CardiacMotionProp", "Start Motion Tracking", None))
         self.groupBox_7.setTitle(_translate("CardiacMotionProp", "Apply Tracking to Object", None))
         self.label_20.setText(_translate("CardiacMotionProp", "Object", None))
