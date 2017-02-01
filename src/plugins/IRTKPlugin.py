@@ -216,13 +216,13 @@ class IRTKPluginMixin(object):
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
 		
 		if isWindows:
-			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTKWin64')
+			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Win64')
 		elif isLinux:
-			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTKLinux')
+			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Linux')
 			self.exesuffix=''
 			os.environ['LD_LIBRARY_PATH']='%s:%s'%(os.environ['LD_LIBRARY_PATH'],self.mirtkdir)
 		else:
-			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTKOSX')
+			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
 			os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ['DYLD_LIBRARY_PATH'],self.mirtkdir)
 			
 		self.ffd_motion=os.path.join(self.mirtkdir,'ffd_motion.cfg')
@@ -1358,7 +1358,7 @@ class IRTKPluginMixin(object):
 				
 				for i,(img1,img2) in enumerate(successive(names)):
 					logfile=os.path.join(trackdir,'%.4i.log'%i)
-					args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof'%i]
+					args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
 					if maskfile and os.path.isfile(maskfile):
 						args+=['-mask',maskfile]
 					r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
