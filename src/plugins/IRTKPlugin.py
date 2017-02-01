@@ -220,10 +220,10 @@ class IRTKPluginMixin(object):
 		elif isLinux:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Linux')
 			self.exesuffix=''
-			os.environ['LD_LIBRARY_PATH']='%s:%s'%(os.environ['LD_LIBRARY_PATH'],self.mirtkdir)
+			os.environ['LD_LIBRARY_PATH']='%s:%s'%(os.environ.get('LD_LIBRARY_PATH',''),self.mirtkdir)
 		else:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
-			os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ['DYLD_LIBRARY_PATH'],self.mirtkdir)
+			os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ.get('DYLD_LIBRARY_PATH',''),self.mirtkdir)
 			
 		self.ffd_motion=os.path.join(self.mirtkdir,'ffd_motion.cfg')
 		
