@@ -225,7 +225,7 @@ class IRTKPluginMixin(object):
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
 			os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ['DYLD_LIBRARY_PATH'],self.mirtkdir)
 			
-		self.ffd_motion=os.path.join(self.mirtkdir,'ffd_motion.cfg')
+		self.ffd_motion=os.path.join(getAppDir(),LIBSDIR,'MIRTK','ffd_motion.cfg')
 		
 		self.register=os.path.join(self.mirtkdir,'register')+self.exesuffix
 		self.info=os.path.join(self.mirtkdir,'info')+self.exesuffix

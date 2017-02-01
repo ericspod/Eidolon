@@ -25,7 +25,7 @@ To initialize the included **EidolonLibs** submodule which contains shared libra
 
 The submodule can otherwise be initialized within the cloned Eidolon directory with this command:
 
-    git submodule update EidolonLibs
+    git submodule update --init EidolonLibs
     
 The code includes precompiled libraries and executables so compilation shouldn't be necessary unless your platform is not supported. 
 Eidolon itself does not need to be installed in any particular location nor require permissions.
