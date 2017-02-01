@@ -1240,8 +1240,7 @@ def taskmethod(taskLabel=None,selfName='task'):
 					kwargs[selfName]=task
 					f.setObject(meth(self,*args,**kwargs))
 				
-			self.mgr.addTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName))
-			return f
+			return self.mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
 		
 		return taskmethod
 		

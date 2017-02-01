@@ -227,7 +227,7 @@ class CTMotionTrackPlugin(ImageScenePlugin,IRTKPluginMixin):
 				for i,o in enumerate(outfiles):
 					task.setProgress(i)
 					ttime=float(i+1)/len(outfiles)
-					raise NotImplemented,'Choose a different transformation program'
+					raise NotImplementedError,'Choose a different transformation program'
 					#execBatchProgram(self.ptransformation,'in.vtk',o,'-dofin',trackfile,'-time',str(ttime),cwd=trackdir)
 					
 				objds=obj.datasets[0]

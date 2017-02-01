@@ -1093,6 +1093,7 @@ class CardiacMotionProject(Project):
 			self.CardiacMotion.createSegObject(saxname,SegmentTypes.LV)
 
 	def _rigidRegButton(self):
+		self.updateConfigFromProp()
 		regnames=[str(i.text()) for i in self.alignprop.regList.selectedItems()]
 		if len(regnames)>0:
 			self.CardiacMotion.rigidRegisterStackList(self.configMap[ConfigNames._regsubject],self.configMap[ConfigNames._regintermed],regnames)

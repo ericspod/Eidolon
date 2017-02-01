@@ -18,7 +18,7 @@
 
 from eidolon import *
 
-from plugins.VTKPlugin import DatasetTypes,VTKProps
+from plugins.VTKPlugin import DatasetTypes
 from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 
 from ui.mtServerForm import Ui_mtServerForm
@@ -29,7 +29,6 @@ import subprocess
 import socket
 import SocketServer
 import pickle
-import inspect
 import traceback
 import shutil
 import itertools 
@@ -86,7 +85,7 @@ def isTrackDir(path):
 	if not os.path.isfile(os.path.join(path,trackconfname)):
 		return False
 		
-	return len(glob.glob(path+'/*'))>0
+	return len(glob.glob(path+'/*.dof*'))>1
 	
 
 def isPositiveDefinite(mat):
@@ -209,11 +208,11 @@ class IRTKPluginMixin(object):
 
 		self.spatialcorrect=self.irtkpath('spatial_correct')
 		self.rreg=self.irtkpath('rreg')
-		self.headertool=self.irtkpath('headertool')
+		#self.headertool=self.irtkpath('headertool')
 		self.motiontrack=self.irtkpath('motiontrackmultimage')
-		self.transformation=self.irtkpath('transformation')
-		self.ptransformation=self.irtkpath('ptransformation')
-		self.nreg=self.irtkpath('nreg')
+		#self.transformation=self.irtkpath('transformation')
+		#self.ptransformation=self.irtkpath('ptransformation')
+		#self.nreg=self.irtkpath('nreg')
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
 		
 		if isWindows:
@@ -227,6 +226,7 @@ class IRTKPluginMixin(object):
 			os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ['DYLD_LIBRARY_PATH'],self.mirtkdir)
 			
 		self.ffd_motion=os.path.join(self.mirtkdir,'ffd_motion.cfg')
+		
 		self.register=os.path.join(self.mirtkdir,'register')+self.exesuffix
 		self.info=os.path.join(self.mirtkdir,'info')+self.exesuffix
 		self.transimage=os.path.join(self.mirtkdir,'transform-image')+self.exesuffix
@@ -252,12 +252,7 @@ class IRTKPluginMixin(object):
 	def getTrackingDirs(self,root=None):
 		'''Returns a list of absolute path directory names in the current context or in `root' containing tracking information.'''
 		root=root or self.getLocalFile('.')
-		result=[]
-		for d in glob.glob(root+'/*'):
-			if os.path.isdir(d) and os.path.isfile(os.path.join(d,trackconfname)) and glob.glob(d+'/*.dof.gz'):
-				result.append(os.path.abspath(d))
-
-		return result
+		return filter(isTrackDir,glob.glob(root+'/*'))
 
 	def addObject(self,obj):
 		'''
@@ -266,35 +261,30 @@ class IRTKPluginMixin(object):
 		'''
 		pass
 
-	def loadNiftiFiles(self,filenames):
+	@taskmethod('Load Nifti Files')
+	def loadNiftiFiles(self,filenames,task):
 		'''
 		Loads the given NIfTI file paths. The argument `filenames' can be a list of paths, or a Future returning such
 		a list. The result value is a Future which eventually will hold the loaded ImageSceneObject instances. Each
 		loaded file is added to the current context by being passed to addObject().
 		'''
-		f=Future()
-		@taskroutine('Loading NIfTI Files')
-		def _loadNifti(filenames,task):
-			with f:
-				filenames=Future.get(filenames)
-				objs=[]
-				for filename in filenames:
-					filename=os.path.abspath(filename)
-					if not filename.startswith(self.getCWD()):
-						if filename.endswith('.nii.gz'): # unzip file
-							newfilename=self.Nifti.decompressNifti(filename,self.getCWD())
-						else:
-							newfilename=self.getUniqueLocalFile(filename)
-							copyfileSafe(filename,newfilename,True)
-						filename=newfilename
+		filenames=Future.get(filenames)
+		objs=[]
+		for filename in filenames:
+			filename=os.path.abspath(filename)
+			if not filename.startswith(self.getCWD()):
+				if filename.endswith('.nii.gz'): # unzip file
+					newfilename=self.Nifti.decompressNifti(filename,self.getCWD())
+				else:
+					newfilename=self.getUniqueLocalFile(filename)
+					copyfileSafe(filename,newfilename,True)
+				filename=newfilename
 
-					nobj=self.Nifti.loadObject(filename)
-					self.addObject(nobj)
-					objs.append(nobj)
+			nobj=self.Nifti.loadObject(filename)
+			self.addObject(nobj)
+			objs.append(nobj)
 
-				f.setObject(objs)
-
-		return self.mgr.runTasks(_loadNifti(filenames),f)
+		return objs
 
 	def getUniqueShortName(self,*comps,**kwargs):
 		'''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
@@ -383,9 +373,10 @@ class IRTKPluginMixin(object):
 
 		self.mgr.runTasks(_correct(sourceobj,destfile,makeProspective))
 
-	def applyHeaderTool(self,inname,outname,doffile,cwd,correctNifti=True):
-		logfile=self.getLogFile('headertool.log')
-		f=self.mgr.execBatchProgramTask(self.headertool,inname,outname,'-dofin',doffile,logfile=logfile,cwd=cwd)
+	def applyImageDof(self,inname,outname,doffile,cwd,correctNifti=True):
+		logfile=self.getLogFile('editimage.log')
+		app=self.editimage # self.headertool
+		f=self.mgr.execBatchProgramTask(app,inname,outname,'-dofin',doffile,logfile=logfile,cwd=cwd)
 		self._checkProgramTask(f)
 
 		if correctNifti:
@@ -613,7 +604,7 @@ class IRTKPluginMixin(object):
 			# determine the registration of the corrected time-reg to the template image (morpho) and apply to the fixed short-axis
 			f3,f4=self.rigidRegisterStack(templatename,corregname2,tempsaxname2,finalname,doffile,self.fixshort,False)
 			# apply the dof file from the above to the fixed segmentation
-			self.applyHeaderTool(self.getNiftiFile(tempsegname2),finalsegnii,doffile,cwd,False)
+			self.applyImageDof(self.getNiftiFile(tempsegname2),finalsegnii,doffile,cwd,False)
 		else:
 			# move the final results to their new names
 			self.mgr.addFuncTask(lambda:shutil.move(self.getNiftiFile(tempsaxname2),finalsaxnii))
@@ -698,7 +689,7 @@ class IRTKPluginMixin(object):
 		self.removeFilesTask(self.getNiftiFile('*_TRtemp*'))
 
 		if htargetname and finalname:
-			f2=self.applyHeaderTool(htargetnii,finalnii,doffile,cwd)
+			f2=self.applyImageDof(htargetnii,finalnii,doffile,cwd)
 		else:
 			f2=None
 
@@ -736,7 +727,7 @@ class IRTKPluginMixin(object):
 			else:
 				# If there's an intermediate and it's dof has be determined, apply it to `tn'.
 				# This line is only reached on the second time through the loop with an intermediate.
-				ff=self.applyHeaderTool(self.getNiftiFile(tn),finalnii,doffile,cwd)
+				ff=self.applyImageDof(self.getNiftiFile(tn),finalnii,doffile,cwd)
 
 			fresult.append(ff)
 
@@ -945,7 +936,7 @@ class IRTKPluginMixin(object):
 #
 #		self.mgr.runTasks([_crop(imgobj,threshold)])
 #		return self.loadNiftiFiles(f)
-		raise NotImplemented,'This cropping method needs work to get correct behaviour still'
+		raise NotImplementedError,'This cropping method needs work to get correct behaviour still'
 
 	def emptyCropObject(self,imgobj,loadObj=True):
 		f=Future()
@@ -1008,7 +999,7 @@ class IRTKPluginMixin(object):
 		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		timesteps=conf[JobMetaValues._timesteps]
 		isFrameByFrame=conf[JobMetaValues._tracktype] in (TrackTypes._gpunreg,TrackTypes._mirtkregister)
-		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof.gz')))
+		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof*')))
 		resultname=self.getUniqueShortName(obj.getName(),'Tracked',trackname_or_dir)
 		f=Future()
 		
@@ -1032,14 +1023,7 @@ class IRTKPluginMixin(object):
 			self.writePolyNodes(os.path.join(trackdir,'in.vtk'),obj.datasets[0].getNodes())
 
 			filelists=[('in.vtk','out%.4i.vtk'%i,dof,times[i]) for i,dof in enumerate(trackfiles)]
-			app=self.ptransformation
-			extraArgs=[]
-				
-			if conf[JobMetaValues._tracktype]==TrackTypes._mirtkregister: # choose the MIRTK tracking parameters
-				app=self.transpts
-				extraArgs=['-ascii']
-				
-			self.mgr.runTasks(applyMotionTrackTask(app,trackdir,False,filelists,extraArgs)) # apply transforms
+			self.mgr.runTasks(applyMotionTrackTask(self.transpts,trackdir,False,filelists,['-ascii'])) # apply transforms
 
 			@taskroutine('Loading Tracked Files')
 			def _loadSeq(obj,outfiles,timesteps,name,task):
@@ -1073,7 +1057,9 @@ class IRTKPluginMixin(object):
 						# attempt to save the object with its own plugin, defaulting to VTK if this doesn't work
 						try:
 							obj.plugin.saveObject(result,self.getLocalFile(name),setFilenames=True)
-						except ValueError,NotImplemented:
+						except ValueError:
+							self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
+						except NotImplementedError:
 							self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
 					
 						self.addObject(result)
@@ -1088,12 +1074,7 @@ class IRTKPluginMixin(object):
 			resultnii=self.getNiftiFile(resultname)
 
 			filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(trackfiles)]
-			app=self.transformation
-			
-			if conf[JobMetaValues._tracktype]==TrackTypes._mirtkregister: # choose the MIRTK tracking parameters
-				app=self.transimage
-				
-			self.mgr.runTasks(applyMotionTrackTask(app,trackdir,True,filelists))
+			self.mgr.runTasks(applyMotionTrackTask(self.transimage,trackdir,True,filelists))
 
 			@taskroutine('Loading Tracked Files')
 			def _loadSeq(task):
@@ -1377,7 +1358,7 @@ class IRTKPluginMixin(object):
 				
 				for i,(img1,img2) in enumerate(successive(names)):
 					logfile=os.path.join(trackdir,'%.4i.log'%i)
-					args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
+					args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof'%i]
 					if maskfile and os.path.isfile(maskfile):
 						args+=['-mask',maskfile]
 					r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
@@ -1506,7 +1487,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 			rcode=conf[JobMetaValues._resultcode]
 			numTF=conf[JobMetaValues._numtrackfiles]
 
-			numfiles=len(glob.glob(os.path.join(jobdir,'*.dof.gz')))
+			numfiles=len(glob.glob(os.path.join(jobdir,'*.dof*')))
 
 			rcode=rcode if rcode!=None else proc.poll()
 
@@ -1575,7 +1556,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 				if jobdir!=None:
 					#jobdir=os.path.join(jdir,'motiontrack%i'%jid)
 					conf=readBasicConfig(os.path.join(jobdir,trackconfname))
-					numfiles=len(glob.glob(os.path.join(jobdir,'*.dof.gz')))
+					numfiles=len(glob.glob(os.path.join(jobdir,'*.dof*')))
 					response=(ServerMsgs._RStat,(conf[JobMetaValues._resultcode],numfiles,conf[JobMetaValues._numtrackfiles],jobdir))
 				else:
 					response=(ServerMsgs._RStat,(-1,0,0,''))
@@ -1590,7 +1571,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 			elif msg==ServerMsgs._GetResult: # get the results for a finished job
 				jid,isPaths=args
 				jdir=first(h for p,j,h in self.runningProcs if j==jid)
-				filelist=glob.glob(os.path.join(jdir,'*.dof.gz'))
+				filelist=glob.glob(os.path.join(jdir,'*.dof*'))
 
 				if isPaths: # send the file paths to the results back
 					result=list(filelist)

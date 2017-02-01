@@ -377,7 +377,7 @@ class SceneObjectRepr(object):
 
 	def getRayIntersect(self,ray):
 		'''Return the distance value where `ray' intersects this object.'''
-		raise NotImplemented
+		raise NotImplementedError
 
 	def getPropTuples(self):
 		'''Returns a list of name/value pairs listing the properties to display for this scene object in the UI.'''

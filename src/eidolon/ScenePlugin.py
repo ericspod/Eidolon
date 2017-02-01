@@ -184,7 +184,7 @@ class ScenePlugin(object):
 		if the data is incorrect. A SceneObject is returned or an iterable thereof if multiple objects can be loaded.
 		The return value varies by plugin and can be a Future object.
 		'''
-		raise NotImplemented,'Cannot load files as SceneObjects'
+		raise NotImplementedError,'Cannot load files as SceneObjects'
 		
 	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
 		'''
@@ -196,7 +196,7 @@ class ScenePlugin(object):
 		The internal representation of `obj' should be changed to record what the saved filenames are if `setFilenames' 
 		is True, it's up to the plugin to determine how. The return value varies by plugin and can be a Future object.
 		'''
-		raise NotImplemented, 'Cannot save files for this object'
+		raise NotImplementedError, 'Cannot save files for this object'
 		
 	def checkFileOverwrite(self,obj,dirpath,name=None):
 		'''
@@ -205,7 +205,7 @@ class ScenePlugin(object):
 		use the name `name' would not overwrite any existing files. This must function even if the `obj' was not loaded
 		from files.
 		'''
-		raise NotImplemented, 'Cannot determine file overwrites'
+		raise NotImplementedError, 'Cannot determine file overwrites'
 
 	def getObjFiles(self,obj):
 		'''
@@ -220,7 +220,7 @@ class ScenePlugin(object):
 		will overwrite files only if `overwrite' is True, if not then an IOError is raised and nothing is done if files
 		would have to be overwritten. This requires that `obj' was previously loaded from or saved to files.
 		'''
-		raise NotImplemented, 'Cannot move files when renaming objects'
+		raise NotImplementedError, 'Cannot move files when renaming objects'
 
 	def copyObjFiles(self,obj,sdir,overwrite=False):
 		'''
@@ -228,7 +228,7 @@ class ScenePlugin(object):
 		will raise an IOError and do nothing if files need to be overwritten and `overwrite' is False. This requires
 		that `obj' was previously loaded from or saved to files.
 		'''
-		raise NotImplemented, 'Cannot save files for this object'
+		raise NotImplementedError, 'Cannot save files for this object'
 
 	def removeObject(self,obj):
 		'''This should be called if another plugin takes responsibility for `obj' away from the current one.'''
