@@ -1437,10 +1437,7 @@ class ConsoleWidget(QtGui.QTextEdit):
 			with open(self.logfile) as o:
 				log=[s.rstrip() for s in o.readlines()]
 				
-			if len(log)>self.loglines:
-				log=log[-self.loglines:]
-				
-			self.history=log
+			self.history=log[-self.loglines:] # add no more than self.loglines values to the history
 
 		try:
 			self.ps1=sys.ps1

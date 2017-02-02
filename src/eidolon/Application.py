@@ -146,6 +146,7 @@ def generateConfig(inargs):
 		configfile=os.path.join(userappdir,CONFIGFILE)
 		readConfig(configfile,conf)
 		
+	# copy every value in the "All" section to the platformID section if not already present
 	for name in conf.get('All',ConfVars.all).split(','):
 		if not conf.hasValue(platformID,name):
 			conf.set(platformID,name,conf.get('All',name))
