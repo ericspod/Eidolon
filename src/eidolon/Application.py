@@ -52,8 +52,12 @@ def configEnviron():
 			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
 			
 
-def readConfig(configfile,conf):
-	'''Read configuration ini file `configfile' and store values in Config object `conf'.'''
+def readConfig(configfile,conf,overwritePlatform):
+	'''
+	Read configuration ini file `configfile' and store values in Config object `conf', overwriting values in the 
+	platform-specific section with those in the All section if `overwritePlatform` is True (which is not done when the
+	config file in the application directory is loaded).
+	'''
 	conf.set(platformID,ConfVars.configfile,configfile)
 	cparser=ConfigParser.SafeConfigParser()
 	cparser.optionxform=str
@@ -71,7 +75,7 @@ def readConfig(configfile,conf):
 		conf.set(platformID,ConfVars.shaders,','.join(str(n) for n,_ in cparser.items('Shaders')))
 
 	# copy values from the 'All' section into the platform-specific section which haven't already been set
-	if 'All' in cparser.sections():
+	if overwritePlatform and 'All' in cparser.sections():
 		for n,v in cparser.items('All'):
 			if not conf.hasValue(platformID,n):
 				conf.set(platformID,n,v)
@@ -133,18 +137,18 @@ def generateConfig(inargs):
 	# load the config file in the Eidolon's directory if it exists
 	if os.path.isfile(os.path.join(appdir,CONFIGFILE)):
 		configfile=os.path.join(appdir,CONFIGFILE)
-		readConfig(configfile,conf)
+		readConfig(configfile,conf,False)
 
-	userappdir=os.path.expanduser(conf.get(platformID,ConfVars.userappdir))
+	userappdir=os.path.expanduser(conf.get(platformID,ConfVars.userappdir) or conf.get('All',ConfVars.userappdir))
 	conf.set(platformID,ConfVars.userappdir,userappdir)
 	
 	# read the config file specified on the command line, or if not given read userappdir/config.ini if present, and override current values in conf with these
 	if args.config:
 		configfile=args.config
-		readConfig(configfile,conf)
+		readConfig(configfile,conf,True)
 	elif userappdir and os.path.isfile(os.path.join(userappdir,CONFIGFILE)):
 		configfile=os.path.join(userappdir,CONFIGFILE)
-		readConfig(configfile,conf)
+		readConfig(configfile,conf,True)
 
 	# override loaded settings with those specified on the command line
 	if args.setting:

@@ -98,6 +98,10 @@ The Ogre3D library distributed with this version of Ubuntu is needed, so install
 
  * libogre-1.9.0
 
+Sometimes there's a missing package **dateutil.tz**, this can be installed with:
+
+    sudo pip install python-dateutil --upgrade
+
 ### Manual Python Install
 
 The simplest way to install the dependencies all together on the command line:

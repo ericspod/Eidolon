@@ -1366,7 +1366,7 @@ class IRTKPluginMixin(object):
 					task.setProgress(i+1)
 					
 					if r[0]:
-						raise IOError,'register failed with error code %i (%s)'%r
+						raise IOError,'register failed with error code %i:\n%s'%r
 
 				f.setObject(results)
 

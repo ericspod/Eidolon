@@ -853,7 +853,7 @@ class SceneManager(object):
 	def getUserAppDir(self):
 		'''Returns the per-user application directory as defined by ConfVars.userappdir in the config object.'''
 		appdir= self.conf.get(platformID,ConfVars.userappdir)
-		assert os.path.isdir(appdir)
+		assert os.path.isdir(appdir),'Cannot find application directory %r'%appdir
 		return appdir
 		
 	def getUserAppFile(self,filename):
