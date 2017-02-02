@@ -23,13 +23,9 @@ To initialize the included **EidolonLibs** submodule which contains shared libra
 
     git clone --recursive https://github.com/ericspod/Eidolon.git
 
-The submodule can otherwise be initialized within the cloned Eidolon directory with this command:
+The submodule can otherwise be initialized or updated within the cloned Eidolon directory with this command:
 
-    git submodule update --init EidolonLibs
-
-Submodules can be updated after performing a `git pull` on the main repository with:
-
-    git submodule foreach git pull origin master
+    git submodule update --init --recursive
     
 The code includes precompiled libraries and executables so compilation shouldn't be necessary unless your platform is not supported. 
 Eidolon itself does not need to be installed in any particular location nor require permissions.

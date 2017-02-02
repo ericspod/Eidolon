@@ -33,10 +33,9 @@ import Utils
 import Concurrency
 from .SceneUtils import cleanupMatrices
 from .ImageAlgorithms import hounsfieldToUnit
+from .Utils import ConfVars
 
 from .__init__ import __version__, APPDIRVAR, LIBSDIR,CONFIGFILE
-
-from .SceneManager import ConfVars
 
 
 def configEnviron():
@@ -52,11 +51,10 @@ def configEnviron():
 			os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
 			
 
-def readConfig(configfile,conf,overwritePlatform):
+def readConfig(configfile,conf):
 	'''
-	Read configuration ini file `configfile' and store values in Config object `conf', overwriting values in the 
-	platform-specific section with those in the All section if `overwritePlatform` is True (which is not done when the
-	config file in the application directory is loaded).
+	Read configuration ini file `configfile' and store values in Config object `conf'. Each section will also have a
+	value with the name of the section in lower case containing the comma-separated list of value names.
 	'''
 	conf.set(platformID,ConfVars.configfile,configfile)
 	cparser=ConfigParser.SafeConfigParser()
@@ -71,14 +69,11 @@ def readConfig(configfile,conf,overwritePlatform):
 		for n,v in cparser.items(s):
 			conf.set(s,n,v)
 
-	if cparser.has_section('Shaders'):
-		conf.set(platformID,ConfVars.shaders,','.join(str(n) for n,_ in cparser.items('Shaders')))
-
-	# copy values from the 'All' section into the platform-specific section which haven't already been set
-	if overwritePlatform and 'All' in cparser.sections():
-		for n,v in cparser.items('All'):
-			if not conf.hasValue(platformID,n):
-				conf.set(platformID,n,v)
+	# for each section, set a value named for the section in lower case containing a comma-separated list of names in the section
+	for sec in cparser.sections():
+		oldnames=filter(bool,conf.get(sec,sec.lower()).split(','))
+		names=oldnames+[str(n) for n,_ in cparser.items(sec)]
+		conf.set(sec,sec.lower(),','.join(set(names)))
 
 
 def generateConfig(inargs):
@@ -137,18 +132,23 @@ def generateConfig(inargs):
 	# load the config file in the Eidolon's directory if it exists
 	if os.path.isfile(os.path.join(appdir,CONFIGFILE)):
 		configfile=os.path.join(appdir,CONFIGFILE)
-		readConfig(configfile,conf,False)
+		readConfig(configfile,conf)
 
+	# get the user application directory from either the platformID or All section in the config file and then set it for platformID
 	userappdir=os.path.expanduser(conf.get(platformID,ConfVars.userappdir) or conf.get('All',ConfVars.userappdir))
 	conf.set(platformID,ConfVars.userappdir,userappdir)
 	
 	# read the config file specified on the command line, or if not given read userappdir/config.ini if present, and override current values in conf with these
 	if args.config:
 		configfile=args.config
-		readConfig(configfile,conf,True)
+		readConfig(configfile,conf)
 	elif userappdir and os.path.isfile(os.path.join(userappdir,CONFIGFILE)):
 		configfile=os.path.join(userappdir,CONFIGFILE)
-		readConfig(configfile,conf,True)
+		readConfig(configfile,conf)
+		
+	for name in conf.get('All',ConfVars.all).split(','):
+		if not conf.hasValue(platformID,name):
+			conf.set(platformID,name,conf.get('All',name))
 
 	# override loaded settings with those specified on the command line
 	if args.setting:
@@ -283,7 +283,7 @@ def initDefaultAssets(mgr):
 	mgr.scene.initializeResources()
 
 	# load shaders/fragment programs
-	for s in mgr.conf.get(platformID,ConfVars.shaders).split(','):
+	for s in mgr.conf.get('Shaders',ConfVars.shaders).split(','):
 		spec=mgr.conf.get('Shaders',s).split(',')
 		ptype=PT_FRAGMENT if spec[0]=='fragment' else PT_VERTEX
 		profiles=spec[1] if len(spec)>1 else None

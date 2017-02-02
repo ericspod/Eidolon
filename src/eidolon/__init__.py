@@ -41,6 +41,7 @@ __author__='Eric Kerfoot'
 __copyright__="Copyright (c) 2016 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
 __website__="https://ericspod.github.io/Eidolon"
 
+# top-level constants, these are hard-coded environment variable or file names
 APPDIRVAR='APPDIR' # environment variable defining the application's directory, set by the start up script and is needed at init time
 LIBSDIR='EidolonLibs' # directory name containing the application's libraries
 CONFIGFILE='config.ini' # config file name

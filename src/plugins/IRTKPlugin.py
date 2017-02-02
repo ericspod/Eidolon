@@ -252,7 +252,7 @@ class IRTKPluginMixin(object):
 	def getTrackingDirs(self,root=None):
 		'''Returns a list of absolute path directory names in the current context or in `root' containing tracking information.'''
 		root=root or self.getLocalFile('.')
-		return filter(isTrackDir,glob.glob(root+'/*'))
+		return sorted(filter(isTrackDir,glob.glob(root+'/*')))
 
 	def addObject(self,obj):
 		'''

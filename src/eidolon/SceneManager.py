@@ -27,6 +27,7 @@ by plugin libraries to include new functionality into Eidolon.
 from .SceneComponents import *
 from .ScenePlugin import *
 from .Camera2DView import *
+from .Utils import ConfVars
 
 import gc
 import tempfile
@@ -35,13 +36,6 @@ import shutil
 
 globalMgr=None
 globalPlugins=[]
-
-
-ConfVars=enum(
-	'shaders', 'resdir', 'shmdir', 'appdir', 'userappdir','logfile', 'preloadscripts', 'uistyle', 'stylesheet',
-	'winsize', 'camerazlock', 'maxprocs', 'configfile', 'rtt_preferred_mode', 'vsync', 'rendersystem',
-	desc='Variables in the Config object, these should be present and keyed to platformID group'
-)
 
 
 def createSceneMgr(win,conf=None):

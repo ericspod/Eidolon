@@ -35,9 +35,9 @@ import sip
 
 import eidolon
 import eidolon.Utils as Utils
-from eidolon.Utils import EventType, ParamType
+from eidolon.Utils import EventType, ParamType, ConfVars
 
-from renderer.Renderer import getRenderAdapter,RenderParamGroup
+from renderer.Renderer import getRenderAdapter,RenderParamGroup,platformID
 
 from ui.MainWindow import Ui_MainWindow
 from ui.ProjProp import Ui_ProjProp
@@ -1397,11 +1397,12 @@ class ConsoleWidget(QtGui.QTextEdit):
 	individual lines of source. It includes a basic session history feature.
 	'''
 
-	def __init__(self,win,parent=None):
+	def __init__(self,win,conf,parent=None):
 		QtGui.QTextEdit.__init__(self,parent)
 		self.setFont(QtGui.QFont('Courier', 10))
 
 		self.win=win
+		self.logfile=''
 		self.locals={'win':self.win}
 		self.comp=codeop.CommandCompiler()
 		self.inputlines=['']
@@ -1419,7 +1420,27 @@ class ConsoleWidget(QtGui.QTextEdit):
 		self.metadown=0
 
 		self.orig_stdout=sys.stdout
-		self.orig_stderr=sys.stderr
+		self.orig_stderr=sys.stderr	
+		
+		# try to read the setting for number of log file lines, default to 10000 if not present or the value is not a number
+		try:
+			self.loglines=int(conf.get(platformID,ConfVars.consoleloglen))
+		except:
+			self.loglines=10000
+		
+		# try to set the log filename, if there's no user directory this won't be set so no logging will occur
+		if os.path.isdir(conf.get(platformID,ConfVars.userappdir)):
+			self.logfile=os.path.join(conf.get(platformID,ConfVars.userappdir),conf.get(platformID,ConfVars.consolelogfile))
+			
+		# read the log file
+		if os.path.isfile(self.logfile):
+			with open(self.logfile) as o:
+				log=[s.rstrip() for s in o.readlines()]
+				
+			if len(log)>self.loglines:
+				log=log[-self.loglines:]
+				
+			self.history=log
 
 		try:
 			self.ps1=sys.ps1
@@ -1481,6 +1502,11 @@ class ConsoleWidget(QtGui.QTextEdit):
 			# append only if not a duplicate of previous entry
 			if historyAppend and len(line.strip())>0 and (len(self.history)==0 or self.history[-1]!=line):
 				self.history.append(line)
+				
+				# write to log file if present
+				if self.logfile:
+					with open(self.logfile,'a') as o:
+						o.write('%s\n'%line)
 
 		self.inputevent.set()
 
@@ -2188,7 +2214,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		self.scene.logMessage('Python exe: '+sys.executable)
 		self.scene.logMessage('Python path: '+str(sys.path))
 
-		self.console=ConsoleWidget(self)
+		self.console=ConsoleWidget(self,conf)
 		self.consoleLayout.addWidget(self.console)
 		self.consoleWidget.setVisible(False) # hide the console by default
 

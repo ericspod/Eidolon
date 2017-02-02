@@ -3807,7 +3807,13 @@ public:
 	virtual real getSpaceWidth() const { return 0; }
 };
 
-/// Stores configuration values derived from arguments and config files
+/** 
+ * Stores configuration values derived from arguments and config files. Values are always stored as strings keyed to
+ * (group,name) pairs, where group is the category the value is a member of. Categories may include anything depending
+ * on context, `platformID' is the group for per-platform config values with "All" containing default values for all
+ * platforms. Other groups include "args" for command line arguments, "vars" for variable specified on the command line,
+ * and `RenderParamGroup' containing values for initializing the renderer. 
+ */
 class Config
 {
 protected:
