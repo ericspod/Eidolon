@@ -128,6 +128,7 @@ GPU_Nreg is provided by Dr Wenjia Bai, Imperial College London (http://wp.doc.ic
 
 #### MIRTK 
 
-The Medical Image Registration ToolKit  (MIRTK) is distributed under the terms of the Apache License Version 2.
+The Medical Image Registration ToolKit (MIRTK), the successor to IRTK, is distributed under the terms of the Apache License Version 2.
+See the LICENSE.txt file at https://github.com/BioMedIA/MIRTK
 
-MIRTK is written primarily by Andreas Schuh as the successor to IRTK. 
+MIRTK is written primarily by Andreas Schuh with Daniel Rueckert and Julia Schnabel.
