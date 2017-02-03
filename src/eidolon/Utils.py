@@ -576,7 +576,7 @@ def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
 					c=compile_command('\n'.join(lineadd+linebuffer)+'\n',filename,'exec') # raises syntax exceptions
 					if c:
 						linebuffer=[]
-						exec c in localvars # raises execution exceptions
+						exec c in localvars # raises execution exceptions (Note: exec tuple syntax encounters parser bug on python versions below 2.7.9)
 
 			except Exception as e:
 				linebuffer=[] # any exception means the stored code is possibly bogus so reject

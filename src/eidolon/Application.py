@@ -111,7 +111,7 @@ def generateConfig(inargs):
 				if len(helpstr)>0:
 					helplines=helpstr.strip().split('\n')
 					helpstr='\n   '.join(helplines)
-					print('\nPlugin %r:\n   %s' % (g.name,helpstr))
+					Utils.printFlush('\nPlugin %r:\n   %s' % (g.name,helpstr))
 
 			sys.exit(0)
 

@@ -1434,11 +1434,14 @@ class ConsoleWidget(QtGui.QTextEdit):
 			
 		# read the log file
 		if os.path.isfile(self.logfile):
-			with open(self.logfile) as o:
-				log=[s.rstrip() for s in o.readlines()]
+			try:
+				with open(self.logfile) as o:
+					log=[s.rstrip() for s in o.readlines()]
+					
+				self.history=log[-self.loglines:] # add no more than self.loglines values to the history
+			except Exception as e:
+				self.write('Cannot open console log file %r:\n%r\n'%(self.logfile,e))
 				
-			self.history=log[-self.loglines:] # add no more than self.loglines values to the history
-
 		try:
 			self.ps1=sys.ps1
 		except:
@@ -1502,8 +1505,11 @@ class ConsoleWidget(QtGui.QTextEdit):
 				
 				# write to log file if present
 				if self.logfile:
-					with open(self.logfile,'a') as o:
-						o.write('%s\n'%line)
+					try:
+						with open(self.logfile,'a') as o:
+							o.write('%s\n'%line)
+					except Exception as e:
+						self.write('Cannot write to console log file %r:\n%r\n'(self.logfile,e))
 
 		self.inputevent.set()
 
@@ -1561,7 +1567,7 @@ class ConsoleWidget(QtGui.QTextEdit):
 			self.linebuffer=[]
 
 			self.isExecuting=True
-			exec comp in self.locals # execute the statement(s) in the context of the local symbol table
+			exec(comp, self.locals) # execute the statement(s) in the context of the local symbol table
 		except SyntaxError as e:
 			sys.last_type, sys.last_value, sys.last_traceback = sys.exc_info()
 
