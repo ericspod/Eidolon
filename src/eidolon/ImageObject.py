@@ -898,18 +898,22 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 				fig.setVisible(self._isVisible and i==self.timestepIndex)
 
 	def getCurrentTimestepMaterial(self,chosen=0):
-		return self.figmats[self.timestepIndex]
+		return self.figmats[self.timestepIndex] if self.timestepIndex<len(self.figmats) else None
 
 	def getDefinedTransform(self,chosen=None):
 		imgind=self.getCurrentTimestepIndices()[0]
 		tsind=self.timestepIndex
-		img=self.images[imgind]
-		vdims=self.figdims[tsind]
-
-		trans=self.figs[tsind].getPosition(True)-img.orientation*(vdims*vec3(0.5,-0.5,0))
-		scale=self.figs[tsind].getScale(True)*(vdims*vec3(1,-1,1))
-
-		return transform(trans,scale,self.figs[tsind].getRotation(True))
+		
+		if imgind>=len(self.images) or tsind>=len(self.figs):
+			return self.parent.getVolumeTransform()
+		else:
+			img=self.images[imgind]
+			vdims=self.figdims[tsind]
+			trans=self.figs[tsind].getPosition(True)-img.orientation*(vdims*vec3(0.5,-0.5,0))
+			scale=self.figs[tsind].getScale(True)*(vdims*vec3(1,-1,1))
+			rot=self.figs[tsind].getRotation(True)
+	
+			return transform(trans,scale,rot)
 
 	def getPlaneIntersects(self,planept,planenorm,transformPlane=False,isXiPoint=False):
 		if len(self.figs)<=self.timestepIndex:

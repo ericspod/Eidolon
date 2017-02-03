@@ -468,8 +468,10 @@ class BaseCamera2DWidget(Base2DWidget):
 
 		# update the main figure's plane figure and set it's material to the representation's currently used one
 		self.sceneBB=self._updatePlaneFig(mainfig[0],rep,self.viewplane,imgstackpos)
-		mainfig[0].setMaterial(rep.getCurrentTimestepMaterial(imgstackpos))
 		mainfig[0].setOverlay(False)
+		mat=rep.getCurrentTimestepMaterial(imgstackpos)
+		if mat:
+			mainfig[0].setMaterial(mat)
 
 		repfigspairs=[]
 
