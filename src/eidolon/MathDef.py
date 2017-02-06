@@ -186,7 +186,7 @@ class ElemTypeDef(object):
 		return self.applyCoeffs(vals,self.basis(xi0,xi1,xi2,*args,**kwargs))
 
 	def applyCoeffs(self,vals,coeffs):
-		'''Apply the given coefficients to the given values and returns the summed result.'''
+		'''Apply the given coefficients to the given values and return the summed result.'''
 		assert isIterable(vals)
 		assert isIterable(coeffs)
 		assert len(vals)==len(coeffs), '%i != %i' % (len(vals),len(coeffs))
@@ -202,7 +202,10 @@ class ElemTypeDef(object):
 			return mulsum(vals,coeffs)
 
 	def faceXiToElemXi(self,face,xi0,xi1):
-		'''This relies on face 0 being on the xi YZ plane at xi0=0.'''
+		'''
+		Convert the xi value (xi0,xi1) on face number `face' to an element xi value for a 3D element. If self.dim
+		is less than 3, the result is simply (xi0,xi1,0). This relies on face 0 being on the xi YZ plane at xi0=0.
+		'''
 		if self.dim<3:
 			return (xi0,xi1,0)
 			

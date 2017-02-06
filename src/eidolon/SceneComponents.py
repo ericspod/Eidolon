@@ -498,7 +498,9 @@ class PolyHandle2D(Handle2D):
 			ind= first(i for i,pp in enumerate(lines) if 0<=screenpos.lineDist(*pp)<=self.selectRadius)
 			if ind is not None:
 				# choose the closest point index to the line segment that was clicked
-				self.selectedNodeInd=int((float(ind)/len(linepts))*len(pts2d)) 
+				linexi=float(ind)/len(linepts)
+				nodeind=int(round(linexi*len(pts2d)))
+				self.selectedNodeInd=nodeind%len(pts2d)
 				self.setActive(True)
 			
 		return self.selectedNodeInd!=-1

@@ -418,7 +418,7 @@ class BaseCamera2DWidget(Base2DWidget):
 				for i,tsrep in enumerate(rep.enumSubreprs()):
 					task.setProgress(i+1)
 
-					snodes,sinds,scols=generateTriMeshPlanecut(tsrep.dataset,'slicemesh%i'%i,planept,planenorm,self.linewidth,nodecolors=tsrep.nodecolors)
+					snodes,sinds,scols=generateMeshPlanecut(tsrep.dataset,'slicemesh%i'%i,planept,planenorm,self.linewidth,nodecolors=tsrep.nodecolors)
 					vb=None
 					ib=None
 
@@ -505,7 +505,7 @@ class BaseCamera2DWidget(Base2DWidget):
 				# calculate the repr's isolines where it intersects the viewing plane if the current view plane
 				# differs from the one the previous isolines were calculated for, this ensure the calculation is
 				# only done if the view plane has moved.
-				if isinstance(tsrepr,MeshSceneObjectRepr) and tsrepr.tris!=None and self.viewplane!=strans:
+				if isinstance(tsrepr,MeshSceneObjectRepr) and (tsrepr.tris!=None or tsrepr.lines!=None) and self.viewplane!=strans:
 					repfigspairs.append((srep,sfigs))
 
 				# set figure properties, making only the current timestep's figure visible

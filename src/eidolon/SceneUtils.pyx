@@ -87,7 +87,7 @@ StdProps=enum(
 	('valrange','Mininum and maximum values separated by |'),
 	# octree data for each octant (leaf), a tuple of (depth int, dimensions 3-tuple, center 3-tuple)
 	('octreedata','Octree (depth, dimension tuple, center tuple) tuple'),
-	# indices for rows of a sparse matrix stored as columns, eg. for a tuple t each row i starts at t[i] and ends on value before t[i+1]
+	# indices for rows of a sparse matrix with variable row lengths stored as columns, eg. for sparsematrix tuple t row i starts at t[i] and ends on value before t[i+1]
 	('sparsematrix','Indices list for the start of rows stored in single column format')
 )
 
@@ -856,8 +856,8 @@ def cleanupMatrices():
 	'''
 	Do cleanup of shared memory segments created for this process. On Linux this relies on
 	the naming convention Matrix uses, which for now is to prepend __viz__ to the shared name.
-	In OSX this uses the SHMDIRVAR directory in the global Config object which will store the names
-	of open shared memory segments as file names.
+	In OSX this uses the directory returned by the renderer function getSharedDir() which will 
+	store the names of open shared memory segments as file names.
 	'''
 	pid=os.getpid()
 	shmdir=ren.getSharedDir()
@@ -1442,6 +1442,27 @@ def calculateElemIsoline(nodevals,elemtype,val,int refine=-1):
 
 	for line in isofunc(nodevals,elemtype,val,refine):
 		yield line
+
+
+def calculateLinePlaneIntersect(vec3 start,vec3 end,vec3 planept, vec3 planenorm):
+	'''
+	Calculates the intersection point of the line defined by `start'->`end'  with plane (`planept',`planenorm').
+	The return value is the pair (pt,xi) giving the point `pt' where the intersection occurs, and the linear xi value
+	along the line where this occurs. If the line doesn't not intersect the plane, None is returned.
+	'''
+	cdef float d1=start.planeDist(planept,planenorm)
+	cdef float d2=end.planeDist(planept,planenorm)
+	cdef float xi=0
+	
+	if d1==0:
+		return (start,0.0)
+	elif d2==0:
+		return (end,1.0)
+	elif (d1>0 and d2<0) or (d1<0 and d2>0):
+		xi=abs(d1)/(abs(d1)+abs(d2))
+		return (start.lerp(xi,end),xi)
+	else:
+		return None
 
 
 def reindexMesh(list inds,list components):

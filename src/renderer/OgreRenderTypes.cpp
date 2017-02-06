@@ -736,17 +736,8 @@ OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & ma
 
 void OgreBBSetFigure::setCameraVisibility(const Camera* cam, bool isVisible)
 {
-	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i){
-		/*Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
-		u32 flag=ocam->getViewport()->getVisibilityMask();
-
-		if(isVisible)
-			(*i)->addVisibilityFlags(flag);
-		else
-			(*i)->removeVisibilityFlags(flag);
-		*/
+	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
 		OgreRenderTypes::setCameraVisibility(cam,*i,isVisible,scene);
-	}
 }
 
 void OgreBBSetFigure::createBBSet()
@@ -881,14 +872,6 @@ void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bo
 
 void OgreRibbonFigure::setCameraVisibility(const Camera* cam, bool isVisible)
 {
-	/*Ogre::Camera *ocam=scene->mgr->getCamera(cam->getName());
-	u32 flag=ocam->getViewport()->getVisibilityMask();
-
-	if(isVisible)
-		bbchain->addVisibilityFlags(flag);
-	else
-		bbchain->removeVisibilityFlags(flag);
-	*/
 	OgreRenderTypes::setCameraVisibility(cam,bbchain,isVisible,scene);
 }
 

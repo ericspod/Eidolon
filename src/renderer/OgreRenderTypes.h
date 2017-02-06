@@ -1033,7 +1033,6 @@ public:
 
 	void setVisible(bool isVisible)
 	{
-
 		if(obj && node->numAttachedObjects()==0)
 			node->attachObject(obj);
 

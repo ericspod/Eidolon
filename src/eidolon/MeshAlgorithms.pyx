@@ -38,8 +38,8 @@ from renderer.Renderer cimport IndexMatrix,RealMatrix,Vec3Matrix,ColorMatrix,vec
 import SceneUtils
 cimport SceneUtils
 
-from .SceneUtils import PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix
-from .SceneUtils cimport PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix
+from .SceneUtils import PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix,calculateLinePlaneIntersect
+from .SceneUtils cimport PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix,calculateLinePlaneIntersect
 
 
 def unitfuncLin(x):
@@ -355,7 +355,7 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
 	cdef list ocmatinds,subinds
 	cdef dict trees={}
 	cdef object acceptedInds=filter(acceptFunc,dataset.enumIndexSets())
-
+	
 	for inds in acceptedInds:
 		ocname=inds.getName()+MatrixType.octree[1]
 		ocmat=dataset.getIndexSet(ocname)
@@ -569,7 +569,7 @@ def generateTriDataSet(dataset,str name,int refine,bint externalOnly=False,task=
 
 
 @concurrent
-def generateTriMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,Vec3Matrix trinodes,ColorMatrix nodecolors,IndexMatrix triinds,IndexMatrix octree,list slicedleaves):
+def generateMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,Vec3Matrix innodes,ColorMatrix nodecolors,IndexMatrix inds,IndexMatrix octree,list slicedleaves):
 	cdef tuple indextype=MatrixType.lines if width==0 else MatrixType.tris
 	cdef Vec3Matrix nodes=Vec3Matrix(name+MatrixType.nodes[1],0,2)
 	cdef IndexMatrix indices=IndexMatrix(name+indextype[1],0,indextype[2])
@@ -580,23 +580,44 @@ def generateTriMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,
 	cdef list elemdists
 	cdef vec3 xi1,xi2,q1,q2,q3,q4,n1,n2,ee,e1,e2,e3
 	cdef color c1,c2,ec1,ec2,ec3
+	cdef bint isTri=inds.m()==3
 
 	for p in process.prange():
 		for e in range(*slicedleaves[p]):
 			elem=octree.mat.atc(e,0)
-			e1,e2,e3=trinodes.mapIndexRow(triinds,elem)
-			elemxis=SceneUtils.calculateLinearTriIsoline(e1.planeDist(pt,norm),e2.planeDist(pt,norm),e3.planeDist(pt,norm))
-
+			elemxis=None
+			
+			if isTri:
+				e1,e2,e3=innodes.mapIndexRow(inds,elem)
+				elemxis=SceneUtils.calculateLinearTriIsoline(e1.planeDist(pt,norm),e2.planeDist(pt,norm),e3.planeDist(pt,norm))
+	
+				if elemxis:
+					ec1,ec2,ec3=nodecolors.mapIndexRow(inds,elem)
+					xi1,xi2=elemxis
+	
+					n1=SceneUtils.linTriInterp(xi1.x(),xi1.y(),e1,e2,e3)
+					n2=SceneUtils.linTriInterp(xi2.x(),xi2.y(),e1,e2,e3)
+					c1=SceneUtils.linTriInterp(xi1.x(),xi1.y(),ec1,ec2,ec3)
+					c2=SceneUtils.linTriInterp(xi2.x(),xi2.y(),ec1,ec2,ec3)
+			else:
+				e1,e2=innodes.mapIndexRow(inds,elem)
+				elemxis=calculateLinePlaneIntersect(e1,e2,pt,norm)
+				if elemxis:
+					ec1,ec2=nodecolors.mapIndexRow(inds,elem)
+					n1=e1.lerp(clamp(elemxis[1]-0.01,0,1),e2).planeProject(pt,norm)
+					
+					if width>0: # make the line `width' long in the direction of the line's projection on the plane
+						n1=(n1-elemxis[0]).norm()*(width/2)
+						n2=elemxis[0]-n1
+						n1=elemxis[0]+n1
+					else:
+						n2=e1.lerp(clamp(elemxis[1]+0.01,0,1),e2).planeProject(pt,norm)
+						
+					c1=ec1.interpolate(elemxis[1],ec2)
+					c2=ec2
+					
 			if elemxis:
 				n=nodes.n()
-				ec1,ec2,ec3=nodecolors.mapIndexRow(triinds,elem)
-				xi1,xi2=elemxis
-
-				n1=SceneUtils.linTriInterp(xi1.x(),xi1.y(),e1,e2,e3)
-				n2=SceneUtils.linTriInterp(xi2.x(),xi2.y(),e1,e2,e3)
-				c1=SceneUtils.linTriInterp(xi1.x(),xi1.y(),ec1,ec2,ec3)
-				c2=SceneUtils.linTriInterp(xi2.x(),xi2.y(),ec1,ec2,ec3)
-
 				if width==0: # 1D line
 					indices.append(n,n+1)
 					nodes.append(n1,norm)
@@ -620,15 +641,15 @@ def generateTriMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,
 	return shareMatrices(nodes,indices,colors) if process.total>1 else (nodes,indices,colors)
 
 
-def generateTriMeshPlanecut(dataset,str name,vec3 pt,vec3 norm,float width,int treedepth=3,ColorMatrix nodecolors=None,task=None,**kwargs):
-	cdef object acceptIndex=lambda i:isSpatialIndex(i) and ElemType[i.getType()].geom==GeomType._Tri
+def generateMeshPlanecut(dataset,str name,vec3 pt,vec3 norm,float width,int treedepth=3,ColorMatrix nodecolors=None,task=None,**kwargs):
+	cdef object acceptIndex=lambda i:isSpatialIndex(i) and ElemType[i.getType()].geom in (GeomType._Tri,GeomType._Line)
 	cdef dict trees=getDatasetOctrees(dataset,treedepth,acceptIndex)
 	cdef Vec3Matrix nodes=None,dnodes,inodes
 	cdef IndexMatrix indices=None,indmat=None,octree=None,iinds,
 	cdef ColorMatrix cols=None,icols
-
+	
 	if trees:
-		indmat,octree=first(trees.items()) # TODO: cut only the first triangle topology for now
+		indmat,octree=first(trees.items()) # TODO: cut only the first topology for now
 		dnodes=dataset.getNodes()
 
 		depth,dim,center=eval(octree.meta(StdProps._octreedata))
@@ -646,7 +667,7 @@ def generateTriMeshPlanecut(dataset,str name,vec3 pt,vec3 norm,float width,int t
 		if proccount!=1:
 			shareMatrices(dnodes,nodecolors,indmat,octree)
 
-		results=generateTriMeshPlanecutRange(len(slicedleaves),proccount,task,name,pt,norm,width,dnodes,nodecolors,indmat,octree,slicedleaves)
+		results=generateMeshPlanecutRange(len(slicedleaves),proccount,task,name,pt,norm,width,dnodes,nodecolors,indmat,octree,slicedleaves)
 
 		for i in sorted(results):
 			inodes,iinds,icols=results[i]
@@ -1445,6 +1466,7 @@ def generateCylinderDataSet(dataset,str name,int refine,bint externalOnly=False,
 
 	nodes=dataset.getNodes()
 	outnodes,nodeprops,indices,extindices=createDataMatrices(name,MatrixType.lines if use1DLines else MatrixType.tris)
+	indices.setType(ElemType._Line1NL if use1DLines else ElemType._Tri1NL)
 	indlist=[]
 
 	field=dataset.findField(field)
@@ -1561,6 +1583,11 @@ def generateGlyphDataSet(dataset,name,refine,externalOnly=False,task=None,**kwar
 				nodes.setAt(veclambda(field.getRow(n)),n,3)
 
 	return ds,indlist
+
+
+@timing
+def generateRibbonDataSet(dataset,name,refine,externalOnly=False,task=None,**kwargs):
+	pass
 
 
 @concurrent

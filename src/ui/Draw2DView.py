@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/Draw2DView.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Mon Feb  6 20:01:06 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -25,9 +26,11 @@ except AttributeError:
 class Ui_Draw2DView(object):
     def setupUi(self, Draw2DView):
         Draw2DView.setObjectName(_fromUtf8("Draw2DView"))
-        Draw2DView.resize(659, 668)
-        self.verticalLayout = QtGui.QVBoxLayout(Draw2DView)
-        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
+        Draw2DView.resize(932, 780)
+        self.gridLayout = QtGui.QGridLayout(Draw2DView)
+        self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
+        self.mainLayout = QtGui.QVBoxLayout()
+        self.mainLayout.setObjectName(_fromUtf8("mainLayout"))
         self.drawWidget = QtGui.QWidget(Draw2DView)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -36,7 +39,7 @@ class Ui_Draw2DView(object):
         self.drawWidget.setSizePolicy(sizePolicy)
         self.drawWidget.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.drawWidget.setObjectName(_fromUtf8("drawWidget"))
-        self.verticalLayout.addWidget(self.drawWidget)
+        self.mainLayout.addWidget(self.drawWidget)
         self.dataGroup = QtGui.QGroupBox(Draw2DView)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -159,7 +162,8 @@ class Ui_Draw2DView(object):
         self.lineWidthBox.setObjectName(_fromUtf8("lineWidthBox"))
         self.horizontalLayout_2.addWidget(self.lineWidthBox)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
-        self.verticalLayout.addWidget(self.dataGroup)
+        self.mainLayout.addWidget(self.dataGroup)
+        self.gridLayout.addLayout(self.mainLayout, 0, 0, 1, 1)
 
         self.retranslateUi(Draw2DView)
         QtCore.QMetaObject.connectSlotsByName(Draw2DView)

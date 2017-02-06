@@ -48,6 +48,7 @@ from ui.LightProp import Ui_LightProp
 from ui.GPUProp import Ui_gpuProp
 #from ui.loadGPUScript import Ui_gpuDialog # TODO implement dialog
 from ui.Draw2DView import Ui_Draw2DView
+from ui.Draw2DView3Plane import Ui_Draw2DView3Plane
 from ui.ScreenshotForm import Ui_ScreenshotForm
 from ui.ShowMsg import Ui_ShowMsg
 

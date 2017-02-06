@@ -917,6 +917,10 @@ cdef sval indexFunc(void* context,int i,int w) with gil:
 
 
 cdef class CallbackVertexBuffer(VertexBuffer):
+	'''
+	Defines the basic skeleton for a buffer with Cython/Python method bodies callable in C++. This class should be
+	subtyped and method bodies implemented to interface Python data into the renderer through fillData().
+	'''
 	cdef iCallbackVertexBuffer[void*]* val
 
 	def __init__(self,sval numvertices,bint hasNormal,bint hasColor,bint hasUVWCoord):
@@ -973,6 +977,10 @@ cdef class CallbackVertexBuffer(VertexBuffer):
 
 
 cdef class CallbackIndexBuffer(IndexBuffer):
+	'''
+	Defines the basic skeleton for a buffer with Cython/Python method bodies callable in C++. This class should be
+	subtyped and method bodies implemented to interface Python data into the renderer through fillData().
+	'''
 	cdef iCallbackIndexBuffer[void*]* val
 
 	def __init__(self,sval numindices):

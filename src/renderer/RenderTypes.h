@@ -2997,6 +2997,12 @@ public:
 };
 
 
+/**
+ * This buffer uses callback functions passed to its constructor as the sources of data rather than storing matrices. The
+ * purpose is to allow the callback functions to be defined in Cython to adapt Python code/objects to C++. This allows a 
+ * VertexBuffer subtype to be defined with Python code but callable in C++. The Ctx value is the context the callback 
+ * functions are given when called which is typically going to be `this' cast to a different type in Cython such as void*.
+ */
 template<typename Ctx>
 class CallbackVertexBuffer : public VertexBuffer
 {
@@ -3026,6 +3032,7 @@ public:
 	virtual bool hasUVWCoord() const { return uvwfunc!=NULL; }
 };
 
+/// See CallbackVertexBuffer, the same concept applies here with a buffer accepting functions defined in Cython to adapt Python code.
 template<typename Ctx>
 class CallbackIndexBuffer : public IndexBuffer
 {
