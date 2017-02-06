@@ -486,7 +486,7 @@ def calculateTriRange(process,IndexMatrix ind,Vec3Matrix nodes,IndexMatrix ext,i
 	cdef Vec3Matrix outnodes
 	cdef IndexMatrix outprops,outinds,outext
 	cdef int i,facemult,nlen,face,numfaces=elemtype.numFaces()
-	cdef tuple elemnodes,c0,c1,c2
+	cdef tuple elemnodes,c,c0,c1,c2
 	cdef vec3 n1,n2,norm,xi
 
 	assert elemtype.geom in (GeomType._Tri,GeomType._Quad,GeomType._Hex, GeomType._Tet)
