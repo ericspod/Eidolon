@@ -48,7 +48,6 @@ from ui.LightProp import Ui_LightProp
 from ui.GPUProp import Ui_gpuProp
 #from ui.loadGPUScript import Ui_gpuDialog # TODO implement dialog
 from ui.Draw2DView import Ui_Draw2DView
-from ui.Draw2DView3Plane import Ui_Draw2DView3Plane
 from ui.ScreenshotForm import Ui_ScreenshotForm
 from ui.ShowMsg import Ui_ShowMsg
 
@@ -1148,6 +1147,8 @@ class Draw2DView(Ui_Draw2DView):
 		self.secondsButton.setPopupMode(QtGui.QToolButton.InstantPopup)
 
 		self.setImageStackMax(10)
+		self.vsplit.setCollapsible(1,False) # right side is not collapsible
+		self.setLeftSideVisible(False) # hide the left side panel initially
 
 		self.imageBox.valueChanged.connect(self.setImageStackPosition)
 		self.imageSlider.valueChanged.connect(self.setImageStackPosition)
@@ -1258,6 +1259,13 @@ class Draw2DView(Ui_Draw2DView):
 	def getImageStackMax(self):
 		'''Get the maximum stack index.'''
 		return self.imageSlider.maximum()
+		
+	def setLeftSideVisible(self,isVisible):
+		self.vsplit.moveSplitter(100 if isVisible else 0,1)
+		self.vsplit.widget(0).setVisible(isVisible)
+		
+	def isLeftSideVisible(self):
+		return self.vsplit.isEnabled()
 
 
 class RenderWidget(QtGui.QWidget):

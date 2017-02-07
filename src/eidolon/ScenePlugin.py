@@ -689,20 +689,10 @@ class MeshScenePlugin(ScenePlugin):
 					rep=MeshSceneObjectRepr(obj,reprtype,obj.reprcount,refine,ds,obj.datasets[0],drawInternal,externalOnly,matname,**kwargs)
 				else:
 					subreprs=[]
-#					origds=None
-#					indlist=None
-
 					srcdsmap={}
 
 					for i,dds in enumerate(obj.datasets):
 						name='%s %s %i [%i/%i]' %(obj.name,ReprType[reprtype][0],obj.reprcount,i+1,len(obj.datasets))
-
-						# not any faster?
-#						if i==0:
-#							ds=self.createReprDataset(dds,reprtype,name,refine,externalOnly,task,**kwargs)
-#							origds,indlist=ds
-#						else:
-#							ds=reinterpolateVertices(name,origds,dds,indlist,task),indlist
 
 						ddsorig=dds.meta(StdProps._isdsclone)
 						if ddsorig!='' and ddsorig in srcdsmap:
@@ -788,6 +778,11 @@ class MeshScenePlugin(ScenePlugin):
 				ParamDef('numitervals','Num Intervals',ParamType._int,1,1,999,1),
 				ParamDef('vals','Value List',ParamType._str),
 			]
+		elif reprtype == ReprType._ribbon:
+			params+=[
+				ParamDef('rangeinds','Range Indices',ParamType._bool,True),
+				ParamDef('maxlen','Max Length',ParamType._real,0.0,1.0,9999,0.0),
+			]
 #		elif reprtype in (ReprType._bbpoint,ReprType._bbline,ReprType._bbplane):
 #			rad=BoundBox(obj.datasets[0].getNodes()).radius
 #			params+=[
@@ -803,7 +798,8 @@ class MeshScenePlugin(ScenePlugin):
 		return params
 
 	def getReprTypes(self,obj):
-		maxdim=max([0]+[ElemType[e].dim for e in obj.elemTypes()]) # maximal spatial dimensions for the stored index sets
+		elemtypes=obj.elemTypes()
+		maxdim=max([0]+[ElemType[e].dim for e in elemtypes]) # maximal spatial dimensions for the stored index sets
 		reprs=[ReprType._node,ReprType._point]
 
 		if maxdim>0:
@@ -822,6 +818,9 @@ class MeshScenePlugin(ScenePlugin):
 			reprs.append(ReprType._isosurf)
 
 		reprs.append(ReprType._glyph)
+		
+		if len(obj.datasets)>1 and ElemType._Line1NL in elemtypes:
+			reprs.append(ReprType._ribbon)
 
 #		reprs.append(ReprType._bbpoint)
 #		reprs.append(ReprType._bbline)

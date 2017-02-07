@@ -800,7 +800,7 @@ class LVSeg2DMixin(DrawContourMixin):
 #		else:
 #			trans=imgobj.getVolumeTransform()
 #			rightvec=(trans.getRotation()*vec3(0,0.5,0))
-		raise NotImplementedError,'Soon'
+		raise NotImplementedError('Soon')
 
 	def setSegObject(self,segobj):
 		self.segobj=segobj
@@ -987,8 +987,8 @@ class LVSegView(LVSeg2DMixin,PointChooseMixin,Camera2DView):
 
 	def __init__(self,mgr,camera):
 		Camera2DView.__init__(self,mgr,camera)
-		LVSeg2DMixin.__init__(self,self.verticalLayout)
-		PointChooseMixin.__init__(self,self.verticalLayout)
+		LVSeg2DMixin.__init__(self,self.mainLayout)
+		PointChooseMixin.__init__(self,self.mainLayout)
 
 		for p in SegViewPoints:
 			self.addPoint(*p)

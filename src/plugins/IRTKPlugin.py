@@ -988,7 +988,6 @@ class IRTKPluginMixin(object):
 		context. Return value is the time-dependent SceneObject containing the tracking information, or a Future
 		containing this object if the method was called outside of the task thread.
 		'''
-		
 		obj=self.findObject(obj_or_name) 
 		
 		if os.path.isdir(trackname_or_dir):
@@ -1090,6 +1089,17 @@ class IRTKPluginMixin(object):
 					f.setObject(result)
 					
 			return self.mgr.runTasks(_loadSeq(),f)
+		
+	@timing
+	def applyMotionTrackPoints(self,dirname,pts):
+		'''
+		Simple synchronous method applying the motion track data in `dirname' to the list of vec3 points `pts'.
+		Returns map of timesteps to motion tracked points at those times.
+		'''
+		initobj=MeshSceneObject('proxy',PyDataSet('proxyds',pts))
+		f=self.applyMotionTrack(initobj,dirname,False)
+		trackobj=Future.get(f)
+		return {ts:ds.getNodes()[:,0] for ts,ds in zip(trackobj.getTimestepList(),trackobj.datasets)}
 
 	def isServerAlive(self,serveraddr=None,serverport=None):
 		'''

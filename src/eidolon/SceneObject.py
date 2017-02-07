@@ -39,9 +39,9 @@ ReprType=enum(
 	('isoline','Isolines',generateIsolineDataSet,FT_TRILIST,False,True),
 	('glyph','Glyphs',generateGlyphDataSet,FT_GLYPH,True,False),
 	('ribbon','Ribbons',generateRibbonDataSet,FT_RIBBON,False,False),
-	('bbpoint','Billboard Points',generateBillboardDataSet,FT_BB_POINT,True,False),
-	('bbline','Billboard Lines',generateBillboardDataSet,FT_BB_FIXED_PAR,True,False),
-	('bbplane','Billboard Planes',generateBillboardDataSet,FT_BB_FIXED_PERP,True,False),
+#	('bbpoint','Billboard Points',generateBillboardDataSet,FT_BB_POINT,True,False),
+#	('bbline','Billboard Lines',generateBillboardDataSet,FT_BB_FIXED_PAR,True,False),
+#	('bbplane','Billboard Planes',generateBillboardDataSet,FT_BB_FIXED_PERP,True,False),
 	# image types
 	('imgstack','Image Stack',None,None,False,False),
 	('imgtimestack','Timed Image Stack',None,None,False,False),

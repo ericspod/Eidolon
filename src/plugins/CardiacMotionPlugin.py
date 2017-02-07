@@ -655,6 +655,7 @@ class CardiacMotionProject(Project):
 	def __init__(self,name,parentdir,mgr):
 		Project.__init__(self,name,parentdir,mgr)
 		self.addHandlers()
+		self.Measure=mgr.getPlugin('Measure')
 		self.CardiacMotion=mgr.getPlugin('CardiacMotion')
 		self.ReportCard=mgr.getPlugin('ReportCard')
 		self.CardiacMotion.project=self
@@ -867,11 +868,20 @@ class CardiacMotionProject(Project):
 		self.alignprop.strainMeshBox.currentIndexChanged.emit(self.alignprop.strainMeshBox.currentIndex())
 		self.alignprop.torsionMeshBox.currentIndexChanged.emit(self.alignprop.torsionMeshBox.currentIndex())
 
+		# fill tracking dirs boxes with directory names
 		trackdirs=map(os.path.basename,self.CardiacMotion.getTrackingDirs())
 		fillList(self.alignprop.trackDataBox,trackdirs)
 		fillList(self.alignprop.strainTrackBox,trackdirs)
 		fillList(self.alignprop.strainMeshTrackBox,trackdirs)
 		
+		# the Measurement plugin's `trackSrcs' dict with the simple tracking method mapped to tracking dir names
+		for ts,v in self.Measure.trackSrcs.items():
+			if v==self.CardiacMotion.applyMotionTrackPoints:
+				del self.Measure.trackSrcs[ts]
+		
+		self.Measure.trackSrcs.update({td:self.CardiacMotion.applyMotionTrackPoints for td in trackdirs})
+		
+		# set heart rate if stored in the config map
 		heartrate=self.configMap[ConfigNames._heartrateBPM]
 		if heartrate and self.alignprop.bpmBox.value()==0:
 			self.alignprop.bpmBox.setValue(heartrate)

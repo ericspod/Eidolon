@@ -825,10 +825,10 @@ void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bo
 	try{
 		size_t numverts=vb ? vb->numVertices() : 0;
 		size_t numinds=ib ? ib->numIndices() : 0;
-		size_t numnodesmax=0;
+		size_t numnodesmax=ib ? ib->indexWidth(0) : 0;
 
-		for(size_t i=0;i<numinds;i++)
-			numnodesmax=_max<size_t>(numnodesmax,ib->indexWidth(i));
+		//for(size_t i=0;ib && i<numinds;i++)
+		//	numnodesmax=_max<size_t>(numnodesmax,ib->indexWidth(i));
 
 		if(numverts==0 || numinds==0 || numnodesmax==0)
 			return;
@@ -837,12 +837,12 @@ void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bo
 		setNumRibbons(numinds);
 		setMaxNodes(numnodesmax);
 
-		for(size_t i=0;i<numinds;i++){
+		/*for(size_t i=0;i<numinds;i++){
 			size_t numnodes=ib->indexWidth(i);
 			for(size_t j=0;j<numnodes;j++){
 				indexval ind=ib->getIndex(i,j);
 
-				vec3 pos = vb->getVertex(i),norm,uvw;
+				vec3 pos = vb->getVertex(ind),norm,uvw;
 				color col;
 				rotator rot;
 				real width=1.0, tex=1.0;
@@ -861,6 +861,35 @@ void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bo
 			
 				if(vb->hasColor())
 					col=vb->getColor(i);
+
+				addNode(i,pos,col,width,rot,tex);
+			}
+		}*/
+		
+		for(size_t i=0;i<numinds;i++){
+			indexval start=ib->getIndex(i,0);
+			indexval end=ib->getIndex(i,1);
+			
+			for(indexval j=start;j<end;j++){
+				vec3 pos = vb->getVertex(j),norm,uvw;
+				color col;
+				rotator rot;
+				real width=1.0, tex=1.0;
+					
+				if(vb->hasNormal()){
+					norm=vb->getNormal(j);
+					if(!norm.isZero())
+						rot=rotator(vec3(0,0,1),norm);
+				}
+		
+				if(vb->hasUVWCoord()){
+					uvw=vb->getUVWCoord(j);
+					width=uvw.y() ? uvw.y() : 1.0;
+					tex=uvw.x() ? uvw.x() : 1.0;
+				}
+			
+				if(vb->hasColor())
+					col=vb->getColor(j);
 
 				addNode(i,pos,col,width,rot,tex);
 			}

@@ -88,28 +88,17 @@ class BaseCamera2DWidget(Base2DWidget):
 		nodes=list(BaseCamera2DWidget.defaultQuad[0])+cnodes
 		inds=list(BaseCamera2DWidget.defaultQuad[1])+cinds
 		self.indicatorPlane.fillData(PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),[color(1,1,1,0.5)]*len(nodes)),PyIndexBuffer(inds),False,True)
-
-		# setup delay methods for repainting and updating the UI so that these can be safely called multiple times and from task threads
-		delayedMethodWeak(self,'_repaintDelay')
-		delayedMethodWeak(self,'_updateUIDelay')
+		
+		delayedMethodWeak(self,'_repaintDelay') #delay method for repainting allows safe calling multiple times and from task threads
 
 		mgr.addEventHandler(EventType._widgetPreDraw,self._repaintDelay)
-		mgr.addEventHandler(EventType._objectAdded,self.updateUI)
-		mgr.addEventHandler(EventType._objectRemoved,self.updateUI)
 		
 	def _repaintDelay(self):
 		self.mgr.callThreadSafe(self.repaint)
 
-	def _updateUIDelay(self):
-		self.mgr.callThreadSafe(self.updateUI)
-
 	@delayedcall(0.5) # only need/want 1 delay thread for repainting the 3D scene, don't want to do this often
 	def _repaint3DDelay(self):
 		self.mgr.callThreadSafe(self.mgr.repaint)
-
-	def updateUI(self,_=None):
-		'''Called to update and fill the UI whenever some relevant state change has occurred.'''
-		pass
 	
 	def getImageStackPosition(self):
 		'''Get the index in the image stack of the source object.'''
@@ -172,7 +161,6 @@ class BaseCamera2DWidget(Base2DWidget):
 
 	def parentClosed(self,e):
 		self.removeHandles()
-		self.mgr.removeEventHandler(self.updateUI)
 		self.mgr.removeEventHandler(self._repaintDelay)
 		self.mgr.removeCamera(self.camera)
 		self.camera=None
@@ -404,16 +392,18 @@ class BaseCamera2DWidget(Base2DWidget):
 
 	@delayedcall(0.15)
 	def _updateMeshPlanecutFigs(self,repfigspairs,planetrans):
+		'''Updates the figures containing mesh slice data for each secondary mesh object.'''
 		@taskroutine('Generating Mesh Planecut')
 		@timing
 		def _generatecut(task):
 			for rep,figs in repfigspairs:
 				tslen=len(rep.getTimestepList())
-				assert tslen==len(figs)
-				task.setMaxProgress(tslen)
 				planept=planetrans.getTranslation()
 				planerot=planetrans.getRotation()
 				planenorm=planerot*vec3(0,0,1)
+				
+				assert tslen==len(figs)
+				task.setMaxProgress(tslen)
 
 				for i,tsrep in enumerate(rep.enumSubreprs()):
 					task.setProgress(i+1)
@@ -530,6 +520,11 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 	def __init__(self,mgr,camera,parent=None):
 		BaseCamera2DWidget.__init__(self,mgr,camera,parent)
 		Draw2DView.__init__(self)
+		
+		delayedMethodWeak(self,'_updateUIDelay')
+		
+		mgr.addEventHandler(EventType._objectAdded,self.updateUI)
+		mgr.addEventHandler(EventType._objectRemoved,self.updateUI)
 
 		self.modifyDrawWidget(self.drawWidget)
 		self.numVolSteps=10
@@ -537,6 +532,13 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 		self.indicatorBox.clicked.connect(self.setIndicatorVisible)
 		setCollapsibleGroupbox(self.dataGroup)
 		self._updateUIDelay()
+		
+	def _updateUIDelay(self):
+		self.mgr.callThreadSafe(self.updateUI)
+		
+	def parentClosed(self,e):
+		self.mgr.removeEventHandler(self.updateUI)
+		BaseCamera2DWidget.parentClosed(self,e)
 		
 	def getSecondaryNames(self):
 		return self.secondsSelected
@@ -815,8 +817,8 @@ class DrawLineMixin(object):
 	'''
 	def __init__(self,matname='newLine',drawcolor=color(1,0,0)):
 		self.drawingLine=False
-		self.start=None
-		self.end=None
+		self.lineStart=None
+		self.lineEnd=None
 		self.drawcolor=drawcolor
 		
 		self.lineMat=self.mgr.getMaterial(matname) or self.mgr.createMaterial(matname)
@@ -835,7 +837,7 @@ class DrawLineMixin(object):
 		'''Fills the figure representing the drawn line so that it is visible on screen while drawing.'''
 		if self.drawingLine:
 			orthot=self._planeToWorldTransform().inverse()
-			vbuf=PyVertexBuffer([(orthot*self.start)*vec3(1,1),(orthot*self.end)*vec3(1,1)],[vec3(0,0,1)]*2,[self.drawcolor]*2)
+			vbuf=PyVertexBuffer([(orthot*self.lineStart)*vec3(1,1),(orthot*self.lineEnd)*vec3(1,1)],[vec3(0,0,1)]*2,[self.drawcolor]*2)
 			ibuf=PyIndexBuffer([(0,1)])
 			self.lineFig.fillData(vbuf,ibuf)
 
@@ -844,7 +846,7 @@ class DrawLineMixin(object):
 		if e.buttons()!=Qt.LeftButton or not self.drawingLine:
 			return False
 			
-		self.start=self.end=self.getWorldPosition(e.x(),e.y())
+		self.lineStart=self.lineEnd=self.getWorldPosition(e.x(),e.y())
 		self.lineFig.setVisible(True)
 		return True
 		
@@ -853,7 +855,7 @@ class DrawLineMixin(object):
 		if not self.drawingLine:
 			return False
 			
-		self.end=self.getWorldPosition(e.x(),e.y())
+		self.lineEnd=self.getWorldPosition(e.x(),e.y())
 		return True
 
 	def drawMouseRelease(self,e):

@@ -256,6 +256,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		DrawLineMixin.__init__(self)
 		DrawContourMixin.__init__(self,16)
 		
+		self.plugin=self.mgr.getPlugin('Measure')
 		self.handlecol=color(1,0,0)
 		self.handleradius=5.0
 		self.planeMargin=0.001
@@ -268,7 +269,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		
 		self.uiobj=Measure2DWidget()
 		self.uiobj.measureBox.setParent(None)
-		self.verticalLayout.addWidget(self.uiobj.measureBox)
+		self.mainLayout.addWidget(self.uiobj.measureBox)
 		
 		self.uiobj.numCtrlBox.setValue(self.numNodes)
 		self.uiobj.numCtrlBox.valueChanged.connect(self.setNumNodes)
@@ -428,28 +429,8 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		
 		for i,mobj in handles:
 			mobj.setHandleVisible(self.handles[i],curtime,tsmargin)
-
-		# TODO: figure out how to do motion tracking without tight coupling with IRTK or whatever else
-#		imgs=[o for o in self.mgr.objs if isinstance(o,ImageSceneObject)]
-#		fillList(self.uiobj.trackSrcBox,[i.getName() for i in imgs])
-#			
-#		searchdirs=[os.getcwd()]
-#		trackdirs=[]
-#		if self.mgr.project:
-#			searchdirs.append(self.mgr.project.getProjectDir())
-#			
-#		for i in imgs:
-#			files=i.plugin.getObjFiles(i)
-#			if files:
-#				trackdirs.append(os.path.split(files[0])[0])
-#			
-#		for s in searchdirs:
-#			s=os.path.abspath(s)
-#			for d in glob.glob(s+'/*'):
-#				if os.path.isdir(d) and glob.glob(d+'/*.dof.gz'):
-#					trackdirs.append(os.path.abspath(d))
-#					
-#		fillList(self.uiobj.trackDataBox,trackdirs)
+			
+		fillList(self.uiobj.trackDataBox,sorted(list(self.plugin.trackSrcs)))
 	
 	def mousePress(self,e):
 		if DrawLineMixin.drawMousePress(self,e) or DrawContourMixin.drawMousePress(self,e):
@@ -462,7 +443,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		self.uiobj.addLineButton.setStyleSheet('')
 		
 		if DrawLineMixin.drawMouseRelease(self,e):
-			self.addLine(self.start,self.end)
+			self.addLine(self.lineStart,self.lineEnd)
 			self._repaintDelay()
 		elif DrawContourMixin.drawMouseRelease(self,e):
 			self.addContour(self.contour)
@@ -553,10 +534,24 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 			self.measurementChanged.emit(i)
 		
 	def _motionTrack(self):
-		self.mgr.showMsg('Motion tracking is not implemented yet.','Not Implemented')
-#		i=self.getActiveIndex()
-#		if i!=None:
-#			self.measurementChanged.emit(i)
+		i=self.getActiveIndex()
+		rep=self.mgr.findObject(self.sourceName)
+		trackdata=str(self.uiobj.trackDataBox.currentText())
+		
+		if not trackdata:
+			self.mgr.showMsg('No source for motion track data','No Track Data')
+		elif i!=None and rep!=None:
+			m=self.handleNames[i]
+			m.timesteps=rep.getTimestepList()
+			
+			result=self.plugin.trackSrcs[trackdata](m.values[0])
+			m.values=[]
+			
+			for ts in m.timesteps:
+				_,pts=min((abs(ts-t),p) for t,p in result.items())
+				m.values.append(pts)
+				
+			self.measurementChanged.emit(i)
 			
 		
 class MeasurementPlotWidget(TimePlotWidget):
@@ -674,6 +669,8 @@ class MeasurePlugin(ScenePlugin):
 	def __init__(self):
 		ScenePlugin.__init__(self,'Measure')
 		self.dockmap={}
+		# maps source name/directory to function accepting (name, points list) and returns mapping from timesteps to list of points tracked to that time
+		self.trackSrcs={} 
 		
 	def init(self,plugid,win,mgr):
 		ScenePlugin.init(self,plugid,win,mgr)

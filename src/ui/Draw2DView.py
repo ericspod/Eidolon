@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/Draw2DView.ui'
 #
-# Created: Mon Feb  6 20:01:06 2017
+# Created: Tue Feb  7 15:09:02 2017
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,12 +26,27 @@ except AttributeError:
 class Ui_Draw2DView(object):
     def setupUi(self, Draw2DView):
         Draw2DView.setObjectName(_fromUtf8("Draw2DView"))
-        Draw2DView.resize(932, 780)
+        Draw2DView.resize(806, 763)
         self.gridLayout = QtGui.QGridLayout(Draw2DView)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
-        self.mainLayout = QtGui.QVBoxLayout()
+        self.vsplit = QtGui.QSplitter(Draw2DView)
+        self.vsplit.setOrientation(QtCore.Qt.Horizontal)
+        self.vsplit.setObjectName(_fromUtf8("vsplit"))
+        self.hsplit = QtGui.QSplitter(self.vsplit)
+        self.hsplit.setMinimumSize(QtCore.QSize(50, 0))
+        self.hsplit.setOrientation(QtCore.Qt.Vertical)
+        self.hsplit.setChildrenCollapsible(False)
+        self.hsplit.setObjectName(_fromUtf8("hsplit"))
+        self.drawWidgetTL = QtGui.QWidget(self.hsplit)
+        self.drawWidgetTL.setObjectName(_fromUtf8("drawWidgetTL"))
+        self.drawWidgetBL = QtGui.QWidget(self.hsplit)
+        self.drawWidgetBL.setObjectName(_fromUtf8("drawWidgetBL"))
+        self.verticalLayoutWidget = QtGui.QWidget(self.vsplit)
+        self.verticalLayoutWidget.setObjectName(_fromUtf8("verticalLayoutWidget"))
+        self.mainLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
+        self.mainLayout.setMargin(0)
         self.mainLayout.setObjectName(_fromUtf8("mainLayout"))
-        self.drawWidget = QtGui.QWidget(Draw2DView)
+        self.drawWidget = QtGui.QWidget(self.verticalLayoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -40,7 +55,7 @@ class Ui_Draw2DView(object):
         self.drawWidget.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.drawWidget.setObjectName(_fromUtf8("drawWidget"))
         self.mainLayout.addWidget(self.drawWidget)
-        self.dataGroup = QtGui.QGroupBox(Draw2DView)
+        self.dataGroup = QtGui.QGroupBox(self.verticalLayoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -147,7 +162,7 @@ class Ui_Draw2DView(object):
         self.sliceWidthBox = QtGui.QDoubleSpinBox(self.dataGroup)
         self.sliceWidthBox.setDecimals(3)
         self.sliceWidthBox.setMinimum(0.001)
-        self.sliceWidthBox.setSingleStep(0.01)
+        self.sliceWidthBox.setSingleStep(0.2)
         self.sliceWidthBox.setProperty("value", 0.2)
         self.sliceWidthBox.setObjectName(_fromUtf8("sliceWidthBox"))
         self.horizontalLayout_2.addWidget(self.sliceWidthBox)
@@ -163,7 +178,7 @@ class Ui_Draw2DView(object):
         self.horizontalLayout_2.addWidget(self.lineWidthBox)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
         self.mainLayout.addWidget(self.dataGroup)
-        self.gridLayout.addLayout(self.mainLayout, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.vsplit, 0, 0, 1, 1)
 
         self.retranslateUi(Draw2DView)
         QtCore.QMetaObject.connectSlotsByName(Draw2DView)
