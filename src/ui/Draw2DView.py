@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/Draw2DView.ui'
 #
-# Created: Tue Feb  7 15:09:02 2017
-#      by: PyQt4 UI code generator 4.10.4
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -44,7 +43,6 @@ class Ui_Draw2DView(object):
         self.verticalLayoutWidget = QtGui.QWidget(self.vsplit)
         self.verticalLayoutWidget.setObjectName(_fromUtf8("verticalLayoutWidget"))
         self.mainLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
-        self.mainLayout.setMargin(0)
         self.mainLayout.setObjectName(_fromUtf8("mainLayout"))
         self.drawWidget = QtGui.QWidget(self.verticalLayoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)

@@ -294,7 +294,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		
 		setCollapsibleGroupbox(self.uiobj.measureBox,True)
 		
-		self.uiobj.trackGroup.setVisible(False) # TODO: hide the track box until figured out how to track without close coupling
+#		self.uiobj.trackGroup.setVisible(False) # TODO: hide the track box until figured out how to track without close coupling
 		
 	def setSceneObject(self,sceneobj):
 		self.sceneobj=sceneobj
@@ -544,7 +544,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 			m=self.handleNames[i]
 			m.timesteps=rep.getTimestepList()
 			
-			result=self.plugin.trackSrcs[trackdata](m.values[0])
+			result=self.plugin.trackSrcs[trackdata](trackdata,m.values[0])
 			m.values=[]
 			
 			for ts in m.timesteps:
@@ -647,7 +647,7 @@ class MeasureSplitView(QtGui.QSplitter):
 					
 	def setLineVisible(self,measure,metric,isVisible):
 		if isVisible and (measure.name,metric) not in self.plot.measureCache:
-			objs=[self.mgr.findObject(n).parent for n in self.measure.getObjectNames()]
+			objs=[self.mgr.findObject(n).parent for n in self.measure.getObjectNames() if n]
 			self.plot.setMeasurement(measure,metric,objs)
 		else:
 			self.plot.setLineVisible(measure,metric,isVisible)
@@ -655,7 +655,7 @@ class MeasureSplitView(QtGui.QSplitter):
 	def updateMeasurement(self,i):
 		self.fillChooseMenu()
 		m=self.measure.getMeasurement(i)
-		objs=[self.mgr.findObject(n).parent for n in self.measure.getObjectNames()]
+		objs=[self.mgr.findObject(n).parent for n in self.measure.getObjectNames() if n]
 		
 		for k in list(self.plot.measureCache):
 			if k[0]==m.name:
@@ -715,9 +715,6 @@ class MeasurePlugin(ScenePlugin):
 
 		prop.showButton.clicked.connect(lambda:self.mgr.addFuncTask(lambda:obj.createRepr(None)))
 		prop.srcBox.activated.connect(lambda i:obj.set(DatafileParams.srcimage,str(prop.srcBox.itemText(i))))
-
-#		prop.genMeshButton.clicked.connect(lambda:self._generateMeshButton(prop,obj))
-#		prop.genMaskButton.clicked.connect(lambda:self._generateMaskButton(prop,obj))
 
 		return prop
 

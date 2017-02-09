@@ -258,6 +258,16 @@ def applyCoeffsReal(tuple vals,tuple coeffs):
 
 
 def createDataMatrices(name,indextype,includeUVW=False):
+	'''
+	This returns 4 matrices for the expected data suitable as renderable input for MeshSceneObject instances. The `name'
+	value is used to as the prefix for the matrix names, the suffices are standard names from MatrixType which the 
+	MeshSceneObject will understand. The `indextype' parameter is MatrixType.tri or MatrixType.line to choose whether to
+	define triangle or line render objects, or None if no index matrix is to be created. The return values are:
+		nodes -- Vec3Matrix with 4 columns (node, normal, xi, uvw) if `includeUVW' or 3 (node, normal, xi) if not
+		props -- IndexMatrix with 3 columns (elem index, face index, index matrix number) storing node properties
+		extindices -- IndexMatrix of 1 column listing the elements in the index matrix which are external, ie. on the surface
+		indices -- IndexMatrix of however many columns are stated in `indextype'[2], or is None if `indextype' is None
+	'''
 	nodes=Vec3Matrix(name+MatrixType.nodes[1],0,4 if includeUVW else 3) # (node, normal, xi), or (node, normal, xi, uvw) if textures used
 	props=IndexMatrix(name+MatrixType.props[1],0,3) #  elem index, face index, index matrix number
 	extindices=IndexMatrix(name+MatrixType.extinds[1],0,1) # list of external elements
@@ -1586,10 +1596,27 @@ def generateGlyphDataSet(dataset,name,refine,externalOnly=False,task=None,**kwar
 
 
 @timing
-def generateRibbonDataSet(dataset,name,refine,externalOnly=False,task=None,**kwargs):
-	pass
+def generateRibbonDataSet(dataset,str name,int refine,bint externalOnly=False,task=None,**kwargs):
+	rangeinds=kwargs.get('rangeinds',True)
+	maxlen=kwargs.get('rangeinds',0.0)
+	
+	if rangeinds:
+		nodes=dataset.getNodes()
+		lineinds=first(i for i in dataset.enumIndexSets() if isSpatialIndex(i))
+		
+		outnodes,nodeprops,extindices,indices=createDataMatrices(name,MatrixType.lines,True)
+		indices.append(lineinds)
+		
+		for ind in xrange(len(lineinds)):
+			if n in xrange(*lineinds[ind]):
+				outnodes.append(nodes[n],vec3(),vec3(),vec3())
+				nodeprops.append(ind,0,0)
+				extindices.append(len(extindices))
+			
+		ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
+		return ds,[lineinds]
 
-
+		
 @concurrent
 def reinterpolateVerticesRange(process,Vec3Matrix vertices,Vec3Matrix newnodes,Vec3Matrix oldnodes,IndexMatrix oldnodeprops,indlist):
 	cdef int n,elem,indnum,ind

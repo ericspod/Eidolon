@@ -1750,18 +1750,20 @@ public:
 		fontname("DefaultFont"),fontobj(NULL),text("<NULL>")
 	{
 		movableType="MovableText";
+		internalMatName=name+"TextMat";
 		colBuf.setNull();
 		setBoundingBox(vec3(),vec3(1)); // need to have a non-zero bound box to be visible
 	}
 	
 	virtual ~TextRenderable()
 	{
-		if(!mat.isNull())
+		if(!mat.isNull() && mat->getName()==internalMatName)
 			Ogre::MaterialManager::getSingletonPtr()->remove(mat->getName());
 	}
 	
 	std::string text;
 	std::string fontname;
+	std::string internalMatName;
 	color col;
 	VAlignType valign;
 	HAlignType halign;

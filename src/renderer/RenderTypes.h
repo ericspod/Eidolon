@@ -3055,7 +3055,12 @@ public:
 	virtual sval getIndex(int i,int w) const { return indexfunc(context,i,w); }
 };
 
-/// Implementation of a VertexBuffer which uses matrices for storage
+/**
+ * Implementation of a VertexBuffer which uses matrices for storage. This assumes the input Vec3Matrix has 1, 2, or 4
+ * columns, which are the position, normal, xi coordinate, and UVW coordinate components per node. The method hasNormal()
+ * returns true if there's more than one column, and hasUVWCoord() is true if there's more than 3, therefore the xi column
+ * must be present but is ignored.
+ */
 class MatrixVertexBuffer : public VertexBuffer
 {
 	Vec3Matrix* vecs;

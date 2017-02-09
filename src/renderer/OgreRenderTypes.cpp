@@ -1225,9 +1225,6 @@ void TextRenderable::updateColors()
 
 void TextRenderable::updateGeometry()
 {
-	std::string name=getName();
-	std::string internalmatname=name+"TextMat";
-	
 	if(!fontobj || fontname!=fontobj->getName() || mat.isNull()){
 		Ogre::Font* newfontobj = (Ogre::Font *)Ogre::FontManager::getSingleton().getByName(fontname).getPointer();
 		
@@ -1237,12 +1234,12 @@ void TextRenderable::updateGeometry()
 		fontobj=newfontobj;
 		fontobj->load();
 		
-		if(!mat.isNull() && mat->getName()==internalmatname){
-			Ogre::MaterialManager::getSingletonPtr()->remove(internalmatname);
+		if(!mat.isNull() && mat->getName()==internalMatName){
+			Ogre::MaterialManager::getSingletonPtr()->remove(internalMatName);
 			mat.setNull();
 		}
 		
-		mat = fontobj->getMaterial()->clone(internalmatname);
+		mat = fontobj->getMaterial()->clone(internalMatName);
 		if(!mat->isLoaded())
 			mat->load();
 		
