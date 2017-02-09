@@ -818,6 +818,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.mCropSeriesBox,names)
 		fillList(self.alignprop.regInterBox,names,self.configMap[ConfigNames._regintermed],'None')
 		fillList(self.alignprop.tsExtrSrcBox,names)
+		fillList(self.alignprop.trackedNregBox,names)
 
 		names=sorted(o.getName() for o in sceneimgs if o.isTimeDependent and len(o.getTimestepList())==2)
 		fillList(self.alignprop.reorderSrcBox,names)
@@ -835,7 +836,6 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.gridImgBox,names)
 		fillList(self.alignprop.isoCreateBox,names)
 		fillList(self.alignprop.strainROIBox,names)
-		fillList(self.alignprop.trackedNregBox,names)
 		fillList(self.alignprop.maskNregBox,names,defaultitem='None')
 
 		fillList(self.alignprop.keMaskBox,names)

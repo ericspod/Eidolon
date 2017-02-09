@@ -55,13 +55,21 @@ def getContourPlane(contour):
 	assert len(contour)>2
 	center=avg(contour,vec3()) # contour barycenter
 	avgdist=avg(c1.distTo(c2) for c1,c2 in successive(contour)) # average distance between successive values in the contour
-	farpt=first(c for c in contour if c.distTo(contour[0])>=avgdist) # choose a point at least as far from contour[0] as the average distance between points
-	norm=center.planeNorm(contour[0],farpt)
+
+	# choose a point at least as far from contour[0] as the average distance between points, or the next point in the contour
+	farpt=first(c for c in contour if c.distTo(contour[0])>=avgdist) or contour[1] 
+
+	norm=center.planeNorm(contour[0],farpt) # calculate the norm from the far point
 
 	assert (contour[0]-center).angleTo(farpt-center)<math.pi, 'Chose points on a common line, is this contour valid?'
-	assert all(c.onPlane(center,norm) for c in contour), 'Not all contour points on a common plane'
+	#assert all(c.onPlane(center,norm) for c in contour), 'Not all contour points on a common plane'
 
 	return center,norm
+
+
+def contourOnPlane(contour,center,norm):
+	'''Returns True if the points of `contour' are on the plane (center,norm).'''
+	return all(c.onPlane(center,norm) for c in contour)
 
 
 def contoursCoplanar(con1,con2):
@@ -86,8 +94,12 @@ def pointInContour(pt,contour,plane=None,bb=None,center=None):
 	if pt not in bb: # if the point isn't in the contour's boundbox then it isn't even close to being in the contour
 		return False
 
-	plane=plane or getContourPlane(contour) # if the point isn't on the plane then it can't be in the contour
-	if not pt.onPlane(*plane):
+	plane=plane or getContourPlane(contour)
+	
+	if not contourOnPlane(contour,*plane): # if contour isn't on a plane then the point can't be in the contour
+		return False
+		
+	if not pt.onPlane(*plane): # if the point isn't on the plane then it can't be in the contour
 		return False
 
 	center=center or avg(contour,vec3())
@@ -204,8 +216,8 @@ def triangulateContour(contour,skipErrors=False):
 	this ensures the algorithm works if `contour' overlaps itself but will likely produce an overlapping triangulation.
 	'''
 	results=[]
-	cinds=list(enumerate(contour)) # list of (index,node) pairs
 	plane=getContourPlane(contour) 
+	cinds=[(i,c.planeProject(*plane)) for i,c in enumerate(contour)] # list of (index,node) pairs
 	
 	while len(cinds)>2:
 		found=None
@@ -1049,13 +1061,13 @@ class SegSceneObject(SceneObject):
 		return result
 
 	def enumContours(self):
-		'''Yields (node,name,timestep) tuples for each contour in name order.'''
+		'''Yields (nodes,name,timestep) tuples for each contour in name order.'''
 		names=self.getContourNames()
 		sortind=getStrSortIndices(names,-1)
 		for i in sortind:
 			k=names[i]
 			ts,n=self.datamap[k]
-			yield(n,k,ts)
+			yield (n,k,ts)
 
 	def numContours(self):
 		return len(self.getContourNames())
@@ -1278,6 +1290,12 @@ class SegmentPlugin(ScenePlugin):
 		@taskroutine('Creating Hemisphere Mesh')
 		def _create(segobj,name,refine,reinterpolateVal,calcAHA,isVolume,inner,task):
 			with f:
+				if not segobj.get(SegViewPoints._rvAttach):
+					raise ValueError('Segmentation does not define RV attachment point')
+
+				if not segobj.get(SegViewPoints._ch2Apex) or not segobj.get(SegViewPoints._ch3Apex) or not segobj.get(SegViewPoints._ch4Apex):
+					raise ValueError('Segmentation provides no apex points')
+					
 				rightvec=vec3(*segobj.get(SegViewPoints._rvAttach))
 				con,_,_=first(segobj.enumContours())
 				if rightvec.isZero():
@@ -1286,9 +1304,9 @@ class SegmentPlugin(ScenePlugin):
 					pc,pn=getContourPlane([vec3(*c) for c in con])
 					rightvec=rightvec.planeProject(pc,pn)
 					
-				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex))
-				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex))
-				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex))
+				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex)) if segobj.get(SegViewPoints._ch2Apex) else vec3()
+				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex)) if segobj.get(SegViewPoints._ch3Apex) else vec3()
+				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex)) if segobj.get(SegViewPoints._ch4Apex) else vec3()
 				
 				apex=avg((c for c in [ch2,ch3,ch4] if not c.isZero()),vec3())
 				if apex.isZero():
@@ -1297,6 +1315,13 @@ class SegmentPlugin(ScenePlugin):
 				rightvec=(rightvec-avg([vec3(*c) for c in con],vec3())).norm()
 				genfunc=generateHemisphereVolume if isVolume else generateHemisphereSurface
 				contours=zip(*segobj.enumContours())[0]
+
+				for c in contours:
+					c=[vec3(*cc) for cc in c]
+					plane=getContourPlane(c)
+					if not contourOnPlane(c,*plane):
+						raise ValueError('Contours are not all defined on planes (ie. they are not flat)')
+				
 				ds=genfunc(name+'DS',contours,refine,rightvec,apex,reinterpolateVal,calcAHA,None,inner,task)
 				f.setObject(MeshSceneObject(name,ds,plugin))
 

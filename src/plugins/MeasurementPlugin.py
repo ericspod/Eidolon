@@ -32,6 +32,8 @@ DatafileParams=enum('name','title','srcimage','tracksrc','trackdata')
 # types of measurements
 MeasureType=enum('point','line','contour')
 
+measureExt='.measure'
+
 
 PointColors=(color(1,0,0),color(0,1,0),color(0,0,1),color(1,1,0),color(1,0,1),color(0,1,1),color(1,1,1))
 
@@ -80,7 +82,7 @@ class Measurement(object):
 		self.mtype=mtype
 		self.col=color(*col)
 		self.timesteps=list(timesteps)
-		self.values=[list(itertools.starmap(vec3,v)) for v in values] # store values as vec3
+		self.values=[list(itertools.starmap(vec3,v)) for v in values] # list of lists, store values as vec3
 		
 		assert len(self.values)==len(self.timesteps)
 		assert all(len(v)==len(self.values[0]) for v in self.values)
@@ -121,6 +123,11 @@ class Measurement(object):
 		self.timesteps=indexList(sortinds,self.timesteps)
 		self.values=indexList(sortinds,self.values)
 		
+	def setTimesteps(self,timesteps,copyFirstValues=True):
+		self.timesteps=timesteps
+		if copyFirstValues or len(timesteps)!=len(self.values):
+			self.values=[list(self.values[0]) for ii in timesteps]
+		
 	def __repr__(self):
 		col=tuple(self.col)
 		values=[map(tuple,v) for v in self.values]
@@ -130,7 +137,7 @@ class Measurement(object):
 class MeasureSceneObject(SceneObject):
 	def __init__(self,name,filename,plugin,**kwargs):
 		SceneObject.__init__(self,name,plugin,**kwargs)
-		self.filename=ensureExt(filename,'.measure')
+		self.filename=ensureExt(filename,measureExt)
 		self.datamap={
 			DatafileParams.name: name,
 			DatafileParams.title: name,
@@ -320,7 +327,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 			self.updateSceneObject() 
 
 			if not os.path.isfile(self.sceneobj.filename):
-				self.sceneobj.filename=self.sceneobj.plugin.getFilename(False)
+				self.sceneobj.filename=ensureExt(self.sceneobj.plugin.getFilename(False),measureExt)
 			self.sceneobj.save()
 
 	def setNumNodes(self,n):
@@ -345,15 +352,17 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		self.handleNames[i]=mobj
 		self.measurementChanged.emit(i)
 		
-	def createMeasurement(self,mtype,col,values,name=None,timestep=None):
+	def createMeasurement(self,mtype,col,values,name=None,timesteps=None):
 		'''Create and add a new Measurement object of type `mtype', color `col', with points `values'.'''
 		
 		existingnames=map(first,MeasureType)+[n.name for n in self.handleNames.values()] # ensures names are unique and always numbered
 		name=uniqueStr(name or mtype,existingnames) 
-		timestep=self.mgr.timestep if timestep==None else timestep
+		timesteps=[self.mgr.timestep] if timesteps==None else timesteps
 		col=col or self.handlecol
+		if not isinstance(values[0],list):
+			values=[values]
 
-		mobj=Measurement(name,mtype,col,[timestep],[values])
+		mobj=Measurement(name,mtype,col,timesteps,values)
 		self.addMeasurement(mobj)
 		self.setActiveObject(mobj.name)
 		
@@ -498,15 +507,23 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 	def _setObjectPlane(self):
 		i=self.getActiveIndex()
 		if i!=None:
-			h=self.handles[i]
-			nodes=h.getNodes()
-			for n in xrange(len(nodes)):
-				x,y,_=self.getScreenPosition(nodes[n])
-				h.setNode(n,self.getWorldPosition(x,y))
-
-			if self.handleNames[i].updateValue(h,self.mgr.timestep):
-				self.measurementChanged.emit(i)
+#			h=self.handles[i]
+#			nodes=h.getNodes()
+#			for n in xrange(len(nodes)):
+#				x,y,_=self.getScreenPosition(nodes[n])
+#				h.setNode(n,self.getWorldPosition(x,y))
+#
+#			if self.handleNames[i].updateValue(h,self.mgr.timestep):
+#				self.measurementChanged.emit(i)
+		
+			m=self.handleNames[i]
+			
+			for ts in m.values:
+				for j,n in enumerate(ts):
+					x,y,_=self.getScreenPosition(n)
+					ts[j]=self.getWorldPosition(x,y)
 				
+			self.measurementChanged.emit(i)
 			self._repaintDelay()
 	
 	def _setStartTime(self):
@@ -520,17 +537,18 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 	def _cloneObject(self):
 		i=self.getActiveIndex()
 		if i!=None:
-			m=self.handleNames[i].clone()
-			m.name=uniqueStr(m.name,[n.name for n in self.handleNames.values()]) # ensure name uniqueness
-			self.addMeasurement(m)
+			#m=self.handleNames[i].clone()
+			#m.name=uniqueStr(m.mtype,[n.name for n in self.handleNames.values()]) # ensure name uniqueness
+			#self.addMeasurement(m)
+			m=self.handleNames[i]
+			self.createMeasurement(m.mtype,m.col,m.values,None,m.timesteps)
 			
 	def _copySteps(self):
 		i=self.getActiveIndex()
 		rep=self.mgr.findObject(self.sourceName)
 		if i!=None and rep!=None:
 			m=self.handleNames[i]
-			m.timesteps=rep.getTimestepList()			
-			m.values=[list(m.values[0]) for ii in m.timesteps]
+			m.setTimesteps(rep.getTimestepList())
 			self.measurementChanged.emit(i)
 		
 	def _motionTrack(self):
@@ -569,17 +587,9 @@ class MeasurementPlotWidget(TimePlotWidget):
 			self.measureCache[k]=(isVisible,measure.timesteps,self.measureCache[k][-1])
 			self.updatePlot()
 			
-	def setMeasurement(self,measure,metric,objs):
-		f=Future()
-		@taskroutine('Calculating Plot')
-		def _calc(task):
-			with f:
-				linedata=MetricFuncs[metric][2](measure,objs)
-				self.measureCache[(measure.name,metric)]=(True,measure.timesteps,linedata)
-				self.updatePlot()
-				f.setObject(linedata)
-				
-		return self.plugin.mgr.runTasks(_calc(),f)
+	def setMeasurement(self,measure,metric,data):
+		self.measureCache[(measure.name,metric)]=(True,measure.timesteps,data)
+		self.updatePlot()
 	
 	def updatePlot(self):
 		@self.plugin.mgr.callThreadSafe
@@ -644,11 +654,18 @@ class MeasureSplitView(QtGui.QSplitter):
 			for mf in MetricFuncs:
 				if mf[2]==m.mtype:
 					_addAction(m,mf[0])
+			
+	@taskmethod('Calculating Plot')
+	def setMeasurement(self,measure,metric,objs,task):
+		linedata=MetricFuncs[metric][2](measure,objs)
+		self.plot.setMeasurement(measure,metric,linedata)
+		return linedata
 					
 	def setLineVisible(self,measure,metric,isVisible):
 		if isVisible and (measure.name,metric) not in self.plot.measureCache:
 			objs=[self.mgr.findObject(n).parent for n in self.measure.getObjectNames() if n]
-			self.plot.setMeasurement(measure,metric,objs)
+			f=self.setMeasurement(measure,metric,objs)
+			#self.mgr.checkFutureResult(f)
 		else:
 			self.plot.setLineVisible(measure,metric,isVisible)
 					
@@ -662,7 +679,7 @@ class MeasureSplitView(QtGui.QSplitter):
 				if not self.plot.measureCache[k][0]:
 					self.plot.measureCache.pop(k)
 				else:
-					self.plot.setMeasurement(m,k[1],objs)
+					self.setMeasurement(m,k[1],objs)
 				
 
 class MeasurePlugin(ScenePlugin):
@@ -701,7 +718,7 @@ class MeasurePlugin(ScenePlugin):
 		return [obj.getName(),'Show Measurement View'],self.objectMenuItem
 
 	def getFilename(self,isOpen=True):
-		return self.mgr.win.chooseFileDialog('Choose Measurement filename',filterstr='Measurement Files (*.measure)',isOpen=isOpen)
+		return self.mgr.win.chooseFileDialog('Choose Measurement filename',filterstr='Measurement Files (*%s)'%measureExt,isOpen=isOpen)
 
 	def getObjectWidget(self,obj):
 		return first(w for w in self.win.dockWidgets if id(w)==self.dockmap.get(obj.getName(),-1))
@@ -728,10 +745,10 @@ class MeasurePlugin(ScenePlugin):
 		fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
 		
 	def acceptFile(self,filename):
-		return splitPathExt(filename)[2].lower() == '.measure'
+		return splitPathExt(filename)[2].lower() == measureExt
 		
 	def checkFileOverwrite(self,obj,dirpath,name=None):
-		outfile=os.path.join(dirpath,name or obj.getName())+'.measure'
+		outfile=os.path.join(dirpath,name or obj.getName())+measureExt
 		if os.path.exists(outfile):
 			return [outfile]
 		else:
