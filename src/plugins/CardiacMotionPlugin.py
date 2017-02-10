@@ -873,13 +873,11 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.trackDataBox,trackdirs)
 		fillList(self.alignprop.strainTrackBox,trackdirs)
 		fillList(self.alignprop.strainMeshTrackBox,trackdirs)
-		
-		# the Measurement plugin's `trackSrcs' dict with the simple tracking method mapped to tracking dir names
-		for ts,v in self.Measure.trackSrcs.items():
-			if v==self.CardiacMotion.applyMotionTrackPoints:
-				del self.Measure.trackSrcs[ts]
-		
-		self.Measure.trackSrcs.update({td:self.CardiacMotion.applyMotionTrackPoints for td in trackdirs})
+						
+		# refill the measurement plugin's known tracking sources
+		self.Measure.removeTrackSource(self.CardiacMotion.applyMotionTrackPoints)
+		for td in trackdirs:
+			self.Measure.addTrackSource(td,self.CardiacMotion.applyMotionTrackPoints)
 		
 		# set heart rate if stored in the config map
 		heartrate=self.configMap[ConfigNames._heartrateBPM]

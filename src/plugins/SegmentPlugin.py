@@ -21,6 +21,7 @@ from eidolon import *
 from ui.Seg2DView import Ui_Seg2DView
 from ui.SegObjProp import Ui_SegObjProp
 
+import itertools
 
 DatafileParams=enum('name','title','type','srcimage')
 SegmentTypes=enum('LVPool','LV')
@@ -165,11 +166,11 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
 
 def sortContours(contours,startdir=None):
 	'''
-	Accepts a 2D matrix of contours points (either 3-tuples or vec3 objects) plus a vector `startdir' pointing in the
-	direction considered to be to the right of the contour stack and sorts the contours in order from top to bottom. The
-	`startdir' value is used to reorder the points of each contour so that the first point is on the ray pointing from
-	the center of the contour in the direction of `startdir'. If this argument isn't given then this sorting isn't done.
-	The resulting contour 2D matrix contains vec3 objects.
+	Accepts a 2D matrix of contour vec3 points `contours' plus a vector `startdir' pointing in the, direction considered 
+	to be to the right of the contour stack and sorts the contours in order from top to bottom. The `startdir' value is 
+	used to reorder the points of each contour so that the first point is on the ray pointing from the center of the 
+	contour in the direction of `startdir'. If this argument isn't given then this sorting isn't done. The resulting 
+	contour 2D matrix contains vec3 objects.
 	'''
 	#assert len(contours)>1, 'Must have more than 1 contour'
 
@@ -177,8 +178,7 @@ def sortContours(contours,startdir=None):
 	sortorder=None
 	ctrls=[]
 	# convert each contour and rotate the node ordering so the first node is closest in angle to `startdir'
-	for c in contours:
-		nodes=[vec3(*v) for v in c]
+	for nodes in contours:
 		center=avg(nodes,vec3())
 		downvec=downvec or center.planeNorm(nodes[0],nodes[1])
 
@@ -186,7 +186,7 @@ def sortContours(contours,startdir=None):
 		if startdir:
 			#rightvec1=rightvec.planeProject(center,downvec)-center
 			firstind=min((startdir.angleTo(v-center),i) for i,v in enumerate(nodes))[1]
-			nodes=indexList(rotateIndices(firstind,len(c)),nodes)
+			nodes=indexList(rotateIndices(firstind,len(nodes)),nodes)
 
 		# ensures all contours are in the same circular order
 		if sortorder==None:
@@ -1051,8 +1051,8 @@ class SegSceneObject(SceneObject):
 		'''Get the docked widget for this segmentation, or None if the user hasn't created one.'''
 		return self.plugin.getSegObjectWidget(self)
 
-	def get(self,name):
-		return self.datamap.get(name,None)
+	def get(self,name,default=None):
+		return self.datamap.get(name,default)
 
 	def set(self,name,value):
 		result=self.get(name)
@@ -1296,32 +1296,36 @@ class SegmentPlugin(ScenePlugin):
 				if not segobj.get(SegViewPoints._ch2Apex) or not segobj.get(SegViewPoints._ch3Apex) or not segobj.get(SegViewPoints._ch4Apex):
 					raise ValueError('Segmentation provides no apex points')
 					
-				rightvec=vec3(*segobj.get(SegViewPoints._rvAttach))
-				con,_,_=first(segobj.enumContours())
-				if rightvec.isZero():
-					rightvec=vec3(*con[0])
-				else:
-					pc,pn=getContourPlane([vec3(*c) for c in con])
-					rightvec=rightvec.planeProject(pc,pn)
-					
-				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex)) if segobj.get(SegViewPoints._ch2Apex) else vec3()
-				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex)) if segobj.get(SegViewPoints._ch3Apex) else vec3()
-				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex)) if segobj.get(SegViewPoints._ch4Apex) else vec3()
-				
-				apex=avg((c for c in [ch2,ch3,ch4] if not c.isZero()),vec3())
-				if apex.isZero():
-					apex=None
-	
-				rightvec=(rightvec-avg([vec3(*c) for c in con],vec3())).norm()
 				genfunc=generateHemisphereVolume if isVolume else generateHemisphereSurface
 				contours=zip(*segobj.enumContours())[0]
+				contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
 
 				for c in contours:
-					c=[vec3(*cc) for cc in c]
 					plane=getContourPlane(c)
 					if not contourOnPlane(c,*plane):
 						raise ValueError('Contours are not all defined on planes (ie. they are not flat)')
 				
+				con=max(contours,key=lambda c:BoundBox(c).radius)
+				rightpos=vec3(*segobj.get(SegViewPoints._rvAttach,(0,0,0))) # position in the rightwards direction
+				
+				# ensure rightpos is on the plane of con
+				if rightpos.isZero():
+					rightpos=con[0]
+				else:
+					pc,pn=getContourPlane(con)
+					rightpos=rightpos.planeProject(pc,pn)
+	
+				rightvec=(rightpos-avg(con,vec3())).norm() # vector pointing in the rightwards direction
+					
+				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex,(0,0,0)))
+				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex,(0,0,0)))
+				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex,(0,0,0)))
+				
+				# choose the apex position by averaging any provided values, or None if none are given
+				apex=avg((c for c in [ch2,ch3,ch4] if not c.isZero()),vec3())
+				if apex.isZero():
+					apex=None
+
 				ds=genfunc(name+'DS',contours,refine,rightvec,apex,reinterpolateVal,calcAHA,None,inner,task)
 				f.setObject(MeshSceneObject(name,ds,plugin))
 
@@ -1335,6 +1339,7 @@ class SegmentPlugin(ScenePlugin):
 			with f:
 				name=name or (segobj.getName()+'Mask')
 				contours=zip(*segobj.enumContours())[0]
+				contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
 				mask=generateImageMask(name,contours,template,labelfunc,task)
 				mask.source=None
 				mask.plugin=None

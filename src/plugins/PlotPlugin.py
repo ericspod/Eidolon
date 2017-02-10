@@ -90,7 +90,7 @@ class BasePlotWidget(pg.PlotWidget):
 		self.title=''
 		self.updatedData=False
 		self.legend=None
-	
+		
 	def setTitle(self,title):
 		'''Sets the title to the given string and calls setUpdated().'''
 		self.title=title
@@ -635,6 +635,15 @@ class PlotPlugin(ScenePlugin):
 		return PlotSceneObject(name,filename,datamap,self)
 		
 	def plotSimpleGraph(self,title,values):
+		'''
+		Generate a simple line plot with title `title' and value list/tuple/dict `values'. If a list of values is
+		provided, these are plotted on x-axis 0 to N for N values and given the name `title'. If a tuple is provided
+		this should be (x-axis,y-axis) value lists which must have the same length. If a dict is provided this must
+		map plot names to either list or tuple values as described. 
+		
+		Example:
+			p=Plot.plotSimpleGraph('X',{'x1':([0,1],[0,1]),'x2':([0,1],[1,0])})
+		'''
 		name=self.mgr.getUniqueObjName('plot')
 		if not isinstance(values,dict):
 			values={title:values}
@@ -644,6 +653,11 @@ class PlotPlugin(ScenePlugin):
 		return plot
 		
 	def plotMatrix(self,mat):
+		'''
+		Plot the RealMatrix `mat' as a graph with the first column containing plotted values. The metadata values
+		"minx" and "maxx" are used to store integer start and end x-axis values applied as arguments to range() to
+		produce the x-axis, if these are not present then range(mat.n()) is used instead.
+		'''
 		minx=mat.meta('minx')
 		maxx=mat.meta('maxx')
 		if minx and maxx:

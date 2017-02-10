@@ -32,9 +32,10 @@ DatafileParams=enum('name','title','srcimage','tracksrc','trackdata')
 # types of measurements
 MeasureType=enum('point','line','contour')
 
+# extension of measurement files
 measureExt='.measure'
 
-
+# default colours for points
 PointColors=(color(1,0,0),color(0,1,0),color(0,0,1),color(1,1,0),color(1,0,1),color(0,1,1),color(1,1,1))
 
 
@@ -418,7 +419,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		handles=sorted(self.handleNames.items())
 		
 		# fill the handles list, selecting the active handle
-		objects=['%s @ %.3f (%s)'%(mobj.name,mobj.timesteps[0],mobj.mtype) for i,mobj in handles]
+		objects=['%s @ %.2f->%.2f (%s)'%(mobj.name,mobj.timesteps[0],mobj.timesteps[-1],mobj.mtype) for i,mobj in handles]
 		selected=self.getActiveIndex()
 		fillList(self.uiobj.objectList,objects,selected if selected!=None else -1,None,True)
 
@@ -641,6 +642,10 @@ class MeasureSplitView(QtGui.QSplitter):
 	def setSceneObject(self,sceneobj):
 		self.measure.setSceneObject(sceneobj)
 		
+	def parentClosed(self,e):
+		self.measure.parentClosed(e)
+		self.plot.parentClosed(e)
+		
 	def fillChooseMenu(self):
 		def _addAction(measure,metric):
 			'''Use a subroutine to ensure `measure' and `metric' are fresh variables for each call to connect().'''
@@ -826,6 +831,20 @@ class MeasurePlugin(ScenePlugin):
 		obj=self.createMeasurementObject(filename,name or splitPathExt(filename)[1])
 		obj.load()
 		return obj
+		
+	def addTrackSource(self,name,func):
+		'''
+		Add the tracking source for the name/directory `name'. The `func' callable must accept 2 arguments, the name
+		it was keyed to and a list of vec3 points, and return a dict mapping timesteps to the motion tracked data
+		at that time.
+		'''
+		self.trackSrcs[name]=func
+		
+	def removeTrackSource(self,name_or_func):
+		'''Remove all tracking sources using the given name or function.'''
+		for n,f in list(self.trackSrcs.items()):
+			if name_or_func in (n,f):
+				del self.trackSrcs[n]
 		
 		
 addPlugin(MeasurePlugin())
