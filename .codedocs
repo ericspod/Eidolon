@@ -14,7 +14,7 @@
 # paths will be considered relative to the root of the repository, not the
 # location of the DOXYFILE.
 
-#DOXYFILE =
+DOXYFILE = Doxyfile
 
 # Specify external repository to link documentation with.
 # This is similar to Doxygen's TAGFILES option, but will automatically link to
@@ -70,8 +70,8 @@ CALL_GRAPH = YES
 # EXAMPLE_PATH =
 # EXAMPLE_PATTERNS =
 # EXAMPLE_RECURSIVE =
-# EXCLUDE =
-EXCLUDE_PATTERNS = **/setup.py tutorial/** tests/**
+# EXCLUDE = tutorial tests EidolonLibs
+EXCLUDE_PATTERNS = **/setup.py 
 # EXCLUDE_SYMBOLS =
 # EXPAND_AS_DEFINED =
 # EXPAND_ONLY_PREDEF =

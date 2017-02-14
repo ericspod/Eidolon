@@ -34,7 +34,7 @@ else
 	# symlink every compiled library for this platform to the correct name
 	for i in $APPDIR/src/*/*.so.$PLAT; do ln -fs $i ${i%.so.$PLAT}.so;done
 	
-	export LD_LIBRARY_PATH=$LIBSDIR/$PLAT/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
+	export LD_LIBRARY_PATH=$LIBSDIR/$PLAT/bin:$LD_LIBRARY_PATH
 fi
 
 python2.7 $APPDIR/main.py "$@"

@@ -205,26 +205,23 @@ class IRTKPluginMixin(object):
 		# if the system-installed IRTK is present, use it instead 
 		if isLinux and mgr.conf.get(platformID,'usesystemirtk').lower()!='false' and os.path.exists('/usr/bin/irtk-rreg'):
 			self.irtkpath=lambda i:('/usr/bin/irtk-'+i) if os.path.exists('/usr/bin/irtk-'+i) else localirtkpath(i)
+		else:
+			addPathVariable('LD_LIBRARY_PATH',self.irtkdir)
 
 		self.spatialcorrect=self.irtkpath('spatial_correct')
 		self.rreg=self.irtkpath('rreg')
-		#self.headertool=self.irtkpath('headertool')
 		self.motiontrack=self.irtkpath('motiontrackmultimage')
-		#self.transformation=self.irtkpath('transformation')
-		#self.ptransformation=self.irtkpath('ptransformation')
-		#self.nreg=self.irtkpath('nreg')
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
 		
+		# setup MIRTK variables
 		if isWindows:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Win64')
 		elif isLinux:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Linux')
 			self.exesuffix=''
-			#os.environ['LD_LIBRARY_PATH']='%s:%s'%(os.environ.get('LD_LIBRARY_PATH',''),self.mirtkdir)
 			addPathVariable('LD_LIBRARY_PATH',self.mirtkdir)
 		else:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
-			#os.environ['DYLD_LIBRARY_PATH']='%s:%s'%(os.environ.get('DYLD_LIBRARY_PATH',''),self.mirtkdir)
 			addPathVariable('DYLD_LIBRARY_PATH',self.mirtkdir)
 			
 		self.ffd_motion=os.path.join(getAppDir(),LIBSDIR,'MIRTK','ffd_motion.cfg')
@@ -1253,7 +1250,7 @@ class IRTKPluginMixin(object):
 					mask=self.findObject(maskname)
 					maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
 					resampleImage(mask,maski)
-					maskfile=self.getUniqueLocalFile(makename+'_I')
+					maskfile=self.getUniqueLocalFile(maskname+'_I')
 					self.Nifti.saveObject(maski,maskfile)
 
 				os.mkdir(trackdir)
@@ -1334,7 +1331,7 @@ class IRTKPluginMixin(object):
 					mask=self.findObject(maskname)
 					maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
 					resampleImage(mask,maski)
-					maskfile=self.getUniqueLocalFile(makename+'_I')
+					maskfile=self.getUniqueLocalFile(maskname+'_I')
 					self.Nifti.saveObject(maski,maskfile)
 
 				os.mkdir(trackdir)
@@ -1371,8 +1368,13 @@ class IRTKPluginMixin(object):
 				for i,(img1,img2) in enumerate(successive(names)):
 					logfile=os.path.join(trackdir,'%.4i.log'%i)
 					args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
-					if maskfile and os.path.isfile(maskfile):
+
+					if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
 						args+=['-mask',maskfile]
+						
+					if i==0: # spit out the parameter file for the first invocation so that config values are preserved for later inspection
+						args+=['-parout',os.path.join(trackdir,'register.cfg')]
+						
 					r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
 					results.append(r)
 					task.setProgress(i+1)
