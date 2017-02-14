@@ -529,6 +529,25 @@ def getUsername():
 	else:
 		import pwd
 		return pwd.getpwuid(os.getuid()).pw_name
+		
+		
+def addPathVariable(varname,path,append=True):
+	'''
+	Add the string `path' to the environment variable `varname' appending (if `append` is True) or prepending `path'
+	using os.pathsep as the separator. This assumes `varname' is a path variable like PATH. Blank paths present in the
+	original variable are moved to the end to prevent consecutive os.pathsep characters appearing in the variable. If
+	`varname' does not name a variable with text it will be set to `path'.
+	'''
+	var=os.environ.get(varname,'').strip()
+	if var: # if the variable exists and has text
+		paths=[p.strip() for p in var.split(os.pathsep)] # split by the separator and strip whitespace just in case
+		paths.insert(len(paths) if append else 0,path) # append or prepend `path'
+		if '' in paths: # need to move the blank path to the end to prevent :: from appearing in the variable
+			paths=filter(bool,paths)+['']
+	else:
+		paths=[path] # variable is new so only text is `path'
+		
+	os.environ[varname]=os.pathsep.join(paths)
 
 
 def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
