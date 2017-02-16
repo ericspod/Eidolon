@@ -3,7 +3,7 @@
 Eidolon needs Python to run as well as build so first follow the instructions for running it. 
 Various additional components are needed to build for each platform. 
 This assumes that the pre-built libraries are included.
-For all platforms the following are required either separately, as included with the srouce, or as part of Anaconda:
+For all platforms the following are required either separately, as included with the source, or as part of Anaconda:
 
  * Ogre3D Development Files
  * PyQt Development Tools
@@ -16,9 +16,9 @@ For all platforms the following are required either separately, as included with
 
 ### Linux (Ubuntu 12/14) 
 
-**Ubuntu 12.\*** doesn't require anything extra if Anaconda is installed, so this is the easiest way to get started with development.
+**Ubuntu 12.*** doesn't require anything extra if Anaconda is installed, so this is the easiest way to get started with development.
 
-**Ubuntu 14.\*** version of Eidolon uses the system Ogre3D package so the development components for that must be installed plus the Qt development tools and Cython:
+**Ubuntu 14.*** version of Eidolon uses the system Ogre3D package so the development components for that must be installed plus the Qt development tools and Cython:
 
     sudo apt-get install libogre-1.9-dev pyqt4-dev-tools qt4-dev-tools cython
 
