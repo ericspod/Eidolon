@@ -123,7 +123,7 @@ else ifeq ($(PLAT),osx)
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.bin
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.exe
 	rm dist/Eidolon.app/EidolonLibs/IRTK/*.dll
-	cd dist && hdiutil create -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
+	cd dist && hdiutil create -size 1000000k -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
 else
 	$(eval DISTNAME?=Eidolon_Linux64_$(shell ./run.sh --version 2>&1))
 	LD_LIBRARY_PATH=$(LIB_HOME)/bin $(PYINST) --clean PyInstaller.spec
