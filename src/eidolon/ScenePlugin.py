@@ -778,11 +778,12 @@ class MeshScenePlugin(ScenePlugin):
 				ParamDef('numitervals','Num Intervals',ParamType._int,1,1,999,1),
 				ParamDef('vals','Value List',ParamType._str),
 			]
-		elif reprtype == ReprType._ribbon:
-			params+=[
-				ParamDef('rangeinds','Range Indices',ParamType._bool,True),
-				ParamDef('maxlen','Max Length',ParamType._real,0.0,1.0,9999,0.0),
-			]
+#		elif reprtype == ReprType._ribbon:
+#			params+=[
+#				ParamDef('rangeinds','Range Indices',ParamType._bool,True),
+#				ParamDef('maxlen','Max Length',ParamType._real,0.0,1.0,9999,0.0),
+#			]
+			
 #		elif reprtype in (ReprType._bbpoint,ReprType._bbline,ReprType._bbplane):
 #			rad=BoundBox(obj.datasets[0].getNodes()).radius
 #			params+=[
