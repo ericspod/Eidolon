@@ -421,7 +421,6 @@ class ProcessServer(Thread):
 
 
 def checkResultMap(result):
-	printFlush(result)
 	'''Checks the results from a concurrent operation, throwing any returned exceptions.'''
 	for i in sorted(result):
 		if isinstance(result[i],Exception):
