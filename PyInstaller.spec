@@ -16,7 +16,8 @@ datas=[
 	('tests','tests'), 
 	('tutorial','tutorial'),
 	('EidolonLibs/IRTK','EidolonLibs/IRTK'),
-	('EidolonLibs/python','EidolonLibs/python')
+	('EidolonLibs/python','EidolonLibs/python'),
+	('EidolonLibs/MIRTK/ffd_motion.cfg','EidolonLibs/MIRTK/ffd_motion.cfg')
 ]
 
 if compat.is_win:
