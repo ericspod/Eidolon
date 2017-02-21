@@ -132,7 +132,7 @@ else
 	rm dist/Eidolon/EidolonLibs/IRTK/*.exe
 	rm dist/Eidolon/EidolonLibs/IRTK/*.dll
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
-	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
+#	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 tutorialfile:

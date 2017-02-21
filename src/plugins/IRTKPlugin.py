@@ -159,8 +159,8 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs):
 			
 		args+=extraArgs
 
-		r=execBatchProgram(exefile,*args,cwd=cwd)
-		results.append(r)
+		ret,out=execBatchProgram(exefile,*args,cwd=cwd)
+		results.append((ret,out,args))
 		process.setProgress(i+1)
 
 	return results
@@ -169,7 +169,9 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs):
 @taskroutine('Applying Transformation')
 def applyMotionTrackTask(exefile,cwd,isInvert,filelists,extraArgs=[],task=None):
 	results=applyMotionTrackRange(len(filelists),0,task,exefile,cwd,isInvert,filelists,extraArgs,partitionArgs=(filelists,))
-	checkResultMap(results)
+	for ret,out,args in sumResultMap(results):
+		if ret!=0:
+			raise IOError('Command failed with return code %r: %r\n%s'%(ret,' '.join(args),out))
 
 
 class IRTKPluginMixin(object):
