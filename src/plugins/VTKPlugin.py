@@ -487,8 +487,8 @@ class VTKPlugin(MeshScenePlugin):
 			if _get(node,'format') and _get(node,'format').lower()=='binary':
 				text=base64.decodestring(node.text)[8:] # skip 8 byte header?
 				if compressor:
-					raise NotImplementedError,"Haven't figured out compression yet"
-					#text=zlib.decompress(text[:24]) # skip 24 byte header?
+					raise NotImplementedError("Haven't figured out compression yet")
+					#text=zlib.decompress(text[:24]) # skip 24 byte header? this refuses to work
 					
 				return np.frombuffer(text,dtype=dtype)
 			else:
@@ -523,6 +523,7 @@ class VTKPlugin(MeshScenePlugin):
 				
 		f=Future()
 		@taskroutine('Loading VTK XML File')
+		@timing
 		def _loadFile(filename,name,task):
 			basename=name or os.path.basename(filename).split('.')[0]
 			name=uniqueStr(basename,[o.getName() for o in self.mgr.enumSceneObjects()])
@@ -556,25 +557,30 @@ class VTKPlugin(MeshScenePlugin):
 				types=first(i for i in cells if i.get('Name').lower()=='types')
 				offsets=first(i for i in cells if i.get('Name').lower()=='offsets')
 				
-				indlist=readArray(connectivity,byteorder,compressor)
+				indlist=readArray(connectivity,byteorder,compressor).tolist() # faster as Python list?
+				fields=readFields(celldata,pointdata,byteorder,compressor)
+				
 				celltypes=readArray(types,byteorder,compressor)
 				offlist=readArray(offsets,byteorder,compressor)
+				cellofflist=np.vstack((celltypes,offlist)).T.tolist() # pair each cell type entry with its width entry
 				
 				assert len(celltypes)==len(offlist)
 				
-				indmats=dict((i,(IndexMatrix(n+'Inds',e,0,len(s)),s,len(s))) for n,i,e,s in CellTypes)
+				# map cell type IDs to IndexMatrix objects for containing the indices of that type and node ordering list
+				indmats={i:(IndexMatrix(n+'Inds',e,0,len(s)),s) for n,i,e,s in CellTypes} 
 				
-				for i in xrange(len(celltypes)):
-					celltype=celltypes[i]
-					if celltype in indmats: # ignore cell types we don't understand (eg. vertex)
-						indmat,sortinds,width=indmats[celltype]
-						off=offlist[i]
-						vals=indlist[off-width:off]
-						indmat.append(*indexList(sortinds,vals))
-					
-				fields=readFields(celldata,pointdata,byteorder,compressor)
+				for celltype,off in cellofflist:
+					indmat,_=indmats.get(celltype,(None,[])) 
+					if indmat is not None: # only found for those cell types we understand (ie. not polygon)
+						indmat.append(*indlist[off-indmat.m():off])
+						
+				inds=[]
+				for ind,order in indmats.values(): # collect and reorder all non-empty index matrices
+					if ind.n()>0:
+						ind[:,:]=np.asarray(ind)[:,order] # reorder columns to match CHeart node ordering
+						inds.append(ind)
 				
-				ds=PyDataSet('vtk',nodes,[i for i,s,w in indmats.values() if i.n()>0],fields)
+				ds=PyDataSet('vtk',nodes,inds,fields)
 				
 			elif poly is not None:
 				pieces=list(poly)
@@ -601,7 +607,7 @@ class VTKPlugin(MeshScenePlugin):
 				
 				ds=PyDataSet('vtk',nodes,inds,fields)
 			else:
-				raise NotImplementedError,'Dataset not understood yet'
+				raise NotImplementedError('Dataset not understood yet')
 				
 			f.setObject(MeshSceneObject(name,ds,self,filename=filename,isXML=True,descdata=''))
 		
