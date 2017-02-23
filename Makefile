@@ -85,7 +85,7 @@ pyxlibs:
 	cd $(PYSRC) && $(PYTHON) setup.py build_ext --inplace
 	rm -f $(patsubst %.pyx,%.cpp,$(wildcard $(PYSRC)/*.pyx))
 
-distfile: # creates the universal distributable .tgz file with path DISTNAME.zip
+distfile: # creates the universal distributable zip file with path DISTNAME.zip
 	$(eval DISTNAME?=Eidolon_All_$(shell ./run.sh --version 2>&1))
 	mkdir $(DISTNAME)
 	cp -Rf src EidolonLibs tutorial tests res $(DISTNAME)
@@ -132,7 +132,9 @@ else
 	rm dist/Eidolon/EidolonLibs/IRTK/*.exe
 	rm dist/Eidolon/EidolonLibs/IRTK/*.dll
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
-#	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
+	cd dist/Eidolon && rm -rf libstdc++.so.6 libglib-2.0.so.0 libgobject-2.0.so.0 libgpg-error.so.0 share/icons
+	cp /usr/lib/x86_64-linux-gnu/libCg.so run.sh dist/Eidolon
+	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 tutorialfile:
