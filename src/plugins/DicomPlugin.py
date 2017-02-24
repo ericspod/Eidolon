@@ -21,7 +21,7 @@
 
 from eidolon import *
 
-addLibraryEgg('pydicom-1.0.0-py2.7') # PyDicom: https://github.com/darcymason/pydicom
+addLibraryEgg('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
 
 
 from pydicom.dicomio import read_file
