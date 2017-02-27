@@ -27,9 +27,16 @@ Meshes passing through images can be visualized as isolines, and other images ca
 Mesh and image data which is time dependent can be rendered in Eidolon simultaneously.
 Timing information is read from input data to ensure data correlates temporally during playback.
 
+## Perform Cardiac Analysis
+
+| Segment<br>![](segmentview.png) | Motion Track<br>![](motiontrack.png) | Analyze<br>![](analyze.png) |
+
+The Cardiac Motion Project provides the tools for segmenting, motion tracking, and then analyzing left ventricle function. 
+These tools allow the user to measure strain, ejection fraction, wall thickness, volume (SDI), and torsion.
+
 ## Process Data
 
-| Script Interface<br>![](script1.png) | Python Console<br>![](console.png)  | Image Processing Projects<br>![](project.png) |
+| Script Interface<br>![](script1.png) | Python Console<br>![](console.png) | Image Processing Projects<br>![](project.png) |
 
 Eidolon exposes its internal data structures and algorithms to user scripts which can be loaded at runtime.
 This allows custom processing of loaded data to be performed with Numpy, Scipy, or imported additional libraries.
