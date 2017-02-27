@@ -32,7 +32,7 @@ Timing information is read from input data to ensure data correlates temporally 
 | Segment<br>![](segmentview.png) | Motion Track<br>![](motiontrack.png) | Analyze<br>![](analyze.png) |
 
 The Cardiac Motion Project provides the tools for segmenting, motion tracking, and then analyzing left ventricle function. 
-These tools allow the user to measure strain, ejection fraction, wall thickness, volume (SDI), and torsion.
+These tools allow the user to measure **strain**, **ejection fraction**, **wall thickness**, **volume (SDI)**, and **torsion**.
 
 ## Process Data
 
