@@ -1472,7 +1472,7 @@ cdef class Image:
 		cdef RenderTypes.u8* p=self.val.getData()
 		return <bytes>p[:self.val.getDataSize()]
 		
-	def encode(self,format='png'):
+	def encode(self,str format='png'):
 		return self.val.encode(format)
 
 	def fillRealMatrix(self,RealMatrix mat):
