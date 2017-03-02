@@ -24,20 +24,20 @@ representations of that data respectively.
 
 from renderer.Renderer import *
 from .SceneUtils import *
-from .MeshAlgorithms import *
+import MeshAlgorithms
 
 # Known representation types: description, generator function, FigureType, is Point type, is Polygon type
 ReprType=enum(
 	# Mesh types
-	('node','Element Nodes',generateNodeDataSet,FT_POINTLIST,True,False),
-	('point','Points',generatePointDataSet,FT_POINTLIST,True,False),
-	('line', 'Lines',generateLineDataSet,FT_LINELIST,False,False),
-	('volume','Mesh Volumes',generateTriDataSet,FT_TRILIST,False,True),
-	('surface','Mesh Surfaces',generateTriDataSet,FT_TRILIST,False,True),
-	('cylinder','Cylinders',generateCylinderDataSet,FT_TRILIST,False,True),
-	('isosurf','Isosurfaces',generateIsosurfaceDataSet,FT_TRILIST,False,True),
-	('isoline','Isolines',generateIsolineDataSet,FT_TRILIST,False,True),
-	('glyph','Glyphs',generateGlyphDataSet,FT_GLYPH,True,False),
+	('node','Element Nodes',MeshAlgorithms.generateNodeDataSet,FT_POINTLIST,True,False),
+	('point','Points',MeshAlgorithms.generatePointDataSet,FT_POINTLIST,True,False),
+	('line', 'Lines',MeshAlgorithms.generateLineDataSet,FT_LINELIST,False,False),
+	('volume','Mesh Volumes',MeshAlgorithms.generateTriDataSet,FT_TRILIST,False,True),
+	('surface','Mesh Surfaces',MeshAlgorithms.generateTriDataSet,FT_TRILIST,False,True),
+	('cylinder','Cylinders',MeshAlgorithms.generateCylinderDataSet,FT_TRILIST,False,True),
+	('isosurf','Isosurfaces',MeshAlgorithms.generateIsosurfaceDataSet,FT_TRILIST,False,True),
+	('isoline','Isolines',MeshAlgorithms.generateIsolineDataSet,FT_TRILIST,False,True),
+	('glyph','Glyphs',MeshAlgorithms.generateGlyphDataSet,FT_GLYPH,True,False),
 #	('ribbon','Ribbons',generateRibbonDataSet,FT_RIBBON,False,False),
 #	('bbpoint','Billboard Points',generateBillboardDataSet,FT_BB_POINT,True,False),
 #	('bbline','Billboard Lines',generateBillboardDataSet,FT_BB_FIXED_PAR,True,False),
@@ -715,9 +715,8 @@ class MeshSceneObjectRepr(SceneObjectRepr):
 		self.rotation=(0.0,0.0,0.0)
 
 		self.datafuncs={} # map from names to functional expressions for tranforming data to material information
-		self.datafuncs['valfunc']=ValueFunc._Average # data-to-unitvalue function
-#		self.datafuncs['vecfunc']=VecFunc._Zero # data-to-vec3 function (for billboard normals)
-		self.datafuncs['alphafunc']=UnitFunc._One # unitvalue-to-unitvalue alpha function
+		self.datafuncs['valfunc']=MeshAlgorithms.ValueFunc._Average # data-to-unitvalue function
+		self.datafuncs['alphafunc']=MeshAlgorithms.UnitFunc._One # unitvalue-to-unitvalue alpha function
 
 		self.vbuff=None
 		self.ibuff=None

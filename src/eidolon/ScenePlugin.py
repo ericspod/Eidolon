@@ -19,6 +19,7 @@
 
 from .SceneObject import *
 from .ImageObject import *
+from .MeshAlgorithms import *
 from .ImageAlgorithms import *
 from .VisualizerUI import *
 from .SceneComponents import *
