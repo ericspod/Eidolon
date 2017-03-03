@@ -18,8 +18,8 @@
 
 
 '''
+These are utility functions and classes defined in pure Python. They do not use libraries like Numpy or the renderer.
 
-These are utility functions and classes aredefined in pure Python. They do not use libraries like Numpy or the renderer.
 '''
 
 import math
@@ -1856,6 +1856,7 @@ def avg(vals,initial=0.0):
 
 
 def mag(vals):
+	'''Return the magnitude of the n-dimensional vector `vals'.'''
 	return math.sqrt(sum(x*x for x in vals))
 
 
@@ -1877,6 +1878,7 @@ def avgspan(vals):
 
 
 def minmaxval(minv,maxv,val):
+	'''Returns min(val,minv),max(val,maxv) or val,val if either `minv' or `maxv' is None.'''
 	if minv is None or maxv is None:
 		return val,val
 	else:
