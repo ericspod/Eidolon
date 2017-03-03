@@ -16,8 +16,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-
-'''This defines the default application setup by setting configuration values, creating default materials, and creating the manager and UI.'''
+'''
+This module defines the default application setup by setting configuration values, creating default materials, and 
+creating the manager and UI. The function defaultMain() is typically called as the entry point, which in turn calls
+generateConfig(), initDefault(), initDefaultAssets(), loads command line filenames, then calls VisualizerUI.execUI().
+These components can be swapped around as needed in some other sort of application packaging, but initDefault() is the
+critical routine responsible for doing a lot of the bookkeeping and creating the SceneManager and main window objects.
+'''
 
 from renderer.Renderer import vec3,color,initSharedDir,Config,platformID,PT_FRAGMENT,PT_VERTEX
 

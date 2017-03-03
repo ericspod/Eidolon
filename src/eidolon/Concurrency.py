@@ -17,11 +17,20 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 '''
-This file contains all the routines and types for implementing multiprocessor concurrency. A ProcessServer object must be
-created a initialization time (specifically before the UI is instantiated) using ProcessServer.CreateGlobalServer().
+This module contains all the routines and types for implementing multiprocessor concurrency. A ProcessServer object must
+be created at initialization time (specifically before the UI is instantiated) using ProcessServer.CreateGlobalServer().
 Any concurrent jobs must be run through this object which the `concurrent' function decorator does. This module uses pure
 Python and so should be portable.
+
+A routine executed through the ProcessServer is executed on each of the requested processes and is passed a different
+instance of AlgorithmProcess in the first argument to provide information abou which process is being used. A routine
+is executed in this way through ProcessServer.callProcessFunc() or by using the @concurrent decorator, see the docs for
+these for further explanation. 
+
+This module is use by algorithms in various placed in Eidolon to implement concurrency. Multiprocessing is necessary to
+get around the limitations of the GIL in Python.
 '''
+
 from .Utils import *
 
 import atexit
@@ -298,6 +307,12 @@ class AlgorithmProcess(Process):
 
 
 class ProcessServer(Thread):
+	'''
+	This type manages the creation of subprocesses and the despatch of computational tasks to them. Typically the global
+	instance is created at startup through createGlobalServer() at which point the subprocesses are created. Tasks are
+	enqueued to be executed through callProcessFunc() or indirectly if a routine decorated with @concurrent is called.
+	
+	'''
 
 	globalServer=None # global instance of the server
 
@@ -325,11 +340,48 @@ class ProcessServer(Thread):
 
 	def callProcessFunc(self,valrange,numprocs,task,target,*args,**kwargs):
 		'''
-		Sends the request to execute `target' in parallel with the given `args' and `kwargs' argument values. The `valrange'
-		value is used to set the value range members of the AlgorithmProcess objects, `numprocs' is the number of processes
-		to execute `target' on (1 will cause `target' to be executed in the main process, a value <=0 will mean all the
-		processes will be used), and `task' is the (possibly None) Task object to report progress to. The return value is
-		a Future object which will contain the results or exceptions thrown.
+		Sends the request to execute `target' in parallel with the given `args' and `kwargs' argument values. The 
+		`valrange' value is used to set the value range members of the AlgorithmProcess objects, `numprocs' is the 
+		number of processes to execute `target' on (1 will cause `target' to be executed in the main process, a value 
+		<=0 will mean all the processes will be used), and `task' is the (possibly None) Task object to report 
+		progress to. The return value is a Future object which will contain the results or exceptions thrown.
+		
+		The `target' routine must exist in a module scope at runtime so inner routines or dynamically created routines
+		cannot be used here. When called, the first argument will be the AlgorithmProcess object followed by those in
+		`args' and `kwargs'. The AlgorithmProcess instance will be different for each process `target' is called in,
+		its members will state which process and the subset of `valrange' assigned to it. The expectation is that
+		`valrange' is the number of elements `target' is used to operate on, when called each process is assigned a 
+		subset of the range [0,`valrange') and the internal algorithm of `target' is expected to iterate over those 
+		values only. 
+		
+		The optional argument "partitionArgs" in `kwargs' may contain a tuple containing the members in `args' which
+		are iterable and which should be partitioned amongst the processes. Values in `args' and `kwargs' are normally
+		copied to each process, so this allows large iterables to be partitioned and not needlessly duplicated.
+		
+		The @concurrent can be used to wrap the invocation of callProcessFunc() within the function definition itself.
+		The first argument of the routine must still be the AlgorithmProcess object but when called three arguments
+		representing `valrange', `numprocs', and `task' must be provided instead. The routine will also no block until
+		the processing is complete and return the results instead of a Future object.
+		
+		Example:
+			def testfunc(process):
+				return (process.index,int(process.startval),int(process.endval))
+			
+			result=ProcessServer.globalServer.callProcessFunc(50,4,None,testfunc)
+			printFlush(listResults(result()))
+		
+		Output: [(0, 0, 12), (1, 12, 25), (2, 25, 37), (3, 37, 50)]
+		
+		Example:
+			@concurrent	
+			def testfunc(process,values):
+				return (process.index,values)
+			
+			values=range(20)
+			result=testfunc(len(values),3,None,values,partitionArgs=(values,))
+			printFlush(listResults(result))
+			
+		Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
 		'''
 		result=Future()
 		self.jobqueue.put((valrange,numprocs,task,target,args,kwargs,result))
@@ -439,11 +491,25 @@ def listResults(result):
 
 def concurrent(func):
 	'''
-	Replaces 'func' with a wrapper which will call 'func' in parallel using processes. The first three arguments of the
-	new wrapper must be the same as those required for 'concurrentAlgorithm', followed by the arguments normally passed
-	to 'func'. Applying this decorator creates a global variable with the name '__local__'+func.__name__ which contains
-	a lambda that calls 'func' when evaluated. This is passed to 'ProcessServer.globalServer.callProcessFunc' when the
+	Replaces `func' with a wrapper which will call `func' in parallel using processes. The first argument of `func'
+	must be the AlgorithmProcess instance corresponding to the subprocess it is being called in. When calling the
+	decorated form of `func' the first three arguments provided must be the `valrange', `numprocs', and `task' values
+	expected by ProcessServer.callProcessFunc(), followed by the arguments normally passed to `func'.
+	
+	Applying this decorator creates a global variable with the name '__local__'+func.__name__ which contains a
+	lambda which calls `func' when evaluated. This is passed to 'ProcessServer.globalServer.callProcessFunc' when the
 	call is made and is used for picklability. Do not call this created function directly.
+	
+	Example:
+		@concurrent	
+		def testfunc(process,values):
+			return (process.index,values)
+		
+		values=range(20)
+		result=testfunc(len(values),3,None,values,partitionArgs=(values,))
+		printFlush(listResults(result))
+		
+	Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
 	'''
 	localname='__local__'+func.__name__
 	globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
@@ -462,7 +528,7 @@ def chooseProcCount(numelems,refine,threshold):
 	Determine a process count to use when running concurrent routines. If numelems*(1+refine)>=threshold then 0 is
 	returned to indicate the number of processes used will be however many processes exist (usually the number of
 	physical cores). A value of 1 is returned otherwise to clue in the system to compute sequentially in the calling
-	process. If `numelems' is less than the number of processes used, only that many will actually be used at most.
+	process. If `numelems' is less than the number of processes used, only that many will actually be used.
 	'''
 	realprocs=ProcessServer.globalServer.realnumprocs
 
@@ -480,7 +546,7 @@ def chooseProcCount(numelems,refine,threshold):
 
 
 @concurrent
-def concurrencyTestRange(process,values):
+def concurrencyTest1Range(process,values):
 	result=[]
 	for i in process.prange():
 		printFlush(process.index,i,values[i])
@@ -492,7 +558,27 @@ def concurrencyTestRange(process,values):
 	return result
 
 
-def concurrencyTest(values,numprocs=0,task=None):
-	result=concurrencyTestRange(len(values),numprocs,task,values)
+def concurrencyTest1(values,numprocs=0,task=None):
+	result=concurrencyTest1Range(len(values),numprocs,task,values)
 	printFlush([len(result[i]) for i in sorted(result)])
 
+
+def concurrencyTest2Range(process):
+	return (process.index,os.getpid(),int(process.startval),int(process.endval))
+
+
+def concurrencyTest2(numvals=100,numprocs=0,task=None):
+	result=ProcessServer.globalServer.callProcessFunc(numvals,numprocs,task,concurrencyTest2Range)
+	printFlush(listResults(result()))
+	
+
+@concurrent	
+def concurrencyTest3Range(process,values):
+	return (process.index,values)
+
+
+def concurrencyTest3(values=range(20),numprocs=0,task=None):
+	printFlush(values)
+	result=concurrencyTest3Range(len(values),numprocs,task,concurrencyTest3Range,values,partitionArgs=(values,))
+	printFlush(listResults(result))
+	

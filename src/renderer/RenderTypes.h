@@ -915,6 +915,61 @@ public:
 			m.m03*m30 + m.m13*m31 + m.m23*m32 + m.m33*m33
 		);
 	}
+	
+	real determinant() const
+	{
+		//return m00*m11*m22*m33 - m00*m11*m23*m32 - m00*m12*m21*m33 + m00*m12*m23*m31 + 
+		//	m00*m13*m21*m32 - m00*m13*m22*m31 - m01*m10*m22*m33 + m01*m10*m23*m32 + 
+		//	m01*m12*m20*m33 - m01*m12*m23*m30 - m01*m13*m20*m32 + m01*m13*m22*m30 + 
+		//	m02*m10*m21*m33 - m02*m10*m23*m31 - m02*m11*m20*m33 + m02*m11*m23*m30 + 
+		//	m02*m13*m20*m31 - m02*m13*m21*m30 - m03*m10*m21*m32 + m03*m10*m22*m31 + 
+		//	m03*m11*m20*m32 - m03*m11*m22*m30 - m03*m12*m20*m31 + m03*m12*m21*m30;
+		
+		real x0 = m00*m11, x1 = m22*m33, x2 = m00*m12, x3 = m23*m31, x4 = m00*m13, x5 = m21*m32, x6 = m01*m10, 
+			x7 = m23*m32, x8 = m01*m12, x9 = m20*m33, x10 = m01*m13, x11 = m22*m30, x12 = m02*m10, x13 = m21*m33, 
+			x14 = m02*m11, x15 = m23*m30, x16 = m02*m13, x17 = m20*m31, x18 = m03*m10, x19 = m22*m31, 
+			x20 = m03*m11, x21 = m20*m32, x22 = m03*m12, x23 = m21*m30;
+			
+		return x0*x1 - x0*x7 - x1*x6 + x10*x11 - x10*x21 - x11*x20 + x12*x13 - x12*x3 - x13*x2 + x14*x15 - x14*x9 - x15*x8 + 
+			x16*x17 - x16*x23 - x17*x22 + x18*x19 - x18*x5 - x19*x4 + x2*x3 + x20*x21 + x22*x23 + x4*x5 + x6*x7 + x8*x9;
+	}
+	
+	mat4 inverse() const
+	{
+		real s0 =  m00*m11 - m01*m10;
+		real s1 =  m00*m12 - m02*m10;
+		real s2 =  m00*m13 - m03*m10;
+		real s3 =  m01*m12 - m02*m11;
+		real s4 =  m01*m13 - m03*m11;
+		real s5 =  m02*m13 - m03*m12;
+		real c5 =  m22*m33 - m23*m32;
+		real c4 =  m21*m33 - m23*m31;
+		real c3 =  m21*m32 - m22*m31;
+		real c2 =  m20*m33 - m23*m30;
+		real c1 =  m20*m32 - m22*m30;
+		real c0 =  m20*m31 - m21*m30;
+		 
+		real invdet = 1.0 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
+		 
+		real b00 = ( c3*m13 - c4*m12 + c5*m11 ) * invdet;
+		real b01 = ( -c3*m03 + c4*m02 - c5*m01 ) * invdet;
+		real b02 = ( m31*s5 - m32*s4 + m33*s3 ) * invdet;
+		real b03 = ( -m21*s5 + m22*s4 - m23*s3 ) * invdet;
+		real b10 = ( -c1*m13 + c2*m12 - c5*m10 ) * invdet;
+		real b11 = ( c1*m03 - c2*m02 + c5*m00 ) * invdet;
+		real b12 = ( -m30*s5 + m32*s2 - m33*s1 ) * invdet;
+		real b13 = ( m20*s5 - m22*s2 + m23*s1 ) * invdet;
+		real b20 = ( c0*m13 - c2*m11 + c4*m10 ) * invdet;
+		real b21 = ( -c0*m03 + c2*m01 - c4*m00 ) * invdet;
+		real b22 = ( m30*s4 - m31*s2 + m33*s0 ) * invdet;
+		real b23 = ( -m20*s4 + m21*s2 - m23*s0 ) * invdet;
+		real b30 = ( -c0*m12 + c1*m11 - c3*m10 ) * invdet;
+		real b31 = ( c0*m02 - c1*m01 + c3*m00 ) * invdet;
+		real b32 = ( -m30*s3 + m31*s1 - m32*s0 ) * invdet;
+		real b33 = ( m20*s3 - m21*s1 + m22*s0 ) * invdet;
+	
+		return mat4(b00,b01,b02,b03,b10,b11,b12,b13,b20,b21,b22,b23,b30,b31,b32,b33);
+	}
 };
 
 /**

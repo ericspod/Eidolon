@@ -9,3 +9,9 @@ For example:
 To run the unit tests with Nose (assuming this is installed), start Eidolon with all of the *tests.py script files specified on the command line:
 
     ../run.sh unittests/*tests.py
+    
+The script **run_coverage.sh** starts Eidolon with code coverage enabled through Coverage.py. 
+This can be run with the included tests to measure line coverage:
+
+    ./run_coverage.sh /meshtests/*.py
+    
