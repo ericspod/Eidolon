@@ -47,6 +47,6 @@ coverage run --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/
 covcmd="coverage run -a --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py"
 #$covcmd ./meshtests/*.py
 #$covcmd ./imagetests/*.py
-$covcmd
+$covcmd "$@"
 coverage report
 

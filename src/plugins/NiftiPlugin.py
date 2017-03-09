@@ -19,7 +19,7 @@
 
 from eidolon import *
 
-addLibraryEgg('nibabel-1.4.0dev-py2.7') # http://nipy.org/nibabel/index.html
+addLibraryFile('nibabel-1.4.0dev-py2.7') # http://nipy.org/nibabel/index.html
 
 import nibabel
 from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes

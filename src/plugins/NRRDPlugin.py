@@ -19,7 +19,7 @@
 
 from eidolon import *
 
-addLibraryEgg('pynrrd-0.1-py2.7')
+addLibraryFile('pynrrd-0.1-py2.7')
 
 import nrrd
 

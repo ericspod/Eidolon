@@ -19,7 +19,7 @@
 
 from eidolon import *
 
-addLibraryEgg('pyparsing-2.0.5-py2.7')
+addLibraryFile('pyparsing-2.0.5-py2.7')
 
 from pyparsing import *
 import xml.etree.ElementTree as ET

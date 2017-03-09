@@ -275,7 +275,13 @@ ParamType=enum(
 
 
 class ParamDef(object):
-	'''Definition of a parameter for various uses, eg. representation object settings.'''
+	'''
+	Definition of a parameter for various uses, eg. representation object settings, UI definitions. Parameters consist
+	of a name, description (for use in tooltips), a value type such as str or int, default value, value range, value 
+	step, and whether None is accepted as a value. A ParamDef represents a named value of some sort defined within these
+	parameters, this can be used to define a generic interface for parameters into objects and to automatically define
+	GUI elements for inputting these values.
+	'''
 	def __init__(self,name,desc,ptype,default=None,minv=None,maxv=None,step=None,notNone=False):
 		assert ptype in ParamType
 		self.name=name
@@ -354,14 +360,22 @@ EventType=enum(
 
 
 class EventHandler(object):
-	'''An event broadcast class which invokes callable objects when an EventType event occurs.'''
+	'''
+	An event broadcast class which invokes callable objects when an EventType event occurs. For every named event, this
+	maintains a list of callback callable objects which accept a set of parameters specific for each event type. When
+	_triggerEvent() is called, each callback associated with the given event name is called with the given arguments
+	passed in. 
+	'''	
 	def __init__(self):
 		self.eventHandlers=dict((i,[]) for i,j in EventType)
 		self.handleLock=threading.Lock()
 		self.suppressedEvents=set()
 
 	def _triggerEvent(self,name,*args):
-		'''Broadcast event to handler callback functions, stopping for any callback that returns True.'''
+		'''
+		Broadcast event to handler callback functions, stopping for any callback that returns True. For every callback
+		associated with event `name', call it expanding `args' as the arguments.
+		'''
 		assert isMainThread()
 		discards=set()
 
@@ -387,10 +401,12 @@ class EventHandler(object):
 				self.suppressedEvents.remove(name)
 
 	def addEventHandler(self,name,cb):
+		'''Add the callback callable `cb' for event named `name'.'''
 		assert name in EventType
 		self.eventHandlers[name].append(cb)
 
 	def removeEventHandler(self,cb):
+		'''Remove the callback `cb' from wherever it occurs.'''
 		for cblist in self.eventHandlers.values():
 			if cb in cblist:
 				cblist.remove(cb)
@@ -454,8 +470,8 @@ def setTrace():
 
 
 def getAppDir():
-	import __init__ 
 	'''Returns the application's directory as stored in the APPDIRVAR environment variable.'''
+	import __init__ 
 	return os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
 
 
@@ -481,10 +497,19 @@ def setLogging(logfile='eidolon.log',filemode='a'):
 	logging.raiseExceptions=False # stop exception prints about the log file being closed when writing traces
 
 
-def addLibraryEgg(egg):
-	'''Add the nominated egg file to the front of the system path, assuming this is found in ${APPDIR}/Libs/python.'''
+def addLibraryFile(lib):
+	'''Add the nominated egg/wheel file to the front of the system path, assuming this is in ${APPDIR}/Libs/python.'''
 	import __init__
-	sys.path.insert(0,os.path.join(getAppDir(),__init__.LIBSDIR,'python',ensureExt(egg,'.egg')))
+	lib=os.path.join(getAppDir(),__init__.LIBSDIR,'python',lib)
+	egg=ensureExt(lib,'.egg')
+	whl=ensureExt(lib,'.whl')
+	
+	if os.path.exists(egg):
+		sys.path.insert(0,egg)
+	elif os.path.exists(whl):
+		sys.path.insert(0,whl)
+	else:
+		raise ValueError,'Library file {}.* does not exist'.format(lib)
 
 
 def processExists(pid):
@@ -524,7 +549,7 @@ def getWinDrives():
 
 
 def getUsername():
-	'''Gets the username in a portable and secure way which works with 'su' and non-terminal processes.'''
+	'''Returns the username in a portable and secure way which works with 'su' and non-terminal processes.'''
 	if isWindows:
 		import win32api,win32con
 		hostuname=win32api.GetUserNameEx(win32con.NameSamCompatible)
@@ -683,8 +708,13 @@ def enumAllFiles(rootdir):
 
 
 def checkValidPath(path):
+	'''
+	Returns values to indicate if `path' is a valid pathname and if not why. This will return 0 if `path' exists or
+	otherwise is a valid path, 1 if not accessible, 2 if the filename component contains invalid characters, and 3 if
+	the extension contains invalid characters.
+	'''
 	pdir,basename,ext=splitPathExt(path)
-	invalidchars='\\/:*?<>|"\0'
+	invalidchars='\\/:;*?!<>|"\'\0'
 
 	if os.path.exists(path):
 		return 0
@@ -757,7 +787,7 @@ def sortFilenameList(names,sortIndex,regex=None):
 
 
 def isSameFile(src,dst):
-	'''Returns True if the files `src' and `dst' refer to the same file that exists.'''
+	'''Returns True if the files `src' and `dst' refer to the same extant file.'''
 	if not os.path.exists(src) or not os.path.exists(dst):
 		return False
 
@@ -845,6 +875,7 @@ def timingBlock(name,printEntry=True):
 cumulativeTimes={}
 
 def printCumulativeTimes():
+	'''Print the cumulative times to the stdout.'''
 	global cumulativeTimes
 	printFlush('Total Global dT (s):')
 	for i in cumulativeTimes.items():
@@ -852,6 +883,7 @@ def printCumulativeTimes():
 
 
 def cumulativeTime(func):
+	'''Add the time taken to execute `func' to a stored cumulative time counter for that function.'''
 	@wraps(func)
 	def timingwrap(*args,**kwargs):
 		start=time.time()
@@ -902,9 +934,15 @@ def tracing(func):
 	return _wrap
 	
 
-def traverseObj(obj,func,visited=[]):
+def traverseObj(obj,func,visited=set()):
+	'''
+	Attempt to visit every member of `obj' and every member of members etc. recursively. The callable `func' is applied
+	to `obj' to determine when to stop traversing, returning False if a stop is requested. The set `visited' is the 
+	recursive accumulated list of visited objects used to prevent cycles.
+	'''
 	result=func(obj)
-	visited=[obj]+visited
+	visited=set(visited)
+	visited.add(obj)
 
 	if result!=False:
 		for d in dir(obj):
@@ -2144,7 +2182,6 @@ def unitWave2RGB(vis_range):
 
 def wave2RGB(wavelength):
 	'''Converts a wavelength value between 380nm and 780nm into a RGB color tuple. Requires 380 <= wavelength <= 780.'''
-
 	w = int(wavelength)
 	R=0.0
 	G=0.0
@@ -2183,10 +2220,12 @@ def wave2RGB(wavelength):
 
 
 def matZero(n,m):
+	'''Return a list of lists with the given dimensions containing zeros.'''
 	return [[0]*m for i in xrange(n)]
 
 
 def matIdent(n):
+	'''Return a list of lists defining the identity matrix of rank `n'.'''
 	mat=matZero(n,n)
 	for nn in range(n):
 		mat[nn][nn]=1.0
@@ -2195,22 +2234,21 @@ def matIdent(n):
 
 
 def assertMatDim(mat,n,m):
+	'''Assert that `mat' has dimensions (n,m).'''
 	assert len(mat)==n
 	assert all(len(row)==m for row in mat)
 
 
 def arrayV(val,*dims):
+	'''Return an array composed of lists containing copies of `val' of dimensions `dims'.'''
 	if len(dims)==0:
 		return val
 
 	return [arrayV(val,*dims[1:]) for i in xrange(dims[0])]
 
 
-def vandermonde(vals,n):
-	return [[v**(n-j-1) for j in xrange(n)] for v in vals]
-
-
 def transpose(mat):
+	'''Return the transpose of list of list `mat'.'''
 	n=len(mat)
 	m=len(mat[0])
 
