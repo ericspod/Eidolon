@@ -84,12 +84,16 @@ import platform
 import threading
 import shutil
 import subprocess
-import ConfigParser
 import atexit
 import contextlib
 import ast
 import string
 import inspect
+
+try:
+	import ConfigParser as configparser
+except:
+	import configparser
 
 from codeop import compile_command
 
@@ -276,7 +280,11 @@ class Future(object):
 
 		# if an exception was raised instead of setting a value, raise it
 		if isinstance(self.obj,FutureError) and self.obj.exc_value:
-			raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
+			if hasattr(self.obj,'with_traceback'): # Python3 compatibility
+				raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb) 
+			else:
+				raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
+				
 		elif isinstance(self.obj,Exception):
 			raise self.obj
 
@@ -483,14 +491,14 @@ def readBasicConfig(filename):
 	Read the config (.ini) file `filename' into a map of name/value pairs. The values must be acceptable inputs to
 	ast.literal_eval(), ie. literals. This is for security since eval() on untrusted input can do interesting things.
 	'''
-	cparser=ConfigParser.RawConfigParser()
+	cparser=configparser.RawConfigParser()
 	cparser.optionxform=str
 	results=cparser.read(filename)
 
 	if len(results)!=1:
 		raise IOError('Cannot parse config file %r' %filename)
 
-	sections=list(cparser.sections())+[ConfigParser.DEFAULTSECT]
+	sections=list(cparser.sections())+[configparser.DEFAULTSECT]
 	results={}
 	for s in sections:
 		for n,v in cparser.items(s):
@@ -504,7 +512,7 @@ def storeBasicConfig(filename,values):
 	Store the name/value map `values' into file `filename' as a config (.ini) file. The keys of `values' must be
 	strings and the values must be literal types. All values go into the DEFAULT section of the file.
 	'''
-	cparser=ConfigParser.RawConfigParser()
+	cparser=configparser.RawConfigParser()
 	cparser.optionxform=str
 	for k,v in sorted(values.items()):
 		cparser.set(None,str(k),repr(v))

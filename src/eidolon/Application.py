@@ -30,8 +30,6 @@ import sys
 import os
 import shutil
 import argparse
-import ConfigParser
-
 import SceneManager
 import VisualizerUI
 import Utils
@@ -40,7 +38,7 @@ from .SceneUtils import cleanupMatrices
 from .ImageAlgorithms import hounsfieldToUnit
 from .Utils import ConfVars
 
-from .__init__ import __version__, APPDIRVAR, LIBSDIR,CONFIGFILE
+from .__init__ import __version__, APPDIRVAR, LIBSDIR, CONFIGFILE
 
 
 def configEnviron():
@@ -62,7 +60,7 @@ def readConfig(configfile,conf):
 	value with the name of the section in lower case containing the comma-separated list of value names.
 	'''
 	conf.set(platformID,ConfVars.configfile,configfile)
-	cparser=ConfigParser.SafeConfigParser()
+	cparser=Utils.configparser.SafeConfigParser()
 	cparser.optionxform=str
 	results=cparser.read(configfile)
 
@@ -211,7 +209,7 @@ def initDefault(conf):
 	
 	if userappdir and not os.path.exists(userappdir):
 		Utils.printFlush('Creating user directory %r'%userappdir)
-		os.mkdir(userappdir,0700)
+		os.mkdir(userappdir,0o700)
 		shutil.copy(os.path.join(appdir,CONFIGFILE),os.path.join(userappdir,CONFIGFILE))
 		
 	if conf.hasValue('args','l'):
