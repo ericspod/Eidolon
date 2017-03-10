@@ -226,7 +226,7 @@ class NiftiPlugin(ImageScenePlugin):
 					path=os.path.join(path,obj.getName())
 				
 				if not overwrite and os.path.exists(path):
-					raise IOError,'File already exists: %r'%path
+					raise IOError('File already exists: %r'%path)
 			
 				if not path.endswith('.nii') and not path.endswith('.nii.gz'):
 					path+='.nii'

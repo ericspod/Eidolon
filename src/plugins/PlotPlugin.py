@@ -247,7 +247,7 @@ class TimePlotWidget(BasePlotWidget):
 			timesteps=[list(timesteps) for t in xrange(len(dataseries))]
 			
 		if any(len(ds)!=len(ts) for ds,ts in zip(dataseries,timesteps)):
-			raise ValueError,'Dataseries lengths do not match associated timesteps: %r != %r'%(map(len,dataseries),map(len,timesteps))
+			raise ValueError('Dataseries lengths do not match associated timesteps: %r != %r'%(map(len,dataseries),map(len,timesteps)))
 			
 		self.updatedData=True
 		self.updatedTime=True
@@ -587,7 +587,7 @@ class PlotPlugin(ScenePlugin):
 	def copyObjFiles(self,obj,sdir,overwrite=False):
 		newfilename=os.path.join(sdir,os.path.basename(obj.filename))
 		if not overwrite and os.path.exists(newfilename):
-			raise IOError,'File already exists: %r'%newfilename
+			raise IOError('File already exists: %r'%newfilename)
 			
 		obj.filename=newfilename
 		obj.save()

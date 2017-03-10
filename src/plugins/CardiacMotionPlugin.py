@@ -934,7 +934,7 @@ class CardiacMotionProject(Project):
 		
 		conflicts=obj.plugin.checkFileOverwrite(obj,self.getProjectDir())
 		if conflicts:
-			raise IOError,'Renaming object would overwrite the following project files: '+', '.join(map(os.path.basename,conflicts))
+			raise IOError('Renaming object would overwrite the following project files: '+', '.join(map(os.path.basename,conflicts)))
 
 		obj.plugin.renameObjFiles(obj,oldname)
 
@@ -1547,7 +1547,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				objs=self.ParRec.loadObject(filename)
 				
 				if len(objs)!=2:
-					raise IOError,'Loaded ParRec does not have 2 orientations, is this mag/phase?'
+					raise IOError('Loaded ParRec does not have 2 orientations, is this mag/phase?')
 					
 				magname=self.getUniqueShortName('Mag',objs[0].getName())
 				phasename=self.getUniqueShortName('Phase',objs[0].getName())
@@ -1740,10 +1740,10 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		
 		if not ahafieldname:
-			raise ValueError,'Need to provide an AHA field name'''
+			raise ValueError('Need to provide an AHA field name''')
 			
 		if len(conf[JobMetaValues._timesteps])!=len(timesteps):
-			raise ValueError,'Mesh object has %i timesteps but tracking data has %i'%(len(timesteps),len(conf[JobMetaValues._timesteps]))
+			raise ValueError('Mesh object has %i timesteps but tracking data has %i'%(len(timesteps),len(conf[JobMetaValues._timesteps])))
 					
 		f=Future()
 		@taskroutine('Calculating strains')

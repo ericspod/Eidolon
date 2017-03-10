@@ -340,7 +340,7 @@ def calculateMotionMaskRange(process,diffimgs,vols,inimgs):
 @timing
 def calculateMotionMask(imgobj,task=None):
 	if not imgobj.isTimeDependent:
-		raise ValueError,"ImageSceneObject `imgobj'must be time-dependent"
+		raise ValueError("ImageSceneObject `imgobj'must be time-dependent")
 
 	for i in imgobj.images:
 		i.img.setShared(True)
@@ -392,7 +392,7 @@ def applySlopeIntercept(imgobj,slope=None,inter=None):
 def applyVolumeMask(imgobj,mask,threshold,task=None):
 	vols=imgobj.getVolumeStacks()
 	if not imgobj.isTimeDependent or len(vols)==1:
-		raise ValueError,"ImageSceneObject `imgobj' must be time-dependent"
+		raise ValueError("ImageSceneObject `imgobj' must be time-dependent")
 
 	minx,miny,maxx,maxy=calculateStackClipSq(mask,threshold)
 	outobj=imgobj.plugin.cropXY(imgobj,imgobj.getName()+'VCrop',minx,miny,maxx,maxy)

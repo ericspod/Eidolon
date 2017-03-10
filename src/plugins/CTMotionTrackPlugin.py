@@ -89,7 +89,7 @@ class CTMotionTrackProject(Project):
 		
 		conflicts=obj.plugin.checkFileOverwrite(obj,self.getProjectDir())
 		if conflicts:
-			raise IOError,'Renaming object would overwrite the following project files: '+', '.join(map(os.path.basename,conflicts))
+			raise IOError('Renaming object would overwrite the following project files: '+', '.join(map(os.path.basename,conflicts)))
 			
 		obj.plugin.renameObjFiles(obj,oldname)
 			

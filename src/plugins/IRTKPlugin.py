@@ -340,7 +340,7 @@ class IRTKPluginMixin(object):
 			result=Future.get(result)
 
 			if result==None:
-				raise Exception,'None result from program'
+				raise Exception('None result from program')
 			elif isinstance(result,Exception):
 				raise result
 			elif result[0]!=0:
@@ -412,7 +412,7 @@ class IRTKPluginMixin(object):
 				ts=[t[0] for t in tsinds]
 				
 				if len(tso)!=3:
-					raise IOError,'Should have 3 orientations: %r'%tso.keys()
+					raise IOError('Should have 3 orientations: %r'%tso.keys())
 					
 				#isorthos=[o1.isOrthogonalTo(o2) or o1.isOrthogonalTo(o3) for o1,o2,o3 in successive(tso,3,True)]
 				
@@ -937,7 +937,7 @@ class IRTKPluginMixin(object):
 #
 #		self.mgr.runTasks([_crop(imgobj,threshold)])
 #		return self.loadNiftiFiles(f)
-		raise NotImplementedError,'This cropping method needs work to get correct behaviour still'
+		raise NotImplementedError('This cropping method needs work to get correct behaviour still')
 
 	def emptyCropObject(self,imgobj,loadObj=True):
 		f=Future()
@@ -1233,7 +1233,7 @@ class IRTKPluginMixin(object):
 		def _GPUTrack(imgname,maskname,trackname,paramfile,task):
 			with f:
 				if not isLinux:
-					raise Exception,'GPU NReg is Linux only'
+					raise Exception('GPU NReg is Linux only')
 					
 				imgobj=self.mgr.findObject(imgname)
 				indices=imgobj.getTimestepIndices()
@@ -1303,7 +1303,7 @@ class IRTKPluginMixin(object):
 					task.setProgress(i+1)
 					
 					if r[0]:
-						raise IOError,'GPU nreg failed with error code %i (%s)'%r
+						raise IOError('GPU nreg failed with error code %i (%s)'%r)
 
 				f.setObject(results)
 
@@ -1382,7 +1382,7 @@ class IRTKPluginMixin(object):
 					task.setProgress(i+1)
 					
 					if r[0]:
-						raise IOError,'register failed with error code %i:\n%s'%r
+						raise IOError('register failed with error code %i:\n%s'%r)
 
 				f.setObject(results)
 
@@ -1599,7 +1599,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 
 				response=(ServerMsgs._RGetResult,(result,))
 			else:
-				raise IOError,'Unhandled message'
+				raise IOError('Unhandled message')
 
 		except Exception as e:
 			format_exc=str(traceback.format_exc())

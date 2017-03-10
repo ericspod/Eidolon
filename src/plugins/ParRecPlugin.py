@@ -285,7 +285,7 @@ class ParRecPlugin(ImageScenePlugin):
 				elif os.path.exists(recfile+'.REC'):
 					recfile=recfile+'.REC'
 				else:
-					raise IOError,"Cannot find rec file '%s.rec'"%recfile
+					raise IOError("Cannot find rec file '%s.rec'"%recfile)
 					
 				geninfo,imginfo=parseParFile(filename) # read par file
 				rec=np.fromfile(recfile,np.uint8) # read rec file
@@ -318,7 +318,7 @@ class ParRecPlugin(ImageScenePlugin):
 					datasize+=w*h*pixelsize
 				
 				if rec.shape[0]!=datasize:
-					raise IOError,'Rec file incorrect size, should be %i but is %i'%(datasize,rec.shape[0])
+					raise IOError('Rec file incorrect size, should be %i but is %i'%(datasize,rec.shape[0]))
 					
 				for imgi in imginfo:
 					dynamic=imgi[imgInfoFields.dynnum[-1]]

@@ -118,7 +118,7 @@ else:
 	elif lsb['DISTRIB_RELEASE'].startswith('14'):
 		platdir='ubuntu14'
 	else:
-		raise ValueError,'Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb)
+		raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
 
 	destfile+='so.%s'%platdir
 

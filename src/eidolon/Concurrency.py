@@ -63,7 +63,7 @@ class MethodProxy(object):
 				raise result
 			return result
 		else:
-			raise IOError,'Did not get result back for method call '+self.name
+			raise IOError('Did not get result back for method call '+self.name)
 
 
 class DynamicProxy(object):
@@ -246,10 +246,10 @@ class AlgorithmProcess(Process):
 			self.syncEvent2,self.syncEvent=self.syncEvent,self.syncEvent2
 			
 			if self.syncCounter.value<0:
-				raise Exception,'Sibling process encountered exception'
+				raise Exception('Sibling process encountered exception')
 
 			if not self._continueRunning():
-				raise Exception,'Parent exited before child completed processing'
+				raise Exception('Parent exited before child completed processing')
 
 	def nrange(self):
 		'''Yields each value from `startval' to `endval'-1.'''

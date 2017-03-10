@@ -67,7 +67,7 @@ def readConfig(configfile,conf):
 	results=cparser.read(configfile)
 
 	if not results:
-		raise IOError,'Unable to read config file %r\n'%configfile
+		raise IOError('Unable to read config file %r\n'%configfile)
 
 	# read all values into the conf object, using the section names from the config file as the group names
 	for s in cparser.sections():

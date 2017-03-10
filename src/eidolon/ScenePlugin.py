@@ -185,7 +185,7 @@ class ScenePlugin(object):
 		if the data is incorrect. A SceneObject is returned or an iterable thereof if multiple objects can be loaded.
 		The return value varies by plugin and can be a Future object.
 		'''
-		raise NotImplementedError,'Cannot load files as SceneObjects'
+		raise NotImplementedError('Cannot load files as SceneObjects')
 		
 	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
 		'''
@@ -197,7 +197,7 @@ class ScenePlugin(object):
 		The internal representation of `obj' should be changed to record what the saved filenames are if `setFilenames' 
 		is True, it's up to the plugin to determine how. The return value varies by plugin and can be a Future object.
 		'''
-		raise NotImplementedError, 'Cannot save files for this object'
+		raise NotImplementedError('Cannot save files for this object')
 		
 	def checkFileOverwrite(self,obj,dirpath,name=None):
 		'''
@@ -206,7 +206,7 @@ class ScenePlugin(object):
 		use the name `name' would not overwrite any existing files. This must function even if the `obj' was not loaded
 		from files.
 		'''
-		raise NotImplementedError, 'Cannot determine file overwrites'
+		raise NotImplementedError('Cannot determine file overwrites')
 
 	def getObjFiles(self,obj):
 		'''
@@ -221,7 +221,7 @@ class ScenePlugin(object):
 		will overwrite files only if `overwrite' is True, if not then an IOError is raised and nothing is done if files
 		would have to be overwritten. This requires that `obj' was previously loaded from or saved to files.
 		'''
-		raise NotImplementedError, 'Cannot move files when renaming objects'
+		raise NotImplementedError('Cannot move files when renaming objects')
 
 	def copyObjFiles(self,obj,sdir,overwrite=False):
 		'''
@@ -229,7 +229,7 @@ class ScenePlugin(object):
 		will raise an IOError and do nothing if files need to be overwritten and `overwrite' is False. This requires
 		that `obj' was previously loaded from or saved to files.
 		'''
-		raise NotImplementedError, 'Cannot save files for this object'
+		raise NotImplementedError('Cannot save files for this object')
 
 	def removeObject(self,obj):
 		'''This should be called if another plugin takes responsibility for `obj' away from the current one.'''
@@ -665,10 +665,10 @@ class MeshScenePlugin(ScenePlugin):
 		to the protocol defined in MeshAlgorithms.
 		'''
 		if reprtype not in ReprType or not ReprType[reprtype][1]:
-			raise ValueError,'Unsupported representation type '+reprtype
+			raise ValueError('Unsupported representation type '+reprtype)
 
 		if dataset.getNodes().n()==0:
-			raise ValueError,'Cannot create representation from dataset with no nodes'
+			raise ValueError('Cannot create representation from dataset with no nodes')
 
 		algorithm=kwargs.get('algorithm',ReprType[reprtype][1]) # use the given algorithm if present, defaulting to that in ReprType
 
@@ -720,7 +720,7 @@ class MeshScenePlugin(ScenePlugin):
 
 		errlist=ParamDef.validateArgMap(self.getReprParams(obj,reprtype),kwargs)
 		if len(errlist)>0:
-			raise ValueError,'Representation Parameter Error:\n   '+'\n   '.join(errlist)
+			raise ValueError('Representation Parameter Error:\n   '+'\n   '.join(errlist))
 
 		tasks=[self.calculateExtAdj(obj),createReprTask()]
 
@@ -1127,7 +1127,7 @@ class ImageScenePlugin(ScenePlugin):
 
 	def createRepr(self,obj,reprtype,**kwargs):
 		if reprtype not in (ReprType._imgstack,ReprType._imgtimestack,ReprType._imgvolume,ReprType._imgtimevolume):
-			raise ValueError,'Unsupported representation type '+reprtype
+			raise ValueError('Unsupported representation type '+reprtype)
 
 		f=Future()
 		isVolume=reprtype in (ReprType._imgvolume,ReprType._imgtimevolume)

@@ -816,7 +816,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 	def loadObject(self,filename,name=None,**kwargs):
 		xfile=ensureExt(filename,'.X',True) # guess X filename based on T filename
 		if not os.path.isfile(xfile):
-			raise IOError,'Cannot find X file to match %r'%filename
+			raise IOError('Cannot find X file to match %r'%filename)
 			
 		ttype=guessTopologyType(filename)
 		return self.loadSceneObject(xfile,filename,'%s%i%s'%ttype)
@@ -855,7 +855,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 				xfiles=loadFileSequence(xfiles,task=task)
 
 				if not all(xfiles):
-					raise IOError,'Unable to read CHeart data from files'
+					raise IOError('Unable to read CHeart data from files')
 
 				initialXMat,header=xfiles.pop(0) if initialXFile else (None,None)
 
@@ -1010,7 +1010,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 				results=loadFileSequence(dfiles,None,dim,task)
 
 				if not all(results):
-					raise IOError,'Unable to read CHeart data field from files'
+					raise IOError('Unable to read CHeart data field from files')
 
 				if not ind and tfile: # if there's no topology by the given name and theres a tfile, load the tfile
 					ind,header=readTFile(tfile,typename,toponame,tfile[-1].lower()=='b')

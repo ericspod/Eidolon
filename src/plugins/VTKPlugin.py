@@ -328,7 +328,7 @@ class VTKPlugin(MeshScenePlugin):
 				if len(lines)>0:
 					indmats.append(lines)
 			else:
-				raise NotImplementedError,'Dataset type %s not understood yet'%str(data[0])
+				raise NotImplementedError('Dataset type %s not understood yet'%str(data[0]))
 				
 			ds=PyDataSet('vtk',nodes,indmats)
 			for k,v in metamap.items():

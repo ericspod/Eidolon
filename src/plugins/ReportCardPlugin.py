@@ -166,7 +166,7 @@ class ReportCardPlugin(ScenePlugin):
 	def copyObjFiles(self,obj,sdir,overwrite=False):
 		newfilename=os.path.join(sdir,os.path.basename(obj.filename))
 		if not overwrite and os.path.exists(newfilename):
-			raise IOError,'File already exists: %r'%newfilename
+			raise IOError('File already exists: %r'%newfilename)
 			
 		obj.filename=newfilename
 		obj.save()

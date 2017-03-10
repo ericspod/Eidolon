@@ -753,9 +753,9 @@ class DicomPlugin(ImageScenePlugin):
 
 				if len(imgs)==0:
 					if hasCompressed:
-						raise IOError,'Series %r contained compressed images DicomPlugin cannot decompress'%name
+						raise IOError('Series %r contained compressed images DicomPlugin cannot decompress'%name)
 					else:
-						raise IOError,'Empty series %r; no Dicom files found or Dicom files are not readable'%name
+						raise IOError('Empty series %r; no Dicom files found or Dicom files are not readable'%name)
 
 				f.setObject(ImageSceneObject(name,series,imgs,self,isTimeDependent))
 

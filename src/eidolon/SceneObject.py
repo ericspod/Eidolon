@@ -260,12 +260,12 @@ class SceneObjectRepr(object):
 		'''
 
 		if any(c==prepr for c in self.enumChildren(True)):
-			raise Exception,'Cannot set a parent which is a child of this representation.'
+			raise Exception('Cannot set a parent which is a child of this representation.')
 
 		p=self.getParent()
 		while p!=None:
 			if p==prepr:
-				raise Exception,'Cannot add a child which is a parent of this representation.'
+				raise Exception('Cannot add a child which is a parent of this representation.')
 			p=p.getParent()
 
 

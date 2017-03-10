@@ -334,7 +334,7 @@ def generateContoursFromMask(images,numctrls,stype):
 			transitions=[i for i,(a,b) in enumerate(successive(samples)) if a!=b]
 	
 			if not transitions:
-				raise ValueError,'Mask does not appear to be mostly convex'
+				raise ValueError('Mask does not appear to be mostly convex')
 	
 			contour1.append(mid+addvec+ray*(float(transitions[0]+1)/numsamples))
 			if stype==SegmentTypes._LV and len(transitions)>1:
@@ -1089,7 +1089,7 @@ class SegSceneObject(SceneObject):
 
 	def setContour(self,name,timestep,nodes):
 		if name not in self.datamap:
-			raise ValueError,'Cannot find contour with name %s'%name
+			raise ValueError('Cannot find contour with name %s'%name)
 
 		oldval=self.datamap[name]
 		self.datamap[name]=(timestep,nodes)
@@ -1097,7 +1097,7 @@ class SegSceneObject(SceneObject):
 
 	def removeContour(self,name):
 		if name not in self.datamap:
-			raise ValueError,'Cannot find contour with name %s'%name
+			raise ValueError('Cannot find contour with name %s'%name)
 
 		return self.datamap.pop(name)
 
@@ -1210,7 +1210,7 @@ class SegmentPlugin(ScenePlugin):
 		
 		newfilename=os.path.join(sdir,os.path.basename(obj.filename))
 		if not overwrite and os.path.exists(newfilename):
-			raise IOError,'File already exists: %r'%newfilename
+			raise IOError('File already exists: %r'%newfilename)
 			
 		obj.filename=newfilename
 		obj.save()

@@ -718,7 +718,7 @@ def cubicHermiteType(geom,desc,order):
 			[8, 9, 10, 11, 24, 25, 26, 27, 40, 41, 42, 43, 56, 57, 58, 59,21], 
 			[2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62,21]]
 	else:
-		raise ValueError,'Unsupported geometry: %r'%geom
+		raise ValueError('Unsupported geometry: %r'%geom)
 
 	xis=[tuple(reversed(xi)) for xi in itertools.product([-1.0,0.0,1.0,2.0],repeat=order)]
 
@@ -870,7 +870,7 @@ def catmullRomType(geom,desc,order):
 			[8, 9, 10, 11, 24, 25, 26, 27, 40, 41, 42, 43, 56, 57, 58, 59,21], 
 			[2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 62,21]]
 	else:
-		raise ValueError,'Unsupported geometry: %r'%geom
+		raise ValueError('Unsupported geometry: %r'%geom)
 		
 	xis=[tuple(reversed(xi)) for xi in itertools.product([-1.0,0.0,1.0,2.0],repeat=order)]
 	
@@ -968,10 +968,10 @@ class ElemTypeMap(enum):
 			basistype=nsplit[3]
 
 			if geom not in GeomType:
-				raise TypeError,"Element type '"+geom+"' not recognized"
+				raise TypeError("Element type '"+geom+"' not recognized")
 
 			if basistype not in BasisGenFuncs:
-				raise TypeError,"Basis Function type '"+basistype+"' not recognized"
+				raise TypeError("Basis Function type '"+basistype+"' not recognized")
 
 			ordernames=['Linear','Quadratic','Cubic','Quartic','Quintic','Hextic','Heptic','Octic','Nonic','Decic']
 			orderstr=ordernames[order-1] if order<=10 else 'Order '+str(order)

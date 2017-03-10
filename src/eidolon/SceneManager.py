@@ -774,10 +774,10 @@ class SceneManager(TaskQueue):
 	def execScript(self,filename,updateLocals=True,tryHard=False):
 		'''Executes the given script file using internal environment, updates local/console variables if `updateLocals'.'''
 		if not os.path.isfile(filename):
-			raise IOError, "Cannot execute %r; not a file" % filename
+			raise IOError("Cannot execute %r; not a file" % filename)
 
 		if not isTextFile(filename):
-			raise IOError,'Cannot execute %r, not a text file'%filename
+			raise IOError('Cannot execute %r, not a text file'%filename)
 
 		self.scriptlocals['scriptdir']=os.path.split(os.path.abspath(filename))[0]+os.path.sep
 		self.scriptlocals['task']=self.getCurrentTask()

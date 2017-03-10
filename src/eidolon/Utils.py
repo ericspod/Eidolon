@@ -276,7 +276,7 @@ class Future(object):
 
 		# if an exception was raised instead of setting a value, raise it
 		if isinstance(self.obj,FutureError) and self.obj.exc_value:
-			raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
+			raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
 		elif isinstance(self.obj,Exception):
 			raise self.obj
 
@@ -488,7 +488,7 @@ def readBasicConfig(filename):
 	results=cparser.read(filename)
 
 	if len(results)!=1:
-		raise IOError,'Cannot parse config file %r' %filename
+		raise IOError('Cannot parse config file %r' %filename)
 
 	sections=list(cparser.sections())+[ConfigParser.DEFAULTSECT]
 	results={}
@@ -575,7 +575,7 @@ def addLibraryFile(lib):
 	elif os.path.exists(whl):
 		sys.path.insert(0,whl)
 	else:
-		raise ValueError,'Library file {}.* does not exist'.format(lib)
+		raise ValueError('Library file {}.* does not exist'.format(lib))
 
 
 def processExists(pid):
@@ -739,7 +739,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 		printFlush(exefile,exeargs,kwargs)
 
 	if not os.path.isfile(exefile):
-		raise IOError,'Cannot find program %r' %exefile
+		raise IOError('Cannot find program %r' %exefile)
 
 	proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = subprocess.PIPE,cwd=cwd)
 	output=''
@@ -879,7 +879,7 @@ def copyfileSafe(src,dst,overwriteFile=False):
 	'''
 	if not isSameFile(src,dst):
 		if not overwriteFile and os.path.exists(dst):
-			raise IOError,'File already exists: %r'%dst
+			raise IOError('File already exists: %r'%dst)
 			
 		shutil.copyfile(src,dst)
 
@@ -896,11 +896,11 @@ def renameFile(oldpath,newname,moveFile=True,overwriteFile=False):
 	newpath=os.path.join(olddir,newname+ext)
 
 	if not os.path.exists(oldpath):
-		raise IOError,'Cannot move %r to %r, source file does not exist'%(oldpath,newpath)
+		raise IOError('Cannot move %r to %r, source file does not exist'%(oldpath,newpath))
 	elif os.path.exists(newpath) and not overwriteFile:
-		raise IOError,'Cannot move %r to %r, destination file already exists'%(oldpath,newpath)
+		raise IOError('Cannot move %r to %r, destination file already exists'%(oldpath,newpath))
 	elif isSameFile(oldpath,newpath):
-		raise IOError,'File names %r and %r refer to the same file'%(oldpath,newpath)
+		raise IOError('File names %r and %r refer to the same file'%(oldpath,newpath))
 	elif moveFile:
 		shutil.move(oldpath,newpath)
 
@@ -1527,7 +1527,7 @@ def getStrSortIndices(strs,sortIndex,regex=None):
 
 	minlen=min(len(n) for n in strcomps)
 	if sortIndex>=minlen or sortIndex<-minlen:
-		raise IndexError,"`sortIndex' value %i is outside possible range [%i,%i]"%(sortIndex,-minlen,minlen-1)
+		raise IndexError("`sortIndex' value %i is outside possible range [%i,%i]"%(sortIndex,-minlen,minlen-1))
 
 	def convertFunc(n):
 		try:
@@ -1955,13 +1955,13 @@ def frange(start,stop=None,step=None):
 		return
 
 	if step<=0:
-		raise ValueError,'Step must be positive and non-zero (step=%s)' % (str(step),)
+		raise ValueError('Step must be positive and non-zero (step=%s)' % (str(step),))
 
 	if stop<0 or start<0:
-		raise ValueError,'All arguments must be positive (start=%s, stop=%s)' % (str(start),str(stop))
+		raise ValueError('All arguments must be positive (start=%s, stop=%s)' % (str(start),str(stop)))
 
 	if stop<start:
-		raise ValueError,'Stop value must be greater than start value (start=%s, stop=%s)' % (str(start),str(stop))
+		raise ValueError('Stop value must be greater than start value (start=%s, stop=%s)' % (str(start),str(stop)))
 
 	# Kahan algorithm (W. Kahan. 1965. Pracniques: further remarks on reducing truncation errors. Commun. ACM 8)
 
