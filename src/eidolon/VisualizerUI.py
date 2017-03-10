@@ -702,7 +702,7 @@ class ParamPanel(QtGui.QWidget):
 
 
 def signalmethod(meth):
-	'''Method decorator for turning a method into a signal proxy.'''
+	'''Method decorator for turning a method into a signal proxy. This causes the method to become asynchronous.'''
 	def signalproxy(self,*args,**kwargs):
 		self.method_signal.emit(meth.__name__,args,kwargs)
 
