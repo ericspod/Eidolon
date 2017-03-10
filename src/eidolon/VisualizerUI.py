@@ -1274,7 +1274,7 @@ class RenderWidget(QtGui.QWidget):
 	constructor and associates it with the `conf' argument. After the object is constructed and placed in a layout,
 	initViz() is called to create the rendering window. If the `evtHandler' object is a EventHandler object, this will
 	receive the events from this widget triggered by rendering, mouse or keyboard input, and resizing. After the widget
-	is added and initViz() called, the host window must call show() to become visible, only then can getRenderScene()
+	is added and initViz() called, the host window must call show() to become visible, ONLY then can getRenderScene()
 	be called to create the RenderScene object necessary to interface with the renderer.
 	'''
 	def __init__(self,conf,parent=None):
@@ -1287,7 +1287,7 @@ class RenderWidget(QtGui.QWidget):
 		self.scene=None
 		self.evtHandler=None
 		self.eventTriggered=False # True if the next event was triggered by internal method calls rather than user input
-		self.wid=0
+		self.wid=None
 
 		# create the adapter from the C++ renderer, associating self.conf with it from which config info will be taken
 		self.adapt=getRenderAdapter(self.conf)
@@ -1321,6 +1321,7 @@ class RenderWidget(QtGui.QWidget):
 
 	def getRenderScene(self):
 		'''Creates (if necessary) and returns the RenderScene object associated with the internal RenderAdapter object.'''
+		assert self.wid is not None
 		self.scene=self.scene or self.adapt.getRenderScene()
 		return self.scene
 

@@ -304,7 +304,7 @@ class Project(object):
 		table.resizeRowsToContents()
 
 
-class SceneManager(object):
+class SceneManager(TaskQueue):
 	'''
 	The manager object for scene objects, assets, and UI. It represents the link between the UI and the scene itself,
 	containing the code to change the scene as directed by interaction with the UI, ie. part of the controller part of 
@@ -315,6 +315,7 @@ class SceneManager(object):
 	'''
 	
 	def __init__(self,win,conf):
+		TaskQueue.__init__(self)
 		self.win=win
 		self.conf=conf
 		self.viz=None
@@ -346,12 +347,9 @@ class SceneManager(object):
 		self.handlemap={} # maps representations to their handles (Repr -> list<Handle>), only populated when handles are first requested
 
 		# task related components
-		self.tasklist=[] # list of queued Task objects
-		self.finishedtasks=[] # list of completed Task objects
-		self.tasklock=threading.RLock() # lock used for controlling access to task lists
-		self.currentTask=None # the current running task, None if there is none
 		self.taskthread=threading.Thread(target=self._processTasks) # thread in which tasks are executed, None if no tasks are being run
 		self.taskthread.daemon=True
+		self.updatethread=None
 
 		# scene component controllers
 		self.matcontrol=MaterialController(self,self.win) # the material controller responsible for all materials
@@ -596,65 +594,24 @@ class SceneManager(object):
 			while True:
 				try:
 					time.sleep(0.1)
-					with self.tasklock:
+					with lockobj(self):
 						task=self.currentTask
 
 					self.setTaskStatus(task or 'Ready')
 				except: # ignores exceptions which are usually related to shutdown when UI objects get cleaned up before this thread stops
 					pass
 
-		updatethread=threading.Thread(target=updateStatus)
-		updatethread.start() # also a daemon
+		self.updatethread=threading.Thread(target=updateStatus)
+		self.updatethread.start() # also a daemon
+		
+		self.processTaskQueue() # process the queue
 
-		while True:
-			try:
-				# remove the first task, using tasklock to prevent interference while doing so
-				with self.tasklock:
-					if len(self.tasklist)>0:
-						self.currentTask=self.tasklist.pop(0)
-	
-				# attempt to run the task by calling its start() method, on exception report and clear the queue
-				try:
-					if self.currentTask:
-						self.currentTask.start()
-						self.finishedtasks.append(self.currentTask)
-					else:
-						time.sleep(0.1)
-				except FutureError as fe:
-					exc=fe.exc_value
-					while exc!=fe and isinstance(exc,FutureError):
-						exc=exc.exc_value
-						
-					self.showExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
-					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-				except Exception as e:
-					if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
-						self.showExcept(e,'Exception from queued task '+self.currentTask.getLabel())
-						self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-				finally:
-					# set the current task to None, using tasklock to prevent inconsistency with updatethread
-					with self.tasklock:
-						# clear the queue if there's a task and it wants to remove all current tasks
-						if self.currentTask!=None and self.currentTask.flushQueue:
-							self.tasklist=[]
-	
-						self.currentTask=None
-			except:
-				pass # ignore errors during shutdown 
+	def taskExcept(self,ex,msg,title):
+		self.showExcept(ex,msg,title)
 
 	def getCurrentTask(self):
 		'''Returns the current Task object if called within the task execution thread, None otherwise.'''
 		return self.currentTask if threading.currentThread()==self.taskthread else None
-
-	def addTasks(self,*tasks):
-		'''Adds the given tasks to the task queue whether called in another task or not.'''
-		assert all(isinstance(t,Task) for t in tasks)
-		with self.tasklock:
-			self.tasklist+=list(tasks)
-
-	def addFuncTask(self,func,name=None):
-		'''Creates a task object (named 'name' or the function name if None) to call the function when executed.'''
-		self.addTasks(Task(name or func.__name__,func))
 
 	def runTasks(self,tasks,resFuture=None,isSequential=False):
 		'''
@@ -769,18 +726,13 @@ class SceneManager(object):
 
 		return self.runTasks([_exeTask(exefile,exeargs,logfile,kwargs)],f,False)
 
-	def listTasks(self):
-		'''Returns a list of the labels of all queued tasks.'''
-		with self.tasklock:
-			return [t.getLabel() for t in self.tasklist]
-
 	def setTaskStatus(self,msgOrTask,progress=0,progressmax=0):
 		'''Sets the task status bar of the window if present, otherwise does nothing.'''
 		if self.win:
 			if isinstance(msgOrTask,str):
 				self.win.setStatus(msgOrTask,progress,progressmax)
 			else:
-				stat='%s | %i tasks waiting' % (msgOrTask.getLabel(),len(self.tasklist))
+				stat='%s | %i tasks waiting' % (msgOrTask.getLabel(),self.getNumTasks())
 				self.win.setStatus(stat,*msgOrTask.getProgress())
 
 	def getPlugin(self,name):

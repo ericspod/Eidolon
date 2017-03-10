@@ -16,10 +16,56 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-
 '''
 These are utility functions and classes defined in pure Python. They do not use libraries like Numpy or the renderer.
+Routines are provided for file handling, file path manipulation, process handling and execution, routine utilities, 
+task handling, and a large number of mathematical utilities. 
 
+The class enum is used throughout the framework to define enumerations sort of like Java. These consist of list/dict
+hybrid types where a tuple of values is associated with a string name, for example:
+
+	vertices=enum(
+		('line',2,'1D'),
+		('triangle',3,'2D'),
+		('tet',4,'3D')
+	)
+
+This associates 'line' with the tuple (2,'1D') which can be queries from `vertices` by name or index, so `vertices.line`
+and `vertices[0]` both return (2,'1D'). See the enum docs for further details of their use.
+
+The class Future is the implementation of the future/promise/delay/etc. pattern. It is a container for a value which will
+be provided eventually by some asynchronous operation. Typically a method is called which launches an asynchronous
+operation and returns the Future instance the result will be placed in. The caller then queries the object to determine
+if the result is present and then to get it directly. For example:
+
+	f=someAsyncOp() #  f is the Future
+	print f() # wait 10 seconds by default for f to be given its value
+	
+If a value is returned or passed as an argument which is either a Future or the object itself, the function Future.get()
+can be used to get the object regardless:
+
+	print Future.get(f)
+	
+The Future type can be used as the object in a with-block to automatically catch exceptions or ensure that a value was
+eventually given. This is done in the asynchronous operation itself to ensure correct communication with its client. If
+an exception is raised, it becomes the stored object, which is then raised by the client when the value is queried:
+
+	def someAsyncOp(f)
+		with f:
+			...
+			raise SomeError()
+	...
+	print f() # raises SomeError here	
+	
+Asynchronous operations are often defined as tasks represented by the Task type. Instances of this type store a callable
+and variables indicating progress and current state. The callable is what defines the actual behaviour so the Task object's
+role is to represent the operation's current status and interface with the TaskQueue object responsible for running the
+tasks. For example, a simple task printing a string to stdout:
+
+	func=lambda:printFlush('I am a test task')
+	q=TaskQueue()
+	q.addTasks(Task('test 1',func))
+	q.processTaskQueue() # note this never returns, should be a separate thread
 '''
 
 import math
@@ -73,8 +119,12 @@ class enum(object):
 	with _ is a valid Python identifier.
 
 	A second member with the same name prepended with _ returns the name itself. The [] operator can query
-	values by index or by name. Containment is defined as whether the given name is a member of the enum or not.
+	values by index or by name. Containment (in/not in) is defined as name membership in the enum. 
 	The members of the enum are also iterable in the given order, each element being a tuple of the name+values.
+	
+	The constructor accepts keyword arguments to define secondary properties of the enum: "doc" should contain a
+	documentation string describing the members of the enum, and "valtype" should be a tuple stating the type for each
+	value in the entries, which assumes all entries have values of the same type.
 
 	Eg. given e=enum( ('foo',1,2), ('bar',3,4), ('baz thunk', 5), ('plonk',) )
 		'foo' in e   -> True
@@ -196,20 +246,29 @@ class Future(object):
 		self.event=Event()
 
 	def setObject(self,obj):
+		'''Set the internal stored object to `obj' and set the event.'''
 		self.obj=obj
 		self.event.set()
 
 	def clear(self):
+		'''Remove the internal object and clear the event.'''
 		self.obj=None
 		self.event.clear()
 
 	def isSet(self):
+		'''Returns True if the event has been set, ie. a result is stored.'''
 		return self.event.isSet()
 		
 	def isEmpty(self):
+		'''Returns True if there is no result and the event is not set.'''
 		return self.obj is None and not self.event.isSet()
 
 	def getObjectWait(self,timeout=10.0):
+		'''
+		Return the stored object, waiting `timeout' seconds for the object to be set, returning None if this doesn't
+		occur in this time. If the object is present and is an exception, this is raised instead. The `timeout'
+		value therefore must be a positive float or None to indicate indefinite waiting.
+		'''
 		res=self.event.wait(timeout)
 
 		if timeout!=None and not res: # if we timed out waiting, return None
@@ -225,12 +284,19 @@ class Future(object):
 		return Future.get(self.obj,timeout) 
 
 	def __call__(self,timeout=10.0):
+		'''Same as getObjectWait().'''
 		return self.getObjectWait(timeout)
 
 	def __enter__(self):
+		'''
+		Used to define with-blocks in which the Future must be given a value. If the block exits without a value set,
+		__exit__ will set the object to a FutureError indicating this. This also includes the case where the block 
+		exits because of a raised exception, the details of which will be stored in the FutureError object.
+		'''
 		return self
 
 	def __exit__(self,exc_type, exc_value, tb):
+		'''Sets the stored object to a FutureError if block exits without a value or because of a raised exception.'''
 		if exc_value or self.isEmpty(): # if there's no value or an exception was raised, store a FutureError
 			self.setObject(FutureError(self,exc_type, exc_value, tb))
 			
@@ -1179,7 +1245,12 @@ class Task(object):
 	'''
 	This class represents the abstract notion of a task, with a 'curprogress' value to indicate progress in relation to
 	a 'maxprogress' value. Tasks may have their own threads or be executed by their containers. Normally tasks are
-	executed by the SceneManager object.
+	executed by a TaskQueue object. The actual action of the Task object should be implemented by the supplied `func'
+	argument, which must be a callable accepting the positional and keyword arguments given by `args' and `kwargs'.
+	When a Task object is executed, it's start() method is called which will call self.func either in the calling thread
+	or a new one, depending on the `useThread' argument. A Task object can have a parent Task, which occurs when the body
+	of one task invokes an operation that normally adds a task to a queue. When this occurs the progress and label 
+	methods call into the parent Task object.
 	'''
 	@staticmethod
 	def Null():
@@ -1205,9 +1276,15 @@ class Task(object):
 		self.setLabel(label)
 
 	def _callFunc(self):
+		'''Call self.func with arguments self.args and self.kwargs, storing the result in self.result.'''
 		self.result=self.func(*self.args,**self.kwargs)
 
 	def start(self,useThread=False):
+		'''
+		Perform the execution of the task. This will set the label, set self.started to True, and then if useThread is
+		True create a thread which will _callFunc(), otherwise _callFunc() is called directly. Finally self.completed
+		is set to True once this is done.
+		'''
 		self.setLabel(self.label)
 		self.started=True
 		if useThread:
@@ -1218,9 +1295,11 @@ class Task(object):
 		self.completed=True
 
 	def isDone(self):
+		'''Returns True if the task has started and the thread is no longer alive or self.complete is True.'''
 		return self.started and (not self.thread.isAlive() if self.thread else self.completed)
 
 	def setLabel(self,label):
+		'''Set the task's label (or that of the parent if present), this will be used by UI to indicate current task.'''
 		if self.parentTask:
 			self.parentTask.setLabel(label)
 		else:
@@ -1229,18 +1308,21 @@ class Task(object):
 				self.thread.label=label
 
 	def getLabel(self):
+		'''Get the task's label, or that of the parent if present.'''
 		if self.parentTask:
 			return self.parentTask.getLabel()
 		else:
 			return self.label
 
 	def setProgress(self,curprogress):
+		'''Set the progress of this or the parent task to the integer value `curprogress'.'''
 		if self.parentTask:
 			self.parentTask.setProgress(curprogress)
 		else:
 			self.curprogress=curprogress
 
 	def setMaxProgress(self,maxprogress):
+		'''Set the max progress value of this or the parent task to the integer value `maxprogress'.'''
 		if self.parentTask:
 			self.parentTask.setMaxProgress(maxprogress)
 		else:
@@ -1248,7 +1330,7 @@ class Task(object):
 			self.curprogress=min(self.curprogress,self.maxprogress)
 
 	def getProgress(self):
-		'''Returns the current progress value and maximum value, or (0,0) if unknown.'''
+		'''Returns the current progress value and maximum value, or that of the parent if present, or (0,0) if unknown.'''
 		if self.parentTask:
 			return self.parentTask.getProgress()
 		else:
@@ -1256,6 +1338,85 @@ class Task(object):
 
 	def __repr__(self):
 		return 'Task<%s>' %self.label
+
+
+class TaskQueue(object):
+	'''
+	This represents a queue of tasks waiting to be executed and the algorithm to do so. The processTaskQueue() method
+	handles executing each task in sequence and handling any exceptions that occur. The expected use case is that this
+	class will be mixed in with another responsible for maintaining tasks and other system-level facilities.
+	'''
+	def __init__(self):
+		self.tasklist=[] # list of queued Task objects
+		self.finishedtasks=[] # list of completed Task objects
+		self.currentTask=None # the current running task, None if there is none
+		self.doProcess=True # loop condition in processTaskQueue
+		
+	def processTaskQueue(self):
+		'''
+		Process the tasks in the queue, looping so long as self.doProcess is True. This method will not return so long
+		as this condition is True and so should be executed in its own thread. Tasks are popped from the top of the
+		queue and their start() methods are called. Exceptions from this method are handled through taskExcept().
+		'''
+		while self.doProcess:
+			try:
+				# remove the first task, using the self lock to prevent interference while doing so
+				with lockobj(self):
+					if len(self.tasklist)>0:
+						self.currentTask=self.tasklist.pop(0)
+	
+				# attempt to run the task by calling its start() method, on exception report and clear the queue
+				try:
+					if self.currentTask:
+						self.currentTask.start() # run the task's operation
+						self.finishedtasks.append(self.currentTask)
+					else:
+						time.sleep(0.1)
+				except FutureError as fe:
+					exc=fe.exc_value
+					while exc!=fe and isinstance(exc,FutureError):
+						exc=exc.exc_value
+						
+					self.taskExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
+					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+				except Exception as e:
+					if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
+						self.taskExcept(e,'','Exception from queued task '+self.currentTask.getLabel())
+						self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+				finally:
+					# set the current task to None, using self lock to prevent inconsistency with updatethread
+					with lockobj(self):
+						# clear the queue if there's a task and it wants to remove all current tasks
+						if self.currentTask!=None and self.currentTask.flushQueue:
+							del self.tasklist[:]
+	
+						self.currentTask=None
+			except:
+				pass # ignore errors during shutdown 
+		
+	@locking		
+	def addTasks(self,*tasks):
+		'''Adds the given tasks to the task queue whether called in another task or not.'''
+		assert all(isinstance(t,Task) for t in tasks)
+		self.tasklist+=list(tasks)
+
+	def addFuncTask(self,func,name=None):
+		'''Creates a task object (named 'name' or the function name if None) to call the function when executed.'''
+		self.addTasks(Task(name or func.__name__,func))
+
+	@locking
+	def listTasks(self):
+		'''Returns a list of the labels of all queued tasks.'''
+		return [t.getLabel() for t in self.tasklist]
+		
+	@locking
+	def getNumTasks(self):
+		'''Returns the number of queued tasks.'''
+		return len(self.tasklist)
+				
+	def taskExcept(self,ex,msg,title):
+		'''Called when the task queue encounters exception `ex' with message `msg' and report window title `title'.'''
+		pass
 
 
 def taskroutine(taskLabel=None,selfName='task'):

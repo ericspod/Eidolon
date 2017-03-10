@@ -3591,19 +3591,29 @@ public:
 	}
 };
 
+/// Image objects represented loaded image files. These are used to access image data in code rather than load it into the renderer.
 class Image
 {
 public:
 	virtual ~Image() {} 
 
-	virtual TextureFormat getFormat() const { return TF_UNKNOWN; } 
+	/// Get the loaded data's format
+	virtual TextureFormat getFormat() const { return TF_UNKNOWN; }
+	/// Get the image width
 	virtual sval getWidth() const { return 0; }
+	/// Get the image height
 	virtual sval getHeight() const { return 0; }
+	/// Get the image depth
 	virtual sval getDepth() const { return 0; }
+	/// Get the image data size in bytes
 	virtual size_t getDataSize() const { return 0; }
+	/// Get a pointer to the internal data buffer
 	virtual u8* getData() { return 0; }
+	/// Encode the image data as the byte stream for a file, the format of which is given by `format' (eg. png, jpg)
 	virtual std::string encode(const std::string& format) { return ""; }
+	/// Transfer the image data into the given matrix
 	virtual void fillRealMatrix(RealMatrix* mat) throw(IndexException) {}
+	/// Transfer the image data into the given matrix
 	virtual void fillColorMatrix(ColorMatrix* mat) throw(IndexException) {} 
 };
 
@@ -3879,7 +3889,7 @@ public:
  * (group,name) pairs, where group is the category the value is a member of. Categories may include anything depending
  * on context, `platformID' is the group for per-platform config values with "All" containing default values for all
  * platforms. Other groups include "args" for command line arguments, "vars" for variable specified on the command line,
- * and `RenderParamGroup' containing values for initializing the renderer. 
+ * and `RenderParamGroup' containing values for initializing the renderer. Group and name values are NOT case sensitive.
  */
 class Config
 {
@@ -3978,7 +3988,7 @@ public:
 	/// Load a GPU program (shader) of the given name, type, and language (ie. Cg).
 	virtual GPUProgram* createGPUProgram(const char* name,ProgramType ptype,const char* language) throw(RenderException) { return NULL; }
 
-	/// Save a screenshot to the given filename taken from the given camera of the whole 3D window if this isn't provided.
+	/// Save a screenshot to the given filename taken from the given camera, or of the whole 3D window if this isn't provided.
 	virtual void saveScreenshot(const char* filename,Camera* c=NULL,int width=0,int height=0,real stereoOffset=0.0,TextureFormat tf=TF_RGB24) throw(RenderException) {}
 
 	/// Returns the Config object used to define properties for the scene.
@@ -4007,6 +4017,21 @@ public:
  * This class represents the bridge between the rendering engine and the windowing toolkit. It is instantiated for the windowing object that will
  * be the target for rendering. It's main purpose is to collect into one place the code for creating and resizing the render window and processing
  * paint events. This also allows the windowing class to be defined without using headers for the rendering engine.
+ * 
+ * A RenderAdapter type is instantiated through getRenderAdapter() which is implemented by the specific renderer being used, thus it returns a 
+ * specialized subtype specific to that renderer. The Config object passed as the argument is retained and used as the source of parameter info
+ * needed to instantiate the renderer. Once the object is created, createWindow() must be called after the host UI widget has been created so that
+ * the parameters identifying the window have been set in the Config object. These parameters are necessary since the renderer has to bind to a 
+ * place to render into. Once this has been done and the widget is visible, only then can getRenderScene() be called to create the RenderScene
+ * object needed to interact with the renderer. Whenever the widget resizes resize() must be called with the new size as arguments. When the widget
+ * receives a paint event, paint() is called to cause a redraw of the scene by the renderer.
+ *
+ * The parameters to pass to the Config object are specific to the platform and renderer being used, but must be stored in the RenderParamGroup
+ * config group. For Ogre these are the following named values:
+ *
+ *   Windows: parent window ID number in "parentWindowHandle"
+ *   Linux:   D:S:W in "parentWindowHandle" where D is the display number, S the screen number, and W the window ID number
+ *   OSX:     window ID number in "externalWindowHandle"
  */
 class RenderAdapter
 {
