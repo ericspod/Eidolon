@@ -264,11 +264,13 @@ def screenshotWidget(w,filename):
 
 
 def setChecked(isChecked,checkbox):
+	'''Set the checkable widget `checkbox' to the boolean status `isChecked'.'''
 	with signalBlocker(checkbox):
 		checkbox.setChecked(isChecked)
 
 
 def setColorButton(col,button):
+	'''Set the colour of left hand border of `button' to color object `col'.'''
 	button.setStyleSheet('border-left: 5px solid ' + str(toQtColor(col).name()))
 
 

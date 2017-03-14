@@ -58,7 +58,7 @@ an exception is raised, it becomes the stored object, which is then raised by th
 	print f() # raises SomeError here	
 	
 Asynchronous operations are often defined as tasks represented by the Task type. Instances of this type store a callable
-and variables indicating progress and current state. The callable is what defines the actual behaviour so the Task object's
+and variables indicating progress and current state. The callable is what defines the actual behaviour, the Task object's
 role is to represent the operation's current status and interface with the TaskQueue object responsible for running the
 tasks. For example, a simple task printing a string to stdout:
 
@@ -66,6 +66,11 @@ tasks. For example, a simple task printing a string to stdout:
 	q=TaskQueue()
 	q.addTasks(Task('test 1',func))
 	q.processTaskQueue() # note this never returns, should be a separate thread
+	
+Decorating a function with @taskroutine creates a wrapped version which returns a Task object when called, this object
+will execute the function's body when used in a TaskQueue. Decorating a method with @taskmethod produces a method which
+will enqueue a Task executing its body on the TaskQueue the receiver refers to in a member variable, by default called
+`mgr'. Such a method when called will try to run the task immediately and return a Future object for the result.
 '''
 
 import math
@@ -1445,11 +1450,12 @@ def taskroutine(taskLabel=None,selfName='task'):
 	return funcwrap
 	
 
-def taskmethod(taskLabel=None,selfName='task'):
+def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
 	'''
-	Wraps a given method in code which will execute the method's body in a task and store the result in a returned
-	Future object. This assumes the method's receiver has a member called `mgr' which references the SceneManager
-	object. 
+	Wraps a given method such that it will execute the method's body in a task and store the result in a returned
+	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
+	object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
+	The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
 	
 	For example, the method:
 	
@@ -1478,7 +1484,7 @@ def taskmethod(taskLabel=None,selfName='task'):
 					kwargs[selfName]=task
 					f.setObject(meth(self,*args,**kwargs))
 				
-			return self.mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
+			return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
 		
 		return taskmethod
 		

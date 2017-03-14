@@ -74,6 +74,8 @@ JobMetaValues=enum(
 )
 
 
+EnvironVars=enum('LD_LIBRARY_PATH','DYLD_LIBRARY_PATH')
+
 trackconfname='track.ini'
 
 
@@ -85,7 +87,7 @@ def isTrackDir(path):
 	if not os.path.isfile(os.path.join(path,trackconfname)):
 		return False
 		
-	return len(glob.glob(path+'/*.dof*'))>1
+	return len(glob.glob(path+'/*.dof*'))>0
 	
 
 def isPositiveDefinite(mat):
@@ -146,7 +148,12 @@ def detagImage(obj,coresize,revert=False):
 
 
 @concurrent
-def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs):
+def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs,environ):
+	oldenviron={ev:os.environ[ev] for ev in environ if ev in os.environ}
+
+	for ev,val in environ.items():
+		os.environ[ev]=val
+		
 	results=[]
 	for i,(infile,outfile,doffile,ttime) in enumerate(filelists):
 		args=[infile,outfile,'-dofin',doffile]
@@ -155,20 +162,24 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs):
 			args.append('-invert')
 
 		if ttime>=0: # timestep selection
-			args+=['-time',str(ttime)]
+			args+=['-St',str(ttime)]
 			
 		args+=extraArgs
 
 		ret,out=execBatchProgram(exefile,*args,cwd=cwd)
 		results.append((ret,out,args))
 		process.setProgress(i+1)
+		
+	for ev,val in oldenviron.items():
+		os.environ[ev]=val
 
 	return results
 	
 
 @taskroutine('Applying Transformation')
 def applyMotionTrackTask(exefile,cwd,isInvert,filelists,extraArgs=[],task=None):
-	results=applyMotionTrackRange(len(filelists),0,task,exefile,cwd,isInvert,filelists,extraArgs,partitionArgs=(filelists,))
+	environ={ev:os.environ[ev] for ev in map(first,EnvironVars) if ev in os.environ}
+	results=applyMotionTrackRange(len(filelists),0,task,exefile,cwd,isInvert,filelists,extraArgs,environ,partitionArgs=(filelists,))
 	for ret,out,args in sumResultMap(results):
 		if ret!=0:
 			raise IOError('Command failed with return code %r: %r\n%s'%(ret,' '.join(args),out))
@@ -208,7 +219,7 @@ class IRTKPluginMixin(object):
 		if isLinux and mgr.conf.get(platformID,'usesystemirtk').lower()!='false' and os.path.exists('/usr/bin/irtk-rreg'):
 			self.irtkpath=lambda i:('/usr/bin/irtk-'+i) if os.path.exists('/usr/bin/irtk-'+i) else localirtkpath(i)
 		else:
-			addPathVariable('LD_LIBRARY_PATH',self.irtkdir)
+			addPathVariable(EnvironVars.LD_LIBRARY_PATH,self.irtkdir)
 
 		self.spatialcorrect=self.irtkpath('spatial_correct')
 		self.rreg=self.irtkpath('rreg')
@@ -221,10 +232,10 @@ class IRTKPluginMixin(object):
 		elif isLinux:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Linux')
 			self.exesuffix=''
-			addPathVariable('LD_LIBRARY_PATH',self.mirtkdir)
+			addPathVariable(EnvironVars.LD_LIBRARY_PATH,self.mirtkdir)
 		else:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
-			addPathVariable('DYLD_LIBRARY_PATH',self.mirtkdir)
+			addPathVariable(EnvironVars.DYLD_LIBRARY_PATH,self.mirtkdir)
 			
 		self.ffd_motion=os.path.join(getAppDir(),LIBSDIR,'MIRTK','ffd_motion.cfg')
 		
@@ -781,26 +792,15 @@ class IRTKPluginMixin(object):
 	def createIsotropicObject(self,obj,cropEmpty):
 		f=Future()
 		@taskroutine('Creating Isotropic Object')
-		def _createIso(obj,isoargs,shapetype,logfile,cwd,task):
+		def _createIso(obj,shapetype,logfile,cwd,task):
 			with f:
 				obj=self.findObject(obj)
 
 				outname=self.getUniqueShortName(obj.getName(),'Iso')
-#				infile=self.getNiftiFile(obj.getName())
 				outfile=self.getNiftiFile(outname)
 				
 				if cropEmpty:
 					obj=self.emptyCropObject(obj,False)
-
-#				tempNii=not os.path.isfile(infile)
-#
-#				if tempNii:
-#					self.saveToNifti([obj])
-#
-#				self.createIsotropicStack(infile,outfile,isoargs,shapetype,logfile,cwd)
-#
-#				if tempNii:
-#					self.removeFilesTask(infile)
 
 				isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso')
 				resampleImage(obj,isoobj)
@@ -809,7 +809,7 @@ class IRTKPluginMixin(object):
 
 				f.setObject(isoobj)
 
-		return self.mgr.runTasks(_createIso(obj,isoargs,shapetype,logfile,cwd),f)
+		return self.mgr.runTasks(_createIso(obj,shapetype,logfile,cwd),f)
 		
 	def setObjectTimestep(self,objname,start,step):
 		@taskroutine('Setting Timestep')
@@ -998,8 +998,9 @@ class IRTKPluginMixin(object):
 			
 		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		timesteps=conf[JobMetaValues._timesteps]
-		isFrameByFrame=conf[JobMetaValues._tracktype] in (TrackTypes._gpunreg,TrackTypes._mirtkregister)
 		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof*')))
+		isSingleDof=len(trackfiles)==1
+		isFrameByFrame=conf[JobMetaValues._tracktype] in (TrackTypes._gpunreg,TrackTypes._mirtkregister) and not isSingleDof
 		resultname=self.getUniqueShortName(obj.getName(),'Tracked',trackname_or_dir)
 		f=Future()
 		
@@ -1015,6 +1016,8 @@ class IRTKPluginMixin(object):
 			if os.path.isfile(os.path.join(trackdir,'times.txt')):
 				with open(os.path.join(trackdir,'times.txt')) as o:
 					times=map(float,o.readlines())
+			elif isSingleDof:
+				times=timesteps
 			else:
 				times=[-1]*len(trackfiles)
 
@@ -1099,7 +1102,7 @@ class IRTKPluginMixin(object):
 		'''
 		initobj=MeshSceneObject('proxy',PyDataSet('proxyds',pts))
 		f=self.applyMotionTrack(initobj,dirname,False)
-		trackobj=Future.get(f)
+		trackobj=Future.get(f,None)
 		return {ts:ds.getNodes()[:,0] for ts,ds in zip(trackobj.getTimestepList(),trackobj.datasets)}
 
 	def isServerAlive(self,serveraddr=None,serverport=None):
@@ -1309,84 +1312,80 @@ class IRTKPluginMixin(object):
 
 		return self.mgr.runTasks(_GPUTrack(imgname,maskname,trackname,paramfile),f,False)
 		
-	def startRegisterMotionTrack(self,imgname,maskname,trackname,paramfile,model=None):
-		f=Future()
-		@taskroutine('Tracking Image With MIRTK register')
-		@timing
-		def _track(imgname,maskname,trackname,paramfile,model,task):
-			with f:
-				imgobj=self.mgr.findObject(imgname)
-				indices=imgobj.getTimestepIndices()
-				timesteps=imgobj.getTimestepList()
-				model=model or 'FFD'
+	@taskmethod('Tracking Image With MIRTK register')
+	@timing
+	def startRegisterMotionTrack(self,imgname,maskname,trackname,paramfile,model=None,task=None):
+		'''Motion tracking using MIRTK register program.'''
+		imgobj=self.mgr.findObject(imgname)
+		indices=imgobj.getTimestepIndices()
+		timesteps=imgobj.getTimestepList()
+		model=model or 'FFD'
 
-				if not os.path.isfile(paramfile):
-					paramfile=self.ffd_motion
+		if not os.path.isfile(paramfile):
+			paramfile=self.ffd_motion
 
-				trackname=trackname.strip() or 'RegTrack_'+imgobj.getName()
+		trackname=trackname.strip() or 'RegTrack_'+imgobj.getName()
 
-				trackname=self.getUniqueObjName(getValidFilename(trackname))
-				trackdir=self.getLocalFile(trackname)
-				maskfile=None
-				
-				if maskname and maskname!='None':
-					mask=self.findObject(maskname)
-					maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
-					resampleImage(mask,maski)
-					maskfile=self.getUniqueLocalFile(maskname+'_I')
-					self.Nifti.saveObject(maski,maskfile)
-
-				os.mkdir(trackdir)
-				names=[]
-				results=[]
-				
-				conf={
-					JobMetaValues._trackobj     :imgname,
-					JobMetaValues._maskobj      :maskname,
-					JobMetaValues._resultcode   :None,
-					JobMetaValues._numtrackfiles:len(timesteps)-1,
-					JobMetaValues._tracktype    :TrackTypes._mirtkregister,
-					JobMetaValues._timesteps    :timesteps,
-					JobMetaValues._transform    :tuple(imgobj.getVolumeTransform()),
-					JobMetaValues._pixdim       :tuple(imgobj.getVoxelSize()),
-					JobMetaValues._trackfile    :trackname,
-					JobMetaValues._paramfile    :paramfile,
-					JobMetaValues._maskfile     :maskfile,
-					JobMetaValues._startdate    :time.asctime()
-				}
+		trackname=self.getUniqueObjName(getValidFilename(trackname))
+		trackdir=self.getLocalFile(trackname)
+		maskfile=None
 		
-				storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
+		if maskname and maskname!='None':
+			mask=self.findObject(maskname)
+			maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
+			resampleImage(mask,maski)
+			maskfile=self.getUniqueLocalFile(maskname+'_I')
+			self.Nifti.saveObject(maski,maskfile)
 
-				for i,tsinds in enumerate(indices):
-					name='image%.4i'%i
-					filename=os.path.join(trackdir,name+'.nii')
-					names.append(filename)
-					subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
-					self.Nifti.saveObject(subobj,filename)
+		os.mkdir(trackdir)
+		names=[]
+		results=[]
+		
+		conf={
+			JobMetaValues._trackobj     :imgname,
+			JobMetaValues._maskobj      :maskname,
+			JobMetaValues._resultcode   :None,
+			JobMetaValues._numtrackfiles:len(timesteps)-1,
+			JobMetaValues._tracktype    :TrackTypes._mirtkregister,
+			JobMetaValues._timesteps    :timesteps,
+			JobMetaValues._transform    :tuple(imgobj.getVolumeTransform()),
+			JobMetaValues._pixdim       :tuple(imgobj.getVoxelSize()),
+			JobMetaValues._trackfile    :trackname,
+			JobMetaValues._paramfile    :paramfile,
+			JobMetaValues._maskfile     :maskfile,
+			JobMetaValues._startdate    :time.asctime()
+		}
 
-				task.setMaxProgress(len(names)-1)
-				task.setLabel('Tracking Image With MIRTK register')
+		storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
+
+		for i,tsinds in enumerate(indices):
+			name='image%.4i'%i
+			filename=os.path.join(trackdir,name+'.nii')
+			names.append(filename)
+			subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
+			self.Nifti.saveObject(subobj,filename)
+
+		task.setMaxProgress(len(names)-1)
+		task.setLabel('Tracking Image With MIRTK register')
+		
+		for i,(img1,img2) in enumerate(successive(names)):
+			logfile=os.path.join(trackdir,'%.4i.log'%i)
+			args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
+
+			if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
+				args+=['-mask',maskfile]
 				
-				for i,(img1,img2) in enumerate(successive(names)):
-					logfile=os.path.join(trackdir,'%.4i.log'%i)
-					args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
+			if i==0: # spit out the parameter file for the first invocation so that config values are preserved for later inspection
+				args+=['-parout',os.path.join(trackdir,'register.cfg')]
+				
+			r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
+			results.append(r)
+			task.setProgress(i+1)
+			
+			if r[0]:
+				raise IOError('register failed with error code %i:\n%s'%r)
 
-					if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
-						args+=['-mask',maskfile]
-						
-					if i==0: # spit out the parameter file for the first invocation so that config values are preserved for later inspection
-						args+=['-parout',os.path.join(trackdir,'register.cfg')]
-						
-					r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
-					results.append(r)
-					task.setProgress(i+1)
-					
-					if r[0]:
-						raise IOError('register failed with error code %i:\n%s'%r)
-
-				f.setObject(results)
-
-		return self.mgr.runTasks(_track(imgname,maskname,trackname,paramfile,model),f,False)
+		return results
 
 	def checkMotionTrackJobs(self,jids):
 		f=Future()
