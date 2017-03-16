@@ -789,27 +789,23 @@ class IRTKPluginMixin(object):
 #		self._checkProgramTask(f)
 #		return f
 
-	def createIsotropicObject(self,obj,cropEmpty):
-		f=Future()
-		@taskroutine('Creating Isotropic Object')
-		def _createIso(obj,shapetype,logfile,cwd,task):
-			with f:
-				obj=self.findObject(obj)
+	@taskmethod('Creating Isotropic Object')
+	def createIsotropicObject(self,obj,cropEmpty,task=None):
+		obj=self.findObject(obj)
 
-				outname=self.getUniqueShortName(obj.getName(),'Iso')
-				outfile=self.getNiftiFile(outname)
-				
-				if cropEmpty:
-					obj=self.emptyCropObject(obj,False)
+		outname=self.getUniqueShortName(obj.getName(),'Iso')
+		outfile=self.getNiftiFile(outname)
+		
+		if cropEmpty:
+			obj=self.emptyCropObject(obj,False)
 
-				isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso')
-				resampleImage(obj,isoobj)
-				isoobj.plugin.saveObject(isoobj,outfile,setFilenames=True)
-				self.addObject(isoobj)
+		isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso')
+		resampleImage(obj,isoobj)
+		isoobj.plugin.saveObject(isoobj,outfile,setFilenames=True)
+		self.addObject(isoobj)
 
-				f.setObject(isoobj)
-
-		return self.mgr.runTasks(_createIso(obj,shapetype,logfile,cwd),f)
+		return isoobj
+		
 		
 	def setObjectTimestep(self,objname,start,step):
 		@taskroutine('Setting Timestep')

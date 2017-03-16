@@ -40,50 +40,6 @@ def avgDevRange(vals,stddevDist=1.0):
 	sd=stddev(vals)*stddevDist
 	return avg(v for v in vals if abs(v-a)<=sd)
 
-
-#@timing
-#def calculateRadialField(ds,indmat):
-#	'''
-#	Calculate a field of radial vectors for the surface of the mesh defined by index matrix `indmat' using nodes and
-#	other data from dataset `ds'.
-#	'''
-#	calculateElemExtAdj(ds)
-#
-#	result=calculateMeshSurfNormals(ds.getNodes(),indmat,ds.getIndexSet(indmat.getName()+MatrixType.external[1]))
-#	radialf=RealMatrix('radial',0,3)
-#	for i in xrange(result.n()):
-#		radialf.append(*result.getAt(i))
-#
-#	radialf.meta(StdProps._topology,indmat.getName())
-#	radialf.meta(StdProps._spatial,indmat.getName())
-#	radialf.meta(StdProps._timecopy,'True')
-#	ds.setDataField(radialf)
-#	return radialf
-#
-#
-#@timing
-#def calculateLVDirectionalFields(ds,radialfield,longaxis,longname,circumname):
-#	'''
-#	Given the dataset `ds' and radial vector field `radialfield', calculate the logitudinal and circumferential fields
-#	using LV centerline axis direction `longaxis'. The names of the returned matrices are `longname' and `circumname'.
-#	'''
-#	length=radialfield.n()
-#	longmat=RealMatrix(longname,length,3)
-#	circummat=RealMatrix(circumname,length,3)
-#
-#	for n in xrange(length):
-#		longmat.setRow(n,*longaxis)
-#		circummat.setRow(n,*longaxis.cross(vec3(*radialfield.getRow(n))))
-#
-#	longmat.meta(StdProps._topology,radialfield.meta(StdProps._topology))
-#	longmat.meta(StdProps._spatial,radialfield.meta(StdProps._spatial))
-#	longmat.meta(StdProps._timecopy,'True')
-#	circummat.meta(StdProps._topology,radialfield.meta(StdProps._topology))
-#	circummat.meta(StdProps._spatial,radialfield.meta(StdProps._spatial))
-#	circummat.meta(StdProps._timecopy,'True')
-#
-#	return longmat,circummat
-	
 	
 @timing
 def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
@@ -192,19 +148,6 @@ def strainTensor(px,mx,py,my,pz,mz,hh):
 	a,b,c=(px-mx)*hh2
 	d,e,f=(py-my)*hh2
 	g,h,i=(pz-mz)*hh2
-
-	# unrolled equivalent of 0.5*(F.T*F-np.eye(3)) where F=G+np.eye(3)
-#	E1=0.5*(a**2 + 2.0*a + d**2 + g**2)
-#	E2=0.5*(a*b + b + d*e + d + g*h)
-#	E3=0.5*(a*c + c + d*f + g*i + g)
-#	E5=0.5*(b**2 + e**2 + 2.0*e + h**2)
-#	E6=0.5*(b*c + e*f + f + h*i + h)
-#	E9=0.5*(c**2 + f**2 + i**2 + 2.0*i)
-#	return E1,E2,E3,E2,E5,E6,E3,E6,E9
-
-	#F=np.asarray([[a,b,c],[d,e,f],[g,h,i]],dtype=float)
-	#T=0.5*(np.dot(F.T,F)-np.eye(3))
-	#return T.flatten().tolist()
 
 	x0 = 0.5*a
 	x1 = 0.5*d
@@ -348,36 +291,6 @@ def divideMeshByElemFunc(datasets,oldinds,choosefunc):
 		dsout.append(PyDataSet(ds.getName()+'Div',dsnodes,[inds],fields))
 
 	return dsout,chosen,nodemap
-
-
-#@concurrent
-#def divideMeshElemsByElemValRange(process,inds,elemvals,choosevals):
-#	matrices=dict((cv,IndexMatrix('choose_%i_%r'%(process.index,cv),inds.getType(),0,inds.m())) for cv in choosevals)
-#
-#	for n in process.prange():
-#		matrices[elemvals.getAt(n)].append(inds.getRow(n))
-#
-#	return shareMatrices(*[matrices[cv] for cv in choosevals])
-#
-#
-#def divideMeshElemsByElemVal(dataset,elemvals,choosevals,task=None):
-#	inds=dataset.getIndexSet(elemvals.meta(StdProps._spatial)) or first(dataset.enumIndexSets())
-#
-#	assert inds
-#	assert inds.n()==elemvals.n()
-#
-#	proccount=chooseProcCount(inds.n(),0,2000)
-#	shareMatrices(inds,elemvals)
-#	results=divideMeshElemsByElemValRange(inds.n(),proccount,task,inds,elemvals,choosevals)
-#
-#	results=[results[i] for i in sorted(results)]
-#	unshareMatrices(*results[0])
-#
-#	for r in results[1:]:
-#		for i in range(len(r)):
-#			results[0][i].append(r[i])
-#
-#	return results[0]
 
 
 @concurrent
@@ -629,6 +542,45 @@ def calculateTorsion(datasetlist,aha,choosevals):
 		basetwists.append(avg(twist[i] for i in baseinds))
 			
 	return results,apextwists,basetwists,longaxis.len()
+	
+	
+@concurrent
+def calculateTriAreasRange(process,nodes,inds,result):
+	for i in process.prange():
+		a,b,c=nodes.mapIndexRow(inds,i)
+		result.setAt(max(epsilon*10,a.triArea(b,c)),i) # ensure no 0-area triangles just in case
+
+
+def calculateTriAreas(nodes,inds,task=None):	
+	assert inds.getType()==ElemType._Tri1NL and inds.m()==3,'Not a triangle topology'
+	result=RealMatrix('areas',inds.n(),1,True)
+	result.meta(StdProps._topology,inds.getName())
+	result.meta(StdProps._spatial,inds.getName())
+	
+	shareMatrices(nodes,inds)
+	proccount=chooseProcCount(inds.n(),1,5000)
+	calculateTriAreasRange(inds.n(),proccount,task,nodes,inds,result)
+	return result
+	
+	
+def calculateRegionSumField(field,regionfield,choosevals):
+	sumfield=field.clone(field.getName()+'_'+regionfield.getName())
+	sumfield.fill(0)
+	
+	summap={r:0 for r in choosevals}
+	
+	for n in xrange(field.n()): # sum per-region values
+		v=field.getAt(n)
+		r=int(regionfield.getAt(n))
+		if r in summap:
+			summap[r]=summap[r]+v
+	
+	for n in xrange(field.n()):	# fill sumfield with region summations
+		r=int(regionfield.getAt(n))
+		if r in summap:
+			sumfield.setAt(summap[r],n)
+			
+	return summap,sumfield
 
 
 class CardiacMotionPropWidget(QtGui.QWidget,Ui_CardiacMotionProp):
@@ -760,6 +712,7 @@ class CardiacMotionProject(Project):
 		self.alignprop.strainButton.clicked.connect(self._calculateStrainButton)
 		self.alignprop.strainMeshButton.clicked.connect(self._calculateStrainMeshButton)
 		self.alignprop.torsionButton.clicked.connect(self._calculateTorsionButton)
+		self.alignprop.squeezeButton.clicked.connect(self._calculateSqueezeButton)
 
 		self.alignprop.keCalcButton.clicked.connect(self._calculateKineticEnergyButton)
 
@@ -778,6 +731,7 @@ class CardiacMotionProject(Project):
 		fillFieldBox(self.alignprop.dispMeshBox,self.alignprop.dispFieldBox)
 		fillFieldBox(self.alignprop.volMeshBox,self.alignprop.volFieldBox)
 		fillFieldBox(self.alignprop.torsionMeshBox,self.alignprop.torsionFieldBox)
+		fillFieldBox(self.alignprop.squeezeMeshBox,self.alignprop.squeezeFieldBox)
 
 		fillFieldBox(self.alignprop.strainMeshBox,self.alignprop.strainMeshAHABox)
 
@@ -786,12 +740,13 @@ class CardiacMotionProject(Project):
 		setCollapsibleGroupbox(self.alignprop.trackAdvBox,False)
 		setWarningStylesheet(self.alignprop.trackAdvBox)
 
+		@self.alignprop.tsExtrSrcBox.activated.connect
 		def _fillTS(i=None):
 			o=self.mgr.findObject(str(self.alignprop.tsExtrSrcBox.currentText()))
 			if o:
 				fillList(self.alignprop.tsExtrChooseBox,['Step %i @ Time %i'%its for its in enumerate(o.getTimestepList())])
 
-		self.alignprop.tsExtrSrcBox.activated.connect(_fillTS)
+		#self.alignprop.tsExtrSrcBox.activated.connect(_fillTS)
 		
 		self.mgr.addFuncTask(self._checkTrackDirs) # check directories after everything else has loaded
 
@@ -857,6 +812,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.dispMeshBox,names)
 		fillList(self.alignprop.volMeshBox,names)
 		fillList(self.alignprop.torsionMeshBox,names)
+		fillList(self.alignprop.squeezeMeshBox,names)
 
 		names=sorted(o.getName() for o in sceneimgs+scenemeshes if len(o.getTimestepList())>1)
 		fillList(self.alignprop.tsSetObjBox,names)
@@ -867,6 +823,7 @@ class CardiacMotionProject(Project):
 		self.alignprop.volMeshBox.currentIndexChanged.emit(self.alignprop.volMeshBox.currentIndex())
 		self.alignprop.strainMeshBox.currentIndexChanged.emit(self.alignprop.strainMeshBox.currentIndex())
 		self.alignprop.torsionMeshBox.currentIndexChanged.emit(self.alignprop.torsionMeshBox.currentIndex())
+		self.alignprop.squeezeMeshBox.currentIndexChanged.emit(self.alignprop.squeezeMeshBox.currentIndex())
 
 		# fill tracking dirs boxes with directory names
 		trackdirs=map(os.path.basename,self.CardiacMotion.getTrackingDirs())
@@ -1382,6 +1339,13 @@ class CardiacMotionProject(Project):
 		ahafieldname=str(self.alignprop.torsionFieldBox.currentText())
 		
 		f=self.CardiacMotion.calculateTorsion(objname,ahafieldname)
+		self.mgr.checkFutureResult(f)
+		
+	def _calculateSqueezeButton(self):
+		objname=str(self.alignprop.squeezeMeshBox.currentText())
+		ahafieldname=str(self.alignprop.squeezeFieldBox.currentText())
+		
+		f=self.CardiacMotion.calculateSqueeze(objname,ahafieldname)
 		self.mgr.checkFutureResult(f)
 
 	def _calculateKineticEnergyButton(self):
@@ -2002,6 +1966,55 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				f.setObject((twists,gplot))
 		
 		return self.mgr.runTasks(_calcTorsion(objname,fieldname),f)
+		
+	@taskmethod('Calculating Mesh Squeeze')
+	def calculateSqueeze(self,objname,regionfieldname=None,regionvals=None,task=None):
+		obj=self.findObject(objname)
+		regionfield=obj.datasets[0].getDataField(regionfieldname or 'AHA')
+		regionvals=regionvals or range(1,18) # AHA regions
+		initareas=None
+		initsums=None
+		initsumlist=None
+		results=[]
+		dss=[]
+		
+		for ds in obj.datasets:
+			nodes=ds.getNodes()
+			inds=first(i for i in ds.enumIndexSets() if i.m()==3)
+			areas=calculateTriAreas(nodes,inds,task)
+			summap,sumareas=calculateRegionSumField(areas,regionfield,regionvals)
+			sumlist=[summap[i] for i in summap]
+			
+			if initareas==None: # store the first results for scaling subsequent results
+				initareas=areas
+				initsums=sumareas
+				initsumlist=sumlist
+			else: # store the areas as proportions of the initial areas
+				areas.div(initareas)
+				sumareas.div(initsums)
+			
+			printFlush(sumlist,initsumlist)
+			ds.setDataField(areas)
+			ds.setDataField(sumareas)
+			results.append([(a/b if b!=0 else 0) for a,b in zip(sumlist,initsumlist)])
+			
+			dss.append((ds,nodes,inds,sumareas))
+			
+		# set the initial areas to be proportions of themselves to match subsequent frames
+		initareas.fill(1)
+		initsums.fill(1)
+			
+		plotname=objname+'_squeeze'
+		plottitle=objname+' Region Squeeze'
+		plotfilename=self.project.getProjectFile(plotname+'.plot')
+		
+		plot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,obj.getTimestepList(),self.Plot.AHADockWidget,obj)
+		plot.save()
+		self.addObject(plot)
+			
+		obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
+		
+		return dss
 
 	def calculatePhaseKineticEnergy(self,maskname,phaseXname,phaseYname,phaseZname,maskval=2):
 		mask=self.findObject(maskname)

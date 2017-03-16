@@ -767,3 +767,24 @@ def cropRefImage(obj,ref,name,marginx=0,marginy=0):
 	
 	return obj.plugin.cropXY(obj,name,int(minx),int(miny),int(maxx),int(maxy))
 	
+	
+def createTemporalImage(obj,numImgsPerStep=None, stepMul=1):
+	'''
+	Apply a temporal scheme to the image object `obj', assuming that the members of obj.images are in spatial then 
+	temporal order but have incorrect timestep information. If `numImgsPerStep' is provided then this is used as the 
+	number of images each timestep is defined by. If not provided this can be determine for 2D planes or 3D volumes 
+	by checking how many images after the first are present before another in the same location is encountered. Each 
+	calculated timestep is multiplied by `stepMul' when set for each new image. Return value is a new time-dependent 
+	scene object with the same image data but with timesteps set to calculated values.
+	'''
+	imgs=[i.clone() for i in obj.images]
+	
+	if not numImgsPerStep is None:
+		numImgsPerStep=first(i for i in range(1,len(imgs)) if imgs[0].position==imgs[i].position)
+		
+	for i in range(len(imgs)):
+		imgs[i].timestep= (i//numImgsPerStep)*stepMul
+		
+	return obj.plugin.createSceneObject(obj.name+'TS',imgs,obj.source,True)
+	
+	
