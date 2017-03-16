@@ -805,22 +805,18 @@ class IRTKPluginMixin(object):
 		self.addObject(isoobj)
 
 		return isoobj
-		
-		
-	def setObjectTimestep(self,objname,start,step):
-		@taskroutine('Setting Timestep')
-		def _setTimestep(objname,start,step,task):
-			obj=self.findObject(objname)
 			
-			obj.setTimestepScheme(start,step)
-			
-			if isinstance(obj,ImageSceneObject):
-				obj.proptuples=[]
-				self.saveToNifti([obj])
-			
-			self.addObject(obj)
+	@taskmethod('Setting Timestep')
+	def setObjectTimestep(self,objname,start,step,task=None):
+		obj=self.findObject(objname)
 		
-		self.mgr.runTasks(_setTimestep(objname,start,step))
+		obj.setTimestepScheme(start,step)
+		
+		if isinstance(obj,ImageSceneObject):
+			obj.proptuples=[]
+			self.saveToNifti([obj])
+		
+		return obj
 
 	def invertTimesteps(self,sourceobj):
 		sourceobj=self.findObject(sourceobj)

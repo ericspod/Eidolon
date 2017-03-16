@@ -21,7 +21,7 @@ from .SceneComponents import *
 from .ImageObject import *
 from .ImageAlgorithms import *
 from .VisualizerUI import *
-
+from .MeshAlgorithms import *
 
 class BaseCamera2DWidget(Base2DWidget):
 	'''
