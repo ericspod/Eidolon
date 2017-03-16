@@ -702,6 +702,7 @@ class CardiacMotionProject(Project):
 		self.alignprop.applyTrackButton.clicked.connect(self._applyTrackButton)
 		self.alignprop.gridButton.clicked.connect(self._createGridButton)
 		self.alignprop.resampleButton.clicked.connect(self._resampleImage)
+		self.alignprop.extendButton.clicked.connect(self._extendImage)
 		self.alignprop.tsExtrButton.clicked.connect(self._extractTimesteps)
 		self.alignprop.isoCreateButton.clicked.connect(self._createIsoImage)
 		self.alignprop.bbCropButton.clicked.connect(self._cropBoundBox)
@@ -746,8 +747,6 @@ class CardiacMotionProject(Project):
 			if o:
 				fillList(self.alignprop.tsExtrChooseBox,['Step %i @ Time %i'%its for its in enumerate(o.getTimestepList())])
 
-		#self.alignprop.tsExtrSrcBox.activated.connect(_fillTS)
-		
 		self.mgr.addFuncTask(self._checkTrackDirs) # check directories after everything else has loaded
 
 		return prop
@@ -767,6 +766,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.bbCropRefBox,names)
 		fillList(self.alignprop.emptyCropImgBox,names)
 		fillList(self.alignprop.resampleSrcBox,names)
+		fillList(self.alignprop.extendSrcBox,names)
 		fillList(self.alignprop.resampleTmpltBox,names)
 
 		names=sorted(o.getName() for o in sceneimgs if o.isTimeDependent)
@@ -1277,6 +1277,14 @@ class CardiacMotionProject(Project):
 		tmpltname=str(self.alignprop.resampleTmpltBox.currentText())
 		isIso=self.alignprop.resampleIsoCheck.isChecked()
 		f=self.CardiacMotion.resampleObject(objname,tmpltname,isIso)
+		self.mgr.checkFutureResult(f)
+		
+	def _extendImage(self):
+		objname=str(self.alignprop.extendSrcBox.currentText())
+		x=self.alignprop.extendXBox.value()
+		y=self.alignprop.extendYBox.value()
+		z=self.alignprop.extendZBox.value()
+		f=self.CardiacMotion.extendImageObject(objname,x,y,z)
 		self.mgr.checkFutureResult(f)
 
 	def _extractTimesteps(self):

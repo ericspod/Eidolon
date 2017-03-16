@@ -972,9 +972,28 @@ class IRTKPluginMixin(object):
 		return self.mgr.runTasks([_crop(imgname,refname,mx,my)],f)
 		
 	def extendImageStack(self,stack,mx=0,my=0,mz=0,value=0):
+		'''
+		Given image stack named by `stack', extend the images by `mx' and `my' and add `mz' images on the above and
+		below the stack. The new image areas are filled with `value'. This returns the extend object and a list with
+		the NIfTI filename it was saved to.
+		'''
 		obj=self.findObject(stack)
 		ext=extendImage(obj,self.getUniqueShortName(obj.getName(),'Ext'),mx,my,mz,value)
 		return ext,self.saveToNifti([ext],True)
+
+	@taskmethod('Extending image object')		
+	def extendImageObject(self,obj,mx=0,my=0,mz=0,value=0,task=None):
+		'''
+		Given image object or name `obj', extend the images by `mx' and `my' and add `mz' images on the above and
+		below the stack. The new image areas are filled with `value'. This returns a Future containing the object
+		added to the scene. This differs from extendImageStack() by adding the new object to the scene rather than
+		just returning it and saving it to a NIfTI file, as well as being implemented as a task method.
+		'''
+		obj=self.findObject(obj)
+		ext=extendImage(obj,self.getUniqueShortName(obj.getName(),'Ext'),mx,my,mz,value)
+		self.saveToNifti([ext],True)
+		self.addObject(ext)
+		return ext
 
 	def applyMotionTrack(self,obj_or_name,trackname_or_dir,addObject=True):
 		'''

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>530</width>
+    <width>621</width>
     <height>868</height>
    </rect>
   </property>
@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>4</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -45,7 +45,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>528</width>
+        <width>619</width>
         <height>224</height>
        </rect>
       </property>
@@ -202,7 +202,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>528</width>
+        <width>619</width>
         <height>480</height>
        </rect>
       </property>
@@ -444,7 +444,7 @@
        <rect>
         <x>0</x>
         <y>-114</y>
-        <width>515</width>
+        <width>606</width>
         <height>855</height>
        </rect>
       </property>
@@ -852,8 +852,8 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-240</y>
-        <width>515</width>
+        <y>-681</y>
+        <width>606</width>
         <height>1422</height>
        </rect>
       </property>
@@ -1641,8 +1641,8 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>515</width>
-        <height>1364</height>
+        <width>606</width>
+        <height>1507</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1777,6 +1777,99 @@ background-color:rgba(255.0,255.0,255.0,200.0);
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_23">
+         <property name="title">
+          <string>Extend Image</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_22">
+          <item row="0" column="1">
+           <widget class="QComboBox" name="extendSrcBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_59">
+            <property name="text">
+             <string>Source Series</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_75">
+            <property name="text">
+             <string>Extend By</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_19">
+            <item>
+             <widget class="QLabel" name="label_76">
+              <property name="text">
+               <string>X</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="extendXBox"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_77">
+              <property name="text">
+               <string>Y</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="extendYBox"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_78">
+              <property name="text">
+               <string>Z</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="extendZBox"/>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_7">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="extendButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Create</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="groupBox_9">
          <property name="title">
           <string>Image Boundbox Crop</string>
@@ -1785,14 +1878,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
           <property name="fieldGrowthPolicy">
            <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
           </property>
-          <item row="0" column="0">
+          <item row="1" column="0">
            <widget class="QLabel" name="label_29">
             <property name="text">
              <string>Source Series</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
+          <item row="1" column="1">
            <widget class="QComboBox" name="bbCropSrcBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1802,14 +1895,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_30">
             <property name="text">
              <string>Boundbox</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="1">
            <widget class="QComboBox" name="bbCropRefBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1819,14 +1912,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="label_31">
             <property name="text">
              <string>Margins</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="3" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_2">
             <item>
              <widget class="QLabel" name="label_32">
@@ -1877,7 +1970,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
            </layout>
           </item>
-          <item row="3" column="1">
+          <item row="4" column="1">
            <widget class="QPushButton" name="bbCropButton">
             <property name="text">
              <string>Crop</string>
