@@ -18,6 +18,8 @@
 
 
 # Template for generating matrices of various types, DO NOT INCLUDE THIS FILE DIRECTLY
+# Use Python string formatting to create type-specific versions of this file and store
+# these to separate .pyx files.
 # Parameters:
 #	N - Name prefix
 #	T - C++ template typename

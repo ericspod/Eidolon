@@ -71,6 +71,17 @@ void setCameraVisibility(const Camera* cam, Ogre::MovableObject *obj,bool isVisi
 
 void destroySceneNode(Ogre::SceneNode *node,Ogre::MovableObject* obj,OgreRenderScene *scene)
 {
+	/*if(node){
+		if(obj)
+			node->detachObject(obj);
+		scene->destroyNode(node);
+	}
+	SAFE_DELETE(obj);*/
+	scene->addResourceOp(new DestroySceneNodeOp(obj,node,scene));
+}
+
+void DestroySceneNodeOp::op()
+{
 	if(node){
 		if(obj)
 			node->detachObject(obj);
@@ -88,7 +99,7 @@ OgreBaseRenderable::OgreBaseRenderable(const std::string& name,const std::string
 	
 	_notifyManager(mgr);
 	
-	setMaterial(matname.size()==0 ? "BaseWhite" : matname.c_str());
+	setMaterial(matname.size()==0 ? "BaseWhite" : matname.c_str()); // BaseWhite is the Ogre default material
 	setVisibilityFlags(1); // set default visibility so that every camera by default sees this object
 }
 
@@ -323,12 +334,12 @@ OgreLight::~OgreLight()
 
 OgreMaterial::~OgreMaterial()
 {
-	Ogre::MaterialManager::getSingleton().remove(mat->getName());
+	Ogre::MaterialManager::getSingleton().remove(mat->getName()); // TODO: should be done as ResourceOp
 	mat.setNull();
 }
 
 OgreFigure::OgreFigure(const std::string &name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
-		OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(type),scene->mgr),scene->createNode(this),scene), type(type)
+		OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(type),scene->mgr),scene->createNode(name),scene), type(type)
 {}
 
 void OgreFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
@@ -431,7 +442,7 @@ void OgreFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool def
 }
 
 OgreTextureVolumeFigure::OgreTextureVolumeFigure(const std::string &name,const std::string & matname,OgreRenderScene *scene) :
-			OgreBaseFigure(new TextureVolumeRenderable(name,matname,this,scene->mgr),scene->createNode(this),scene),numplanes(10), alpha(1.0)
+			OgreBaseFigure(new TextureVolumeRenderable(name,matname,this,scene->mgr),scene->createNode(name),scene),numplanes(10), alpha(1.0)
 {
 	setAABB(vec3(0),vec3(1)); // default non-zero sized bounding box
 	setTexAABB(vec3(0),vec3(1)); // default texture space, works without texture wrap around if texture addresses are clamped
@@ -502,7 +513,7 @@ Material* OgreRenderScene::createMaterial(const char* name) throw(RenderExceptio
 
 		Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(uname, resGroupName, false);
 	
-		OgreMaterial *m= new OgreMaterial(mMat);
+		OgreMaterial *m= new OgreMaterial(mMat,this);
 		return m;
 	}
 	catch(Ogre::Exception &e){
@@ -515,7 +526,6 @@ Figure* OgreRenderScene::createFigure(const char* name, const char* mat,FigureTy
 	try{
 		Figure *f=NULL;
 		std::string uname=getUniqueFigureName(name);
-
 		if(type==FT_LINELIST || type==FT_POINTLIST || type==FT_TRILIST || type==FT_TRISTRIP)
 			f=new OgreFigure(uname,mat,this,type);
 		else if(type==FT_GLYPH)
@@ -583,7 +593,7 @@ Texture* OgreRenderScene::createTexture(const char* name,sval width, sval height
 		// create a texture that's always 3D even if depth==1, this is so the shaders can always work with a sampler3D object
 		Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().createManual(uname,resGroupName, Ogre::TEX_TYPE_3D, width,height,depth,0,convert(format));
 
-		return new OgreTexture(tp,"");
+		return new OgreTexture(tp,"",this);
 	}
 	catch(Ogre::Exception &e){
 		THROW_RENDEREX(e);
@@ -606,7 +616,7 @@ Texture* OgreRenderScene::loadTextureFile(const char* name,const char* absFilena
 			
 			tp=Ogre::TextureManager::getSingleton().loadImage(name,resGroupName,img);
 		}
-		return new OgreTexture(tp,absFilename);
+		return new OgreTexture(tp,absFilename,this);
 	}
 	catch(Ogre::Exception &e){
 		THROW_RENDEREX(e);
@@ -633,6 +643,7 @@ GPUProgram* OgreRenderScene::createGPUProgram(const char* name,ProgramType ptype
 void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,real stereoOffset) throw(RenderException)
 {
 	try{
+		scene->applyResourceOps();
 		u32 mask=port->getVisibilityMask();
 		Ogre::ColourValue bg=port->getBackgroundColour();
 
@@ -731,7 +742,7 @@ void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,rea
 OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
 		node(NULL),scene(scene),matname(matname), name(name),type(type),isInitialized(false),width(1.0),height(1.0)
 {
-	node=scene->createNode(this);
+	node=scene->createNode(name);
 }
 
 void OgreBBSetFigure::setCameraVisibility(const Camera* cam, bool isVisible)
@@ -769,6 +780,8 @@ void OgreBBSetFigure::createBBSet()
 
 void OgreBBSetFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
 {
+	// TODO: should be done as a ResourceOp
+	
 	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
 		(*i)->clear();
 	
@@ -807,7 +820,7 @@ void OgreBBSetFigure::setVisible(bool isVisible)
 OgreRibbonFigure::OgreRibbonFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene) throw(RenderException) :
 	node(NULL), bbchain(NULL), scene(scene), name(name), matname(matname), orient(0)
 {
-	node=scene->createNode(this);
+	node=scene->createNode(name);
 	bbchain=scene->mgr->createBillboardChain(name);
 	node->attachObject(bbchain);
 	scene->mgr->addRenderObjectListener(this);
@@ -822,6 +835,7 @@ OgreRibbonFigure::~OgreRibbonFigure()
 
 void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
 {
+	// TODO: should be done as a ResourceOp
 	try{
 		size_t numverts=vb ? vb->numVertices() : 0;
 		size_t numinds=ib ? ib->numIndices() : 0;
@@ -1084,13 +1098,15 @@ void OgreGlyphFigure::fillDefaultGlyphs(glyphmap &map)
 }
 
 OgreGlyphFigure::OgreGlyphFigure(const std::string& name,const std::string & matname,OgreRenderScene *scene) throw(RenderException)
-	: OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(FT_TRILIST),scene->mgr),scene->createNode(this),scene),glyphscale(1),glyphname("sphere")
+	: OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(FT_TRILIST),scene->mgr),scene->createNode(name),scene),glyphscale(1),glyphname("sphere")
 {
 	OgreGlyphFigure::fillDefaultGlyphs(glyphs);
 }
 
 void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException)
 {
+	// TODO: use deferFill correctly
+	
 	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
 
 	glyphmap::const_iterator i=glyphs.find(glyphname);
@@ -1171,7 +1187,7 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 }
 
 OgreTextFigure::OgreTextFigure(const std::string& name,OgreRenderScene *scene) throw(RenderException)
-	: OgreBaseFigure(new TextRenderable(name,scene->mgr),scene->createNode(this),scene)
+	: OgreBaseFigure(new TextRenderable(name,scene->mgr),scene->createNode(name),scene)
 {}
 
 void TextRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
@@ -1318,13 +1334,14 @@ void TextRenderable::updateGeometry()
 			startline=true;
 			top-=textHeight; // move down to next line
 		}
-		else if (std::isspace(c)) // space (or some other control character other than \n), just move to the left by the space width
+		else if (std::isspace(c)) // space (or some other control character other than \n), just move the left by the space width
 			left+=swidth;
 		else{
 			Ogre::Font::UVRect uv = fontobj->getGlyphTexCoords(c);
 			float cw = fontobj->getGlyphAspectRatio(c) * textHeight;
 			float ch=-textHeight;
 			
+			// define the 6 vertices for the 2 triangles representing the quad for this character 
 			buf[pos  ].set(left,   top,   uv.left, uv.top,   min,max); // top left
 			buf[pos+1].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
 			buf[pos+2].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
@@ -1332,7 +1349,7 @@ void TextRenderable::updateGeometry()
 			buf[pos+4].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
 			buf[pos+5].set(left+cw,top+ch,uv.right,uv.bottom,min,max); // bottom right
 			
-			left += cw;
+			left += cw; // move left by the character width
 			pos+=6; // advance to next quad
 		}
 	}
@@ -1347,6 +1364,7 @@ void TextRenderable::updateGeometry()
 
 void OgreTexture::fillBlack()
 {
+	// TODO: should be done as a ResourceOp
 	Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
 	buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
 	memset(buff->getCurrentLock().data,0,buff->getSizeInBytes());
@@ -1355,6 +1373,7 @@ void OgreTexture::fillBlack()
 
 void OgreTexture::fillColor(color col)
 {
+	// TODO: should be done as a ResourceOp
 	sval w=getWidth();
 	sval h=getHeight();
 	sval d=getDepth();
@@ -1374,6 +1393,7 @@ void OgreTexture::fillColor(color col)
 
 void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 {
+	// TODO: should be done as a ResourceOp
 	sval w=getWidth();
 	sval h=getHeight();
 	sval d=getDepth();
@@ -1391,6 +1411,7 @@ void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 
 void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,real maxval, const Material* colormat,const RealMatrix *alphamat,bool mulAlpha)
 {
+	// TODO: should be done as a ResourceOp
 	sval w=getWidth();
 	sval h=getHeight();
 	sval d=getDepth();
@@ -1594,6 +1615,8 @@ u64 OgreRenderAdapter::createWindow(int width, int height) throw(RenderTypes::Re
 
 void OgreRenderAdapter::paint()
 {
+	scene->applyResourceOps();
+	
 	if(!root->_fireFrameStarted())
 		return;
 	

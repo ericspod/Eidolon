@@ -362,6 +362,7 @@ public:
   #define destroy_mutex pthread_mutex_destroy
 #endif
 
+/// Simple mutex type allowing locking and attempted locking with timeout
 class Mutex
 {
 	MutexType _mutex;
@@ -402,6 +403,10 @@ public:
 
 	~Mutex() { destroy_mutex(&_mutex); }
 
+	/**
+	 * Acquire the mutex lock. If `timeout' is >0 try for that length of time in seconds to acquire the lock. Returns true
+	 * if `timeout'<=0 or the lock was acquired in the time given, false if the time elapsed without getting the lock.
+	 */
 	bool lock(real timeout=0.0)
 	{
 		if(timeout>0){
@@ -421,6 +426,8 @@ public:
 			return true;
 		}
 	}
+	
+	/// Releases the mutex lock
 	void release() { unlock_mutex(&_mutex); }
 };
 

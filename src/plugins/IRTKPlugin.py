@@ -16,12 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import *
 
-from plugins.VTKPlugin import DatasetTypes
-from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
-
-from ui.mtServerForm import Ui_mtServerForm
 import os
 import sys
 import glob
@@ -35,8 +30,13 @@ import itertools
 import multiprocessing
 
 from contextlib import closing
-
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
+
+from eidolon import *
+from plugins.VTKPlugin import DatasetTypes
+from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
+from ui.mtServerForm import Ui_mtServerForm
+
 
 InterpTypes=enum(
 	('Linear','-linear'),
@@ -101,50 +101,69 @@ def fillMatrix(nmat,rmat):
 		rmat.setRow(n,*map(float,nmat[:,n]))
 
 
-def imgfft3d(mat,coresize,revert):
-	xmax,ymax,zmax=mat.shape
-	xs = int(math.floor(xmax/2))
-	ys = int(math.floor(ymax/2))
-	zs = int(math.floor(zmax/2))
-
-	x,y,z =np.meshgrid(range(-ys,ys+1),range(-xs,xs+1),range(-zs,zs+1))
-
-	dist=np.sqrt(x**2+y**2+z**2)
-	c=(dist < math.sqrt(3*(coresize**2)))
-	if revert:
-		c=(c==0)
-
-	mat1 = fftshift(fftn(mat))
-	mat2=mat1*c
-	return ifftn(ifftshift(mat2))
+#def imgfft3d(mat,coresize,revert):
+#	xmax,ymax,zmax=mat.shape
+#	xs = int(math.floor(xmax/2))
+#	ys = int(math.floor(ymax/2))
+#	zs = int(math.floor(zmax/2))
+#
+#	x,y,z =np.meshgrid(range(-ys,ys+ymax%2),range(-xs,xs+xmax%2),range(-zs,zs+zmax%2))
+#
+#	dist=np.sqrt(x**2+y**2+z**2)
+#	c=(dist < math.sqrt(3*(coresize**2)))
+#	if revert:
+#		c=(c==0)
+#
+#	mat1 = fftshift(fftn(mat))
+#	mat2=mat1*c
+#	return ifftn(ifftshift(mat2))
+#
+#
+#def detagImage(obj,coresize,revert=False):
+#	vinds=obj.getVolumeStacks()
+#	width,height,depth=obj.maxcols,obj.maxrows,len(vinds[0])
+#	xred=1-width%2
+#	yred=1-height%2
+#	zred=1-depth%2
+#
+#	for inds in vinds:
+#		img=np.ndarray((width,height,depth),np.float64)
+#		# read the image stack into the array
+#		for d,ind in enumerate(inds):
+#			img[:,:,d]=matrixToArray(obj.images[ind].img,np.float64).T
+#
+#		# ensure that the image array has odd dimensions
+#		if xred!=0 or yred!=0 or zred!=0:
+#			img=img[:width-xred,:height-yred,:depth-zred]
+#
+#		# apply the FFT shift operation
+#		img1=imgfft3d(img,coresize,revert)
+#		img1=img1.real
+#
+#		# read the array back into the images
+#		for d,ind in enumerate(inds):
+#			obj.images[ind].img.fill(0)
+#			if d<(depth-zred):
+#				fillMatrix(img1[:,:,d],obj.images[ind].img)
 
 
 def detagImage(obj,coresize,revert=False):
-	vinds=obj.getVolumeStacks()
-	width,height,depth=obj.maxcols,obj.maxrows,len(vinds[0])
-	xred=1-width%2
-	yred=1-height%2
-	zred=1-depth%2
-
-	for inds in vinds:
-		img=np.ndarray((width,height,depth),np.float64)
-		# read the image stack into the array
-		for d,ind in enumerate(inds):
-			img[:,:,d]=matrixToArray(obj.images[ind].img,np.float64).T
-
-		# ensure that the image array has odd dimensions
-		if xred!=0 or yred!=0 or zred!=0:
-			img=img[:width-xred,:height-yred,:depth-zred]
-
-		# apply the FFT shift operation
-		img1=imgfft3d(img,coresize,revert)
-		img1=img1.real
-
-		# read the array back into the images
-		for d,ind in enumerate(inds):
-			obj.images[ind].img.fill(0)
-			if d<(depth-zred):
-				fillMatrix(img1[:,:,d],obj.images[ind].img)
+	with processImageNp(obj) as im:
+		xmax,ymax,zmax,tmax=im.shape
+		xs = int(math.floor(xmax/2))
+		ys = int(math.floor(ymax/2))
+		zs = int(math.floor(zmax/2))
+		x,y,z =np.meshgrid(range(-ys,ys+ymax%2),range(-xs,xs+xmax%2),range(-zs,zs+zmax%2))
+	
+		dist=np.sqrt(x**2+y**2+z**2)
+		c=(dist < math.sqrt(3*(coresize**2)))
+		if revert:
+			c=(c==0)
+			
+		for t in range(tmax):
+			mat1 = fftshift(fftn(im[...,t]))
+			mat2=mat1*c
+			im[...,t]=ifftn(ifftshift(mat2))
 
 
 @concurrent

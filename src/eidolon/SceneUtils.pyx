@@ -34,9 +34,6 @@ cimport renderer.Renderer as ren
 from renderer.Renderer import vec3,transform,rotator,color,Vec3Matrix,RealMatrix,IndexMatrix,ColorMatrix
 from renderer.Renderer cimport vec3,transform,rotator,color,Vec3Matrix,RealMatrix,IndexMatrix,ColorMatrix
 
-import numpy as np
-cimport numpy as np
-
 from .Utils import *
 from .Concurrency import *
 from .MathDef import GeomType,ElemType
@@ -1010,18 +1007,6 @@ def listToMatrix(mat,name='mat',mtype='',isShared=False,objtype=None):
 	m=objtype(name,mtype,len(mat),width,isShared)
 	m.fromList(mat)
 	return m
-
-
-def matrixToArray(mat,dtype=None):
-	'''Converts a RealMatrix or IndexMatrix `mat' to a Numpy array with type `dtype' or the matching type to `mat'.'''
-	assert isinstance(mat,(RealMatrix,IndexMatrix))
-	dtype=dtype or np.dtype(float if isinstance(mat,RealMatrix) else int)
-	return np.asarray(mat).astype(dtype)
-
-
-def arrayToMatrix(arr,mat):
-	'''Fills the RealMatrix or IndexMatrix `mat' with the contents of Numpy array `arr' converted to the correct format.'''
-	np.asarray(mat)[:,:]=arr
 
 
 def storeMatrixToFile(filename,mat,metanames=[]):

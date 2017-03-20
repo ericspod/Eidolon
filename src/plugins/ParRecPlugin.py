@@ -354,7 +354,9 @@ class ParRecPlugin(ImageScenePlugin):
 
 					simg=SharedImage(recfile,pos,rot,dims,spacing,trigger)
 					simg.allocateImg('%s_t%i_d%i_img%i'%(name,itype,dynamic,len(images)))
-					simg.setArrayImg(arr)
+					#simg.setArrayImg(arr)
+					simg.setMinMaxValues(arr.min(),arr.max())
+					np.asarray(simg.img)[:,:]=arr
 						
 					images.append(simg)	
 				

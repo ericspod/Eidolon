@@ -1081,9 +1081,20 @@ class CardiacMotionProject(Project):
 		self.CardiacMotion.emptyCropObject(srcname)
 
 	def _loadCineSeries(self):
-		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE')
+		param=ParamDef('showCrop','Show Crop Dialog',ParamType._bool,False)
+		results={}
+		
+		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE',params=([param],lambda n,v:results.update({n:v})))
 		if len(series)>0:
-			objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
+			if results.get('showCrop',False):
+				objs=[]
+				for s in series:
+					obj=self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(s)
+					if obj:
+						objs.append(obj)
+			else:
+				objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
+				
 			self._readDicomHeartRate(series[0])
 			filenames=self.CardiacMotion.saveToNifti(objs)
 			self.CardiacMotion.loadNiftiFiles(filenames)

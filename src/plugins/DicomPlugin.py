@@ -26,7 +26,6 @@ addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason
 
 from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary
-from pydicom.errors import InvalidDicomError
 from pydicom.tag import Tag
 from pydicom.dataset import Dataset,FileDataset
 	
@@ -992,8 +991,8 @@ class DicomPlugin(ImageScenePlugin):
 
 	def openChooseSeriesDialog(self,dirpath=None,allowMultiple=True,params=None,subject=None):
 		'''
-		Opens a dialog for choose which series to load. The starting directory is given by `dirpath', this path is used
-		in the dialog, but if left as None an open directory dialog is presented for choosing a directory. If `allowMultiple'
+		Opens a dialog for choosing a series to load. The starting directory is given by `dirpath', this path is used
+		in the dialog, but if left as None an open directory dialog is presented for choosing one. If `allowMultiple'
 		is true then multiple series can be returned. If `params' is a pair containing a list of ParamDef objects and
 		a callable accepting 2 arguments, then a ParamPanel is created in the series choose dialog using the given
 		callable as the callback for changed values. The `subject' parameter, if given, should be a string describing
@@ -1007,16 +1006,16 @@ class DicomPlugin(ImageScenePlugin):
 				d=ChooseSeriesDialog(self,f,dirpath,self.win,allowMultiple,params,subject)
 				d.exec_()
 
-		return f()
+		return f(None)
 
 	def showTimeMultiSeriesDialog(self,series):
 		f=Future()
+		@self.mgr.callThreadSafe
 		def showDialog():
 			d=TimeMultiSeriesDialog(toIterable(series),f,self.mgr,self,self.mgr.win)
 			d.exec_()
 
-		self.mgr.callThreadSafe(showDialog)
-		return f
+		return f(None)
 
 	def getScriptCode(self,obj,**kwargs):
 		configSection=kwargs.get('configSection',False)

@@ -1287,8 +1287,9 @@ class ImageScenePlugin(ScenePlugin):
 
 	def getImageObjectArray(self,obj,datatype=float):
 		'''
-		Create a 2D/3D/4D Numpy array of type `datatype' from the image data in `obj'. The result is a dictionary
-		with the following keys:
+		Create a 2D/3D/4D Numpy array of type `datatype' from the image data in `obj'. This array is intended to be
+		suitable as input for a number of libraries for writing image files, hence the multiple dimensions possible.
+		The result is a dictionary with the following keys:
 			pos : position in space
 			spacing : pixel/voxel dimensions
 			rot : spatial rotation

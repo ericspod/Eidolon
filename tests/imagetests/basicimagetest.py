@@ -20,7 +20,7 @@ import sys
 sys.path.append(scriptdir+'..')
 from Testing import ReprType
 
-obj=ImgPlugin.createTestImage(50,50,50)
+obj=ImgPlugin.createTestImage(51,52,53)
 mgr.addSceneObject(obj)
 
 rep=obj.createRepr(ReprType._imgstack)

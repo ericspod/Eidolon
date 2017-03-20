@@ -19,6 +19,7 @@
 
 from .ImageObject import *
 
+import numpy as np
 import scipy.ndimage
 import scipy.signal
 
@@ -513,27 +514,44 @@ def thresholdImage(obj,minv,maxv,task=None):
 		i.setMinMaxValues(*minmaxMatrixReal(i.img))
 
 
-#@contextlib.contextmanager
-#def processImageNp(img,dtype=None):
-#	'''
-#	Yields a Numpy array from the SharedImage or RealMatrix `img' with type `dtype' when the context entures, then
-#	copies data back into `img' when the context is left.
-#	'''
-#	if isinstance(img,SharedImage):
-#		img=img.img
-#	im=matrixToArray(img,dtype)
-#	yield im
-#	if im.size>0:
-#		arrayToMatrix(im,img)
-#
-#
-#@timing
-#def sobelImage2D(obj):
-#	for image in obj.images:
-#		with processImageNp(image) as im:
-#			sx = ndimage.sobel(im, axis=0, mode='constant')
-#			sy = ndimage.sobel(im, axis=1, mode='constant')
-#			im[:]=np.hypot(sx, sy)
+def matrixToArray(mat,dtype=None):
+	'''Converts a RealMatrix or IndexMatrix `mat' to a Numpy array with type `dtype' or the matching type to `mat'.'''
+	assert isinstance(mat,(RealMatrix,IndexMatrix))
+	dtype=dtype or np.dtype(float if isinstance(mat,RealMatrix) else int)
+	return np.asarray(mat).astype(dtype)
+	
+
+#def arrayToMatrix(arr,mat):
+#	'''Fills the RealMatrix or IndexMatrix `mat' with the contents of Numpy array `arr' converted to the correct format.'''
+#	np.asarray(mat)[:,:]=arr
+	
+
+@contextlib.contextmanager
+def processImageNp(imgobj,dtype=np.float):
+	'''
+	Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
+	image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
+	object once the context exits. 
+	'''
+	shape=imgobj.getArrayDims()
+	im=np.ndarray(shape,dtype)
+	timeseqs=imgobj.getVolumeStacks()
+
+	for t,ts in enumerate(timeseqs):
+		for d,dd in enumerate(ts):
+			arr=matrixToArray(imgobj.images[dd].img,dtype)
+			assert arr.shape==shape[:2]
+			im[:,:,d,t]=arr
+	
+	yield im
+	
+	imgobj.imagerange=(im.min(),im.max()) # reset the stored image range
+	for t,ts in enumerate(timeseqs):
+		for d,dd in enumerate(ts):
+			arr=im[:,:,d,t]
+			img=imgobj.images[dd]
+			img.setMinMaxValues(arr.min(),arr.max())
+			np.asarray(img.img)[:,:]=arr
 
 
 def sampleImageVolume(obj,pt,timestep,transinv=None):

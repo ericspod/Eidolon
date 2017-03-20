@@ -27,15 +27,10 @@ from cython.operator cimport dereference as deref
 import array
 from cpython cimport array
 
-# import the regular Numpy library and Cython declarations
-import numpy as np
-cimport numpy as np
-
-from libc.string cimport memcpy
-
-# C++ type declarations
+# C/C++ declarations
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair
+from libc.string cimport memcpy
 
 # import RenderTypes declarations, aliasing class types by prepending i to the names
 cimport RenderTypes
@@ -1111,8 +1106,9 @@ cdef class Spectrum:
 		return self.val.getName()
 		
 	def setSpectrumData(self,colors,colorpos=None,alphactrls=None):
+		cdef float numpos=float(len(colors)-1)
 		self.val.clearSpectrum()
-		colorpos=colorpos or np.linspace(0,1.0,len(colors))
+		colorpos=colorpos or [i/numpos for i in range(len(colors))] 
 		for c,p in zip(colors,colorpos):
 			self.addSpectrumValue(p,c)
 				

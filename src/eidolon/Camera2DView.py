@@ -231,6 +231,7 @@ class BaseCamera2DWidget(Base2DWidget):
 		Helper method for creating a figure with name `name' and type `ftype'. If `is2DOnly' is True then the returned
 		figure is visible to this widget's camera only, otherwise it's default behaviour is unchanged.
 		'''
+		assert isMainThread()
 		fig=self.mgr.scene.createFigure(name,'',ftype)
 		fig.fillData(PyVertexBuffer([]),PyIndexBuffer([]))
 		fig.setVisible(True)

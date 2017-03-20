@@ -128,6 +128,32 @@ inline Ogre::RenderOperation::OperationType convert(FigureType type)
 	}
 }
 
+/// Base class used by specializations with the renderer to destroy and update resources within the render cycle
+class ResourceOp
+{
+public:
+	/// Before each render operation, this method is called for every ResourceOp object the renderer stores, the object is deleted
+	virtual void op() {}
+};
+
+template<typename T>
+class CommitOp : public ResourceOp
+{
+	T* obj;
+	CommitOp(T* obj) : obj(obj){}
+	virtual void op() { obj->commit(); }
+};
+
+class DestroySceneNodeOp : public ResourceOp
+{
+	Ogre::MovableObject* obj;
+	Ogre::SceneNode *node;
+	OgreRenderScene *scene;
+public:
+	DestroySceneNodeOp(Ogre::MovableObject* obj,Ogre::SceneNode *node,OgreRenderScene *scene) : obj(obj), node(node),scene(scene) {}
+	virtual void op();
+};
+
 class DLLEXPORT OgreImage : public Image
 {
 	Ogre::Image img;
@@ -409,6 +435,9 @@ class DLLEXPORT OgreMaterial : public Material
 	static const sval SPECWIDTH=100;
 
 protected:
+	/// The root scene which renders this object
+	OgreRenderScene *scene;
+	
 	Ogre::MaterialPtr mat;
 	Ogre::Pass* t0p0;
 	Ogre::TextureUnitState* texunit;
@@ -424,7 +453,8 @@ protected:
 	Ogre::TextureUnitState* specunit;
 	
 public:
-	OgreMaterial(Ogre::MaterialPtr mat) : mat(mat), bm(BM_ALPHA),t0p0(mat->getTechnique(0)->getPass(0)),texunit(0),_useTexFiltering(true),
+	OgreMaterial(Ogre::MaterialPtr mat,OgreRenderScene *scene) : mat(mat), scene(scene), bm(BM_ALPHA),
+		t0p0(mat->getTechnique(0)->getPass(0)),texunit(0),_useTexFiltering(true),
 		_isClampTexAddress(false),specunit(0)
 	{
 		mat->setLightingEnabled(true);
@@ -444,7 +474,7 @@ public:
 	virtual Material* clone(const char* name) const 
 	{
 		Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, false);
-		OgreMaterial *m=new OgreMaterial(mMat);
+		OgreMaterial *m=new OgreMaterial(mMat,this->scene);
 		copyTo(m,true,true,true);
 		return m;
 	}
@@ -654,6 +684,7 @@ public:
 
 	virtual void useSpectrumTexture(bool use) 
 	{
+		// TODO: as ResourceOp
 		std::string specname=mat->getName()+"_spectex";
 
 		if(use && spectex.isNull())
@@ -674,6 +705,7 @@ public:
 
 	virtual void updateSpectrum()
 	{
+		// TODO: as ResourceOp
 		if(specunit!=NULL){
 			rgba data[SPECWIDTH];
 			Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
@@ -853,15 +885,16 @@ public:
 
 
 /** 
- * This is the base class for Ogre figured used by the renderer.
+ * This is the base class for Ogre renderables used by the Figure subtypes.
  *
- * It manages Ogre vertex and index hardware data buffers directly and provides facilities for filling data into local buffers which are
- * later copied to the hardware buffers. It extends the basic Ogre types needed to represent a renderable object in a scene. It uses an
- * internal Vertex type having position, normal, color, and texture components.
+ * It manages Ogre vertex and index hardware data buffers directly and provides facilities for filling data into local 
+ * buffers which are later copied to the hardware buffers. It extends the basic Ogre types needed to represent a 
+ * renderable object in a scene. It uses an internal Vertex type having position, normal, color, and texture components.
  */
 class OgreBaseRenderable : public Ogre::MovableObject, public Ogre::Renderable
 {
 public:
+	/// Fixed definition of a vertex used in the renderer 
 	struct Vertex
 	{
 		float pos[3];
@@ -872,10 +905,14 @@ public:
 
 protected:
 
+	/// Parent figure this renderable is used by
 	Figure *parent;
+	/// The root scene which renders this object
 	OgreRenderScene *scene;
 
+	/// Sets vertex buffer to be write only
 	static Ogre::HardwareBuffer::Usage vertexBufferUsage;
+	/// Sets index buffer to be write only
 	static Ogre::HardwareBuffer::Usage indexBufferUsage;
 	
 	Ogre::VertexData* vertexData;
@@ -890,7 +927,9 @@ protected:
 	size_t _numVertices;
 	size_t _numIndices;
 
+	/// Vertex buffer in main memory used to stage data before being committed to video memory
 	Vertex *localVertBuff;
+	/// Index buffer in main memory used to stage data before being committed to video memory
 	indexval *localIndBuff;
 	
 	Ogre::MaterialPtr mat;
@@ -916,10 +955,10 @@ public:
 
 	Mutex* getMutex()  { return &mutex; }
 	
-	/// Create the hardware buffers with the given number of vertices and indices
+	/// Create the hardware buffers with the given number of vertices and indices (NOTE: must be executed in renderer thread)
 	virtual void createBuffers(size_t numVerts,size_t numInds,bool deferCreate=false);
 	
-	/// Delete the hardware and local buffers
+	/// Delete the hardware and local buffers (NOTE: must be executed in renderer thread)
 	virtual void destroyBuffers();
 	
 	virtual void _updateRenderQueue(Ogre::RenderQueue* queue) ;
@@ -932,8 +971,9 @@ public:
 	/// Get (and allocate if needed) the local memory index buffer of the same size as the hardware buffer
 	indexval* getLocalIndBuff();
 	
-	/// Copy the local buffers to the hardware buffers (NOTE: must be executed in rendered thread)
+	/// Copy the local buffers to the hardware buffers (NOTE: must be executed in renderer thread)
 	void commitBuffers(bool commitVert=true, bool commitInd=true);
+	/// Copy the data from matrices to the hardware buffers (NOTE: must be executed in renderer thread)
 	void commitMatrices(const Matrix<Vertex>* verts,const IndexMatrix *inds);
 	
 	void deleteLocalVertBuff() { SAFE_DELETE(localVertBuff); }
@@ -990,6 +1030,15 @@ public:
 	virtual void visitRenderables(Ogre::Renderable::Visitor* visitor, bool debugRenderables) { visitor->visit(this, 0, false); }
 };
 
+/**
+ * This is the base figure type which merges Ogre renderable objects with the renderer interface types. It inherits from 
+ * the template parameter F which must be Figure or one of its subtypes. The parameter T must be OgreBaseRenderable or
+ * one of its subtypes, an internal instance of this type is used to represent the rendering operation of the object.
+ * This combination of inheritance and delegation is used to route around the need to convergent inheritance in subtypes.
+ * If this type were defined to inherit from Figure then any type inheriting from it which also want to inherit from a 
+ * subtype of Figure to implement that interface would then inherit Figure twice. This would require virtual inheritance
+ * which doesn't play nice with the Python binding layer.
+ */
 template<typename T,typename F> // T <: OgreBaseRenderable, F <: Figure
 class OgreBaseFigure : public F
 {
@@ -997,11 +1046,11 @@ protected:
 	T* obj; /// The OgreBaseRenderable object which implements the actual rendering operations
 	Ogre::SceneNode *node;
 	OgreRenderScene *scene;
-
+	
 public:
 	OgreBaseFigure(T* obj,Ogre::SceneNode *node, OgreRenderScene *scene) : obj(obj),node(node),scene(scene) { if(obj) obj->setParentObjects(this,scene); } 
 
-	virtual ~OgreBaseFigure() { destroySceneNode(node,obj,scene);}
+	virtual ~OgreBaseFigure() { destroySceneNode(node,obj,scene); }
 	
 	T* getRenderable() const { return obj; }
 	
@@ -1844,16 +1893,19 @@ public:
 class DLLEXPORT OgreTexture : public Texture
 {
 protected:
+	/// The root scene which renders this object
+	OgreRenderScene *scene;
+	
 	std::string filename;
 	Ogre::TexturePtr ptr;
 	
 public:
-	OgreTexture(Ogre::TexturePtr ptr,const char *filename): ptr(ptr),filename(filename)
+	OgreTexture(Ogre::TexturePtr ptr,const char *filename,OgreRenderScene *scene): ptr(ptr),filename(filename), scene(scene)
 	{}
 
 	virtual ~OgreTexture() 
 	{
-		Ogre::TextureManager::getSingleton().remove(ptr->getName());
+		Ogre::TextureManager::getSingleton().remove(ptr->getName()); // TODO: should be done as ResourceOp
 	}
 
 	virtual const char* getFilename() const {return filename.c_str();}
@@ -2001,6 +2053,8 @@ public:
 	// time code has been assigned, which is necessary since programs can't be changed once compiled it seems.
 	virtual void setSourceCode(const std::string& code)
 	{ 
+		// TODO: must be done as a commit instead using CommitOp
+		
 		std::string oldnamecounted=namecounted;
 		bool isFirstSource=(source=="");
 		std::ostringstream out;
@@ -2110,7 +2164,7 @@ public:
 	Ogre::OverlaySystem *overlay;
 	Config *config;
 	
-	RenderScene *scene;
+	OgreRenderScene *scene;
 
 	OgreRenderAdapter(Config *config) throw(RenderException);
 	virtual ~OgreRenderAdapter();
@@ -2133,7 +2187,7 @@ public:
 	
 	Ogre::MaterialPtr background;
 
-	typedef std::map<Figure*,Ogre::SceneNode*> nodemap;
+	typedef std::map<std::string,Ogre::SceneNode*> nodemap;
 
 	/// Maps Figure objects to SceneNode objects created for them
 	nodemap nmap;
@@ -2141,6 +2195,9 @@ public:
 	u32 cameraCount;
 
 	u32 assetCount;
+	
+	std::vector<ResourceOp*> pendingOps;
+	Mutex opsMutex;
 
 	OgreRenderScene(OgreRenderAdapter *adapt) : root(adapt->root), mgr(adapt->mgr), win(adapt->win),config(adapt->config),cameraCount(0),assetCount(0)
 	{
@@ -2173,7 +2230,26 @@ public:
 	virtual void saveScreenshot(const char* filename,Camera* c=NULL,int width=0,int height=0,real stereoOffset=0.0,TextureFormat tf=TF_RGB24) throw(RenderException);
 	
 	virtual Config* getConfig() const { return config; }
+
+	virtual void applyResourceOps()
+	{
+		critical(&opsMutex){
+			for(std::vector<ResourceOp*>::iterator i=pendingOps.begin();i!=pendingOps.end();++i){
+				ResourceOp* rop=*i;
+				rop->op();
+				delete rop;
+			}
+			
+			pendingOps.clear();
+		}
+	}
 	
+	virtual void addResourceOp(ResourceOp *op)
+	{
+		critical(&opsMutex){
+			pendingOps.push_back(op);
+		}
+	}
 
 	virtual void logMessage(const char* msg)
 	{
@@ -2192,19 +2268,24 @@ public:
 		mgr->setSkyBox(enabled,background->getName(),1000);
 	}
 	
-	virtual Ogre::SceneNode* createNode(Figure *fig)
+	virtual Ogre::SceneNode* createNode(const std::string& name)
 	{
-		Ogre::SceneNode* node=mgr->getRootSceneNode()->createChildSceneNode();
-		nmap[fig]=node;
-		return node;
+		critical(&opsMutex){
+			Ogre::SceneNode* node=mgr->getRootSceneNode()->createChildSceneNode();
+			nmap[name]=node;
+			return node;
+		}
 	}
 
 	virtual Ogre::SceneNode* getNode(Figure *fig)
 	{
-		if(nmap.find(fig)!=nmap.end())
-			return nmap[fig];
-		else
-			return NULL;
+		std::string name=fig->getName();
+		critical(&opsMutex){
+			if(nmap.find(name)!=nmap.end())
+				return nmap[name];
+			else
+				return NULL;
+		}
 	}
 
 	virtual void destroyNode(Ogre::SceneNode *node) throw(Ogre::InternalErrorException)
@@ -2214,17 +2295,19 @@ public:
 			nmap.erase(fig);
 			mgr->destroySceneNode(node);
 		}*/
-		Figure *fig=NULL;
-		for(nodemap::iterator it=nmap.begin();!fig && it!=nmap.end();++it)
-			if(it->second==node)
-				fig=it->first;
-			
-		if(fig){
-			nmap.erase(fig);
-			mgr->destroySceneNode(node);
+		critical(&opsMutex){
+			std::string  name="";
+			for(nodemap::iterator it=nmap.begin();!name.size() && it!=nmap.end();++it)
+				if(it->second==node)
+					name=it->first;
+				
+			if(name.size()){
+				nmap.erase(name);
+				mgr->destroySceneNode(node);
+			}
+			else
+				OGRE_EXCEPT(Ogre::Exception::ERR_INTERNAL_ERROR,"Cannot find Figure for node","OgreRenderScene::destroyNode");
 		}
-		else
-			OGRE_EXCEPT(Ogre::Exception::ERR_INTERNAL_ERROR,"Cannot find Figure for node","OgreRenderScene::destroyNode");
 	}
 
 private:
@@ -2248,19 +2331,22 @@ private:
 		std::ostringstream os;
 		std::string uname=name;
 		
-		for(int i=0;i<1000000;i++){
-			bool namefound=false;
-			for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it)
-				namefound=it->first->getName()==uname;
-			
-			if(!namefound)
-				break;
-			
-			os.str("");
-			os << name << "_" << i;
-			uname=os.str();
+		critical(&opsMutex){
+			for(int i=0;i<1000000;i++){
+				//bool namefound=false;
+				//for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it){
+				//	namefound=it->first==uname;
+				//}
+				bool namefound=nmap.find(uname)!=nmap.end();
+				
+				if(!namefound)
+					break;
+				
+				os.str("");
+				os << name << "_" << i;
+				uname=os.str();
+			}
 		}
-
 		return uname;
 	}
 
