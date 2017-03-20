@@ -2317,10 +2317,19 @@ public:
 	virtual void setType(ProgramType pt) {}
 	virtual ProgramType getType() const { return PT_VERTEX; }
 	virtual std::string getLanguage() const { return ""; }
+	
+	/// Set the language for the source of the program, eg. cg
 	virtual void setLanguage(const std::string& lang) {}
+	
+	/// Set the source code for the program, this must be done in the main thread
 	virtual void setSourceCode(const std::string& code){}
+	
+	/// Returns true if the source code given for the program has failed to parse
 	virtual bool hasError() const { return false; }
+	
+	/// Return the text of the source for this program
 	virtual std::string getSourceCode() const { return ""; }
+	
 	virtual bool setParameter(const std::string& param, const std::string& val) { return false; }
 	virtual std::string getParameter(const std::string& param) const { return ""; }
 	virtual std::string getEntryPoint() const { return getParameter("entry_point"); }

@@ -80,7 +80,7 @@ srcfiles=['Renderer.pyx','RenderTypes.cpp','OgreRenderTypes.cpp']
 libraries=['OgreMain','OgreOverlay']
 extra_compile_args=['-w','-O3']
 extra_link_args=[]
-define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None)]
+define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None),('USEOGRE',None)]
 destfile='./Renderer.'
 
 cpptime=max(map(os.path.getmtime,glob.glob('*.cpp')))

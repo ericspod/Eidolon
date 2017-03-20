@@ -22,6 +22,9 @@
 
 #include <cctype>
 
+
+// if the renderer is configured to use Ogre, define getRenderAdapter() to return an Ogre object
+#ifdef USEOGRE
 namespace RenderTypes
 {
 using namespace OgreRenderTypes;
@@ -32,6 +35,7 @@ RenderAdapter* getRenderAdapter(Config* config) throw(RenderException)
 	return new OgreRenderAdapter(config);
 }
 } // namespace RenderTypes
+#endif
 
 
 namespace OgreRenderTypes
@@ -71,12 +75,6 @@ void setCameraVisibility(const Camera* cam, Ogre::MovableObject *obj,bool isVisi
 
 void destroySceneNode(Ogre::SceneNode *node,Ogre::MovableObject* obj,OgreRenderScene *scene)
 {
-	/*if(node){
-		if(obj)
-			node->detachObject(obj);
-		scene->destroyNode(node);
-	}
-	SAFE_DELETE(obj);*/
 	scene->addResourceOp(new DestroySceneNodeOp(obj,node,scene));
 }
 
@@ -105,10 +103,12 @@ OgreBaseRenderable::OgreBaseRenderable(const std::string& name,const std::string
 
 void OgreBaseRenderable::createBuffers(size_t numVerts,size_t numInds,bool deferCreate)
 {
+	// store these values for the next render cycle, these clue in the object that a deferred data fill operation was requested
 	deferFillOp=deferCreate;
 	_numVertices=numVerts;
 	_numIndices=numInds;
 
+	// do nothing if creation is being deferred to a render cycle or if the existing data objects are present and don't need resizing
 	if(deferCreate || (vertexData && vertexData->vertexCount==numVerts && indexData && indexData->indexCount==numInds))
 		return;
 	
@@ -155,13 +155,13 @@ void OgreBaseRenderable::destroyBuffers()
 
 void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue) 
 {
-	if(vertexData==NULL && !deferFillOp)
+	if(vertexData==NULL && !deferFillOp) // return if there's nothing to render
 		return;
 			
-	//bool locked=false;
 	trylock(&mutex,0.0001){
-		//locked=true;
 
+		// `deferFillOp' is true if a data fill operation was deferred until now, so now if there vertex or index data,
+		// create the buffers, fill the data, and delete the temporary buffers, otherwise fill with the default data
 		if(deferFillOp){
 			deferFillOp=false;
 			if(_numVertices>0 || _numIndices>0){
@@ -214,9 +214,6 @@ void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
 			delete distindices;
 		}
 	}
-
-	//if(!locked)
-	//	fillDefaultData();
 
 	if (mRenderQueuePrioritySet)
 		queue->addRenderable(this, mRenderQueueID, mRenderQueuePriority);
@@ -334,8 +331,15 @@ OgreLight::~OgreLight()
 
 OgreMaterial::~OgreMaterial()
 {
-	Ogre::MaterialManager::getSingleton().remove(mat->getName()); // TODO: should be done as ResourceOp
+	scene->addResourceOp(new RemoveResourceOp<Ogre::MaterialManager>(mat->getName()));
 	mat.setNull();
+}
+
+Material* OgreMaterial::clone(const char* name) const 
+{
+	OgreMaterial *m=dynamic_cast<OgreMaterial*>(scene->createMaterial(name));
+	copyTo(m,true,true,true);
+	return m;
 }
 
 OgreFigure::OgreFigure(const std::string &name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
@@ -345,7 +349,9 @@ OgreFigure::OgreFigure(const std::string &name,const std::string & matname,OgreR
 void OgreFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
 {
 	try{
-		critical(obj->getMutex()){
+		// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
+		critical(obj->getMutex()){ 
+			
 			Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
 
 			size_t indexWidth=0,indexSum=0;
@@ -429,7 +435,7 @@ void OgreFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool def
 				obj->setBoundingBox(minv,maxv);
 				node->needUpdate();
 
-				if(!deferFill){
+				if(!deferFill){ // if not deferring to render time, commit the buffers now and delete the local buffers
 					obj->commitBuffers();
 					obj->deleteLocalIndBuff();
 					obj->deleteLocalVertBuff();
@@ -491,7 +497,6 @@ void OgreRenderScene::saveScreenshot(const char* filename, Camera* c,int width,i
 void OgreRenderScene::addResourceDir(const char* dir)
 {
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation(dir,"FileSystem");
-	//Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 }
 
 void OgreRenderScene::initializeResources()
@@ -509,7 +514,7 @@ Material* OgreRenderScene::createMaterial(const char* name) throw(RenderExceptio
 	try{
 		std::string uname=getUniqueResourceName(name,Ogre::MaterialManager::getSingleton());
 		if(Ogre::MaterialManager::getSingleton().resourceExists(uname))
-			throw RenderException("Rsource exists",__FILE__,__LINE__);
+			throw RenderException("Resource exists",__FILE__,__LINE__);
 
 		Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(uname, resGroupName, false);
 	
@@ -643,7 +648,7 @@ GPUProgram* OgreRenderScene::createGPUProgram(const char* name,ProgramType ptype
 void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,real stereoOffset) throw(RenderException)
 {
 	try{
-		scene->applyResourceOps();
+		scene->applyResourceOps(); // apply pending operations to clean up anything being deleted
 		u32 mask=port->getVisibilityMask();
 		Ogre::ColourValue bg=port->getBackgroundColour();
 
@@ -1360,6 +1365,11 @@ void TextRenderable::updateGeometry()
 	updateGeom = false;
 	updateCols = true;
 	//mParentNode->needUpdate();
+}
+
+OgreTexture::~OgreTexture() 
+{
+	scene->addResourceOp(new RemoveResourceOp<Ogre::TextureManager>(ptr->getName()));
 }
 
 void OgreTexture::fillBlack()

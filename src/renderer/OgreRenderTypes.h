@@ -34,6 +34,8 @@
 
 #define THROW_RENDEREX(e) throw RenderException(e.getFullDescription().c_str(),__FILE__,__LINE__)
 
+#define MAXNAMECOUNT 1000000 // maximum number to append to names when creating unique names
+
 namespace OgreRenderTypes
 {
 
@@ -139,6 +141,7 @@ public:
 template<typename T>
 class CommitOp : public ResourceOp
 {
+public:
 	T* obj;
 	CommitOp(T* obj) : obj(obj){}
 	virtual void op() { obj->commit(); }
@@ -152,6 +155,19 @@ class DestroySceneNodeOp : public ResourceOp
 public:
 	DestroySceneNodeOp(Ogre::MovableObject* obj,Ogre::SceneNode *node,OgreRenderScene *scene) : obj(obj), node(node),scene(scene) {}
 	virtual void op();
+};
+
+template<typename M>
+class RemoveResourceOp : public ResourceOp
+{
+public:
+	std::string name;
+	RemoveResourceOp(const std::string &name) : name(name) {}
+	
+	virtual void op()
+	{
+		M::getSingleton().remove(name); 
+	}
 };
 
 class DLLEXPORT OgreImage : public Image
@@ -471,13 +487,15 @@ public:
 	
 	virtual ~OgreMaterial();
 	
-	virtual Material* clone(const char* name) const 
-	{
-		Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, false);
-		OgreMaterial *m=new OgreMaterial(mMat,this->scene);
-		copyTo(m,true,true,true);
-		return m;
-	}
+	/// Cloning must be done in the main thread
+	virtual Material* clone(const char* name) const;
+//	{
+//		//Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, false);
+//		//OgreMaterial *m=new OgreMaterial(mMat,this->scene);
+//		OgreMaterial *m=scene->createMaterial(name);
+//		copyTo(m,true,true,true);
+//		return m;
+//	}
 	
 	virtual void copyTo(Material* m,bool copyTex=false,bool copySpec=false,bool copyProgs=false) const 
 	{
@@ -1530,7 +1548,10 @@ public:
 		bbchain->setMaxChainElements(num); 
 	}
 
-	virtual sval getMaxNodes() { return bbchain->getMaxChainElements(); }
+	virtual sval getMaxNodes() 
+	{ 
+		return bbchain->getMaxChainElements(); 
+	}
 	
 	virtual void clearRibbons() 
 	{
@@ -1903,10 +1924,7 @@ public:
 	OgreTexture(Ogre::TexturePtr ptr,const char *filename,OgreRenderScene *scene): ptr(ptr),filename(filename), scene(scene)
 	{}
 
-	virtual ~OgreTexture() 
-	{
-		Ogre::TextureManager::getSingleton().remove(ptr->getName()); // TODO: should be done as ResourceOp
-	}
+	virtual ~OgreTexture();
 
 	virtual const char* getFilename() const {return filename.c_str();}
 	virtual const char* getName() const { return ptr->getName().c_str(); }
@@ -2053,8 +2071,6 @@ public:
 	// time code has been assigned, which is necessary since programs can't be changed once compiled it seems.
 	virtual void setSourceCode(const std::string& code)
 	{ 
-		// TODO: must be done as a commit instead using CommitOp
-		
 		std::string oldnamecounted=namecounted;
 		bool isFirstSource=(source=="");
 		std::ostringstream out;
@@ -2317,7 +2333,7 @@ private:
 		std::ostringstream os;
 		std::string uname=name;
 
-		for(int i=0;i<1000000 && mgr->hasEntity(uname);i++){
+		for(int i=0;i<MAXNAMECOUNT && mgr->hasEntity(uname);i++){
 			os.str("");
 			os << name << "_" << i;
 			uname=os.str();
@@ -2332,7 +2348,7 @@ private:
 		std::string uname=name;
 		
 		critical(&opsMutex){
-			for(int i=0;i<1000000;i++){
+			for(int i=0;i<MAXNAMECOUNT;i++){
 				//bool namefound=false;
 				//for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it){
 				//	namefound=it->first==uname;
@@ -2357,12 +2373,8 @@ private:
 
 		bool namefound=false;
 		
-		for(int i=0;i<1000000;i++){
-//#ifdef __APPLE__
-//			namefound=rmgr.getByName(uname,resGroupName).isNull();
-//#else
+		for(int i=0;i<MAXNAMECOUNT;i++){
 			namefound=rmgr.getResourceByName(uname,resGroupName).isNull();
-//#endif			
 	
 			if(namefound)
 				break;
@@ -2380,9 +2392,9 @@ private:
 		
 		return uname;
 	}
-
 };
 
 
 } // namespace OgreRenderTypes
 #endif /* RENDERSCENE_H_ */
+
