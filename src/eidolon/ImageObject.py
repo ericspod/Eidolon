@@ -19,7 +19,7 @@
 
 from renderer.Renderer import *
 from .SceneUtils import *
-from .SceneObject import SceneObject, SceneObjectRepr,ReprType,ModifierBufferGenerator
+from .SceneObject import SceneObject, SceneObjectRepr,ReprType
 
 
 #ImageType=enum(
@@ -186,9 +186,9 @@ class SharedImage(object):
 			self.imgmin=0.0
 			self.imgmax=0.0
 			
-	def setArrayImg(self,arr):
-		self.setMinMaxValues(arr.min(),arr.max())
-		arrayToMatrix(arr,self.img)
+#	def setArrayImg(self,arr):
+#		self.setMinMaxValues(arr.min(),arr.max())
+#		arrayToMatrix(arr,self.img)
 
 	def setMinMaxValues(self,minv,maxv):
 		if self.img:
@@ -341,10 +341,10 @@ class ImageSceneObject(SceneObject):
 
 		return vec3(img0.spacing[0],img0.spacing[1],img0.position.distTo(img1.position)/(len(stack[0])-1))
 
-	def getMatrixDims(self):
-		'''Get the 4 dimensions (columns, rows, height, time) for a 4D matrix containing the volume image data.'''
+	def getArrayDims(self):
+		'''Get the 4 dimensions (rows, columns, height, time) for a 4D array containing the volume image data.'''
 		inds=self.getTimestepIndices()
-		return (self.maxcols,self.maxrows,len(inds[0][1]),len(inds))
+		return (self.maxrows,self.maxcols,len(inds[0][1]),len(inds))
 
 	def getVolumeDims(self):
 		'''Get the dimension vector the image volume in world space units.'''
@@ -496,7 +496,8 @@ class ImageSceneObject(SceneObject):
 		time-dependent, then each member list represents an independent stack in the series of images differentiated
 		by orientation and given in an arbitrary order. If multiple stacks define volumes at the same position and time
 		they will be listed together, so a list of indices in the returned list may define multiple overlaying volumes.
-		The ordering of the indices in the returned list depends on the order of images in self.images.
+		The ordering of the indices in the returned list depends on the order of images in self.images. 2D image series
+		are treated as single image stacks, so the result will be a list of lists containing single indices.
 		'''
 		return [stack for _,stack in self.getTimestepIndices()]
 
