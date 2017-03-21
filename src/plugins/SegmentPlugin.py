@@ -264,8 +264,9 @@ def estimateHemiThickness(contours):
 	
 
 def getHemiAxis(contours):
+	'''For the given sorted hemisphere contours, returns the normal of the shape pointing from top to apex.'''
 	_,norm=getContourPlane(contours[0])
-	realaxis=(avg(contours[-1],vec3())-avg(contours[0],vec3())).norm()
+	realaxis=(avg(contours[-1])-avg(contours[0])).norm() # vector pointing from middle of top contour to middle of bottom
 	return norm if norm.angleTo(realaxis)<halfpi else -norm
 	
 
@@ -362,20 +363,21 @@ def generateApexContours(contours,scale=0.5,givenapex=None):
 	c1=contours[-1]
 	c2=contours[-2]
 	clen=len(c1)
-	p1,norm=getContourPlane(c1)
+	p1,_=getContourPlane(c1)
 	p2,_=getContourPlane(c2)
 	planedist=p1.distTo(p2)
+	planeshift=getHemiAxis(contours)*(planedist*0.2)
 
 	# if no apex point given calculate one
 	if givenapex==None: 
 		# define an initial apex point by interpolating between the last 2 contours as defined by `scale'
-		initialapex=avg([i+(i-j)*scale for i,j in zip(c1,c2)],vec3()) 
-		finalapex=initialapex-norm*(planedist*0.2) # define a final apex point
+		initialapex=avg(i+(i-j)*scale for i,j in zip(c1,c2)) 
+		finalapex=initialapex+planeshift # define a final apex point
 	else:
 		finalapex=initialapex=givenapex # define the initial and final apex points as the given one
 		
 	# define a middle ring of control points as the median between the initial apex point and the last contour
-	midring=[lerp(0.5,i,initialapex)-norm*(planedist*0.2) for i in c1]
+	midring=[lerp(0.5,i,initialapex)+planeshift for i in c1]
 	# define an inverted or crossed-over ring segment to allow interpolation to cross over the xi_2=1 boundary
 	invertring=[midring[(clen/2+i)%clen] for i in xrange(clen)]
 
@@ -393,7 +395,8 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,include17):
 		
 	# AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
 	aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17])
-
+	norm=-norm
+	
 	aha=RealMatrix('AHA',len(inds))
 	aha.meta(StdProps._elemdata,'True')
 	
@@ -624,7 +627,7 @@ def generateHemisphereSurface(name,contours,refine, startdir, apex=None, reinter
 
 	apex,apexctrls=generateApexContours(ctrls,0.25 if innerSurface else 0.5,apex) # generate apex contour(s)
 	ctrls+=apexctrls
-
+	
 	assert all(len(c)==len(ctrls[0]) for c in ctrls),'Contour lengths do not match, sorting failure?'
 
 	nodes,inds,xis=generatePCRTriHemisphere(ctrls,refine,task)
@@ -1293,8 +1296,8 @@ class SegmentPlugin(ScenePlugin):
 				if not segobj.get(SegViewPoints._rvAttach):
 					raise ValueError('Segmentation does not define RV attachment point')
 
-				if not segobj.get(SegViewPoints._ch2Apex) or not segobj.get(SegViewPoints._ch3Apex) or not segobj.get(SegViewPoints._ch4Apex):
-					raise ValueError('Segmentation provides no apex points')
+				#if not segobj.get(SegViewPoints._ch2Apex) or not segobj.get(SegViewPoints._ch3Apex) or not segobj.get(SegViewPoints._ch4Apex):
+				#	raise ValueError('Segmentation provides no apex points')
 					
 				genfunc=generateHemisphereVolume if isVolume else generateHemisphereSurface
 				contours=zip(*segobj.enumContours())[0]

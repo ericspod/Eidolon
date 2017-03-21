@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>4</number>
+      <number>2</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -443,7 +443,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-114</y>
+        <y>0</y>
         <width>606</width>
         <height>855</height>
        </rect>
@@ -462,7 +462,162 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupBox_3">
+        <widget class="QGroupBox" name="groupBox_19">
+         <property name="title">
+          <string>Non-rigid Registration Motion Tracking</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_14">
+          <item>
+           <layout class="QFormLayout" name="formLayout_19">
+            <property name="fieldGrowthPolicy">
+             <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_66">
+              <property name="text">
+               <string>Track Image</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="trackedNregBox"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_67">
+              <property name="text">
+               <string>Tracking Name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_14">
+              <item>
+               <widget class="QLineEdit" name="trackingNregName"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_68">
+                <property name="text">
+                 <string>(leave blank for default)</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_69">
+              <property name="text">
+               <string>Param File</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_15">
+              <item>
+               <widget class="QLineEdit" name="paramNRegEdit">
+                <property name="text">
+                 <string>&lt;&lt;Use Default&gt;&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="chooseNRegParamButton">
+                <property name="text">
+                 <string>Choose</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_65">
+              <property name="text">
+               <string>Mask Image</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="maskNregBox"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="QCheckBox" name="gpuNregCheck">
+              <property name="text">
+               <string>GPU Nreg (Linux only)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="startNregButton">
+            <property name="text">
+             <string>Start Motion Tracking</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_7">
+         <property name="title">
+          <string>Apply Tracking to Object</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_5">
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>Object</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="trackObjBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>Track Data</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="trackDataBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QPushButton" name="applyTrackButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Apply</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="legacyBox">
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -470,7 +625,7 @@
           </size>
          </property>
          <property name="title">
-          <string>Motion Tracking</string>
+          <string>Motion Tracking (Legacy)</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
@@ -691,168 +846,13 @@ background-color:rgba(255.0,255.0,255.0,200.0);
          </layout>
         </widget>
        </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_19">
-         <property name="title">
-          <string>Non-rigid Registration Motion Tracking</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_14">
-          <item>
-           <layout class="QFormLayout" name="formLayout_19">
-            <property name="fieldGrowthPolicy">
-             <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-            </property>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_66">
-              <property name="text">
-               <string>Track Image</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QComboBox" name="trackedNregBox"/>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_67">
-              <property name="text">
-               <string>Tracking Name</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_14">
-              <item>
-               <widget class="QLineEdit" name="trackingNregName"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_68">
-                <property name="text">
-                 <string>(leave blank for default)</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_69">
-              <property name="text">
-               <string>Param File</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <layout class="QHBoxLayout" name="horizontalLayout_15">
-              <item>
-               <widget class="QLineEdit" name="paramNRegEdit">
-                <property name="text">
-                 <string>&lt;&lt;Use Default&gt;&gt;</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="chooseNRegParamButton">
-                <property name="text">
-                 <string>Choose</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_65">
-              <property name="text">
-               <string>Mask Image</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QComboBox" name="maskNregBox"/>
-            </item>
-            <item row="4" column="1">
-             <widget class="QCheckBox" name="gpuNregCheck">
-              <property name="text">
-               <string>GPU Nreg (Linux only)</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QPushButton" name="startNregButton">
-            <property name="text">
-             <string>Start Motion Tracking</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_7">
-         <property name="title">
-          <string>Apply Tracking to Object</string>
-         </property>
-         <layout class="QFormLayout" name="formLayout_5">
-          <property name="fieldGrowthPolicy">
-           <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-          </property>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_20">
-            <property name="text">
-             <string>Object</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="trackObjBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_21">
-            <property name="text">
-             <string>Track Data</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="trackDataBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QPushButton" name="applyTrackButton">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Apply</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="page_5">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-681</y>
+        <y>0</y>
         <width>606</width>
         <height>1422</height>
        </rect>

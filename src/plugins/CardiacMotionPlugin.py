@@ -739,6 +739,7 @@ class CardiacMotionProject(Project):
 		#fillList(self.alignprop.interpTypeBox,['None']+[i.replace('_',' ') for i,j in InterpTypes])
 
 		setCollapsibleGroupbox(self.alignprop.trackAdvBox,False)
+		setCollapsibleGroupbox(self.alignprop.legacyBox,False)
 		setWarningStylesheet(self.alignprop.trackAdvBox)
 
 		@self.alignprop.tsExtrSrcBox.activated.connect
