@@ -1254,6 +1254,28 @@ def delayedMethodWeak(obj,methname,delay=0):
 	setattr(obj,methname,newmeth)
 
 
+def asyncfunc(func):
+	'''
+	Wraps the function `func' with a asynchronous version which executes the function's body in a daemon thread. The
+	return value is the threading.Thread object executing the function, which an extra member `result' containing the
+	Future object which will eventually store the return value or raised exception from calling `func'. 
+	'''
+	@wraps(func)
+	def funcwrap(*args,**kwargs):
+		f=Future()
+		def _call():
+			with f:
+				f.setObject(func(*args,**kwargs))
+				
+		t=threading.Thread(target=_call)
+		t.daemon=True
+		t.result=f
+		t.start()
+		return t
+		
+	return funcwrap
+		
+
 class Task(object):
 	'''
 	This class represents the abstract notion of a task, with a 'curprogress' value to indicate progress in relation to

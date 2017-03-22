@@ -390,18 +390,17 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,include17):
 	Calculates an AHA field for the hemisphere defined by (nodes,inds,xis). The plane defined by (topcenter,norm) should be
 	the top of the hemisphere aligned with the center axis. The `apex' node should be node at the bottom of the inside
 	surface. If `include17' is True then region 17 at the apex is defined, otherwise regions 13-16 extend to the bottom
-	(eg. for pool meshes).
+	(eg. for pool meshes). Vector `norm' should be the long axis normal pointing from top to apex.
 	'''
 		
 	# AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
 	aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17])
-	norm=-norm
 	
 	aha=RealMatrix('AHA',len(inds))
 	aha.meta(StdProps._elemdata,'True')
 	
-	apexdist=-apex.planeDist(topcenter,norm)
-	nodeheights=[-nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))]
+	apexdist=apex.planeDist(topcenter,norm)
+	nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))]
 	maxheight=max(nodeheights)
 	apexheight=lerpXi(apexdist,0,maxheight) if include17 else 1.0
 	thresholds=[apexheight/3,apexheight/1.5,apexheight]
@@ -635,7 +634,9 @@ def generateHemisphereSurface(name,contours,refine, startdir, apex=None, reinter
 
 	# calculate the AHA region for each triangle based on the average or minimal xi value of its vertices
 	if calcAHA:
-		topcenter,norm=getContourPlane(ctrls[0])
+		#topcenter,norm=getContourPlane(ctrls[0])
+		topcenter=avg(ctrls[0])
+		norm=getHemiAxis(ctrls)
 		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,apex,not innerSurface))
 
 	return TriDataSet(name+'DS',nodes,inds,fields)
@@ -712,7 +713,10 @@ def generateHemisphereVolume(name,contours,refine, startdir, apex=None,reinterpo
 #		else:
 #			topcenter,norm=getContourPlane(ctrls[0][0])
 #			fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,True))
-		topcenter,norm=getContourPlane(ctrls[0][0])
+		#topcenter,norm=getContourPlane(ctrls[0][0])
+	
+		topcenter=avg(ctrls[0][0])
+		norm=getHemiAxis(listSum(ctrls))
 		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,not innerOnly))
 
 	return PyDataSet(name+'DS',nodes,[inds],fields)

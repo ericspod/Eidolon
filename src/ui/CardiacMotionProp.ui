@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>4</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -852,9 +852,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-648</y>
         <width>606</width>
-        <height>1422</height>
+        <height>1389</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1223,30 +1223,13 @@ background-color:rgba(255.0,255.0,255.0,200.0);
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label_52">
-            <property name="text">
-             <string>Image Object</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="strainImgBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
            <widget class="QLabel" name="label_53">
             <property name="text">
              <string>AHA Field</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
+          <item row="2" column="1">
            <widget class="QComboBox" name="strainMeshAHABox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1256,14 +1239,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="label_54">
             <property name="text">
              <string>Track Data</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
+          <item row="3" column="1">
            <widget class="QComboBox" name="strainMeshTrackBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1273,14 +1256,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
+          <item row="4" column="0">
            <widget class="QLabel" name="label_56">
             <property name="text">
              <string>Spacing</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
+          <item row="4" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_12">
             <property name="bottomMargin">
              <number>0</number>
@@ -1323,7 +1306,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
            </layout>
           </item>
-          <item row="8" column="1">
+          <item row="7" column="1">
            <widget class="QPushButton" name="strainMeshButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1642,7 +1625,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
         <x>0</x>
         <y>0</y>
         <width>606</width>
-        <height>1507</height>
+        <height>1532</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1667,14 +1650,14 @@ background-color:rgba(255.0,255.0,255.0,200.0);
           <property name="fieldGrowthPolicy">
            <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
           </property>
-          <item row="0" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_27">
             <property name="text">
              <string>Source Series</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
+          <item row="2" column="1">
            <widget class="QComboBox" name="isoCreateBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1684,20 +1667,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QCheckBox" name="emptyCropBox">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>Empty Space Crop</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
+          <item row="6" column="1">
            <widget class="QPushButton" name="isoCreateButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1710,6 +1680,59 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
+          <item row="4" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_20">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_52">
+              <property name="text">
+               <string>Size</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="isoSizeBox">
+              <property name="minimum">
+               <double>0.010000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="value">
+               <double>1.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="emptyCropBox">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>Empty Space Crop</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
          </layout>
         </widget>
        </item>
@@ -1719,6 +1742,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
           <string>Resample Image</string>
          </property>
          <layout class="QFormLayout" name="formLayout_17">
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+          </property>
           <item row="0" column="0">
            <widget class="QLabel" name="label_63">
             <property name="text">
@@ -1753,6 +1779,13 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
            </widget>
           </item>
+          <item row="2" column="1">
+           <widget class="QCheckBox" name="resampleIsoCheck">
+            <property name="text">
+             <string>Create Isotropic Series</string>
+            </property>
+           </widget>
+          </item>
           <item row="3" column="1">
            <widget class="QPushButton" name="resampleButton">
             <property name="sizePolicy">
@@ -1763,13 +1796,6 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </property>
             <property name="text">
              <string>Create</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QCheckBox" name="resampleIsoCheck">
-            <property name="text">
-             <string>Create Isotropic Series</string>
             </property>
            </widget>
           </item>

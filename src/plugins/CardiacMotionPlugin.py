@@ -1091,14 +1091,18 @@ class CardiacMotionProject(Project):
 				objs=[]
 				for s in series:
 					obj=self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(s)
+					printFlush(obj)
 					if obj:
 						objs.append(obj)
 			else:
 				objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
 				
+			printFlush(objs)
 			self._readDicomHeartRate(series[0])
 			filenames=self.CardiacMotion.saveToNifti(objs)
-			self.CardiacMotion.loadNiftiFiles(filenames)
+			printFlush(filenames)
+			f=self.CardiacMotion.loadNiftiFiles(filenames)
+			self.mgr.checkFutureResult(f)
 
 	def _loadMorphoSeries(self):
 		param=ParamDef('tsOffset','Timestep Offset',ParamType._int,40,-300,300,10)
@@ -2013,7 +2017,6 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				areas.div(initareas)
 				sumareas.div(initsums)
 			
-			printFlush(sumlist,initsumlist)
 			ds.setDataField(areas)
 			ds.setDataField(sumareas)
 			results.append([(a/b if b!=0 else 0) for a,b in zip(sumlist,initsumlist)])

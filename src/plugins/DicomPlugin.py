@@ -495,6 +495,7 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 				start,end,minx,miny,maxx,maxy=self.state
 				selection=range(start,end+1)
 				crop=(minx,miny,maxx,maxy)
+				
 				for i,series in enumerate(self.serieslist):
 					simgs=self.plugin.loadSeriesImages(series,selection,False,crop)
 					images+=simgs
@@ -502,7 +503,7 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 						for s in simgs:
 							s.timestep=i
 
-				self.resultf.setObject(ImageSceneObject(name,self.serieslist[0],images,self.plugin,len(self.serieslist)>1))
+				self.resultf.setObject(ImageSceneObject(name,self.serieslist[0],images,self.plugin))
 
 		self.mgr.runTasks(_load())
 		self.accept()
@@ -1015,7 +1016,7 @@ class DicomPlugin(ImageScenePlugin):
 			d=TimeMultiSeriesDialog(toIterable(series),f,self.mgr,self,self.mgr.win)
 			d.exec_()
 
-		return f(None)
+		return f#(None)
 
 	def getScriptCode(self,obj,**kwargs):
 		configSection=kwargs.get('configSection',False)

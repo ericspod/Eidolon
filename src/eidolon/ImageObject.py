@@ -45,7 +45,7 @@ def isImageVolume(images,err=1e-3):
 	samediags=all(d.distTo(diags[0])<=err for d in diags)
 	
 	if not sameaxis and samenorm and samediags:
-		printFlush(images,sameaxis,samenorm,samediags)
+		#printFlush(images,sameaxis,samenorm,samediags)
 		return False
 		
 	return True

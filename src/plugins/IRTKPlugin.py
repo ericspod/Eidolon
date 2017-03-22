@@ -28,6 +28,7 @@ import traceback
 import shutil
 import itertools 
 import multiprocessing
+import threading
 
 from contextlib import closing
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
@@ -65,7 +66,7 @@ ServerMsgs=enum(
 	doc='Server request and response messages, containing the types of the arguments and a description'
 )
 
-TrackTypes=enum('motiontrackmultimage','gpunreg','mirtkregister')
+TrackTypes=enum('motiontrackmultimage','gpunreg','mirtkregister','mirtkregister1file')
 
 JobMetaValues=enum(
 	'pid','rootdir','numtrackfiles','timesteps','tracktype','trackobj','maskobj','trackfile','maskfile',
@@ -80,15 +81,25 @@ trackconfname='track.ini'
 
 
 def isTrackDir(path):
-	'''Returns True if `path' is the path to a directory containing tracking information.'''
-	if not os.path.isdir(path):
-		return False
+	'''
+	Returns True if `path' is the path to a directory containing tracking information. This is done asynchronously with
+	a daemon thread. The function will block for up to 1 second and return False if an answer isn't calculated by then.
+	This ensures the UI is not held up by a slow file system.
+	'''
+	@asyncfunc
+	def _check():
+		if not os.path.isdir(path):
+			return False
+			
+		if not os.path.isfile(os.path.join(path,trackconfname)):
+			return False
+			
+		return len(glob.glob(path+'/*.dof*'))>0
 		
-	if not os.path.isfile(os.path.join(path,trackconfname)):
-		return False
-		
-	return len(glob.glob(path+'/*.dof*'))>0
+	t=_check()
 	
+	return t.result(1.0) or False
+		
 
 def isPositiveDefinite(mat):
 	'''Returns True if `mat' is a positive definite matrix (ie. all positive eigenvalues).'''

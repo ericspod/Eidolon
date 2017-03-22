@@ -115,27 +115,28 @@ def loadImageStack(files,imgLoadFunc,positions,rot=rotator(),spacing=(1.0,1.0),t
 
 
 def generateImageStack(width,height,slices,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1),name='img'):
-		'''Create a blank image stack with each timestep ordered bottom-up with integer timesteps.'''
-		assert width>0
-		assert height>0
-		assert slices>0
-		assert spacing.x()>0
-		assert spacing.y()>0
-		assert timesteps>0
+	'''Create a blank image stack with each timestep ordered bottom-up with integer timesteps.'''
+	assert width>0
+	assert height>0
+	assert slices>0
+	assert spacing.x()>0
+	assert spacing.y()>0
+	assert timesteps>0
 
-		images=[]
-		positions=[pos+(rot*vec3(0,0,spacing.z()*s)) for s in range(slices)]
-		for t,s in trange(timesteps,slices):
-			siname='%s_%i_%i' %(name,s,t)
-			si=SharedImage(siname,positions[s],rot,(width,height),(spacing.x(),spacing.y()),t)
-			si.allocateImg(siname+'Img')
-			si.img.fill(0)
-			images.append(si)
+	images=[]
+	positions=[pos+(rot*vec3(0,0,spacing.z()*s)) for s in range(slices)]
+	for t,s in trange(timesteps,slices):
+		siname='%s_%i_%i' %(name,s,t)
+		si=SharedImage(siname,positions[s],rot,(width,height),(spacing.x(),spacing.y()),t)
+		si.allocateImg(siname+'Img')
+		si.img.fill(0)
+		images.append(si)
 
-		return images
+	return images
 
 
 def generateTestImageStack(width,height,slices,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1)):
+	'''Create a test pattern on an otherwise blank image stack made with generateImageStack().'''
 	images=generateImageStack(width,height,slices,timesteps,pos,rot,spacing)
 	
 	for ind,im in enumerate(images):
@@ -167,6 +168,7 @@ def generateTestImageStack(width,height,slices,timesteps=1,pos=vec3(),rot=rotato
 
 
 def generateSphereImageStack(width,height,slices,center=vec3(0.5),scale=vec3(0.45),innerval=0.75,shellval=1.0):
+	'''Create a sphere image on an otherwise blank image stack made with generateImageStack().'''
 	dim=vec3(width,height,slices)
 	center=center*dim
 	images=generateImageStack(width,height,slices)
@@ -527,11 +529,11 @@ def matrixToArray(mat,dtype=None):
 	
 
 @contextlib.contextmanager
-def processImageNp(imgobj,dtype=np.float):
+def processImageNp(imgobj,dtype=np.float,writeBack=True):
 	'''
 	Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
 	image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
-	object once the context exits. 
+	object once the context exits if `writeBack' is True. 
 	'''
 	shape=imgobj.getArrayDims()
 	im=np.ndarray(shape,dtype)
@@ -545,13 +547,14 @@ def processImageNp(imgobj,dtype=np.float):
 	
 	yield im
 	
-	imgobj.imagerange=(im.min(),im.max()) # reset the stored image range
-	for t,ts in enumerate(timeseqs):
-		for d,dd in enumerate(ts):
-			arr=im[:,:,d,t]
-			img=imgobj.images[dd]
-			img.setMinMaxValues(arr.min(),arr.max())
-			np.asarray(img.img)[:,:]=arr
+	if writeBack:
+		imgobj.imagerange=(im.min(),im.max()) # reset the stored image range
+		for t,ts in enumerate(timeseqs):
+			for d,dd in enumerate(ts):
+				arr=im[:,:,d,t]
+				img=imgobj.images[dd]
+				img.setMinMaxValues(arr.min(),arr.max())
+				np.asarray(img.img)[:,:]=arr
 
 
 def sampleImageVolume(obj,pt,timestep,transinv=None):
