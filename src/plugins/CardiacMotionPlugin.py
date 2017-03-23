@@ -1091,16 +1091,13 @@ class CardiacMotionProject(Project):
 				objs=[]
 				for s in series:
 					obj=self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(s)
-					printFlush(obj)
 					if obj:
 						objs.append(obj)
 			else:
 				objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
 				
-			printFlush(objs)
 			self._readDicomHeartRate(series[0])
 			filenames=self.CardiacMotion.saveToNifti(objs)
-			printFlush(filenames)
 			f=self.CardiacMotion.loadNiftiFiles(filenames)
 			self.mgr.checkFutureResult(f)
 

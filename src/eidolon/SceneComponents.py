@@ -219,6 +219,9 @@ class Handle2D(Handle):
 	This represents a handle in a BaseCamera2DWidget rendering widget. It has representation in 2D widget and optionally
 	have representation in the main 3D view. 
 	'''
+	
+	defaultPlaneMargin=1e-3 # margin for measuring if a handle is on a plane in 3D space, a handle this far from a plane is considered on it
+	
 	def __init__(self,widg2D,col,selectRadius=None):
 		'''
 		Initialize the handle with the BaseCamera2DWidget instance `widg2D', color `col' applied to the figures of the
@@ -226,7 +229,7 @@ class Handle2D(Handle):
 		'''
 		Handle.__init__(self)
 		self.widg2D=widg2D
-		self.planeMargin=1e-3
+		self.planeMargin=Handle2D.defaultPlaneMargin
 		self.selectRadius=abs(selectRadius or 5.0)
 		self.selectedNodeInd=-1
 		self._isActive=True # set to True if is manipulable by user input

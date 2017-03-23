@@ -267,7 +267,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 		self.plugin=self.mgr.getPlugin('Measure')
 		self.handlecol=color(1,0,0)
 		self.handleradius=5.0
-		self.planeMargin=0.001
+		self.planeMargin=Handle2D.defaultPlaneMargin
 		
 		self.lastUpdateTime=-1.0
 		

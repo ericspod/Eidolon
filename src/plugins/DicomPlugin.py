@@ -569,7 +569,7 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 
 
 class DicomSeries(object):
-	'''Represent a list of Dicom images which are members of a series.'''
+	'''Represent a list of Dicom images which are members of a series. Changing will break existing .pickle files.'''
 	def __init__(self,parent,seriesID,filenames=[]):
 		self.parent=parent
 		self.seriesID=seriesID
@@ -579,6 +579,7 @@ class DicomSeries(object):
 		self.simgs=[] #[None]*len(filenames) # initially empty list of ShareImage objects which will be loaded from Dicoms
 		#self.tagmap=OrderedDict()
 #		self.lastLoadArgs=() # last arguments used when loading images, pair of (selection,crop) values
+#		self.selectCrop=None # (selection range, crop value) pair indicating the loading parameters used
 		
 	def getPropTuples(self):
 		return [
@@ -603,6 +604,9 @@ class DicomSeries(object):
 
 	def getSharedImage(self,filename):
 		return first(s for s in self.simgs if s and s.filename.endswith(filename))
+		
+	def clearSharedImages(self):
+		del self.simgs[:]
 
 	def enumFilePaths(self):
 		for f in self.filenames:
@@ -672,6 +676,7 @@ class DicomPlugin(ImageScenePlugin):
 		ImageScenePlugin.__init__(self,'Dicom')
 		self.dirobjs={}
 		self.loadedNames=[]
+		self.selectCropMap={} # maps series to image selection/crop pairs
 
 	def init(self,plugid,win,mgr):
 		ImageScenePlugin.init(self,plugid,win,mgr)
@@ -693,28 +698,27 @@ class DicomPlugin(ImageScenePlugin):
 		assert selection==None or all(s<len(series.filenames) for s in selection)
 
 		@taskroutine('Loading Image Data')
+		@timing
 		def loadSITask(task=None):
 			with f:
 				if len(series.filenames)>0:
 					proccount=chooseProcCount(len(series.filenames),0,10)
 					rootdir=series.parent.rootdir
 
-#					loadargs=(tuple(selection) if selection else None,tuple(crop) if crop else None)
-#					if loadargs!=series.lastLoadArgs:
-#						series.simgs=[]
-#
-#					series.lastLoadArgs=loadargs
-#					series.simgs=[]
+					if self.selectCropMap.get(series,None)!=(selection,crop):
+						series.clearSharedImages()
+						
+					self.selectCropMap[series]=(selection,crop)
 
+					# get the series filenames or a selected range thereof if `selection' is given
 					filenames=[series.filenames[i] for i in selection] if selection else series.filenames
-
 					# remove already-loaded images
 					filenames=filter(lambda i:series.getSharedImage(i)==None,filenames)
 
 					if len(filenames)>0:
 						simgs=loadSharedImages(len(filenames),proccount,task,rootdir,filenames,crop,partitionArgs=(filenames,))
-
-						series.addSharedImages(listSum(simgs.values())) # add new images, there isn't necessarily any order to this list
+						checkResultMap(simgs)
+						series.addSharedImages(sumResultMap(simgs)) # add new images, there isn't necessarily any order to this list
 
 				f.setObject(series.simgs)
 
@@ -738,7 +742,8 @@ class DicomPlugin(ImageScenePlugin):
 		name=uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
 		self.loadedNames.append(name)
 
-		self.loadSeriesImages(series,selection,loadSequential,crop)
+		ff=self.loadSeriesImages(series,selection,loadSequential,crop)
+		self.mgr.checkFutureResult(ff)
 
 		@taskroutine('Creating Scene Object')
 		def createDicomObject(task):

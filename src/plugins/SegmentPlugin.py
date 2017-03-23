@@ -736,15 +736,16 @@ def generateImageMaskRange(process,contours,planes,images,labelfunc):
 		imgcontours=[]
 		for con,plane in zip(contours,planes):
 			angle=plane[1].angleTo(img.norm)
-			if (angle<epsilon or angle>(math.pi-epsilon)) and abs(img.getDist(plane[0]))<epsilon:
+			if (angle<epsilon or angle>(math.pi-epsilon)) and abs(img.getDist(plane[0]))<=Handle2D.defaultPlaneMargin:
 				transcon=[(trans*c)*vec3(1,1) for c in con]
 				box=BoundBox(transcon)
 				box=BoundBox([box.minv-vec3(0,0,1),box.maxv+vec3(0,0,1)])
-				imgcontours.append((transcon,box,avg(transcon,vec3())))
+				imgcontours.append((transcon,box,avg(transcon)))
 
 		if len(imgcontours)==0:
 			continue
-
+		
+		# iterate over every pixel in the image and set to the value specified by `labelfunc', this clearly could be optimized 
 		for n,m in matIterate(img.img):
 			pt=vec3(float(m)/img.img.m(),float(n)/img.img.n())
 			incontours=[c for c,bb,ce in imgcontours if pointInContour(pt,c,(vec3(),vec3(0,0,1)),bb,ce)]
@@ -791,7 +792,7 @@ class LVSeg2DMixin(DrawContourMixin):
 		self.segobj=None
 		self.handlecol=color(1,0,0)
 		self.handleradius=5.0
-		self.planeMargin=0.001
+		self.planeMargin=Handle2D.defaultPlaneMargin
 
 		self.uiobj.numCtrlBox.setValue(self.numNodes)
 		self.uiobj.numCtrlBox.valueChanged.connect(self.setNumNodes)
