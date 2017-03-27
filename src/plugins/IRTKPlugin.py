@@ -70,7 +70,7 @@ TrackTypes=enum('motiontrackmultimage','gpunreg','mirtkregister','mirtkregister1
 
 JobMetaValues=enum(
 	'pid','rootdir','numtrackfiles','timesteps','tracktype','trackobj','maskobj','trackfile','maskfile',
-	'paramfile','adaptive','resultcode','startdate','transform','pixdim',
+	'paramfile','adaptive','resultcode','startdate','enddate','transform','pixdim',
 	doc='Names of fields in job/track ini files storing metadata about the associated operation/job'
 )
 
@@ -1389,17 +1389,18 @@ class IRTKPluginMixin(object):
 			JobMetaValues._maskobj      :maskname,
 			JobMetaValues._resultcode   :None,
 			JobMetaValues._numtrackfiles:len(timesteps)-1,
-			JobMetaValues._tracktype    :TrackTypes._mirtkregister if onefile else TrackTypes._mirtkregister,
+			JobMetaValues._tracktype    :TrackTypes._mirtkregister1file if onefile else TrackTypes._mirtkregister,
 			JobMetaValues._timesteps    :timesteps,
 			JobMetaValues._transform    :tuple(imgobj.getVolumeTransform()),
 			JobMetaValues._pixdim       :tuple(imgobj.getVoxelSize()),
 			JobMetaValues._trackfile    :trackname,
 			JobMetaValues._paramfile    :paramfile,
 			JobMetaValues._maskfile     :maskfile,
-			JobMetaValues._startdate    :time.asctime()
+			JobMetaValues._startdate    :time.asctime(),
+			JobMetaValues._enddate      :None
 		}
 
-		storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
+		storeBasicConfig(os.path.join(trackdir,trackconfname),conf) # store initial config values in the tracking ini file
 		
 		if onefile:
 			logfile=os.path.join(trackdir,'track.log')
@@ -1412,10 +1413,6 @@ class IRTKPluginMixin(object):
 			r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
 			results.append(r)
 			task.setProgress(1)
-			
-			if r[0]:
-				raise IOError('register failed with error code %i:\n%s'%r)
-			
 		else:
 			for i,tsinds in enumerate(indices):
 				name='image%.4i'%i
@@ -1440,8 +1437,16 @@ class IRTKPluginMixin(object):
 				results.append(r)
 				task.setProgress(i+1)
 				
-				if r[0]:
-					raise IOError('register failed with error code %i:\n%s'%r)
+				if r[0]: # stop immediately if register failed
+					break
+
+		# store the result code and end date in the tracking ini file
+		conf[JobMetaValues._resultcode]=results[-1][0]
+		conf[JobMetaValues._enddate]=time.asctime()
+		storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
+
+		if results[-1][0]:
+			raise IOError('register failed with error code %i:\n%s'%results[-1])
 
 		return results
 
@@ -1740,9 +1745,3 @@ class MotionServerProcess(multiprocessing.Process):
 		mt=MotionTrackServer(self.serverdir,self.port,self.motiontrack)
 		sys.exit(app.exec_())
 		
-
-#if __name__ == '__main__': # run the server program
-#	printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
-#	app = QtGui.QApplication(sys.argv)
-#	mt=MotionTrackServer(sys.argv[1],int(sys.argv[2]),sys.argv[3])
-#	sys.exit(app.exec_())
