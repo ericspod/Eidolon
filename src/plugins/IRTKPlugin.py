@@ -1355,7 +1355,7 @@ class IRTKPluginMixin(object):
 		
 	@taskmethod('Tracking Image With MIRTK register')
 	@timing
-	def startRegisterMotionTrack(self,imgname,maskname,trackname,paramfile,model=None,task=None):
+	def startRegisterMotionTrack(self,imgname,maskname,trackname,paramfile,model=None,onefile=False,task=None):
 		'''Motion tracking using MIRTK register program.'''
 		imgobj=self.mgr.findObject(imgname)
 		indices=imgobj.getTimestepIndices()
@@ -1382,12 +1382,14 @@ class IRTKPluginMixin(object):
 		names=[]
 		results=[]
 		
+		task.setLabel('Tracking Image With MIRTK register') # reset the label
+		
 		conf={
 			JobMetaValues._trackobj     :imgname,
 			JobMetaValues._maskobj      :maskname,
 			JobMetaValues._resultcode   :None,
 			JobMetaValues._numtrackfiles:len(timesteps)-1,
-			JobMetaValues._tracktype    :TrackTypes._mirtkregister,
+			JobMetaValues._tracktype    :TrackTypes._mirtkregister if onefile else TrackTypes._mirtkregister,
 			JobMetaValues._timesteps    :timesteps,
 			JobMetaValues._transform    :tuple(imgobj.getVolumeTransform()),
 			JobMetaValues._pixdim       :tuple(imgobj.getVoxelSize()),
@@ -1398,33 +1400,48 @@ class IRTKPluginMixin(object):
 		}
 
 		storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
-
-		for i,tsinds in enumerate(indices):
-			name='image%.4i'%i
-			filename=os.path.join(trackdir,name+'.nii')
-			names.append(filename)
-			subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
-			self.Nifti.saveObject(subobj,filename)
-
-		task.setMaxProgress(len(names)-1)
-		task.setLabel('Tracking Image With MIRTK register')
 		
-		for i,(img1,img2) in enumerate(successive(names)):
-			logfile=os.path.join(trackdir,'%.4i.log'%i)
-			args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
-
+		if onefile:
+			logfile=os.path.join(trackdir,'track.log')
+			args=[imgobj.source['filename'],'-parin',paramfile,'-model',model,'-dofout','track.dof.gz','-parout','register.cfg']
 			if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
 				args+=['-mask',maskfile]
 				
-			if i==0: # spit out the parameter file for the first invocation so that config values are preserved for later inspection
-				args+=['-parout',os.path.join(trackdir,'register.cfg')]
-				
+			task.setMaxProgress(1)
+			task.setProgress(0)
 			r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
 			results.append(r)
-			task.setProgress(i+1)
+			task.setProgress(1)
 			
 			if r[0]:
 				raise IOError('register failed with error code %i:\n%s'%r)
+			
+		else:
+			for i,tsinds in enumerate(indices):
+				name='image%.4i'%i
+				filename=os.path.join(trackdir,name+'.nii')
+				names.append(filename)
+				subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
+				self.Nifti.saveObject(subobj,filename)
+	
+			task.setMaxProgress(len(names)-1)
+			
+			for i,(img1,img2) in enumerate(successive(names)):
+				logfile=os.path.join(trackdir,'%.4i.log'%i)
+				args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
+	
+				if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
+					args+=['-mask',maskfile]
+					
+				if i==0: # spit out the parameter file for the first invocation so that config values are preserved for later inspection
+					args+=['-parout',os.path.join(trackdir,'register.cfg')]
+					
+				r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
+				results.append(r)
+				task.setProgress(i+1)
+				
+				if r[0]:
+					raise IOError('register failed with error code %i:\n%s'%r)
 
 		return results
 

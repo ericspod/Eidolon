@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/CardiacMotionProp.ui'
 #
-# Created: Wed Mar 22 14:05:37 2017
-#      by: PyQt4 UI code generator 4.10.4
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -40,7 +39,7 @@ class Ui_CardiacMotionProp(object):
         self.toolBox.setFrameShape(QtGui.QFrame.StyledPanel)
         self.toolBox.setObjectName(_fromUtf8("toolBox"))
         self.page = QtGui.QWidget()
-        self.page.setGeometry(QtCore.QRect(0, 0, 619, 224))
+        self.page.setGeometry(QtCore.QRect(0, 0, 619, 202))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -102,7 +101,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_8.addWidget(self.groupBox)
         self.toolBox.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 619, 480))
+        self.page_2.setGeometry(QtCore.QRect(0, 0, 619, 419))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -225,7 +224,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_9.addWidget(self.groupBox_5)
         self.toolBox.addItem(self.page_2, _fromUtf8(""))
         self.page_3 = QtGui.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 606, 855))
+        self.page_3.setGeometry(QtCore.QRect(0, 0, 619, 761))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -280,7 +279,10 @@ class Ui_CardiacMotionProp(object):
         self.formLayout_19.setWidget(1, QtGui.QFormLayout.FieldRole, self.maskNregBox)
         self.gpuNregCheck = QtGui.QCheckBox(self.groupBox_19)
         self.gpuNregCheck.setObjectName(_fromUtf8("gpuNregCheck"))
-        self.formLayout_19.setWidget(4, QtGui.QFormLayout.FieldRole, self.gpuNregCheck)
+        self.formLayout_19.setWidget(5, QtGui.QFormLayout.FieldRole, self.gpuNregCheck)
+        self.oneFileCheck = QtGui.QCheckBox(self.groupBox_19)
+        self.oneFileCheck.setObjectName(_fromUtf8("oneFileCheck"))
+        self.formLayout_19.setWidget(4, QtGui.QFormLayout.FieldRole, self.oneFileCheck)
         self.verticalLayout_14.addLayout(self.formLayout_19)
         self.startNregButton = QtGui.QPushButton(self.groupBox_19)
         self.startNregButton.setObjectName(_fromUtf8("startNregButton"))
@@ -433,7 +435,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_10.addWidget(self.legacyBox)
         self.toolBox.addItem(self.page_3, _fromUtf8(""))
         self.page_5 = QtGui.QWidget()
-        self.page_5.setGeometry(QtCore.QRect(0, -648, 606, 1389))
+        self.page_5.setGeometry(QtCore.QRect(0, 0, 602, 1167))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -862,7 +864,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_12.addWidget(self.groupBox_16)
         self.toolBox.addItem(self.page_5, _fromUtf8(""))
         self.page_4 = QtGui.QWidget()
-        self.page_4.setGeometry(QtCore.QRect(0, 0, 606, 1532))
+        self.page_4.setGeometry(QtCore.QRect(0, 0, 602, 1306))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -1369,7 +1371,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_4.addWidget(self.toolBox)
 
         self.retranslateUi(CardiacMotionProp)
-        self.toolBox.setCurrentIndex(4)
+        self.toolBox.setCurrentIndex(2)
         self.toolBox.layout().setSpacing(0)
         QtCore.QMetaObject.connectSlotsByName(CardiacMotionProp)
 
@@ -1420,6 +1422,7 @@ class Ui_CardiacMotionProp(object):
         self.chooseNRegParamButton.setText(_translate("CardiacMotionProp", "Choose", None))
         self.label_65.setText(_translate("CardiacMotionProp", "Mask Image", None))
         self.gpuNregCheck.setText(_translate("CardiacMotionProp", "GPU Nreg (Linux only)", None))
+        self.oneFileCheck.setText(_translate("CardiacMotionProp", "One File Tracking (makes time-dependent dof file)", None))
         self.startNregButton.setText(_translate("CardiacMotionProp", "Start Motion Tracking", None))
         self.groupBox_7.setTitle(_translate("CardiacMotionProp", "Apply Tracking to Object", None))
         self.label_20.setText(_translate("CardiacMotionProp", "Object", None))

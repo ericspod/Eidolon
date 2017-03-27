@@ -1260,11 +1260,12 @@ class CardiacMotionProject(Project):
 		maskname=str(self.alignprop.maskNregBox.currentText())
 		trackname=str(self.alignprop.trackingNregName.text())
 		paramfile=str(self.alignprop.paramNRegEdit.text())
+		onefile=self.alignprop.oneFileCheck.isChecked()
 		
 		if self.alignprop.gpuNregCheck.isChecked():
 			f=self.CardiacMotion.startGPUNRegMotionTrack(imgname,maskname,trackname,paramfile)
 		else:
-			f=self.CardiacMotion.startRegisterMotionTrack(imgname,maskname,trackname,paramfile)
+			f=self.CardiacMotion.startRegisterMotionTrack(imgname,maskname,trackname,paramfile,None,onefile)
 			
 		self.mgr.checkFutureResult(f)
 
