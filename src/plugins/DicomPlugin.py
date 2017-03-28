@@ -36,6 +36,7 @@ import threading
 import mmap
 import datetime
 import time
+import re
 from collections import OrderedDict
 from Queue import Queue
 from random import randint
@@ -85,9 +86,9 @@ def readDicomMMap(fullpath,**kwargs):
 def readDicomHeartRate(series_or_dcm):
 	'''
 	Attempt to retrieve the heart rate in BPM from the DicomSeries or Dicom object `series_or_dcm'. If the "HeartRate"
-	tag is present then this is used, otherwise attempt to parse the RR value from the "ImageComments" tag if this is
-	present. The comment should be something like "RR 1153 +/- 41; 138 heartbeats" for this to work, in which case the
-	first number is the average cycle time in ms. If no heart rate is found then return None.
+	tag is present then this is used, otherwise attempt to parse the RR or bpm value from the "ImageComments" tag if 
+	this is present. The comment should be something like "RR 1153 +/- 41; 138 heartbeats" or contain a BPM value like
+	"56 bpm" for this to work. If no heart rate is found then return None.
 	'''
 	if isinstance(series_or_dcm,DicomSeries):
 		dcm=series_or_dcm.loadDicomFile(0)
@@ -99,10 +100,38 @@ def readDicomHeartRate(series_or_dcm):
 	# if the HeartRate tag isn't given attempt to parse the RR time from the comment field
 	if not heartrate:
 		comment=dcm.get('ImageComments','')
-		if comment.startswith('RR'):
-			heartrate=60000/int(comment.split()[1])
+		m1=re.search('RR\s*(\d+)\s*\d+',comment)
+		
+		if m1:
+			heartrate=60000/int(m.groups()[0])
+		else:
+			m2=re.search('(\d+)\s*[Bb][Pp][Mm]',comment)
+			if m2:
+				heartrate=int(m.groups()[0])
 			
 	return heartrate
+	
+	
+def readDicomTimeValue(series_or_dcm):
+	'''
+	Attempt to determine a timing value from the DicomSeries or Dicom object `series_or_dcm'. This will try to use the
+	TriggerTime tag but will then attempt to read a phase value from the ImageComment tag, this should work for CT
+	images which don't use TriggerTime. Returns the determined time or -1 if none was found.
+	'''
+	if isinstance(series_or_dcm,DicomSeries):
+		dcm=series_or_dcm.loadDicomFile(0)
+	else:
+		dcm=series_or_dcm
+		
+	trigger=dcm.get('TriggerTime',None)
+	if trigger is not None:
+		return float(trigger)
+		
+	m=re.search('(\d+)\s*%',dcm.get('ImageComments',''))
+	if m:
+		return float(m.groups()[0])
+		
+	return -1
 	
 
 def createDicomReadThread(rootpath,files,readPixels=True):
@@ -208,6 +237,19 @@ def convertToDict(dcm):
 	
 	
 def addDicomTagsToMap(dcm,tagmap):
+	
+	def _datasetToDict(dcm):
+		result=OrderedDict()
+		for elem in dcm:
+			name=elem.name
+			value=_elemToValue(elem)
+			tag=(elem.tag.group,elem.tag.elem)
+
+			if value:
+				result[tag]=(name,value)
+				
+		return result
+
 	def _elemToValue(elem):
 		value=None
 		if elem.VR=='SQ':
@@ -232,6 +274,22 @@ def addDicomTagsToMap(dcm,tagmap):
 			elif len(tagmap[name])>1 or (len(tagmap[name])==1 and tagmap[name][0]!=value):
 				tagmap[name].append(value)
 				
+				
+def getSeriesTagMap(series):
+	tags={}
+	
+	for i in xrange(len(series.filenames)):
+		addDicomTagsToMap(series.loadDicomFile(i),tags)
+		
+	for k,v in tags.items():
+		try:
+			if len(set(v))==1:
+				tags[k]=[v[0]]
+		except TypeError:
+			pass
+		
+	return tags
+	
 				
 def isPhaseImage(image):
 	'''Returns True if the SharedImage or Dicom image object `image' has a tag field indicating the image is phase.'''
@@ -490,8 +548,13 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 		@taskroutine('Loading Multiseries Image')
 		def _load(task=None):
 			with self.resultf:
+				if len(self.serieslist)>1:
+					name='%sto%s'%(self.serieslist[0].desc,self.serieslist[-1].desc)
+				else:
+					name=self.serieslist[0].desc
+					
 				images=[]
-				name=getValidFilename('%sto%s'%(self.serieslist[0].desc,self.serieslist[-1].desc))
+				name=getValidFilename(name)
 				start,end,minx,miny,maxx,maxy=self.state
 				selection=range(start,end+1)
 				crop=(minx,miny,maxx,maxy)
@@ -542,7 +605,7 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 	si.seriesID=str(dcm.get('SeriesInstanceUID',''))
 	si.imageType=list(dcm.get('ImageType',[]))
 	si.isSpatial=validPixelArray and dcm.get('ImagePositionPatient',None)!=None
-	si.timestep=float(dcm.get('TriggerTime',-1))
+	si.timestep=readDicomTimeValue(dcm) #float(dcm.get('TriggerTime',-1))
 	si.isCompressed=not validPixelArray and not getattr(dcm,'_is_uncompressed_transfer_syntax',lambda:False)()
 	#si.tags=convertToDict(dcm)
 
@@ -626,7 +689,7 @@ class DicomSeries(object):
 
 
 class DicomDataset(object):
-	'''Represents all the loaded Dicom information for files found in a given root directory.'''
+	'''Represents all the loaded Dicom information for files found in a given root directory. Changing breaks .pickle files.'''
 	def __init__(self,rootdir='.'):
 		self.series=[]
 		self.rootdir=rootdir
@@ -768,7 +831,10 @@ class DicomPlugin(ImageScenePlugin):
 
 	@timing
 	def loadDigestFile(self,dirpath,task):
-		'''Loads the directory digest pickle file in 'dirpath' if it exists, or creates it if not.'''
+		'''
+		Loads the directory digest pickle file in 'dirpath' if it exists, or creates it otherwise. Returns the loaded
+		or created DicomDataset object.
+		'''
 		dirpath=os.path.abspath(dirpath)
 		dirfiles=list(enumAllFiles(dirpath))
 		picklefile=os.path.join(dirpath,'dicomdataset.pickle')

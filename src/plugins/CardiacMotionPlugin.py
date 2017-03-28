@@ -514,8 +514,8 @@ def calculateTorsion(datasetlist,aha,choosevals):
 			for ind in inds[i]:
 				apexinds.add(ind)
 				
-	basepos=avg(nodes0[i] for i in baseinds)
-	apexpos=avg(nodes0[i] for i in apexinds)
+	basepos=avg(nodes0[i] for i in baseinds) or vec3()
+	apexpos=avg(nodes0[i] for i in apexinds) or vec3()
 	longaxis=apexpos-basepos
 
 	orient=rotator(longaxis,-vec3.Z())

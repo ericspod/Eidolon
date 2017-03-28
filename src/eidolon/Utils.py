@@ -94,6 +94,7 @@ import contextlib
 import ast
 import string
 import inspect
+import collections
 
 try:
 	import ConfigParser as configparser
