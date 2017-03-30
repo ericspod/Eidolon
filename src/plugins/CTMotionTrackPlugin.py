@@ -48,6 +48,7 @@ class CTMotionTrackProject(Project):
 		self.ctprop.chooseParamButton.clicked.connect(self._chooseParamFile)
 		self.ctprop.trackButton.clicked.connect(self._trackButton)
 		self.ctprop.applyTrackButton.clicked.connect(self._applyTrack)
+		self.ctprop.isoCreateButton.clicked.connect(self._createIsoImage)
 		
 		self.ctprop.paramEdit.textChanged.connect(self.updateConfigFromProp)
 		
@@ -74,6 +75,7 @@ class CTMotionTrackProject(Project):
 		scenemeshes=filter(lambda o:isinstance(o,MeshSceneObject),self.memberObjs)
 
 		names=sorted(o.getName() for o in sceneimgs)
+		fillList(self.ctprop.isoCreateBox,names)
 		fillList(self.ctprop.trackImgBox,names)
 		fillList(self.ctprop.trackMaskBox,names,defaultitem='None')
 
@@ -137,14 +139,21 @@ class CTMotionTrackProject(Project):
 		mask=str(self.ctprop.trackMaskBox.currentText())
 		paramfile=str(self.ctprop.paramEdit.text())
 		trackname=str(self.ctprop.trackName.text())
+		onefile=self.ctprop.oneFileCheck.isChecked()
 		
-		f=self.CTMotion.startRegisterMotionTrack(name,mask,trackname,paramfile)
+		f=self.CTMotion.startRegisterMotionTrack(name,mask,trackname,paramfile,None,onefile)
 		self.mgr.checkFutureResult(f)
 		
 	def _applyTrack(self):
 		name=str(self.ctprop.trackObjBox.currentText())
 		trackname=str(self.ctprop.trackDataBox.currentText())
 		f=self.CTMotion.applyMotionTrack(name,trackname)
+		self.mgr.checkFutureResult(f)
+		
+	def _createIsoImage(self):
+		name=str(self.ctprop.isoCreateBox.currentText())
+		cropEmpty=self.ctprop.emptyCropBox.isChecked()
+		f=self.CTMotion.createIsotropicObject(name,cropEmpty)
 		self.mgr.checkFutureResult(f)
 	
 

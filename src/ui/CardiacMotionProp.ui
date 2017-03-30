@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>4</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -1789,7 +1789,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
           <item row="2" column="1">
            <widget class="QCheckBox" name="resampleIsoCheck">
             <property name="text">
-             <string>Create Isotropic Series</string>
+             <string>Create Isotropic 1x1x1 Series</string>
             </property>
            </widget>
           </item>

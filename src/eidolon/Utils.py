@@ -742,7 +742,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 	keyword value `timeout' can be given indicating how long to wait for the program in seconds before killing it,
 	otherwise the routine will wait forever. If the keyword `logcmd' is True then the command line to be executed is
 	printed to stdout before being run. If a log file path is given in keyword `logfile', the output from the program
-	will be stored in that file once it completes. 
+	will be piped to that file. 
 	'''
 	timeout=kwargs.get('timeout',None) # timeout time value in seconds
 	cwd=kwargs.get('cwd',None)
@@ -756,8 +756,13 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 
 	if not os.path.isfile(exefile):
 		raise IOError('Cannot find program %r' %exefile)
+		
+	if 'logfile' in kwargs:
+		stdout=open(kwargs['logfile'],'w')
+	else:
+		stdout=subprocess.PIPE
 
-	proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = subprocess.PIPE,cwd=cwd)
+	proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = stdout,cwd=cwd)
 	output=''
 	errcode=0
 
@@ -779,11 +784,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 	(out,err) = proc.communicate()
 	returncode= errcode if errcode!=0 and proc.returncode==0 else proc.returncode
 	
-	if kwargs.get('logfile'):
-		with open(kwargs.get('logfile'),'w') as logfile:
-			logfile.write(out)
-
-	return (returncode,output+out)
+	return (returncode,output+(out or ''))
 
 
 def enumAllFiles(rootdir):

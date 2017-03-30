@@ -76,7 +76,7 @@ all: header ui renderer pyxlibs
 ui : $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui))
 
 resource:
-	$(PYRCC) res/Resources.qrc -o $(SRC)/ui/Resources_rc.py
+	$(PYRCC) res/Resources.qrc -py3 -o $(SRC)/ui/Resources_rc.py
 
 renderer:
 	cd $(RESRC) && $(PYTHON) setup.py build_ext --inplace

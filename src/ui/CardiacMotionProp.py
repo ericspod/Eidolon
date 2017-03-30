@@ -1371,7 +1371,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_4.addWidget(self.toolBox)
 
         self.retranslateUi(CardiacMotionProp)
-        self.toolBox.setCurrentIndex(2)
+        self.toolBox.setCurrentIndex(4)
         self.toolBox.layout().setSpacing(0)
         QtCore.QMetaObject.connectSlotsByName(CardiacMotionProp)
 
@@ -1505,7 +1505,7 @@ class Ui_CardiacMotionProp(object):
         self.groupBox_17.setTitle(_translate("CardiacMotionProp", "Resample Image", None))
         self.label_63.setText(_translate("CardiacMotionProp", "Source Series", None))
         self.label_64.setText(_translate("CardiacMotionProp", "Template Series", None))
-        self.resampleIsoCheck.setText(_translate("CardiacMotionProp", "Create Isotropic Series", None))
+        self.resampleIsoCheck.setText(_translate("CardiacMotionProp", "Create Isotropic 1x1x1 Series", None))
         self.resampleButton.setText(_translate("CardiacMotionProp", "Create", None))
         self.groupBox_23.setTitle(_translate("CardiacMotionProp", "Extend Image", None))
         self.label_59.setText(_translate("CardiacMotionProp", "Source Series", None))
