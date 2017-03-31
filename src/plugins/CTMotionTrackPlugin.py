@@ -20,6 +20,7 @@ class CTMotionTrackProject(Project):
 	def __init__(self,name,parentdir,mgr):
 		Project.__init__(self,name,parentdir,mgr)
 		self.addHandlers()
+		self.Measure=mgr.getPlugin('Measure')
 		self.CTMotion=mgr.getPlugin('CTMotion')
 		self.Dicom=mgr.getPlugin('Dicom')
 		self.CTMotion.project=self
@@ -29,9 +30,35 @@ class CTMotionTrackProject(Project):
 		
 		for n in ConfigNames:
 			self.configMap[n[0]]=''
+
+	@taskmethod('Adding Object to Project')			
+	def checkIncludeObject(self,obj,task=None):
+		
+		# only try to import meshes and images that aren't already in the project
+		# Important: since this is a task method this will be called after the project has loaded
+		if not isinstance(obj,(MeshSceneObject,ImageSceneObject)) or obj in self.memberObjs:
+			return
 			
-#		self.configMap[ConfigNames._paramfile]=self.CTMotion.tsffd
+		def _copy():
+			pdir=self.getProjectDir()
+			files=map(os.path.abspath,obj.plugin.getObjFiles(obj) or [])
+		
+			if not files or any(not f.startswith(pdir) for f in files):
+				newname=self.CTMotion.getUniqueObjName(getValidFilename(obj.getName()))
+				self.mgr.renameSceneObject(obj,newname)
+				filename=self.getProjectFile(obj.getName())
+				
+				if isinstance(obj,ImageSceneObject):
+					self.CTMotion.saveToNifti([obj],True)
+				elif isinstance(obj,MeshSceneObject):
+					self.CTMotion.VTK.saveObject(obj,filename,setFilenames=True)
+
+			Project.addObject(self,obj)
+			self.save()	
 			
+		msg="Do you want to add %r to the project? This requires saving/copying the object's file data into the project directory."%(obj.getName())
+		self.mgr.win.chooseYesNoDialog(msg,'Adding Object',_copy)
+		
 	def getPropBox(self):
 		prop=Project.getPropBox(self)
 		
@@ -84,6 +111,11 @@ class CTMotionTrackProject(Project):
 				
 		trackdirs=map(os.path.basename,self.CTMotion.getTrackingDirs())
 		fillList(self.ctprop.trackDataBox,sorted(trackdirs))
+						
+		# refill the measurement plugin's known tracking sources
+		self.Measure.removeTrackSource(self.CTMotion.applyMotionTrackPoints)
+		for td in trackdirs:
+			self.Measure.addTrackSource(td,self.CTMotion.applyMotionTrackPoints)
 		
 	def renameObject(self,obj,oldname):
 		newname=getValidFilename(obj.getName())

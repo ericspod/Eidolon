@@ -2527,6 +2527,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		'''
 		Opens a color pick dialog initialized with `origcolor' (RGBA tuple or color object). If Ok is pressed, the
 		callable `callback' is invoked with the RGBA color tuple passed as the single argument, otherwise does nothing.
+		This is threadsafe and non-blocking.
 		'''
 		c = QtGui.QColorDialog.getColor(toQtColor(origcolor), self)
 		if c.isValid():
@@ -2534,19 +2535,32 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
 	@signalmethod
 	def chooseYesNoDialog(self,msg,title,callback):
+		'''
+		Opens a Yes/No dialog box with message string `msg' and title string `title'. If Yes is selected, the callable
+		`callback' is called with no arguments. This is threadsafe and non-blocking.
+		'''
 		reply=QtGui.QMessageBox.question(self, title, msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
 		if reply==QtGui.QMessageBox.Yes:
 			callback()
 			
 	@signalmethod
 	def getYesNoDialogValue(self,msg,title,future):
+		'''
+		Opens a Yes/No dialog box with message string `msg' and title string `title'. If Yes is selected, the Future
+		object `future' is set to True, otherwise False. This is threadsafe and non-blocking.
+		'''
 		with future:
 			reply=QtGui.QMessageBox.question(self, title, msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
 			future.setObject(reply==QtGui.QMessageBox.Yes)
 
 	@signalmethod
-	def chooseStrDialog(self,title,defaultValue,callback):
-		text, ok = QtGui.QInputDialog.getText(self, 'Input String',title,text=defaultValue)
+	def chooseStrDialog(self,title,defaultval,callback):
+		'''
+		Opens a dialog box asking for an input string with title string `title' and default string value `defaultval'.
+		When the dialog closes, the callable `callback' is called with the given string value as the only argument. 
+		This is threadsafe and non-blocking.
+		'''
+		text, ok = QtGui.QInputDialog.getText(self, 'Input String',title,text=defaultval)
 		if ok:
 			callback(str(text))
 
