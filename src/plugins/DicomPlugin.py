@@ -100,7 +100,7 @@ def readDicomHeartRate(series_or_dcm):
 	# if the HeartRate tag isn't given attempt to parse the RR time from the comment field
 	if not heartrate:
 		comment=dcm.get('ImageComments','')
-		m1=re.search('RR\s*(\d+)\s*\d+',comment)
+		m1=re.search('RR\s*(\d+)\s*',comment)
 		
 		if m1:
 			heartrate=60000/int(m.groups()[0])

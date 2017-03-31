@@ -34,8 +34,8 @@ class CTMotionTrackProject(Project):
 	@taskmethod('Adding Object to Project')			
 	def checkIncludeObject(self,obj,task=None):
 		
-		# only try to import meshes and images that aren't already in the project
-		# Important: since this is a task method this will be called after the project has loaded
+		# only try to import meshes and images that aren't already in the project Important: since this is a
+		# task method this will be called after the project has loaded so won't ask to add things already in the project
 		if not isinstance(obj,(MeshSceneObject,ImageSceneObject)) or obj in self.memberObjs:
 			return
 			
@@ -56,7 +56,7 @@ class CTMotionTrackProject(Project):
 			Project.addObject(self,obj)
 			self.save()	
 			
-		msg="Do you want to add %r to the project? This requires saving/copying the object's file data into the project directory."%(obj.getName())
+		msg="Do you want to add %r to the project?\nThis requires saving/copying the object's file data into the project directory."%(obj.getName())
 		self.mgr.win.chooseYesNoDialog(msg,'Adding Object',_copy)
 		
 	def getPropBox(self):
