@@ -1782,17 +1782,17 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				# These matrices will contain one row per timestep, each row will have an averaged value for each
 				# region, thus the matrices are indexed by timestep then region
-				mavgstrains=[[0]*len(aharegions)] # averages of maximal eigenvalue strain
-				minavgstrains=[[0]*len(aharegions)] # averages of minimal eigenvalue strain
-				lavgstrains=[[0]*len(aharegions)] # averages of longitudinal strain
-				ravgstrains=[[0]*len(aharegions)] # averages of radial strain
-				cavgstrains=[[0]*len(aharegions)] # averages of circumferential strain
+				mavgstrains=[] # averages of maximal eigenvalue strain
+				minavgstrains=[] # averages of minimal eigenvalue strain
+				lavgstrains=[] # averages of longitudinal strain
+				ravgstrains=[] # averages of radial strain
+				cavgstrains=[] # averages of circumferential strain
 				
-				globalmavgstrains=[0]
-				globalminavgstrains=[0]
-				globallavgstrains=[0]
-				globalravgstrains=[0]
-				globalcavgstrains=[0]
+				globalmavgstrains=[]
+				globalminavgstrains=[]
+				globallavgstrains=[]
+				globalravgstrains=[]
+				globalcavgstrains=[]
 				
 				# for each pairing of a dataset from the original object and from the tracked strain object,
 				# compute the strain from the tracked object's data, storing the results in the original's
@@ -1826,7 +1826,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					# add the value to the appropriate sublist in the one the above list, otherwise zero the value out
 					for n in xrange(maxeig.n()):
 						region=nodeaha.getAt(n)-1
-						if region in aharegions: # if the node is in a region of interest, add its strain values to the lists
+						if (region+1) in aharegions: # if the node is in a region of interest, add its strain values to the lists
 							mavgstrain[region].append(maxeig.getAt(n))
 							minavgstrain[region].append(mineig.getAt(n))
 							lavgstrain[region].append(longstrain.getAt(n))
