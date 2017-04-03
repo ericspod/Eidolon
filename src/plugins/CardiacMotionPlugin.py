@@ -776,7 +776,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.tsExtrSrcBox,names)
 		fillList(self.alignprop.trackedNregBox,names)
 
-		names=sorted(o.getName() for o in sceneimgs if o.isTimeDependent and len(o.getTimestepList())==2)
+		#names=sorted(o.getName() for o in sceneimgs if o.isTimeDependent and len(o.getTimestepList())==2)
 		fillList(self.alignprop.reorderSrcBox,names)
 
 #		names=sorted(o.getName() for o in sceneimgs if o.is2D)
@@ -1185,8 +1185,9 @@ class CardiacMotionProject(Project):
 
 	def _reorderMulticycle(self):
 		name=str(self.alignprop.reorderSrcBox.currentText())
-		self.CardiacMotion.reorderMulticycleImage(name,self.imgalignprop.reorderStartBox.value(),self.imgalignprop.reorderStepBox.value())
-
+		f=self.CardiacMotion.reorderMulticycleImage(name,self.alignprop.reorderStartBox.value(),self.alignprop.reorderStepBox.value())
+		self.mgr.checkFutureResult(f)
+		
 	def _chooseParamFile(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Parameter file')
 		if filename:

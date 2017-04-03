@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>4</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -852,7 +852,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-648</y>
+        <y>0</y>
         <width>667</width>
         <height>1389</height>
        </rect>
@@ -1623,7 +1623,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-741</y>
         <width>667</width>
         <height>1532</height>
        </rect>
@@ -2322,7 +2322,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             <item>
              <widget class="QSpinBox" name="reorderStartBox">
               <property name="minimum">
-               <number>-10000</number>
+               <number>0</number>
               </property>
               <property name="maximum">
                <number>9999</number>
@@ -2342,13 +2342,13 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             <item>
              <widget class="QSpinBox" name="reorderStepBox">
               <property name="minimum">
-               <number>-10000</number>
+               <number>1</number>
               </property>
               <property name="maximum">
                <number>9999</number>
               </property>
               <property name="value">
-               <number>300</number>
+               <number>30</number>
               </property>
              </widget>
             </item>

@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/CTMotionProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Mon Apr  3 19:06:19 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -25,7 +26,7 @@ except AttributeError:
 class Ui_CTMotionProp(object):
     def setupUi(self, CTMotionProp):
         CTMotionProp.setObjectName(_fromUtf8("CTMotionProp"))
-        CTMotionProp.resize(366, 553)
+        CTMotionProp.resize(474, 643)
         self.verticalLayout = QtGui.QVBoxLayout(CTMotionProp)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.groupBox = QtGui.QGroupBox(CTMotionProp)
@@ -35,14 +36,17 @@ class Ui_CTMotionProp(object):
         sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
         self.groupBox.setSizePolicy(sizePolicy)
         self.groupBox.setObjectName(_fromUtf8("groupBox"))
-        self.verticalLayout_2 = QtGui.QVBoxLayout(self.groupBox)
-        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
+        self.horizontalLayout = QtGui.QHBoxLayout(self.groupBox)
+        self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.ctDicomButton = QtGui.QPushButton(self.groupBox)
         self.ctDicomButton.setObjectName(_fromUtf8("ctDicomButton"))
-        self.verticalLayout_2.addWidget(self.ctDicomButton)
+        self.horizontalLayout.addWidget(self.ctDicomButton)
         self.niftiButton = QtGui.QPushButton(self.groupBox)
         self.niftiButton.setObjectName(_fromUtf8("niftiButton"))
-        self.verticalLayout_2.addWidget(self.niftiButton)
+        self.horizontalLayout.addWidget(self.niftiButton)
+        self.vtkButton = QtGui.QPushButton(self.groupBox)
+        self.vtkButton.setObjectName(_fromUtf8("vtkButton"))
+        self.horizontalLayout.addWidget(self.vtkButton)
         self.verticalLayout.addWidget(self.groupBox)
         self.isoCreateGroup = QtGui.QGroupBox(CTMotionProp)
         self.isoCreateGroup.setObjectName(_fromUtf8("isoCreateGroup"))
@@ -202,8 +206,9 @@ class Ui_CTMotionProp(object):
         self.groupBox.setTitle(_translate("CTMotionProp", "Import Data", None))
         self.ctDicomButton.setText(_translate("CTMotionProp", "CT DICOM Series", None))
         self.niftiButton.setText(_translate("CTMotionProp", "NIfTI Image Stack", None))
+        self.vtkButton.setText(_translate("CTMotionProp", "VTK Mesh", None))
         self.isoCreateGroup.setTitle(_translate("CTMotionProp", "Create Isotropic Image Series", None))
-        self.label_27.setText(_translate("CTMotionProp", "Source Series", None))
+        self.label_27.setText(_translate("CTMotionProp", "Source", None))
         self.isoCreateButton.setText(_translate("CTMotionProp", "Create", None))
         self.label_52.setText(_translate("CTMotionProp", "Size", None))
         self.emptyCropBox.setText(_translate("CTMotionProp", "Empty Space Crop", None))
@@ -214,7 +219,7 @@ class Ui_CTMotionProp(object):
         self.label_68.setText(_translate("CTMotionProp", "(blank for default)", None))
         self.label_11.setText(_translate("CTMotionProp", "Param File", None))
         self.chooseParamButton.setText(_translate("CTMotionProp", "Choose", None))
-        self.oneFileCheck.setText(_translate("CTMotionProp", "One File Tracking (makes time-dependent dof file)", None))
+        self.oneFileCheck.setText(_translate("CTMotionProp", "One File Tracking (makes time-dependent dof)", None))
         self.trackButton.setText(_translate("CTMotionProp", "Start Motion Tracking", None))
         self.groupBox_6.setTitle(_translate("CTMotionProp", "Apply Tracking", None))
         self.label_12.setText(_translate("CTMotionProp", "Object", None))

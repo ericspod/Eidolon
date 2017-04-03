@@ -930,14 +930,25 @@ class IRTKPluginMixin(object):
 		def _reorder(srcname,starttime,timestep,task):
 			with f:
 				obj=self.findObject(srcname)
-				time1,time2=obj.getTimestepList()[:2]
+				timeinds=obj.getTimestepIndices()
+				startind=min((abs(timeinds[i][0]-starttime),i) for i in range(len(timeinds)))[1]
+				rinds=rotateIndices(startind,len(timeinds))
 				images=[]
-
-				for i in obj.images:
-					if i.timestep in (time1,time2):
-						i=i.clone()
-						i.timestep=starttime+(timestep if i.timestep==time1 else 0)
-						images.append(i)
+				
+				for i,ri in enumerate(rinds):
+					for ind in timeinds[ri][1]:
+						img=obj.images[ind].clone()
+						img.timestep=i*timestep
+						images.append(img)
+				
+#				time1,time2=obj.getTimestepList()[:2]
+#				images=[]
+#
+#				for i in obj.images:
+#					if i.timestep in (time1,time2):
+#						i=i.clone()
+#						i.timestep=starttime+(timestep if i.timestep==time1 else 0)
+#						images.append(i)
 
 				name=self.getUniqueShortName(obj.getName(),'Reord')
 				reobj=ImageSceneObject(name,obj.source,images,obj.plugin)
