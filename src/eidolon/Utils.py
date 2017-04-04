@@ -1328,14 +1328,19 @@ class Task(object):
 		True create a thread which will _callFunc(), otherwise _callFunc() is called directly. Finally self.completed
 		is set to True once this is done.
 		'''
+		oldlabel=self.getLabel()
 		self.setLabel(self.label)
 		self.started=True
-		if useThread:
-			self.thread=Thread(target=self._callFunc,name=self.label)
-			self.thread.start()
-		else:
-			self._callFunc()
-		self.completed=True
+		try:
+			if useThread:
+				self.thread=Thread(target=self._callFunc,name=self.label)
+				self.thread.start()
+			else:
+				self._callFunc()
+			self.completed=True
+		finally:
+			if oldlabel and self.parentTask:
+				self.parentTask.setLabel(oldlabel) # restore the old label of the parent task if present
 
 	def isDone(self):
 		'''Returns True if the task has started and the thread is no longer alive or self.complete is True.'''

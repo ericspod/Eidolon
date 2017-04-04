@@ -91,6 +91,8 @@ intnums=Regex(r"(%s[ \n\r\t]+)+"%intregex).setParseAction(toMatrix(int))
 nums=Regex(r"(%s[ \n\r\t]+)+"%floatregex).setParseAction(toMatrix(float))
 vecs=Regex(r"(%s[ \n\r\t]+)+"%floatregex).setParseAction(toMatrix(vec3))
 
+metadata=Optional(Suppress(ZeroOrMore(nls)+Keyword('METADATA')+lineEnd+OneOrMore(CharsNotIn('\r\n')+lineEnd)+lineEnd))
+
 # dataset
 spatialvalue=(Keyword('DIMENSIONS')|Keyword('ORIGIN')|Keyword('SPACING')|Keyword('ASPECT_RATIO')) +vec+nls
 spatialvalues=ZeroOrMore(spatialvalue).setParseAction(lambda s,l,t:dict((t[i],t[i+1]) for i in range(0,len(t),2)))
@@ -101,10 +103,10 @@ polyelems.setParseAction(toTuple)
 # cells and cell types, produces a list of tuples of varying length which is turned into a matrix with as many columns as the largest tuple
 cellline=Regex(r"(%s[ \t]*)+"%intregex).setParseAction(lambda s,l,t:tuple(map(int,t[0].strip().split())))
 cellnums=ZeroOrMore(cellline+nls).setParseAction(toMatrix(None))
-cells=Suppress(Keyword('CELLS')+intnum+intnum)+nls+cellnums
-celltypes=Suppress(Keyword('CELL_TYPES')+intnum)+nls+intnums
+cells=Suppress(Keyword('CELLS')+intnum+intnum)+nls+cellnums+metadata
+celltypes=Suppress(Keyword('CELL_TYPES')+intnum)+nls+intnums+metadata
 
-points=Suppress(Keyword('POINTS')+intnum+ident)+nls+vecs
+points=Suppress(Keyword('POINTS')+intnum+ident)+nls+vecs+metadata
 
 strucpts=Keyword('STRUCTURED_POINTS')+nls+spatialvalues+Optional(points)
 strucgrid=Keyword('STRUCTURED_GRID')+nls+Suppress(Keyword('DIMENSIONS'))+vec+nls+points
@@ -116,15 +118,15 @@ dfield=Keyword('FIELD')+ident+nls+nums
 dataset=Suppress(Keyword('DATASET'))+(strucpts|strucgrid|rectgrid|polydata|unstrucgrid|dfield).setParseAction(toTuple)
 
 # attributes
-fieldarray=(ident+intnum+intnum+ident+nls+nums).setParseAction(toTuple)
+fieldarray=(ident+intnum+intnum+ident+nls+nums+metadata).setParseAction(toTuple)
 
 scalars=Keyword('SCALARS')+ident+ident+Optional(intnum)+nls+Optional(Keyword('LOOKUP_TABLE')+ident+nls)+nums
-color_scalars=Keyword('COLOR_SCALARS')+ident+intnum+nls+nums
-lookup=Keyword('LOOKUP_TABLE')+ident+intnum+nls+nums
-vectors=Keyword('VECTORS')+ident+ident+nls+nums
-normals=Keyword('NORMALS')+ident+ident+nls+nums
-tensors=Keyword('TENSORS')+ident+ident+nls+nums
-texcoords=Keyword('TEXTURE_COORDINATES')+ident+intnum+ident+nls+nums
+color_scalars=Keyword('COLOR_SCALARS')+ident+intnum+nls+nums+metadata
+lookup=Keyword('LOOKUP_TABLE')+ident+intnum+nls+nums+metadata
+vectors=Keyword('VECTORS')+ident+ident+nls+nums+metadata
+normals=Keyword('NORMALS')+ident+ident+nls+nums+metadata
+tensors=Keyword('TENSORS')+ident+ident+nls+nums+metadata
+texcoords=Keyword('TEXTURE_COORDINATES')+ident+intnum+ident+nls+nums+metadata
 field=Keyword('FIELD')+ident+intnum+nls+ZeroOrMore(fieldarray)
 attrtypes=(scalars|color_scalars|lookup|vectors|normals|texcoords|tensors|field).setParseAction(toTuple)
 
@@ -589,17 +591,18 @@ class VTKPlugin(MeshScenePlugin):
 				celldata=pieces[0].find('CellData') 
 				pointdata=pieces[0].find('PointData')
 				nodearray=points.find('DataArray')
+				nodes=readNodes(nodearray,byteorder,compressor)
+				inds=[]
+				
+				lines=IndexMatrix('lines',ElemType._Line1NL,0,2)
+				tris=IndexMatrix('tris',ElemType._Tri1NL,0,3)
+				quads=IndexMatrix('quads',ElemType._Quad1NL,0,4)
 				
 				poly=pieces[0].find('Polys')
 				polyconnect=first(p for p in poly.findall('DataArray') if p.get('Name').lower()=='connectivity')
-				
-				nodes=readNodes(nodearray,byteorder,compressor)
-				
-				inds=[]
-				
 				if polyconnect is not None and len(polyconnect.text.strip())>0:
 					ind=IndexMatrix('poly',ElemType._Tri1NL,0,3)
-					for tri in group(polyconnect.text.split(),3):
+					for tri in group(polyconnect.text.split(),3): # TODO: not correct, connect values give a range of indices
 						ind.append(*map(int,tri))
 					inds.append(ind)
 				
