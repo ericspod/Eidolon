@@ -909,25 +909,16 @@ class CardiacMotionProject(Project):
 	def getReportCard(self):
 		return first(obj for obj in self.memberObjs if obj.getName()==self.name and isinstance(obj,ReportCardSceneObject))
 
-	def checkIncludeObject(self,obj):
+	@taskmethod('Adding Object to Project')
+	def checkIncludeObject(self,obj,task):
 		'''Check whether the given object should be added to the project or not.'''
-		# if this isn't a scene object, ignore
-		if not isinstance(obj,SceneObject) or obj in self.memberObjs:
-			return
 
-#		# ignore if this isn't a mesh or image and we can't save it to a file
-#		if not isinstance(obj,(MeshSceneObject,ImageSceneObject)) and not obj.plugin.getObjFiles(obj):
-#			return
+		# only try to objects that aren't already in the project 
+		# Important: this task method will be called after the project has loaded so won't ask to add things already in the project
+		if obj in self.memberObjs:
+			return
 			
-		# ignore if this isn't a mesh or image
-		if not isinstance(obj,(MeshSceneObject,ImageSceneObject)):
-			return
-
-		pdir=self.getProjectDir()
-		files=map(os.path.abspath,obj.plugin.getObjFiles(obj) or [])
-
-		@taskroutine('Adding Object to Project')
-		def _copy(task=None):
+		def _copy():
 			newname=getValidFilename(obj.getName())
 			self.mgr.renameSceneObject(obj,newname)
 			filename=self.getProjectFile(obj.getName())
@@ -940,14 +931,19 @@ class CardiacMotionProject(Project):
 					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True)
 				else:
 					self.CardiacMotion.VTK.saveObject(obj,filename,setFilenames=True)
+			else:
+				obj.plugin.saveObject(obj,filename,setFilenames=True)
 
 			Project.addObject(self,obj)
 
 			self.save()
 
+		pdir=self.getProjectDir()
+		files=map(os.path.abspath,obj.plugin.getObjFiles(obj) or [])
+
 		if not files or any(not f.startswith(pdir) for f in files):
 			msg="Do you want to add %r to the project? This requires saving/copying the object's file data into the project directory."%(obj.getName())
-			self.mgr.win.chooseYesNoDialog(msg,'Adding Object',lambda:self.mgr.addTasks(_copy()))
+			self.mgr.win.chooseYesNoDialog(msg,'Adding Object',_copy)
 			
 	def _checkTrackDirs(self):
 		'''

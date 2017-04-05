@@ -26,6 +26,8 @@ import itertools
 DatafileParams=enum('name','title','type','srcimage')
 SegmentTypes=enum('LVPool','LV')
 
+segExt='.seg'
+
 SegViewPoints=enum(
 	('rvAttach','RV Anterior Attachment',color(1,0,1)),
 	('ch2Apex','2 Chamber Long Axis Apex',color(1,0,0)),
@@ -1043,7 +1045,7 @@ class SegSceneObject(SceneObject):
 	'''
 	def __init__(self,name,filename,plugin,**kwargs):
 		SceneObject.__init__(self,name,plugin,**kwargs)
-		self.filename=ensureExt(filename,'.seg')
+		self.filename=ensureExt(filename,segExt)
 		self.datamap={DatafileParams.name:name,DatafileParams.title:name}
 		self._updatePropTuples()
 
@@ -1183,7 +1185,7 @@ class SegmentPlugin(ScenePlugin):
 
 		prop.genMeshButton.clicked.connect(lambda:self._generateMeshButton(prop,obj))
 		prop.genMaskButton.clicked.connect(lambda:self._generateMaskButton(prop,obj))
-
+		
 		return prop
 
 	def updateObjPropBox(self,obj,prop):
@@ -1195,11 +1197,15 @@ class SegmentPlugin(ScenePlugin):
 		fillTable(obj.getPropTuples(),prop.propTable)
 		fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
 		
+		# if not source object has been selected, select the first one
+		if not obj.get(DatafileParams.srcimage) and len(imgnames)>0:
+			prop.srcBox.activated.emit(0)
+		
 	def acceptFile(self,filename):
-		return splitPathExt(filename)[2].lower() == '.seg'
+		return splitPathExt(filename)[2].lower() == segExt
 		
 	def checkFileOverwrite(self,obj,dirpath,name=None):
-		outfile=os.path.join(dirpath,name or obj.getName())+'.seg'
+		outfile=os.path.join(dirpath,name or obj.getName())+segExt
 		if os.path.exists(outfile):
 			return [outfile]
 		else:
@@ -1292,6 +1298,23 @@ class SegmentPlugin(ScenePlugin):
 			obj.set(DatafileParams.srcimage,fstimg)
 			
 		return obj
+		
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
+		if not isinstance(obj,SegSceneObject) or not isinstance(obj.plugin,SegmentPlugin):
+			raise ValueError('Can only save segment objects with SegmentPlugin')
+			
+		if os.path.isdir(path):
+			path=os.path.join(path,getValidFilename(obj.getName()))
+			
+		path=ensureExt(path,segExt)
+		oldpath=obj.filename
+		obj.filename=path
+		obj.save()
+		
+		if not setFilenames: # set the filename back to the original if we're not supposed to change it
+			obj.filename=oldpath
+		
+		return path
 
 	def createHemisphereMesh(self,segobj,name,refine,reinterpolateVal=20,calcAHA=False,isVolume=False,inner=True,plugin=None):
 		f=Future()

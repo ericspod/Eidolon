@@ -492,6 +492,429 @@ class EventHandler(object):
 				cblist.remove(cb)
 
 
+class ObjectLocker(object):
+	globalLocker=None
+	
+	def __init__(self):
+		self.objLocks={} # map of objects to locks used to store unique locks for every requested object
+		self.thisLock=RLock() # a lock for this object
+		ObjectLocker.globalLocker=ObjectLocker.globalLocker or self
+		
+	def getLock(self,obj):
+		with self.thisLock:
+			lock=first(self.objLocks[w] for w in self.objLocks if id(w())==id(obj))
+	
+			if not lock:
+				w=weakref.ref(obj,self._removeLock)
+				lock=RLock()
+				self.objLocks[w]=lock
+	
+			return lock
+			
+	def _removeLock(self,obj):
+		with self.thisLock:
+			self.objLocks.pop(obj)
+
+
+ObjectLocker.globalLocker=ObjectLocker()
+		
+
+def lockobj(obj,locker=None):
+	'''
+	Returns a lock object which is be globally unique per input object. This lock can be used to synchronize access
+	to any arbitrary object. It uses weak references to ensure previously locked objects can be collected.
+	This function is thread-safe.
+	'''
+	locker=locker or ObjectLocker.globalLocker
+	return locker.getLock(obj)
+
+
+def locking(func,locker=None):
+	'''
+	This is a locking method decorator which uses 'lockobj' to synchronize access to the current object. This ensures
+	that calls to decorated methods are restricted to one thread at a time, which doesn't necessarily ensure exclusive
+	access to the all of the receiving object's members. A calling thread having a lock to the receiver already through
+	'lockobj' will be able to call decorated methods as well.
+	'''
+	@wraps(func)
+	def funcwrap(self,*args,**kwargs):
+		with lockobj(self,locker):
+			return func(self,*args,**kwargs)
+
+	return funcwrap
+
+
+def trylocking(func,locker=None):
+	'''
+	Same as 'locking' except it only attempts to acquire the lock without blocking, and does nothing if the acquire fails.
+	'''
+	@wraps(func)
+	def funcwrap(self,*args,**kwargs):
+		lock=lockobj(self,locker)
+		if lock.acquire(False):
+			try:
+				return func(self,*args,**kwargs)
+			finally:
+				lock.release()
+
+	return funcwrap
+	
+
+class DelayThread(Thread):
+	'''
+	Calls a target callable with the given args after a delay time has elapsed, which is reset to the full time if
+	subsequent call request come before the call occurs. This ensures that a single call to the target happens even
+	if multiple requests come in during the delay period, allowing for example update tasks to be scheduled when UI
+	elements are manipulated and then deferred if further operations are performed soon after.
+	'''
+
+	globalDelayMap={}
+
+	def __init__(self,delay,target):
+		Thread.__init__(self)
+		self.target=target
+		self.args=()
+		self.kwargs={}
+		self.delay=float(delay)
+		self.decDelayVal=0.05
+		self.currentDelay=0.0
+		self.evt=Event()
+		self.daemon=True
+
+	def stop(self):
+		self.delay=-1
+		self.evt.set()
+
+	@locking
+	def callTargetDelayed(self,args,kwargs):
+		self.currentDelay=self.delay
+		self.args=args
+		self.kwargs=kwargs
+		self.evt.set()
+
+	@locking
+	def getCurrentDelay(self):
+		return self.currentDelay
+
+	@locking
+	def decCurrentDelay(self):
+		self.currentDelay-=self.decDelayVal
+
+	def run(self):
+		while True:
+			self.evt.wait()
+			if self.delay<0:
+				break
+
+			while self.getCurrentDelay()>0:
+				self.decCurrentDelay()
+				time.sleep(self.decDelayVal)
+
+			try:
+				self.target(*self.args, **self.kwargs)
+				self.args=None
+				self.kwargs=None
+			except:
+				t=first(t for t,d in DelayThread.globalDelayMap.items() if d==self)
+				del DelayThread.globalDelayMap[t]
+				return
+
+			self.evt.clear()
+
+	@staticmethod
+	def callGlobalTarget(delay,target,args,kwargs):
+		if target not in DelayThread.globalDelayMap:
+			DelayThread.globalDelayMap[target]=DelayThread(delay,target)
+			DelayThread.globalDelayMap[target].start()
+
+		DelayThread.globalDelayMap[target].callTargetDelayed(args,kwargs)
+
+	@staticmethod
+	def removeGlobalTarget(target):
+		for d in DelayThread.globalDelayMap:
+			if d.target==target:
+				del DelayThread.globalDelayMap[d]
+				break
+
+
+def delayedcall(delay):
+	'''
+	Wrapper for defining a delayed call function. When the function is called, up to `delay' seconds elapses before
+	the call actually occurs. Subsequent calls to the function before this time elapses resets the counter but will
+	not induce multiple calls. The most recent arguments passed to the wrapped function are the ones used when the
+	call does occur; there is never a return value.
+	'''
+	def funcwrap(func):
+		@wraps(func)
+		def delayCall(*args,**kwargs):
+			DelayThread.callGlobalTarget(delay,func,args,kwargs)
+
+		return delayCall
+
+	return funcwrap
+
+
+def delayedMethodWeak(obj,methname,delay=0):
+	'''
+	Replaces the method named `methname' of object `obj' with an equivalent delayed call with a delay value of `delay'.
+	The new method assigned to `obj' replaces `methname' but keeps only a weak reference to `obj'. Once `obj' has been
+	collected an exception will be thrown when attempting to call this method, this will cause the delay thread to be
+	removed from the DelayThread global list. This allows objects to be assigned individual delay threads for their
+	methods, otherwise using delayedcall() directly means a thread is assigned to a method which is shared amongst all
+	instances. Using the weak reference prevents the delay mechanism from affecting collection behaviour.
+	'''
+	wself=weakref.ref(obj)
+	meth=getattr(type(obj),methname)
+
+	@delayedcall(delay)
+	def newmeth(*args,**kwargs):
+		meth(wself(),*args,**kwargs)
+
+	setattr(obj,methname,newmeth)
+		
+
+class Task(object):
+	'''
+	This class represents the abstract notion of a task, with a 'curprogress' value to indicate progress in relation to
+	a 'maxprogress' value. Tasks may have their own threads or be executed by their containers. Normally tasks are
+	executed by a TaskQueue object. The actual action of the Task object should be implemented by the supplied `func'
+	argument, which must be a callable accepting the positional and keyword arguments given by `args' and `kwargs'.
+	When a Task object is executed, it's start() method is called which will call self.func either in the calling thread
+	or a new one, depending on the `useThread' argument. A Task object can have a parent Task, which occurs when the body
+	of one task invokes an operation that normally adds a task to a queue. When this occurs the progress and label 
+	methods call into the parent Task object.
+	'''
+	@staticmethod
+	def Null():
+		return Task('NullTask')
+
+	def __init__(self,label,func=None,args=(),kwargs={},selfName=None,parentTask=None):
+		self.curprogress=0
+		self.maxprogress=0
+		self.result=None
+		self.completed=False
+		self.started=False
+		self.flushQueue=False # set to true if the queue is to be task flushed when this task finishes
+		self.parentTask=parentTask # if this task is being run within another task, call that task's methods instead so that it is used to indicate status
+
+		kwargs=dict(kwargs)
+		if selfName:
+			kwargs[selfName]=self
+
+		self.func=func
+		self.args=args
+		self.kwargs=kwargs
+		self.thread=None
+		self.setLabel(label)
+
+	def _callFunc(self):
+		'''Call self.func with arguments self.args and self.kwargs, storing the result in self.result.'''
+		self.result=self.func(*self.args,**self.kwargs)
+
+	def start(self,useThread=False):
+		'''
+		Perform the execution of the task. This will set the label, set self.started to True, and then if useThread is
+		True create a thread which will _callFunc(), otherwise _callFunc() is called directly. Finally self.completed
+		is set to True once this is done.
+		'''
+		oldlabel=self.getLabel()
+		self.setLabel(self.label)
+		self.started=True
+		try:
+			if useThread:
+				self.thread=Thread(target=self._callFunc,name=self.label)
+				self.thread.start()
+			else:
+				self._callFunc()
+			self.completed=True
+		finally:
+			if oldlabel and self.parentTask:
+				self.parentTask.setLabel(oldlabel) # restore the old label of the parent task if present
+
+	def isDone(self):
+		'''Returns True if the task has started and the thread is no longer alive or self.complete is True.'''
+		return self.started and (not self.thread.isAlive() if self.thread else self.completed)
+
+	def setLabel(self,label):
+		'''Set the task's label (or that of the parent if present), this will be used by UI to indicate current task.'''
+		if self.parentTask:
+			self.parentTask.setLabel(label)
+		else:
+			self.label=label
+			if self.thread:
+				self.thread.label=label
+
+	def getLabel(self):
+		'''Get the task's label, or that of the parent if present.'''
+		if self.parentTask:
+			return self.parentTask.getLabel()
+		else:
+			return self.label
+
+	def setProgress(self,curprogress):
+		'''Set the progress of this or the parent task to the integer value `curprogress'.'''
+		if self.parentTask:
+			self.parentTask.setProgress(curprogress)
+		else:
+			self.curprogress=curprogress
+
+	def setMaxProgress(self,maxprogress):
+		'''Set the max progress value of this or the parent task to the integer value `maxprogress'.'''
+		if self.parentTask:
+			self.parentTask.setMaxProgress(maxprogress)
+		else:
+			self.maxprogress=maxprogress
+			self.curprogress=min(self.curprogress,self.maxprogress)
+
+	def getProgress(self):
+		'''Returns the current progress value and maximum value, or that of the parent if present, or (0,0) if unknown.'''
+		if self.parentTask:
+			return self.parentTask.getProgress()
+		else:
+			return self.curprogress,self.maxprogress
+
+	def __repr__(self):
+		return 'Task<%s>' %self.label
+
+
+class TaskQueue(object):
+	'''
+	This represents a queue of tasks waiting to be executed and the algorithm to do so. The processTaskQueue() method
+	handles executing each task in sequence and handling any exceptions that occur. The expected use case is that this
+	class will be mixed in with another responsible for maintaining tasks and other system-level facilities.
+	'''
+	def __init__(self):
+		self.tasklist=[] # list of queued Task objects
+		self.finishedtasks=[] # list of completed Task objects
+		self.currentTask=None # the current running task, None if there is none
+		self.doProcess=True # loop condition in processTaskQueue
+		
+	def processTaskQueue(self):
+		'''
+		Process the tasks in the queue, looping so long as self.doProcess is True. This method will not return so long
+		as this condition is True and so should be executed in its own thread. Tasks are popped from the top of the
+		queue and their start() methods are called. Exceptions from this method are handled through taskExcept().
+		'''
+		while self.doProcess:
+			try:
+				# remove the first task, using the self lock to prevent interference while doing so
+				with lockobj(self):
+					if len(self.tasklist)>0:
+						self.currentTask=self.tasklist.pop(0)
+	
+				# attempt to run the task by calling its start() method, on exception report and clear the queue
+				try:
+					if self.currentTask:
+						self.currentTask.start() # run the task's operation
+						self.finishedtasks.append(self.currentTask)
+					else:
+						time.sleep(0.1)
+				except FutureError as fe:
+					exc=fe.exc_value
+					while exc!=fe and isinstance(exc,FutureError):
+						exc=exc.exc_value
+						
+					self.taskExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
+					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+				except Exception as e:
+					if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
+						self.taskExcept(e,'','Exception from queued task '+self.currentTask.getLabel())
+						self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+				finally:
+					# set the current task to None, using self lock to prevent inconsistency with updatethread
+					with lockobj(self):
+						# clear the queue if there's a task and it wants to remove all current tasks
+						if self.currentTask!=None and self.currentTask.flushQueue:
+							del self.tasklist[:]
+	
+						self.currentTask=None
+			except:
+				pass # ignore errors during shutdown 
+		
+	@locking		
+	def addTasks(self,*tasks):
+		'''Adds the given tasks to the task queue whether called in another task or not.'''
+		assert all(isinstance(t,Task) for t in tasks)
+		self.tasklist+=list(tasks)
+
+	def addFuncTask(self,func,name=None):
+		'''Creates a task object (named 'name' or the function name if None) to call the function when executed.'''
+		self.addTasks(Task(name or func.__name__,func))
+
+	@locking
+	def listTasks(self):
+		'''Returns a list of the labels of all queued tasks.'''
+		return [t.getLabel() for t in self.tasklist]
+		
+	@locking
+	def getNumTasks(self):
+		'''Returns the number of queued tasks.'''
+		return len(self.tasklist)
+				
+	def taskExcept(self,ex,msg,title):
+		'''Called when the task queue encounters exception `ex' with message `msg' and report window title `title'.'''
+		pass
+
+
+def taskroutine(taskLabel=None,selfName='task'):
+	'''
+	Routine decorator which produces a wrapper function returning a task that will execute the original function when
+	processedby the task queue. The first argument indicates the name of the variable used to pass the Task instance
+	to the function call or is None if no passing is wanted. If the task argument is present it must be the last and
+	when the function is called no value for it must be provided, thus it must have a default value (usually None).
+	The optional second argument defines whether the task is a threaded one or not (default is False).
+	'''
+	def funcwrap(func):
+		@wraps(func)
+		def taskroutinefunc(*args,**kwargs):
+			return Task(taskLabel if taskLabel else func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
+
+		return taskroutinefunc
+
+	return funcwrap
+	
+
+def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
+	'''
+	Wraps a given method such that it will execute the method's body in a task and store the result in a returned
+	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
+	object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
+	The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
+	
+	For example, the method:
+	
+		def meth(self,*args,**kwargs):
+			f=Future()
+			@taskroutine('msg')
+			def _func(task):
+				with f:
+					f.setObject(doSomething())
+					
+			return self.mgr.runTasks(_func(),f)
+		
+	is equivalent to:
+		
+		@taskmethod('msg')
+		def meth(self,*args,**kwargs):
+			return doSomething()
+	'''
+	
+	def methwrap(meth): # function which returns wrapper method
+		@wraps(meth)
+		def taskmethod(self,*args,**kwargs): # wrapper method which adds the task executing `meth'
+			f=Future()
+			def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
+				with f:
+					kwargs[selfName]=task
+					f.setObject(meth(self,*args,**kwargs))
+				
+			return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
+		
+		return taskmethod
+		
+	return methwrap
+
+
 def readBasicConfig(filename):
 	'''
 	Read the config (.ini) file `filename' into a map of name/value pairs. The values must be acceptable inputs to
@@ -747,6 +1170,8 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 	timeout=kwargs.get('timeout',None) # timeout time value in seconds
 	cwd=kwargs.get('cwd',None)
 	exefile=os.path.abspath(exefile)
+	output=''
+	errcode=0
 
 	if isWindows:
 		exefile=ensureExt(exefile,'.exe')
@@ -757,14 +1182,13 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 	if not os.path.isfile(exefile):
 		raise IOError('Cannot find program %r' %exefile)
 		
+	# if log file given, open it to receive output, otherwise send output to pipe
 	if 'logfile' in kwargs:
-		stdout=open(kwargs['logfile'],'w')
+		stdout=open(kwargs['logfile'],'w+')
 	else:
 		stdout=subprocess.PIPE
 
 	proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = stdout,cwd=cwd)
-	output=''
-	errcode=0
 
 	# if timeout is present, kill the process and throw an exception if the program doesn't finish beforehand
 	if timeout!=None and timeout>0:
@@ -781,9 +1205,15 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 			output='Process %r failed to complete after %.3f seconds\n' %(exefile,timeout)
 			errcode=1
 
-	(out,err) = proc.communicate()
-	returncode= errcode if errcode!=0 and proc.returncode==0 else proc.returncode
+	out,_ = proc.communicate()
+	returncode= errcode if errcode!=0 and proc.returncode==0 else proc.returncode # choose errcode if the process was killed
 	
+	# if a log file was specified, read it into `out' since it will be empty in this case
+	if 'logfile' in kwargs:
+		stdout.seek(0)
+		out=stdout.read()
+		stdout.close()
+		
 	return (returncode,output+(out or ''))
 
 
@@ -1091,177 +1521,6 @@ def isMainThread():
 	return isinstance(currentThread(),_MainThread)
 
 
-# This global map of objects to locks is used by 'lockobj' to store unique locks for every requested object
-globalObjLocks={}
-globalLocksLock=RLock() # a lock for the above object map
-
-
-def _removeObjLock(obj):
-	with globalLocksLock:
-		globalObjLocks.pop(obj)
-
-
-def lockobj(obj):
-	'''
-	Returns a lock object which is be globally unique per input object. This lock can be used to synchronize access
-	to any arbitrary object. It uses weak references to ensure previously locked objects can be collected.
-	This function is thread-safe.
-	'''
-	with globalLocksLock:
-		lock=first(globalObjLocks[w] for w in globalObjLocks if id(w())==id(obj))
-
-		if not lock:
-			w=weakref.ref(obj,_removeObjLock)
-			lock=RLock()
-			globalObjLocks[w]=lock
-
-		return lock
-
-
-def locking(func):
-	'''
-	This is a locking method decorator which uses 'lockobj' to synchronize access to the current object. This ensures
-	that calls to decorated methods are restricted to one thread at a time, which doesn't necessarily ensure exclusive
-	access to the all of the receiving object's members. A calling thread having a lock to the receiver already through
-	'lockobj' will be able to call decorated methods as well.
-	'''
-	@wraps(func)
-	def funcwrap(self,*args,**kwargs):
-		with lockobj(self):
-			return func(self,*args,**kwargs)
-
-	return funcwrap
-
-
-def trylocking(func):
-	'''
-	Same as 'locking' except it only attempts to acquire the lock without blocking, and does nothing if the acquire fails.
-	'''
-	@wraps(func)
-	def funcwrap(self,*args,**kwargs):
-		lock=lockobj(self)
-		if lock.acquire(False):
-			try:
-				return func(self,*args,**kwargs)
-			finally:
-				lock.release()
-
-	return funcwrap
-
-
-class DelayThread(Thread):
-	'''
-	Calls a target callable with the given args after a delay time has elapsed, which is reset to the full time if
-	subsequent call request come before the call occurs. This ensures that a single call to the target happens even
-	if multiple requests come in during the delay period, allowing for example update tasks to be scheduled when UI
-	elements are manipulated and then deferred if further operations are performed soon after.
-	'''
-
-	globalDelayMap={}
-
-	def __init__(self,delay,target):
-		Thread.__init__(self)
-		self.target=target
-		self.args=()
-		self.kwargs={}
-		self.delay=float(delay)
-		self.decDelayVal=0.05
-		self.currentDelay=0.0
-		self.evt=Event()
-		self.daemon=True
-
-	def stop(self):
-		self.delay=-1
-		self.evt.set()
-
-	@locking
-	def callTargetDelayed(self,args,kwargs):
-		self.currentDelay=self.delay
-		self.args=args
-		self.kwargs=kwargs
-		self.evt.set()
-
-	@locking
-	def getCurrentDelay(self):
-		return self.currentDelay
-
-	@locking
-	def decCurrentDelay(self):
-		self.currentDelay-=self.decDelayVal
-
-	def run(self):
-		while True:
-			self.evt.wait()
-			if self.delay<0:
-				break
-
-			while self.getCurrentDelay()>0:
-				self.decCurrentDelay()
-				time.sleep(self.decDelayVal)
-
-			try:
-				self.target(*self.args, **self.kwargs)
-				self.args=None
-				self.kwargs=None
-			except:
-				t=first(t for t,d in DelayThread.globalDelayMap.items() if d==self)
-				del DelayThread.globalDelayMap[t]
-				return
-
-			self.evt.clear()
-
-	@staticmethod
-	def callGlobalTarget(delay,target,args,kwargs):
-		if target not in DelayThread.globalDelayMap:
-			DelayThread.globalDelayMap[target]=DelayThread(delay,target)
-			DelayThread.globalDelayMap[target].start()
-
-		DelayThread.globalDelayMap[target].callTargetDelayed(args,kwargs)
-
-	@staticmethod
-	def removeGlobalTarget(target):
-		for d in DelayThread.globalDelayMap:
-			if d.target==target:
-				del DelayThread.globalDelayMap[d]
-				break
-
-
-def delayedcall(delay):
-	'''
-	Wrapper for defining a delayed call function. When the function is called, up to `delay' seconds elapses before
-	the call actually occurs. Subsequent calls to the function before this time elapses resets the counter but will
-	not induce multiple calls. The most recent arguments passed to the wrapped function are the ones used when the
-	call does occur; there is never a return value.
-	'''
-	def funcwrap(func):
-		@wraps(func)
-		def delayCall(*args,**kwargs):
-			DelayThread.callGlobalTarget(delay,func,args,kwargs)
-
-		return delayCall
-
-	return funcwrap
-
-
-def delayedMethodWeak(obj,methname,delay=0):
-	'''
-	Replaces the method named `methname' of object `obj' with an equivalent delayed call with a delay value of `delay'.
-	The new method assigned to `obj' replaces `methname' but keeps only a weak reference to `obj'. Once `obj' has been
-	collected an exception will be thrown when attempting to call this method, this will cause the delay thread to be
-	removed from the DelayThread global list. This allows objects to be assigned individual delay threads for their
-	methods, otherwise using delayedcall() directly means a thread is assigned to a method which is shared amongst all
-	instances. Using the weak reference prevents the delay mechanism from affecting collection behaviour.
-	'''
-	wself=weakref.ref(obj)
-	meth=getattr(type(obj),methname)
-
-	@delayedcall(delay)
-	def newmeth(*args,**kwargs):
-		meth(wself(),*args,**kwargs)
-
-	setattr(obj,methname,newmeth)
-
-
 def asyncfunc(func):
 	'''
 	Wraps the function `func' with a asynchronous version which executes the function's body in a daemon thread. The
@@ -1282,249 +1541,7 @@ def asyncfunc(func):
 		return t
 		
 	return funcwrap
-		
 
-class Task(object):
-	'''
-	This class represents the abstract notion of a task, with a 'curprogress' value to indicate progress in relation to
-	a 'maxprogress' value. Tasks may have their own threads or be executed by their containers. Normally tasks are
-	executed by a TaskQueue object. The actual action of the Task object should be implemented by the supplied `func'
-	argument, which must be a callable accepting the positional and keyword arguments given by `args' and `kwargs'.
-	When a Task object is executed, it's start() method is called which will call self.func either in the calling thread
-	or a new one, depending on the `useThread' argument. A Task object can have a parent Task, which occurs when the body
-	of one task invokes an operation that normally adds a task to a queue. When this occurs the progress and label 
-	methods call into the parent Task object.
-	'''
-	@staticmethod
-	def Null():
-		return Task('NullTask')
-
-	def __init__(self,label,func=None,args=(),kwargs={},selfName=None,parentTask=None):
-		self.curprogress=0
-		self.maxprogress=0
-		self.result=None
-		self.completed=False
-		self.started=False
-		self.flushQueue=False # set to true if the queue is to be task flushed when this task finishes
-		self.parentTask=parentTask # if this task is being run within another task, call that task's methods instead so that it is used to indicate status
-
-		kwargs=dict(kwargs)
-		if selfName:
-			kwargs[selfName]=self
-
-		self.func=func
-		self.args=args
-		self.kwargs=kwargs
-		self.thread=None
-		self.setLabel(label)
-
-	def _callFunc(self):
-		'''Call self.func with arguments self.args and self.kwargs, storing the result in self.result.'''
-		self.result=self.func(*self.args,**self.kwargs)
-
-	def start(self,useThread=False):
-		'''
-		Perform the execution of the task. This will set the label, set self.started to True, and then if useThread is
-		True create a thread which will _callFunc(), otherwise _callFunc() is called directly. Finally self.completed
-		is set to True once this is done.
-		'''
-		oldlabel=self.getLabel()
-		self.setLabel(self.label)
-		self.started=True
-		try:
-			if useThread:
-				self.thread=Thread(target=self._callFunc,name=self.label)
-				self.thread.start()
-			else:
-				self._callFunc()
-			self.completed=True
-		finally:
-			if oldlabel and self.parentTask:
-				self.parentTask.setLabel(oldlabel) # restore the old label of the parent task if present
-
-	def isDone(self):
-		'''Returns True if the task has started and the thread is no longer alive or self.complete is True.'''
-		return self.started and (not self.thread.isAlive() if self.thread else self.completed)
-
-	def setLabel(self,label):
-		'''Set the task's label (or that of the parent if present), this will be used by UI to indicate current task.'''
-		if self.parentTask:
-			self.parentTask.setLabel(label)
-		else:
-			self.label=label
-			if self.thread:
-				self.thread.label=label
-
-	def getLabel(self):
-		'''Get the task's label, or that of the parent if present.'''
-		if self.parentTask:
-			return self.parentTask.getLabel()
-		else:
-			return self.label
-
-	def setProgress(self,curprogress):
-		'''Set the progress of this or the parent task to the integer value `curprogress'.'''
-		if self.parentTask:
-			self.parentTask.setProgress(curprogress)
-		else:
-			self.curprogress=curprogress
-
-	def setMaxProgress(self,maxprogress):
-		'''Set the max progress value of this or the parent task to the integer value `maxprogress'.'''
-		if self.parentTask:
-			self.parentTask.setMaxProgress(maxprogress)
-		else:
-			self.maxprogress=maxprogress
-			self.curprogress=min(self.curprogress,self.maxprogress)
-
-	def getProgress(self):
-		'''Returns the current progress value and maximum value, or that of the parent if present, or (0,0) if unknown.'''
-		if self.parentTask:
-			return self.parentTask.getProgress()
-		else:
-			return self.curprogress,self.maxprogress
-
-	def __repr__(self):
-		return 'Task<%s>' %self.label
-
-
-class TaskQueue(object):
-	'''
-	This represents a queue of tasks waiting to be executed and the algorithm to do so. The processTaskQueue() method
-	handles executing each task in sequence and handling any exceptions that occur. The expected use case is that this
-	class will be mixed in with another responsible for maintaining tasks and other system-level facilities.
-	'''
-	def __init__(self):
-		self.tasklist=[] # list of queued Task objects
-		self.finishedtasks=[] # list of completed Task objects
-		self.currentTask=None # the current running task, None if there is none
-		self.doProcess=True # loop condition in processTaskQueue
-		
-	def processTaskQueue(self):
-		'''
-		Process the tasks in the queue, looping so long as self.doProcess is True. This method will not return so long
-		as this condition is True and so should be executed in its own thread. Tasks are popped from the top of the
-		queue and their start() methods are called. Exceptions from this method are handled through taskExcept().
-		'''
-		while self.doProcess:
-			try:
-				# remove the first task, using the self lock to prevent interference while doing so
-				with lockobj(self):
-					if len(self.tasklist)>0:
-						self.currentTask=self.tasklist.pop(0)
-	
-				# attempt to run the task by calling its start() method, on exception report and clear the queue
-				try:
-					if self.currentTask:
-						self.currentTask.start() # run the task's operation
-						self.finishedtasks.append(self.currentTask)
-					else:
-						time.sleep(0.1)
-				except FutureError as fe:
-					exc=fe.exc_value
-					while exc!=fe and isinstance(exc,FutureError):
-						exc=exc.exc_value
-						
-					self.taskExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
-					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-				except Exception as e:
-					if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
-						self.taskExcept(e,'','Exception from queued task '+self.currentTask.getLabel())
-						self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-				finally:
-					# set the current task to None, using self lock to prevent inconsistency with updatethread
-					with lockobj(self):
-						# clear the queue if there's a task and it wants to remove all current tasks
-						if self.currentTask!=None and self.currentTask.flushQueue:
-							del self.tasklist[:]
-	
-						self.currentTask=None
-			except:
-				pass # ignore errors during shutdown 
-		
-	@locking		
-	def addTasks(self,*tasks):
-		'''Adds the given tasks to the task queue whether called in another task or not.'''
-		assert all(isinstance(t,Task) for t in tasks)
-		self.tasklist+=list(tasks)
-
-	def addFuncTask(self,func,name=None):
-		'''Creates a task object (named 'name' or the function name if None) to call the function when executed.'''
-		self.addTasks(Task(name or func.__name__,func))
-
-	@locking
-	def listTasks(self):
-		'''Returns a list of the labels of all queued tasks.'''
-		return [t.getLabel() for t in self.tasklist]
-		
-	@locking
-	def getNumTasks(self):
-		'''Returns the number of queued tasks.'''
-		return len(self.tasklist)
-				
-	def taskExcept(self,ex,msg,title):
-		'''Called when the task queue encounters exception `ex' with message `msg' and report window title `title'.'''
-		pass
-
-
-def taskroutine(taskLabel=None,selfName='task'):
-	'''
-	Routine decorator which produces a wrapper function returning a task that will execute the original function when
-	processedby the task queue. The first argument indicates the name of the variable used to pass the Task instance
-	to the function call or is None if no passing is wanted. If the task argument is present it must be the last and
-	when the function is called no value for it must be provided, thus it must have a default value (usually None).
-	The optional second argument defines whether the task is a threaded one or not (default is False).
-	'''
-	def funcwrap(func):
-		@wraps(func)
-		def taskroutinefunc(*args,**kwargs):
-			return Task(taskLabel if taskLabel else func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
-
-		return taskroutinefunc
-
-	return funcwrap
-	
-
-def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
-	'''
-	Wraps a given method such that it will execute the method's body in a task and store the result in a returned
-	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
-	object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
-	The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
-	
-	For example, the method:
-	
-		def meth(self,*args,**kwargs):
-			f=Future()
-			@taskroutine('msg')
-			def _func(task):
-				with f:
-					f.setObject(doSomething())
-					
-			return self.mgr.runTasks(_func(),f)
-		
-	is equivalent to:
-		
-		@taskmethod('msg')
-		def meth(self,*args,**kwargs):
-			return doSomething()
-	'''
-	
-	def methwrap(meth): # function which returns wrapper method
-		@wraps(meth)
-		def taskmethod(self,*args,**kwargs): # wrapper method which adds the task executing `meth'
-			f=Future()
-			def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
-				with f:
-					kwargs[selfName]=task
-					f.setObject(meth(self,*args,**kwargs))
-				
-			return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
-		
-		return taskmethod
-		
-	return methwrap
-	
 
 def partitionSequence(maxval,part,numparts):
 	'''

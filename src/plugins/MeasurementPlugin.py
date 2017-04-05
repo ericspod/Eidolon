@@ -832,6 +832,23 @@ class MeasurePlugin(ScenePlugin):
 		obj.load()
 		return obj
 		
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
+		if not isinstance(obj,MeasureSceneObject) or not isinstance(obj.plugin,MeasurePlugin):
+			raise ValueError('Can only save measurement objects with MeasurePlugin')
+			
+		if os.path.isdir(path):
+			path=os.path.join(path,getValidFilename(obj.getName()))
+			
+		path=ensureExt(path,measureExt)
+		oldpath=obj.filename
+		obj.filename=path
+		obj.save()
+		
+		if not setFilenames: # set the filename back to the original if we're not supposed to change it
+			obj.filename=oldpath
+		
+		return path
+		
 	def addTrackSource(self,name,func):
 		'''
 		Add the tracking source for the name/directory `name'. The `func' callable must accept 2 arguments, the name

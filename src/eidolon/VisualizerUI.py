@@ -2172,7 +2172,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		self.setupUi(self)
 		self.setWindowTitle('%s v%s (FOR RESEARCH ONLY)'%(eidolon.__appname__,eidolon.__version__))
 
-		self.treeWidget.itemClicked.connect(lambda:self._clickedTree(self.propScrollArea,self.treeWidget.currentItem()))
+		self.treeWidget.currentItemChanged.connect(lambda:self._clickedTree(self.propScrollArea,self.treeWidget.currentItem()))
 		self.treeWidget.itemDoubleClicked.connect(lambda:self._doubleClickedTree(self.propScrollArea,self.treeWidget.currentItem()))
 		self.assetList.itemSelectionChanged.connect(lambda :self._clickedTree(self.assetScrollArea,self.assetList.currentItem()))
 		self.treeWidget.customContextMenuRequested.connect(lambda p:self._menuClickedTree(self.treeWidget,p))

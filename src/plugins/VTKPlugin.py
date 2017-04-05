@@ -490,7 +490,7 @@ class VTKPlugin(MeshScenePlugin):
 				text=base64.decodestring(node.text)[8:] # skip 8 byte header?
 				if compressor:
 					raise NotImplementedError("Haven't figured out compression yet")
-					#text=zlib.decompress(text[:24]) # skip 24 byte header? this refuses to work
+					#text=zlib.decompress(text[:24]) # TODO: skip 24 byte header? this refuses to work
 					
 				return np.frombuffer(text,dtype=dtype)
 			else:
@@ -522,6 +522,18 @@ class VTKPlugin(MeshScenePlugin):
 					mat.meta(StdProps._elemdata,'True')	
 					
 			return fields
+			
+		def yieldConnectedOffsets(conoffsetpair,byteorder,compressor):
+			connect=first(c for c in conoffsetpair if _get(c,'Name')=='connectivity')
+			offsets=first(c for c in conoffsetpair if _get(c,'Name')=='offsets')
+			start=0
+			if connect is not None and len(connect.text.strip())>0:
+				connect=readArray(connect,byteorder,compressor).tolist()
+				offsets=readArray(offsets,byteorder,compressor).tolist()
+				
+				for off in offsets:
+					yield connect[start:off]
+					start=off
 				
 		f=Future()
 		@taskroutine('Loading VTK XML File')
@@ -597,14 +609,33 @@ class VTKPlugin(MeshScenePlugin):
 				lines=IndexMatrix('lines',ElemType._Line1NL,0,2)
 				tris=IndexMatrix('tris',ElemType._Tri1NL,0,3)
 				quads=IndexMatrix('quads',ElemType._Quad1NL,0,4)
-				
-				poly=pieces[0].find('Polys')
-				polyconnect=first(p for p in poly.findall('DataArray') if p.get('Name').lower()=='connectivity')
-				if polyconnect is not None and len(polyconnect.text.strip())>0:
-					ind=IndexMatrix('poly',ElemType._Tri1NL,0,3)
-					for tri in group(polyconnect.text.split(),3): # TODO: not correct, connect values give a range of indices
-						ind.append(*map(int,tri))
-					inds.append(ind)
+					
+				for a,b in yieldConnectedOffsets(pieces[0].find('Lines'),byteorder,compressor):
+					lines.append(a,b)
+					
+				for strip in yieldConnectedOffsets(pieces[0].find('Strips'),byteorder,compressor):
+					for a,b,c in successive(strip,3):
+						tris.append(a,b,c)
+					
+				for poly in yieldConnectedOffsets(pieces[0].find('Polys'),byteorder,compressor):
+					if len(poly)==2:
+						lines.append(*poly)
+					elif len(poly)==3:
+						tris.append(*poly)
+					elif len(poly)==4:
+						quads.append(*poly)
+						
+					# TODO: read in arbitrary polygon and triangulate?
+					
+				if len(lines)>0:
+					inds.append(lines)
+					
+				if len(tris)>0:
+					inds.append(tris)
+					
+				if len(quads)>0:
+					quads[:,:]=np.asarray(quads)[:,CellTypes.Quad[-1]]
+					inds.append(quads)
 				
 				fields=readFields(celldata,pointdata,byteorder,compressor)
 				
@@ -701,7 +732,7 @@ class VTKPlugin(MeshScenePlugin):
 		@taskroutine('Saving VTK XML File')
 		def _saveFile(obj,filenameprefix,filetype,setObjArgs,task):
 			with f:
-				assert filetype in ('vtu',) # TODO: other file types
+				assert filetype in ('vtu',) # TODO: other file types? No real data format need for anything else though some may want vtp
 				dds=obj.datasets
 				filenameprefix=os.path.splitext(filenameprefix)[0]
 				
