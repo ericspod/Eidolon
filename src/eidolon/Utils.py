@@ -1566,14 +1566,14 @@ def createShortName(*comps,**kwargs):
 
 def uniqueStr(name,namelist,spacer='_'):
 	'''
-	Derive a string from `name' guaranteed to not be in `namelist', which will be `name' if it wasn't originally in list.
-	The created name will otherwise be `name' followed by `spacer' and a number.
+	Derive a string from `name' guaranteed to not be in `namelist'. If `name' isn't in `namelist', it will be returned
+	unmodified, otherwise the created name will be `name' followed by `spacer' and a number which makes it unique.
 	'''
 	count=1
 	newname=name
 
 	while newname in namelist:
-		newname=name+spacer+str(count)
+		newname='%s%s%.2i'%(name,spacer,count)
 		count+=1
 
 	return newname

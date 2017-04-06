@@ -1373,28 +1373,28 @@ class IRTKPluginMixin(object):
 		timesteps=imgobj.getTimestepList()
 		model=model or 'FFD'
 
-		if not os.path.isfile(paramfile):
+		if not os.path.isfile(paramfile): # choose the default parameter file if no valid one provided
 			paramfile=self.ffd_motion
 
-		trackname=trackname.strip() or 'RegTrack_'+imgobj.getName()
+		trackname=trackname.strip() or 'RegTrack_'+imgobj.getName() # choose default track name based on image object name
 
 		trackname=self.getUniqueObjName(getValidFilename(trackname))
 		trackdir=self.getLocalFile(trackname)
 		maskfile=None
+		results=[]
+
+		os.mkdir(trackdir) # create the directory to contain all the tracking information
 		
+		# if a mask object is provided, reimage it to the same space as the tracked image and save to the tracking directory
 		if maskname and maskname!='None':
 			mask=self.findObject(maskname)
+			maskfile=os.path.join(trackdir,maskname+'_I') #self.getUniqueLocalFile(maskname+'_I')
 			maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
 			resampleImage(mask,maski)
-			maskfile=self.getUniqueLocalFile(maskname+'_I')
 			self.Nifti.saveObject(maski,maskfile)
+			task.setLabel('Tracking Image With MIRTK register') # reset the label
 
-		os.mkdir(trackdir)
-		names=[]
-		results=[]
-		
-		task.setLabel('Tracking Image With MIRTK register') # reset the label
-		
+		# initialize the configuration values to store in the tracking ini file
 		conf={
 			JobMetaValues._trackobj     :imgname,
 			JobMetaValues._maskobj      :maskname,
@@ -1425,6 +1425,8 @@ class IRTKPluginMixin(object):
 			results.append(r)
 			task.setProgress(1)
 		else:
+			names=[]
+			# save each timestep into a separate nifti file
 			for i,tsinds in enumerate(indices):
 				name='image%.4i'%i
 				filename=os.path.join(trackdir,name+'.nii')
@@ -1434,6 +1436,7 @@ class IRTKPluginMixin(object):
 	
 			task.setMaxProgress(len(names)-1)
 			
+			# iterate over every successive timestep pairing and run register
 			for i,(img1,img2) in enumerate(successive(names)):
 				logfile=os.path.join(trackdir,'%.4i.log'%i)
 				args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
