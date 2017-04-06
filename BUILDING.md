@@ -20,9 +20,11 @@ For all platforms the following are required either separately, as included with
 
 **Ubuntu 14.*** version of Eidolon uses the system Ogre3D package so the development components for that must be installed plus the Qt development tools and Cython:
 
-    sudo apt-get install libogre-1.9-dev pyqt4-dev-tools qt4-dev-tools cython
+    sudo apt-get install libogre-1.9-dev pyqt4-dev-tools qt4-dev-tools
 
 Additionally for either platform, **g++** and **make** are needed to build the libraries, you should have these already. 
+
+The version of Cython you'll get with 14.\* is too old, download it and install using the **setup.py** script. 
 
 ### OS X
 
@@ -43,10 +45,10 @@ You will otherwise have to download and install the following:
 Compiling in Windows requires Anaconda with its associated **MinGW** distribution and GNU Make.
 
  1. Install Cygwin from http://www.cygwin.org first, making sure to include **make** with the installation. Modify your config files to ensure the Anaconda executables are topmost in your **PATH**. 
+
+    **OR** 
  
- **OR**
- 
- Use the Windows shell or PowerShell to invoke the commands in the next 2 steps, and then calling **mingw32-make.exe** when building instead of **make**. Cygwin isn't necessary but is really handy.
+    Use the Windows shell or PowerShell to invoke the commands in the next 2 steps, and then calling **mingw32-make.exe** when building instead of **make**. Cygwin isn't necessary but is really handy.
 
  2. Next pip must be installed, go to https://pip.pypa.io/en/latest/installing.html to get the get-pip.py script and run it in your Cygwin terminal. 
 
