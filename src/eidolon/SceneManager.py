@@ -270,6 +270,11 @@ class Project(object):
 					self.removeObject(obj)
 
 	def updatePropBox(self,proj,prop):
+		'''
+		Update the property dialog for this project. The dialog box is `prop' while `proj' is always `self' just to
+		maintain compatibility with the way the main window calls this method. This method should always be called by
+		overrides to ensure the whole prop UI is filled out correctly.
+		'''
 		prop.nameEdit.setText(self.name)
 		prop.dirEdit.setText(self.parentdir)
 
