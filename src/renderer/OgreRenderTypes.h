@@ -1911,6 +1911,10 @@ public:
 	}
 };
 
+/**
+ * This adapts Ogre::Texture objects to the renderer interface. It uses an internal data buffer to fill with pixel data which is
+ * written to the actual texture only at render type using a CommitOp object. 
+ */
 class DLLEXPORT OgreTexture : public Texture
 {
 protected:
@@ -1919,12 +1923,15 @@ protected:
 	
 	std::string filename;
 	Ogre::TexturePtr ptr;
+	u8* buffer;
 	
 public:
-	OgreTexture(Ogre::TexturePtr ptr,const char *filename,OgreRenderScene *scene): ptr(ptr),filename(filename), scene(scene)
+	OgreTexture(Ogre::TexturePtr ptr,const char *filename,OgreRenderScene *scene): ptr(ptr),filename(filename), scene(scene),buffer(0)
 	{}
 
 	virtual ~OgreTexture();
+	
+	virtual void commit();
 
 	virtual const char* getFilename() const {return filename.c_str();}
 	virtual const char* getName() const { return ptr->getName().c_str(); }
@@ -2213,7 +2220,7 @@ public:
 	u32 assetCount;
 	
 	std::vector<ResourceOp*> pendingOps;
-	Mutex opsMutex;
+	Mutex sceneMutex;
 
 	OgreRenderScene(OgreRenderAdapter *adapt) : root(adapt->root), mgr(adapt->mgr), win(adapt->win),config(adapt->config),cameraCount(0),assetCount(0)
 	{
@@ -2249,7 +2256,7 @@ public:
 
 	virtual void applyResourceOps()
 	{
-		critical(&opsMutex){
+		critical(&sceneMutex){
 			for(std::vector<ResourceOp*>::iterator i=pendingOps.begin();i!=pendingOps.end();++i){
 				ResourceOp* rop=*i;
 				rop->op();
@@ -2262,7 +2269,7 @@ public:
 	
 	virtual void addResourceOp(ResourceOp *op)
 	{
-		critical(&opsMutex){
+		critical(&sceneMutex){
 			pendingOps.push_back(op);
 		}
 	}
@@ -2286,7 +2293,7 @@ public:
 	
 	virtual Ogre::SceneNode* createNode(const std::string& name)
 	{
-		critical(&opsMutex){
+		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted symultaneously
 			Ogre::SceneNode* node=mgr->getRootSceneNode()->createChildSceneNode();
 			nmap[name]=node;
 			return node;
@@ -2295,8 +2302,8 @@ public:
 
 	virtual Ogre::SceneNode* getNode(Figure *fig)
 	{
-		std::string name=fig->getName();
-		critical(&opsMutex){
+		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted symultaneously
+			std::string name=fig->getName();
 			if(nmap.find(name)!=nmap.end())
 				return nmap[name];
 			else
@@ -2306,12 +2313,7 @@ public:
 
 	virtual void destroyNode(Ogre::SceneNode *node) throw(Ogre::InternalErrorException)
 	{
-		/*if(nmap.find(fig)!=nmap.end()){
-			Ogre::SceneNode* node=nmap[fig];
-			nmap.erase(fig);
-			mgr->destroySceneNode(node);
-		}*/
-		critical(&opsMutex){
+		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted symultaneously
 			std::string  name="";
 			for(nodemap::iterator it=nmap.begin();!name.size() && it!=nmap.end();++it)
 				if(it->second==node)
@@ -2347,7 +2349,7 @@ private:
 		std::ostringstream os;
 		std::string uname=name;
 		
-		critical(&opsMutex){
+		critical(&sceneMutex){ // ensures there's no contention when determining if a name is unique or not
 			for(int i=0;i<MAXNAMECOUNT;i++){
 				//bool namefound=false;
 				//for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it){

@@ -350,8 +350,7 @@ void OgreFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool def
 {
 	try{
 		// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
-		critical(obj->getMutex()){ 
-			
+		critical(obj->getMutex()){
 			Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
 
 			size_t indexWidth=0,indexSum=0;
@@ -1116,6 +1115,7 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 
 	glyphmap::const_iterator i=glyphs.find(glyphname);
 
+	// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
 	critical(obj->getMutex()){
 		if(vb->numVertices()==0 || i==glyphs.end()){
 			obj->fillDefaultData();
@@ -1130,7 +1130,7 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 
 		sval numverts=gverts->n(), numinds=ginds->n();
 
-		obj->createBuffers(vb->numVertices()*numverts,vb->numVertices()*numinds*3);
+		obj->createBuffers(vb->numVertices()*numverts,vb->numVertices()*numinds*3,deferFill);
 
 		vec3 minv=vb->getVertex(0), maxv=vb->getVertex(0);
 
@@ -1183,10 +1183,13 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 		}
 
 	
-		obj->commitBuffers();
+		if(!deferFill){ // if not deferring to render time, commit the buffers now and delete the local buffers
+			obj->commitBuffers();
+			obj->deleteLocalIndBuff();
+			obj->deleteLocalVertBuff();
+		}
+		
 		obj->setBoundingBox(minv,maxv);
-		obj->deleteLocalIndBuff();
-		obj->deleteLocalVertBuff();
 		node->needUpdate();
 	}
 }
@@ -1372,33 +1375,61 @@ OgreTexture::~OgreTexture()
 	scene->addResourceOp(new RemoveResourceOp<Ogre::TextureManager>(ptr->getName()));
 }
 
+void OgreTexture::commit()
+{
+	if(buffer){
+		Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+		buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+		memcpy(buff->getCurrentLock().data,buffer,buff->getSizeInBytes());
+		buff->unlock();
+		SAFE_DELETE(buffer);
+	}
+}
+
 void OgreTexture::fillBlack()
 {
 	// TODO: should be done as a ResourceOp
-	Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	memset(buff->getCurrentLock().data,0,buff->getSizeInBytes());
-	buff->unlock();
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//memset(buff->getCurrentLock().data,0,buff->getSizeInBytes());
+	//buff->unlock();
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	SAFE_DELETE(buffer);
+	buffer=new u8[texsize];
+	memset(buffer,0,texsize);
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 void OgreTexture::fillColor(color col)
 {
-	// TODO: should be done as a ResourceOp
 	sval w=getWidth();
 	sval h=getHeight();
 	sval d=getDepth();
-
-	Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-
 	Ogre::ColourValue cv=convert(col);
+	
+	// TODO: should be done as a ResourceOp
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+        //
+	//for(sval z=0;z<d;z++)
+	//	for(sval y=0;y<h;y++)
+	//		for(sval x=0;x<w;x++)
+	//			pb.setColourAt(cv,x,y,z);
+        //
+	//buff->unlock();
+	
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	SAFE_DELETE(buffer);
+	buffer=new u8[texsize];
+	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+	
 	for(sval z=0;z<d;z++)
 		for(sval y=0;y<h;y++)
 			for(sval x=0;x<w;x++)
 				pb.setColourAt(cv,x,y,z);
-
-	buff->unlock();
+	
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
@@ -1408,15 +1439,20 @@ void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 	sval h=getHeight();
 	sval d=getDepth();
 
-	Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	SAFE_DELETE(buffer);
+	buffer=new u8[texsize];
+	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
 
 	for(sval y=0;y<h;y++)
 		for(sval x=0;x<w;x++)
 			pb.setColourAt(convert(mat->at(y,x)),x,y,depth);
 
-	buff->unlock();
+	//buff->unlock();
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,real maxval, const Material* colormat,const RealMatrix *alphamat,bool mulAlpha)
@@ -1426,9 +1462,15 @@ void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,rea
 	sval h=getHeight();
 	sval d=getDepth();
 
-	Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+	
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	SAFE_DELETE(buffer);
+	buffer=new u8[texsize];
+	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+	
 	Ogre::ColourValue col;
 
 	for(sval y=0;y<h;y++)
@@ -1453,7 +1495,8 @@ void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,rea
 			pb.setColourAt(col,x,y,depth);
 		}
 
-	buff->unlock();
+	//buff->unlock();
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 OgreRenderAdapter::OgreRenderAdapter(Config *config) throw(RenderException) : mgr(NULL), win(NULL), config(config), scene(NULL) 
