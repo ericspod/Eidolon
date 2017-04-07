@@ -736,8 +736,6 @@ class CardiacMotionProject(Project):
 
 		fillFieldBox(self.alignprop.strainMeshBox,self.alignprop.strainMeshAHABox)
 
-		#fillList(self.alignprop.interpTypeBox,['None']+[i.replace('_',' ') for i,j in InterpTypes])
-
 		setCollapsibleGroupbox(self.alignprop.trackAdvBox,False)
 		setCollapsibleGroupbox(self.alignprop.legacyBox,False)
 		setWarningStylesheet(self.alignprop.trackAdvBox)
@@ -752,6 +750,7 @@ class CardiacMotionProject(Project):
 
 		return prop
 
+	@timing
 	def updatePropBox(self,proj,prop):
 		Project.updatePropBox(self,proj,prop)
 		
@@ -776,11 +775,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.tsExtrSrcBox,names)
 		fillList(self.alignprop.trackedNregBox,names)
 
-		#names=sorted(o.getName() for o in sceneimgs if o.isTimeDependent and len(o.getTimestepList())==2)
 		fillList(self.alignprop.reorderSrcBox,names)
-
-#		names=sorted(o.getName() for o in sceneimgs if o.is2D)
-#		fillList(self.alignprop.alignCheckBox,names)
 
 		names=sorted(o.getName() for o in sceneimgs if not o.is2D)
 		fillList(self.alignprop.shortAxisBox,names,self.configMap[ConfigNames._shortaxis])
@@ -788,7 +783,6 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.trackedBox,names,self.configMap[ConfigNames._trackedimg])
 		fillList(self.alignprop.maskBox,names,self.configMap[ConfigNames._maskimg],'None')
 		fillList(self.alignprop.regSubBox,names,self.configMap[ConfigNames._regsubject])
-#		fillList(self.alignprop.checkTargetBox,names)
 		fillList(self.alignprop.gridImgBox,names)
 		fillList(self.alignprop.isoCreateBox,names)
 		fillList(self.alignprop.strainROIBox,names)
@@ -915,11 +909,11 @@ class CardiacMotionProject(Project):
 
 		# only try to objects that aren't already in the project 
 		# Important: this task method will be called after the project has loaded so won't ask to add things already in the project
-		if obj in self.memberObjs:
+		if not isinstance(obj,SceneObject) or obj in self.memberObjs:
 			return
 			
 		def _copy():
-			newname=getValidFilename(obj.getName())
+			newname=self.CardiacMotion.getUniqueObjName(obj.getName())
 			self.mgr.renameSceneObject(obj,newname)
 			filename=self.getProjectFile(obj.getName())
 			

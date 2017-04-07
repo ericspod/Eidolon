@@ -277,7 +277,9 @@ class Future(object):
 		'''
 		Return the stored object, waiting `timeout' seconds for the object to be set, returning None if this doesn't
 		occur in this time. If the object is present and is an exception, this is raised instead. The `timeout'
-		value therefore must be a positive float or None to indicate indefinite waiting.
+		value therefore must be a positive float or None to indicate indefinite waiting. If a timeout value is given
+		and the return result is None, the timeout time was reached if isSet() returns False at this point, otherwise
+		None was the set value.
 		'''
 		res=self.event.wait(timeout)
 

@@ -36,7 +36,7 @@ class CTMotionTrackProject(Project):
 		
 		# only try to import meshes and images that aren't already in the project Important: since this is a
 		# task method this will be called after the project has loaded so won't ask to add things already in the project
-		if not isinstance(obj,(MeshSceneObject,ImageSceneObject)) or obj in self.memberObjs:
+		if not isinstance(obj,SceneObject) or obj in self.memberObjs:
 			return
 			
 		def _copy():
@@ -44,7 +44,7 @@ class CTMotionTrackProject(Project):
 			files=map(os.path.abspath,obj.plugin.getObjFiles(obj) or [])
 		
 			if not files or any(not f.startswith(pdir) for f in files):
-				newname=self.CTMotion.getUniqueObjName(getValidFilename(obj.getName()))
+				newname=self.CTMotion.getUniqueObjName(obj.getName())
 				self.mgr.renameSceneObject(obj,newname)
 				filename=self.getProjectFile(obj.getName())
 				
@@ -52,6 +52,8 @@ class CTMotionTrackProject(Project):
 					self.CTMotion.saveToNifti([obj],True)
 				elif isinstance(obj,MeshSceneObject):
 					self.CTMotion.VTK.saveObject(obj,filename,setFilenames=True)
+				else:
+					obj.plugin.saveObject(obj,filename,setFilenames=True)
 
 			Project.addObject(self,obj)
 			self.save()	

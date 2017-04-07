@@ -328,15 +328,19 @@ class IRTKPluginMixin(object):
 
 		return objs
 
-	def getUniqueShortName(self,*comps,**kwargs):
-		'''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
-		return self.getUniqueObjName(createShortName(*comps,**kwargs))
-
 	def getUniqueObjName(self,name):
-		'''Returns an object name guaranteed to be unique and not overwrite an existing file in the current context when saved.'''
+		'''
+		Returns an object name guaranteed to be unique, a valid filename, and not overwrite an existing file in the 
+		current context when saved.
+		'''
+		name=getValidFilename(name)
 		filenames=[splitPathExt(i)[1] for i in glob.glob(self.getLocalFile('*'))]
 		objnames=[o.getName() for o in self.mgr.enumSceneObjects()]
 		return uniqueStr(name,filenames+objnames)
+
+	def getUniqueShortName(self,*comps,**kwargs):
+		'''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
+		return self.getUniqueObjName(createShortName(*comps,**kwargs))
 		
 	def getUniqueLocalFile(self,name):
 		'''Get a version of the filename `name' which is guarranteed to be unique in the current context.'''
@@ -1299,7 +1303,7 @@ class IRTKPluginMixin(object):
 
 				trackname=trackname.strip() or 'GPUNRegTrack_'+imgobj.getName()
 
-				trackname=self.getUniqueObjName(getValidFilename(trackname))
+				trackname=self.getUniqueObjName(trackname)
 				trackdir=self.getLocalFile(trackname)
 				maskfile=None
 				
@@ -1378,7 +1382,7 @@ class IRTKPluginMixin(object):
 
 		trackname=trackname.strip() or 'RegTrack_'+imgobj.getName() # choose default track name based on image object name
 
-		trackname=self.getUniqueObjName(getValidFilename(trackname))
+		trackname=self.getUniqueObjName(trackname)
 		trackdir=self.getLocalFile(trackname)
 		maskfile=None
 		results=[]
