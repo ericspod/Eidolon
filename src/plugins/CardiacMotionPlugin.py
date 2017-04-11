@@ -907,9 +907,9 @@ class CardiacMotionProject(Project):
 	def checkIncludeObject(self,obj,task):
 		'''Check whether the given object should be added to the project or not.'''
 
-		# only try to objects that aren't already in the project 
+		# Only try to save objects that aren't already in the project and which are saveable
 		# Important: this task method will be called after the project has loaded so won't ask to add things already in the project
-		if not isinstance(obj,SceneObject) or obj in self.memberObjs:
+		if not isinstance(obj,SceneObject) or obj in self.memberObjs or obj.plugin.getObjFiles(obj) is None:
 			return
 			
 		def _copy():
@@ -921,8 +921,8 @@ class CardiacMotionProject(Project):
 				self.CardiacMotion.saveToNifti([obj],True)
 			elif isinstance(obj,MeshSceneObject):
 				savecheart=self.configMap[ConfigNames._savecheart].lower()=='true'
-				if savecheart:
-					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True)
+				if savecheart: # force CHeart saving is selected
+					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True) 
 				else:
 					self.CardiacMotion.VTK.saveObject(obj,filename,setFilenames=True)
 			else:
@@ -1259,6 +1259,7 @@ class CardiacMotionProject(Project):
 			f=self.CardiacMotion.startRegisterMotionTrack(imgname,maskname,trackname,paramfile,None,onefile)
 			
 		self.mgr.checkFutureResult(f)
+		self.mgr.addFuncTask(lambda:mgr.callThreadSafe(self.updatePropBox,self,self.prop))
 
 	def _killJob(self):
 		ind=self.alignprop.jobList.currentRow()

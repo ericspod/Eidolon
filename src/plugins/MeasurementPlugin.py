@@ -577,6 +577,7 @@ class MeasurementPlotWidget(TimePlotWidget):
 	def __init__(self,plugin,parent=None):
 		TimePlotWidget.__init__(self,plugin,parent)
 		self.measureCache={} # maps (measurement name, metric name) to (is visible, timestep,line data) tuples
+		self.setObjectName('Measurement Plot')
 		
 	def isLineVisible(self,measure,metric):
 		k=(measure.name,metric)

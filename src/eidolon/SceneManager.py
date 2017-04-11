@@ -1842,20 +1842,25 @@ class SceneManager(TaskQueue):
 			('Main Camera',self.cameras[0],self.cameras[0].getWidth(),self.cameras[0].getHeight()),
 			('Main Window',self.win,self.win.width(),self.win.height())
 		]
+		
+		for c in self.cameras[1:]:
+			sources.append(('Camera "%s"'%c.getName(),c,c.getWidth(),c.getHeight()))
 
-		for d in self.win.dockWidgets: # for each dock, add its camera to the list if it has one, or itself plus any graph widgets
-			if hasattr(d,'camera'):
-				sources.append((d.parent().windowTitle(),d.camera,d.camera.getWidth(),d.camera.getHeight())) # add camera to list
-			else:
-				sources.append((d.parent().windowTitle(),d,d.width(),d.height())) # add widget to list
-
-				def func(w):
-					if isinstance(w,self.getPlugin('Plot').BasePlotWidget):
-						sources.append((' +--> '+str(w.objectName()),w,w.width(),w.height()))
-						return False
-					return True
-
-				traverseWidget(d,func) # add any pyqtgraph types to list
+		#TODO: fix whole thing
+#		for d in self.win.dockWidgets: # for each dock, add its camera to the list if it has one, or itself plus any graph widgets
+#			if hasattr(d,'camera'):
+#				sources.append((d.parent().windowTitle(),d.camera,d.camera.getWidth(),d.camera.getHeight())) # add camera to list
+#			else:
+#				sources.append((d.parent().windowTitle(),d,d.width(),d.height())) # add widget to list
+#
+#				# TODO: fix this kludge, need generic way of choosing what widgets to provide for screenshoting
+##				def func(w):
+##					if isinstance(w,self.getPlugin('Plot').BasePlotWidget):
+##						sources.append((' +--> '+str(w.objectName()),w,w.width(),w.height()))
+##						return False
+##					return True
+##
+##				traverseWidget(d,func) # add any pyqtgraph types to list
 
 		self.win.chooseScreenshotDialog(self.timestepMin,self.timestepMax,self.timeFPS,self.timeStepsPerSec,sources,lambda *args:self.addTasks(_save(*args)))
 

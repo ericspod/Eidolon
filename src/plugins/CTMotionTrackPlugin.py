@@ -34,9 +34,9 @@ class CTMotionTrackProject(Project):
 	@taskmethod('Adding Object to Project')			
 	def checkIncludeObject(self,obj,task=None):
 		
-		# only try to import meshes and images that aren't already in the project Important: since this is a
-		# task method this will be called after the project has loaded so won't ask to add things already in the project
-		if not isinstance(obj,SceneObject) or obj in self.memberObjs:
+		# Only try to save objects that aren't already in the project and which are saveable
+		# Important: this task method will be called after the project has loaded so won't ask to add things already in the project
+		if not isinstance(obj,SceneObject) or obj in self.memberObjs or obj.plugin.getObjFiles(obj) is None:
 			return
 			
 		def _copy():
