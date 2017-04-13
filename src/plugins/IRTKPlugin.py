@@ -34,7 +34,6 @@ from contextlib import closing
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
 
 from eidolon import *
-from plugins.VTKPlugin import DatasetTypes
 from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 from ui.mtServerForm import Ui_mtServerForm
 
@@ -786,8 +785,7 @@ class IRTKPluginMixin(object):
 		return nodes,header
 		
 	def writePolyNodes(self,filename,nodes):
-		vecfunc=lambda v:(-v.x(),-v.y(),v.z())
-		return self.VTK.saveLegacyFile(filename,PyDataSet('DS',nodes),datasettype=DatasetTypes._POLYDATA,writeFields=False,vecfunc=vecfunc)
+		return self.VTK.savePolydataNodes(filename,nodes,lambda v:(-v.x(),-v.y(),v.z()))
 
 	def createImageGrid(self,obj,w,h,d):
 		f=Future()
@@ -928,39 +926,25 @@ class IRTKPluginMixin(object):
 
 		return self.mgr.runTasks(_extract(srcname,indices,timesteps),f)
 
-	def reorderMulticycleImage(self,srcname,starttime,timestep):
-		f=Future()
-		@taskroutine('Reorder Multicycle Image')
-		def _reorder(srcname,starttime,timestep,task):
-			with f:
-				obj=self.findObject(srcname)
-				timeinds=obj.getTimestepIndices()
-				startind=min((abs(timeinds[i][0]-starttime),i) for i in range(len(timeinds)))[1]
-				rinds=rotateIndices(startind,len(timeinds))
-				images=[]
-				
-				for i,ri in enumerate(rinds):
-					for ind in timeinds[ri][1]:
-						img=obj.images[ind].clone()
-						img.timestep=i*timestep
-						images.append(img)
-				
-#				time1,time2=obj.getTimestepList()[:2]
-#				images=[]
-#
-#				for i in obj.images:
-#					if i.timestep in (time1,time2):
-#						i=i.clone()
-#						i.timestep=starttime+(timestep if i.timestep==time1 else 0)
-#						images.append(i)
+	@taskmethod('Reorder Multicycle Image')
+	def reorderMulticycleImage(self,srcname,starttime,timestep,task):
+		obj=self.findObject(srcname)
+		timeinds=obj.getTimestepIndices()
+		startind=min((abs(timeinds[i][0]-starttime),i) for i in range(len(timeinds)))[1]
+		rinds=rotateIndices(startind,len(timeinds))
+		images=[]
+		
+		for i,ri in enumerate(rinds):
+			for ind in timeinds[ri][1]:
+				img=obj.images[ind].clone()
+				img.timestep=i*timestep
+				images.append(img)
 
-				name=self.getUniqueShortName(obj.getName(),'Reord')
-				reobj=ImageSceneObject(name,obj.source,images,obj.plugin)
+		name=self.getUniqueShortName(obj.getName(),'Reord')
+		reobj=ImageSceneObject(name,obj.source,images,obj.plugin)
 
-				filename=self.saveToNifti([reobj])
-				f.setObject(self.loadNiftiFiles(filename))
-
-		return self.mgr.runTasks(_reorder(srcname,starttime,timestep),f)
+		filename=self.saveToNifti([reobj])
+		return self.loadNiftiFiles(filename)
 
 	def motionCropObject(self,imgobj,threshold):
 #		f=Future()
@@ -1154,7 +1138,8 @@ class IRTKPluginMixin(object):
 	def applyMotionTrackPoints(self,dirname,pts):
 		'''
 		Simple synchronous method applying the motion track data in `dirname' to the list of vec3 points `pts'.
-		Returns map of timesteps to motion tracked points at those times.
+		Returns map of timesteps to motion tracked points at those times. This method blocks while the tracking
+		is applied to the points so it shouldn't be expected to be instantaneous.
 		'''
 		initobj=MeshSceneObject('proxy',PyDataSet('proxyds',pts))
 		f=self.applyMotionTrack(initobj,dirname,False)

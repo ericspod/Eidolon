@@ -103,9 +103,9 @@ class Project(object):
 		self.mgr=mgr
 		self.memberObjs={} # maps objects part of this project to their variable names used to generate scripts
 		self.configMap={'name':name}
-		self.varcounter=1
+		self.varcounter=1 # variable counter, used to make unique variable names
 		self.checkboxMap={} # maps QTableWidgetItem to scene object names
-		self.prop=None
+		self.prop=None # project properties dialog box
 		self.header='\nif mgr.project==None:\n  mgr.createProjectObj(%r,%r,Project)\n' %(self.name,self.parentdir)
 		self.backDir=self.getProjectDir()
 
