@@ -107,7 +107,7 @@ def readDicomHeartRate(series_or_dcm):
 		else:
 			m2=re.search('(\d+)\s*[Bb][Pp][Mm]',comment)
 			if m2:
-				heartrate=int(m.groups()[0])
+				heartrate=int(m2.groups()[0])
 			
 	return heartrate
 	
