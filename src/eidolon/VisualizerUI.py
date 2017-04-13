@@ -1032,12 +1032,13 @@ class GPUProgramPropertyWidget(QtGui.QWidget,Ui_gpuProp):
 
 class Base2DWidget(QtGui.QWidget):
 	'''
-	Defines the base class for 2D views, handling the redraw cycle and mouse input callback methods. The method
-	modifyDrawWidget() modifies the argument widget by replacing its paintEvent, wheelEvent, and mouse*Event methods.
-	The new paintEvent() method first calls updateView(), creates a QImage to cover the screen, calls fillImage() with
-	that QImage object as the argument, and then draws the QImage to screen. The update cycle expects updateView() to
-	setup scene and UI values then fillImage() draws whatever's necessary to the QImage object. This class therefore
-	represents the boundary between the UI and 2D rendering subsystems.
+	Defines the base class for 2D views, handling the redraw cycle and mouse and key input callback methods. The method
+	modifyDrawWidget() modifies its argument widget by replacing the paintEvent, wheelEvent, and mouse*Event, and 
+	key*Event methods. The new paintEvent() method first calls updateView(), creates a QImage to cover the screen, calls 
+	fillImage() with that QImage object as the argument, and then draws the QImage to screen. The update cycle expects 
+	updateView() to setup scene and UI values then fillImage() draws whatever's necessary to the QImage object. This 
+	class therefore represents the boundary between the UI and 2D rendering subsystems. The methods of this class
+	except modifyDrawWidget(), getDrawDims(), and getBoxFitScale() must be overridden to implement behaviour.
 	'''
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
@@ -1109,13 +1110,18 @@ class Base2DWidget(QtGui.QWidget):
 		pass
 	
 	def keyPress(self,e):
+		'''By default passes the event `e' to QtGui.QWidget.keyPressEvent.'''
 		QtGui.QWidget.keyPressEvent(self,e)
 	
 	def keyRelease(self,e):
+		'''By default passes the event `e' to QtGui.QWidget.keyReleaseEvent.'''
 		QtGui.QWidget.keyReleaseEvent(self,e)
 
 	def parentClosed(self,e):
-		'''Called if this widget is inside a parent container and that container is closed.'''
+		'''
+		Called if this widget is inside a parent container and that container is closed. It is up to the parent
+		to call this, Qt doesn't do it automatically.
+		'''
 		pass
 
 	def getDrawDims(self):
@@ -1139,6 +1145,7 @@ class Draw2DView(Ui_Draw2DView):
 	'''
 	UI class derived from the generated form, it defines callbacks for UI operations and connects appropriate sockets.
 	This class implements UI behaviour only and is meant to be used with Base2DWidget in a subtype which inherits both.
+	The methods setSourceName() and setPlaneName() must be overriddent.
 	'''
 	def __init__(self,parent=None):
 		self.setupUi(self)

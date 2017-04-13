@@ -495,14 +495,24 @@ class EventHandler(object):
 
 
 class ObjectLocker(object):
+	'''
+	This maintains a dictionary relating weak references to threading.RLock objects. This allows a lock to be associated
+	uniquely with any provided object compatible with the weakref interface. The method getLock() returns the lock for
+	the provided object, creating one if needed. When the object is removed the associated lock is also removed from 
+	the dictonary. The global instance `globalLocker` is created to provide a global default lock for the decorators 
+	which rely on this type.
+	'''
 	globalLocker=None
 	
 	def __init__(self):
 		self.objLocks={} # map of objects to locks used to store unique locks for every requested object
 		self.thisLock=RLock() # a lock for this object
-		ObjectLocker.globalLocker=ObjectLocker.globalLocker or self
 		
 	def getLock(self,obj):
+		'''
+		Get a threading.RLock object uniquely associated with `obj'. If this method is subsequently called with the
+		same object, the same lock is returned. When `obj' is removed by the collector, the lock will also be removed.
+		'''
 		with self.thisLock:
 			lock=first(self.objLocks[w] for w in self.objLocks if id(w())==id(obj))
 	
@@ -516,9 +526,14 @@ class ObjectLocker(object):
 	def _removeLock(self,obj):
 		with self.thisLock:
 			self.objLocks.pop(obj)
-
-
-ObjectLocker.globalLocker=ObjectLocker()
+			
+	@staticmethod
+	def getGlobalLocker():
+		'''Returns the global locker object, instantiating it if necessary.'''
+		if ObjectLocker.globalLocker is None:
+			ObjectLocker.globalLocker=ObjectLocker()
+			
+		return ObjectLocker.globalLocker
 		
 
 def lockobj(obj,locker=None):
@@ -527,7 +542,7 @@ def lockobj(obj,locker=None):
 	to any arbitrary object. It uses weak references to ensure previously locked objects can be collected.
 	This function is thread-safe.
 	'''
-	locker=locker or ObjectLocker.globalLocker
+	locker=locker or ObjectLocker.getGlobalLocker()
 	return locker.getLock(obj)
 
 
@@ -560,119 +575,6 @@ def trylocking(func,locker=None):
 				lock.release()
 
 	return funcwrap
-	
-
-class DelayThread(Thread):
-	'''
-	Calls a target callable with the given args after a delay time has elapsed, which is reset to the full time if
-	subsequent call request come before the call occurs. This ensures that a single call to the target happens even
-	if multiple requests come in during the delay period, allowing for example update tasks to be scheduled when UI
-	elements are manipulated and then deferred if further operations are performed soon after.
-	'''
-
-	globalDelayMap={}
-
-	def __init__(self,delay,target):
-		Thread.__init__(self)
-		self.target=target
-		self.args=()
-		self.kwargs={}
-		self.delay=float(delay)
-		self.decDelayVal=0.05
-		self.currentDelay=0.0
-		self.evt=Event()
-		self.daemon=True
-
-	def stop(self):
-		self.delay=-1
-		self.evt.set()
-
-	@locking
-	def callTargetDelayed(self,args,kwargs):
-		self.currentDelay=self.delay
-		self.args=args
-		self.kwargs=kwargs
-		self.evt.set()
-
-	@locking
-	def getCurrentDelay(self):
-		return self.currentDelay
-
-	@locking
-	def decCurrentDelay(self):
-		self.currentDelay-=self.decDelayVal
-
-	def run(self):
-		while True:
-			self.evt.wait()
-			if self.delay<0:
-				break
-
-			while self.getCurrentDelay()>0:
-				self.decCurrentDelay()
-				time.sleep(self.decDelayVal)
-
-			try:
-				self.target(*self.args, **self.kwargs)
-				self.args=None
-				self.kwargs=None
-			except:
-				t=first(t for t,d in DelayThread.globalDelayMap.items() if d==self)
-				del DelayThread.globalDelayMap[t]
-				return
-
-			self.evt.clear()
-
-	@staticmethod
-	def callGlobalTarget(delay,target,args,kwargs):
-		if target not in DelayThread.globalDelayMap:
-			DelayThread.globalDelayMap[target]=DelayThread(delay,target)
-			DelayThread.globalDelayMap[target].start()
-
-		DelayThread.globalDelayMap[target].callTargetDelayed(args,kwargs)
-
-	@staticmethod
-	def removeGlobalTarget(target):
-		for d in DelayThread.globalDelayMap:
-			if d.target==target:
-				del DelayThread.globalDelayMap[d]
-				break
-
-
-def delayedcall(delay):
-	'''
-	Wrapper for defining a delayed call function. When the function is called, up to `delay' seconds elapses before
-	the call actually occurs. Subsequent calls to the function before this time elapses resets the counter but will
-	not induce multiple calls. The most recent arguments passed to the wrapped function are the ones used when the
-	call does occur; there is never a return value.
-	'''
-	def funcwrap(func):
-		@wraps(func)
-		def delayCall(*args,**kwargs):
-			DelayThread.callGlobalTarget(delay,func,args,kwargs)
-
-		return delayCall
-
-	return funcwrap
-
-
-def delayedMethodWeak(obj,methname,delay=0):
-	'''
-	Replaces the method named `methname' of object `obj' with an equivalent delayed call with a delay value of `delay'.
-	The new method assigned to `obj' replaces `methname' but keeps only a weak reference to `obj'. Once `obj' has been
-	collected an exception will be thrown when attempting to call this method, this will cause the delay thread to be
-	removed from the DelayThread global list. This allows objects to be assigned individual delay threads for their
-	methods, otherwise using delayedcall() directly means a thread is assigned to a method which is shared amongst all
-	instances. Using the weak reference prevents the delay mechanism from affecting collection behaviour.
-	'''
-	wself=weakref.ref(obj)
-	meth=getattr(type(obj),methname)
-
-	@delayedcall(delay)
-	def newmeth(*args,**kwargs):
-		meth(wself(),*args,**kwargs)
-
-	setattr(obj,methname,newmeth)
 		
 
 class Task(object):
@@ -856,9 +758,240 @@ class TaskQueue(object):
 	def taskExcept(self,ex,msg,title):
 		'''Called when the task queue encounters exception `ex' with message `msg' and report window title `title'.'''
 		pass
+	
+
+class DelayThread(Thread):
+	'''
+	Calls a target callable with the given args after a delay time has elapsed, which is reset to the full time if
+	subsequent call request come before the call occurs. This ensures that a single call to the target happens even
+	if multiple requests come in during the delay period, allowing for example update tasks to be scheduled when UI
+	elements are manipulated and then deferred if further operations are performed soon after.
+	'''
+
+	globalDelayMap={}
+
+	def __init__(self,delay,target):
+		Thread.__init__(self)
+		self.target=target
+		self.args=()
+		self.kwargs={}
+		self.delay=float(delay)
+		self.decDelayVal=0.05
+		self.currentDelay=0.0
+		self.evt=Event()
+		self.daemon=True
+
+	def stop(self):
+		self.delay=-1
+		self.evt.set()
+
+	@locking
+	def callTargetDelayed(self,args,kwargs):
+		self.currentDelay=self.delay
+		self.args=args
+		self.kwargs=kwargs
+		self.evt.set()
+
+	@locking
+	def getCurrentDelay(self):
+		return self.currentDelay
+
+	@locking
+	def decCurrentDelay(self):
+		self.currentDelay-=self.decDelayVal
+
+	def run(self):
+		while True:
+			self.evt.wait()
+			if self.delay<0:
+				break
+
+			while self.getCurrentDelay()>0:
+				self.decCurrentDelay()
+				time.sleep(self.decDelayVal)
+
+			try:
+				self.target(*self.args, **self.kwargs)
+				self.args=None
+				self.kwargs=None
+			except:
+				t=first(t for t,d in DelayThread.globalDelayMap.items() if d==self)
+				del DelayThread.globalDelayMap[t]
+				return
+
+			self.evt.clear()
+
+	@staticmethod
+	def callGlobalTarget(delay,target,args,kwargs):
+		if target not in DelayThread.globalDelayMap:
+			DelayThread.globalDelayMap[target]=DelayThread(delay,target)
+			DelayThread.globalDelayMap[target].start()
+
+		DelayThread.globalDelayMap[target].callTargetDelayed(args,kwargs)
+
+	@staticmethod
+	def removeGlobalTarget(target):
+		for d in DelayThread.globalDelayMap:
+			if d.target==target:
+				del DelayThread.globalDelayMap[d]
+				break
+
+	
+def wrapper(func):
+	'''
+	This decorator is applied to functions to simplify the definitions of decorators. A function this is applied to
+	becomes a decorator itself. It's first three arguments must be the function to wrap, the list of positional arguments,
+	and the dictionary of keyword arguments. The remaining arguments are those provided by the decorator call itself.
+	The body of the function is responsible for replacing or augmenting the behaviour of the provided function just like
+	any other decorator. This results in a decorator function which expects the arguments after the first three to be
+	provided, and so must always be called with (), but which doesn't require the definition of nested functions. 
+	
+	For example, the following decorator prints the function and a message provided through the decorator before calling
+	the wrapped function and returning the result:
+	
+		@wrapper
+		def printdeco(func,args,kwargs,msg='No Message'):
+			print 'Calling',func,msg
+			return func(*args,**kwargs) 
+			
+	This is equivalent to:
+	
+		def printdeco(msg='No Message'):
+			def _outer(func):
+				@wraps(func)
+				def _wrapper(*args,**kwargs):
+					print 'Calling',func,msg
+					return func(*args,**kwargs) 
+		
+	This is used as such:
+	
+		@printdeco('Ni!')
+		def spam(x):
+			print 'Spam and',x
+		
+	Calling this function with "Eggs" as the argument prints the following:
+	
+		Calling <function tostr at 0x7f91d747a1b8> Ni!
+		Spam and Eggs
+	'''
+	@wraps(func)
+	def _newdecorator(*args,**kwargs):
+		'''This defines the new argument decorator which replaces `func'.'''
+		def _outer(func1):
+			'''This is the argumentless decorator around the wrapper produced by the replaced version of `func'.'''
+			@wraps(func1)
+			def _wrapper(*wargs,**wkwargs):
+				'''This is the actual wrapper function which calls `func' passing in the decorator and call arguments.'''
+				return func(func1,wargs,wkwargs,*args,**kwargs)
+				
+			return _wrapper
+			
+		return _outer
+		
+	return _newdecorator
 
 
-def taskroutine(taskLabel=None,selfName='task'):
+#def delayedcall(delay):
+#	'''
+#	Wrapper for defining a delayed call function. When the function is called, up to `delay' seconds elapses before
+#	the call actually occurs. Subsequent calls to the function before this time elapses resets the counter but will
+#	not induce multiple calls. The most recent arguments passed to the wrapped function are the ones used when the
+#	call does occur; there is never a return value.
+#	'''
+#	def funcwrap(func):
+#		@wraps(func)
+#		def delayCall(*args,**kwargs):
+#			DelayThread.callGlobalTarget(delay,func,args,kwargs)
+#
+#		return delayCall
+#
+#	return funcwrap
+
+
+@wrapper
+def delayedcall(func,args,kwargs,delay):
+	DelayThread.callGlobalTarget(delay,func,args,kwargs)
+
+
+def delayedMethodWeak(obj,methname,delay=0):
+	'''
+	Replaces the method named `methname' of object `obj' with an equivalent delayed call with a delay value of `delay'.
+	The new method assigned to `obj' replaces `methname' but keeps only a weak reference to `obj'. Once `obj' has been
+	collected an exception will be thrown when attempting to call this method, this will cause the delay thread to be
+	removed from the DelayThread global list. This allows objects to be assigned individual delay threads for their
+	methods, otherwise using delayedcall() directly means a thread is assigned to a method which is shared amongst all
+	instances. Using the weak reference prevents the delay mechanism from affecting collection behaviour.
+	'''
+	wself=weakref.ref(obj)
+	meth=getattr(type(obj),methname)
+
+	@delayedcall(delay)
+	def newmeth(*args,**kwargs):
+		meth(wself(),*args,**kwargs)
+
+	setattr(obj,methname,newmeth)
+
+
+#def taskroutine(taskLabel=None,selfName='task'):
+#	'''
+#	Routine decorator which produces a wrapper function returning a task that will execute the original function when
+#	processedby the task queue. The first argument indicates the name of the variable used to pass the Task instance
+#	to the function call or is None if no passing is wanted. If the task argument is present it must be the last and
+#	when the function is called no value for it must be provided, thus it must have a default value (usually None).
+#	The optional second argument defines whether the task is a threaded one or not (default is False).
+#	'''
+#	def funcwrap(func):
+#		@wraps(func)
+#		def taskroutinefunc(*args,**kwargs):
+#			return Task(taskLabel if taskLabel else func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
+#
+#		return taskroutinefunc
+#
+#	return funcwrap
+#
+#
+#def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
+#	'''
+#	Wraps a given method such that it will execute the method's body in a task and store the result in a returned
+#	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
+#	object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
+#	The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
+#	
+#	For example, the method:
+#	
+#		def meth(self,*args,**kwargs):
+#			f=Future()
+#			@taskroutine('msg')
+#			def _func(task):
+#				with f:
+#					f.setObject(doSomething())
+#					
+#			return self.mgr.runTasks(_func(),f)
+#		
+#	is equivalent to:
+#		
+#		@taskmethod('msg')
+#		def meth(self,*args,**kwargs):
+#			return doSomething()
+#	'''
+#	def methwrap(meth): # function which returns wrapper method
+#		@wraps(meth)
+#		def taskmethod(self,*args,**kwargs): # wrapper method which adds the task executing `meth'
+#			f=Future()
+#			def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
+#				with f:
+#					kwargs[selfName]=task
+#					f.setObject(meth(self,*args,**kwargs))
+#				
+#			return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
+#		
+#		return taskmethod
+#		
+#	return methwrap
+
+
+@wrapper
+def taskroutine(func,args,kwargs,taskLabel=None,selfName='task'):
 	'''
 	Routine decorator which produces a wrapper function returning a task that will execute the original function when
 	processedby the task queue. The first argument indicates the name of the variable used to pass the Task instance
@@ -866,17 +999,11 @@ def taskroutine(taskLabel=None,selfName='task'):
 	when the function is called no value for it must be provided, thus it must have a default value (usually None).
 	The optional second argument defines whether the task is a threaded one or not (default is False).
 	'''
-	def funcwrap(func):
-		@wraps(func)
-		def taskroutinefunc(*args,**kwargs):
-			return Task(taskLabel if taskLabel else func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
+	return Task(taskLabel or func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
 
-		return taskroutinefunc
 
-	return funcwrap
-	
-
-def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
+@wrapper
+def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
 	'''
 	Wraps a given method such that it will execute the method's body in a task and store the result in a returned
 	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
@@ -900,21 +1027,16 @@ def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
 		def meth(self,*args,**kwargs):
 			return doSomething()
 	'''
+	self,args=args[0],args[1:]
+	mgr=getattr(self,mgrName)
+	f=Future()
 	
-	def methwrap(meth): # function which returns wrapper method
-		@wraps(meth)
-		def taskmethod(self,*args,**kwargs): # wrapper method which adds the task executing `meth'
-			f=Future()
-			def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
-				with f:
-					kwargs[selfName]=task
-					f.setObject(meth(self,*args,**kwargs))
-				
-			return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
+	def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
+		with f:
+			kwargs[selfName]=task
+			f.setObject(meth(self,*args,**kwargs))
 		
-		return taskmethod
-		
-	return methwrap
+	return mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
 
 
 def readBasicConfig(filename):
@@ -1503,7 +1625,7 @@ def memoized(converter=lambda i:i,initialmemo={}):
 	The dictionary `initialmemo' can be used to initialize the stored memo with given arg-result value pairs.
 	'''
 	def funcwrap(func):
-		memo=dict(initialmemo)
+		memo=dict(initialmemo) # distinct instance of this is create for each function and is bound in its scope
 
 		@wraps(func)
 		def memoizedfunc(*args,**kwargs):

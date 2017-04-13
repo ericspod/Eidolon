@@ -30,6 +30,9 @@ class BaseCamera2DWidget(Base2DWidget):
 	which will create Figure objects only visible to the internal camera. This class has no UI components and relies on
 	inheriting subtypes calling modifyDrawWidget() to perform the correct association between the widget to draw into
 	and the fillImage() method which updates the camera and copies its data over.
+	
+	The following methods return default values and must be overridden in a subtype for this class to function:
+	getImageStackPosition(), getImageStackMax(), getSecondaryNames(), 
 	'''
 
 	defaultQuad=(
@@ -40,7 +43,7 @@ class BaseCamera2DWidget(Base2DWidget):
 
 	standardPlanes=('XY','XZ','YZ')
 
-	def __init__(self,mgr,camera,parent=None):
+	def __init__(self,mgr,camera,indicatorCol=color(1,1,1,0.25),parent=None):
 		Base2DWidget.__init__(self,parent)
 		self.mgr=mgr
 		self.camera=camera
@@ -69,7 +72,8 @@ class BaseCamera2DWidget(Base2DWidget):
 
 		self.sceneBB=BoundBox(BaseCamera2DWidget.defaultQuad[0])
 
-		self.indicatorMaterial=self.mgr.getMaterial('Indicator') or self.mgr.createMaterial('Indicator')
+		self.indicatorCol=indicatorCol
+		self.indicatorMaterial=self.mgr.scene.createMaterial('IndicatorPlane')
 		self.indicatorMaterial.setDiffuse(color(1,1,1,1))
 		self.indicatorMaterial.useLighting(False)
 
@@ -87,7 +91,7 @@ class BaseCamera2DWidget(Base2DWidget):
 		cnodes,cinds=generateCylinder([mq,q[1],q[3],q[2],q[0],mq],[0.0025]*6,1,4,False)
 		nodes=list(BaseCamera2DWidget.defaultQuad[0])+cnodes
 		inds=list(BaseCamera2DWidget.defaultQuad[1])+cinds
-		self.indicatorPlane.fillData(PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),[color(1,1,1,0.5)]*len(nodes)),PyIndexBuffer(inds),False,True)
+		self.indicatorPlane.fillData(PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),[indicatorCol]*len(nodes)),PyIndexBuffer(inds),False,True)
 		
 		delayedMethodWeak(self,'_repaintDelay') #delay method for repainting allows safe calling multiple times and from task threads
 
@@ -101,14 +105,15 @@ class BaseCamera2DWidget(Base2DWidget):
 		self.mgr.callThreadSafe(self.mgr.repaint)
 	
 	def getImageStackPosition(self):
-		'''Get the index in the image stack of the source object.'''
+		'''Get the index in the image stack of the source object. This must be overridden to set the stack position.'''
 		return 0
 	
 	def getImageStackMax(self):
-		'''Get the maximum stack index.'''
+		'''Get the maximum stack index. This must be overridden to define the max value as something other than 0.'''
 		return 0
 		
 	def getSecondaryNames(self):
+		'''Get the names of secondary viewable objects. This must be overridden to return something other than [].'''
 		return []
 		
 	def getObjectNames(self):
@@ -278,7 +283,10 @@ class BaseCamera2DWidget(Base2DWidget):
 		return self.handles[index]
 		
 	def handleSelected(self,handle):
-		'''Called when the given handle object is selected by mouse click.'''
+		'''
+		Called when the given handle object is selected by mouse click. If this is not overridden, handles are not
+		selectable but the view will otherwise function correctly.
+		'''
 		pass
 
 	def getObjFigures(self,name,numfigs=1,ftype=FT_TRILIST):
@@ -332,6 +340,7 @@ class BaseCamera2DWidget(Base2DWidget):
 				self._repaint3DDelay()
 				
 	def setIndicatorVisible(self,visible):
+		'''Set whether the 3D plane indicator is visible or not.'''
 		self.indicatorVisible=visible
 		self._repaintDelay()
 
@@ -519,7 +528,7 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 	BaseCamera2DWidget and define a different UI which has a widget modifyDrawWidget() can be called with.
 	'''
 	def __init__(self,mgr,camera,parent=None):
-		BaseCamera2DWidget.__init__(self,mgr,camera,parent)
+		BaseCamera2DWidget.__init__(self,mgr,camera,parent=parent)
 		Draw2DView.__init__(self)
 		
 		delayedMethodWeak(self,'_updateUIDelay')
