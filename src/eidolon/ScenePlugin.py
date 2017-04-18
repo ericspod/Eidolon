@@ -489,6 +489,10 @@ class MeshScenePlugin(ScenePlugin):
 
 	def getIcon(self,obj):
 		return IconName.Mesh
+		
+	def getObjFiles(self,obj):
+		'''By default there is no way to save a mesh but they are savable so return [] instead of None.'''
+		return []
 
 	def updateObjPropBox(self,obj,prop):
 		ScenePlugin.updateObjPropBox(self,obj,prop)
@@ -974,6 +978,10 @@ class ImageScenePlugin(ScenePlugin):
 
 	def getIcon(self,obj):
 		return IconName.Image
+		
+	def getObjFiles(self,obj):
+		'''By default there is no way to save an image but they are savable so return [] instead of None.'''
+		return []
 
 	def getReprTypes(self,obj):
 		types=[ReprType._imgstack]

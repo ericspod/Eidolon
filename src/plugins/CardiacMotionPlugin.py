@@ -913,14 +913,16 @@ class CardiacMotionProject(Project):
 			return
 			
 		def _copy():
+			self.mgr.removeSceneObject(obj)
 			newname=self.CardiacMotion.getUniqueObjName(obj.getName())
-			self.mgr.renameSceneObject(obj,newname)
+			#self.mgr.renameSceneObject(obj,newname)
+			obj.setName(newname)
 			filename=self.getProjectFile(obj.getName())
+			savecheart=self.configMap[ConfigNames._savecheart].lower()=='true'
 			
 			if isinstance(obj,ImageSceneObject):
 				self.CardiacMotion.saveToNifti([obj],True)
 			elif isinstance(obj,MeshSceneObject):
-				savecheart=self.configMap[ConfigNames._savecheart].lower()=='true'
 				if savecheart: # force CHeart saving is selected
 					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True) 
 				else:
@@ -928,6 +930,7 @@ class CardiacMotionProject(Project):
 			else:
 				obj.plugin.saveObject(obj,filename,setFilenames=True)
 
+			self.mgr.addSceneObject(obj)
 			Project.addObject(self,obj)
 
 			self.save()

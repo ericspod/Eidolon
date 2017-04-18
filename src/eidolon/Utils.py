@@ -1625,7 +1625,7 @@ def memoized(converter=lambda i:i,initialmemo={}):
 	The dictionary `initialmemo' can be used to initialize the stored memo with given arg-result value pairs.
 	'''
 	def funcwrap(func):
-		memo=dict(initialmemo) # distinct instance of this is create for each function and is bound in its scope
+		memo=dict(initialmemo) # distinct instance of this is created for each function and is bound in its scope
 
 		@wraps(func)
 		def memoizedfunc(*args,**kwargs):
