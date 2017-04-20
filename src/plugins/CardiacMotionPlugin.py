@@ -1262,7 +1262,7 @@ class CardiacMotionProject(Project):
 			f=self.CardiacMotion.startRegisterMotionTrack(imgname,maskname,trackname,paramfile,None,onefile)
 			
 		self.mgr.checkFutureResult(f)
-		self.mgr.addFuncTask(lambda:mgr.callThreadSafe(self.updatePropBox,self,self.prop))
+		self.mgr.addFuncTask(lambda:self.mgr.callThreadSafe(self.updatePropBox,self,self.prop))
 
 	def _killJob(self):
 		ind=self.alignprop.jobList.currentRow()

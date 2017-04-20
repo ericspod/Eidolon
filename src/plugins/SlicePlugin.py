@@ -875,6 +875,9 @@ class SlicePlugin(ScenePlugin):
 
 	def getIcon(self,obj):
 		return IconName.Scissors
+		
+	def getObjFiles(self,obj):
+		return None
 
 	def _createSliceBoxMenu(self):
 		@taskroutine('Creating new slice box')
