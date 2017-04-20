@@ -415,12 +415,12 @@ class SceneManager(TaskQueue):
 		self.addEventHandler(EventType._mouseMove,lambda e:self.repaint(False))
 		self.addEventHandler(EventType._mouseWheel,lambda e:self.repaint(False))
 
-		self.addEventHandler(EventType._widgetPreDraw,self._updateUI)
-		self.addEventHandler(EventType._widgetPreDraw,self._updateManagedObjects)
-		self.addEventHandler(EventType._widgetPostDraw,self._repaintHighQual)
-		self.addEventHandler(EventType._mousePress,self._mousePressHandleCheck)
-		self.addEventHandler(EventType._mouseMove,self._mouseMoveHandleCheck)
-		self.addEventHandler(EventType._mouseRelease,self._mouseReleaseHandleCheck)
+		self.addEventHandler(EventType._widgetPreDraw,self._updateUI) # update UI when redrawing
+		self.addEventHandler(EventType._widgetPreDraw,self._updateManagedObjects) # update boxes and handles before drawing
+		self.addEventHandler(EventType._widgetPostDraw,self._repaintHighQual) # repaint again in high quality if the first paint was in low quality
+		self.addEventHandler(EventType._mousePress,self._mousePressHandleCheck) # transmit mouse presses to handles
+		self.addEventHandler(EventType._mouseMove,self._mouseMoveHandleCheck) # transmit mouse moves to handles
+		self.addEventHandler(EventType._mouseRelease,self._mouseReleaseHandleCheck) # transmit mouse release to handles
 
 		self.taskthread.start() # start taskthread here
 
@@ -508,7 +508,7 @@ class SceneManager(TaskQueue):
 
 	def _updateUI(self):
 		if self.controller:
-			fillTable(self.controller.getPropTuples(),self.win.cameraProps)
+			fillTable(self.controller.getPropTuples(),self.win.cameraProps) # TODO: causes jittering when rotating fast, replace with something faster
 			self.setCameraConfig()
 
 	def _updateManagedObjects(self):

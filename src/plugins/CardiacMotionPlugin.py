@@ -785,7 +785,7 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.regSubBox,names,self.configMap[ConfigNames._regsubject])
 		fillList(self.alignprop.gridImgBox,names)
 		fillList(self.alignprop.isoCreateBox,names)
-		fillList(self.alignprop.strainROIBox,names)
+		fillList(self.alignprop.strainROIBox,names,defaultitem='None')
 		fillList(self.alignprop.maskNregBox,names,defaultitem='None')
 
 		fillList(self.alignprop.keMaskBox,names)
