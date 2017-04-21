@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>3</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -862,7 +862,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-648</y>
         <width>667</width>
         <height>1389</height>
        </rect>
@@ -1496,7 +1496,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             <item>
              <widget class="QLabel" name="label_39">
               <property name="text">
-               <string>(strain vector length in mm)</string>
+               <string>(strain vector length)</string>
               </property>
              </widget>
             </item>
