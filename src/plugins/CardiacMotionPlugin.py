@@ -1095,7 +1095,7 @@ class CardiacMotionProject(Project):
 			self.mgr.checkFutureResult(f)
 
 	def _loadMorphoSeries(self):
-		param=ParamDef('tsOffset','Timestep Offset',ParamType._int,40,-300,300,10)
+		param=ParamDef('tsOffset','Dicom Trigger Time Additive Value',ParamType._int,50,-300,300,10)
 		results={}
 
 		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(allowMultiple=False,params=([param],lambda n,v:results.update({n:v})),subject='Morphology')
