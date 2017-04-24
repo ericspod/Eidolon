@@ -411,22 +411,23 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 	surface. The `startpos' vector is a point in space which marks the plane the regions should start from, so if this is
 	below `topcenter' then nodes above that plane will be put in region 18. If `include17' is True then region 17 at 
 	the apex is defined, otherwise regions 13-16 extend to the bottom (eg. for pool meshes). Vector `norm' should be 
-	the long axis normal pointing from top to apex.
+	the long axis normal pointing from top to apex. The return value is a RealMatrix defining a per-element field which
+	assigns each element to a AHA region or 18 if below `startpos'.
 	'''
-		
 	# AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
 	aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17],[18])
-	ahaheights=(1/3.0,2/3.0,1.0)
+	ahaheights=(1/3.0,2/3.0,1.0) # bottom heights of each region
 	
 	aha=RealMatrix('AHA',len(inds))
 	aha.meta(StdProps._elemdata,'True')
-	
-	apexdist=apex.planeDist(topcenter,norm)
-	nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))]
-	maxheight=max(nodeheights)
-	minheight=startpos.planeDist(topcenter,norm)
-	apexheight=lerpXi(apexdist,minheight,maxheight) if include17 else 1.0
-	thresholds=[apexheight*h for h in ahaheights]
+		
+	nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))] # heights of each node from the top plane
+	maxheight=max(nodeheights) # node farthest from top plane, should be in apex
+	minheight=max(0,startpos.planeDist(topcenter,norm)) # starting position for assign regions, everything between here and the top plane becomes region 18
+
+	apexdist=apex.planeDist(topcenter,norm) # distance from top plane to inner apex point
+	apexheight=lerpXi(apexdist,minheight,maxheight) if include17 else 1.0 # height of apex relative to (minheight,maxheight) range
+	thresholds=[apexheight*h for h in ahaheights] # thresholds for each layer of regions
 	
 	# choose X and Y values to determine which region an element belongs to
 	xvals=[]
@@ -436,7 +437,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 		theights=indexList(ind,nodeheights)
 		txis=indexList(ind,xis)
 		xvals.append(min(n.x() for n in txis if not 0<n.z()<1)) # use the minimal x values since triangles straddling the seam won't have adjacent xi values
-		yvals.append(lerpXi(max(theights),minheight,maxheight))
+		yvals.append(lerpXi(max(theights),minheight,maxheight)) # calculate height relative to the (minheight,maxheight) range
 		
 	# fill in the field aha to assign a region to each element
 	for i in xrange(len(inds)):
@@ -444,7 +445,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 		avgy=yvals[i]
 		minx=xvals[i]
 
-		if avgy<0: # region 18
+		if avgy<0: # negative values are above where the regions start, so region 18
 			row=4
 			sector=0
 		elif avgy<thresholds[0]: # regions 1-6
