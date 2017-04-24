@@ -1322,12 +1322,14 @@ class CardiacMotionProject(Project):
 		objname=str(self.alignprop.thickMeshBox.currentText())
 		fieldname=str(self.alignprop.thickFieldBox.currentText())
 		percentThickness=self.alignprop.percentThickBox.isChecked()
-		self.CardiacMotion.calculateMeshRegionThickness(objname,fieldname,percentThickness)
+		f=self.CardiacMotion.calculateMeshRegionThickness(objname,fieldname,percentThickness)
+		self.mgr.checkFutureResult(f)
 
 	def _calculateAvgDispButton(self):
 		objname=str(self.alignprop.dispMeshBox.currentText())
 		fieldname=str(self.alignprop.dispFieldBox.currentText())
-		self.CardiacMotion.calculateMeshRegionAvgDisp(objname,fieldname)
+		f=self.CardiacMotion.calculateMeshRegionAvgDisp(objname,fieldname)
+		self.mgr.checkFutureResult(f)
 
 	def _calculateVolumeButton(self):
 		objname=str(self.alignprop.volMeshBox.currentText())
@@ -1373,7 +1375,8 @@ class CardiacMotionProject(Project):
 		phaseXname=str(self.alignprop.phaseXBox.currentText())
 		phaseYname=str(self.alignprop.phaseYBox.currentText())
 		phaseZname=str(self.alignprop.phaseZBox.currentText())
-		self.CardiacMotion.calculatePhaseKineticEnergy(maskname,phaseXname,phaseYname,phaseZname)
+		f=self.CardiacMotion.calculatePhaseKineticEnergy(maskname,phaseXname,phaseYname,phaseZname)
+		self.mgr.checkFutureResult(f)
 
 	def _tagCheckBox(self,isChecked):
 		paramfile=str(self.alignprop.paramEdit.text())
