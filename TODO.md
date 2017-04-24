@@ -6,11 +6,12 @@
  * 2D glyph visualization
  * Streamlines representation type
  * PyQt5 compatibility
+ * PACS access
 
 ### 12 Dec 2016
  * ~~Replace IRTK with MIRTK~~ (mostly)
  * ~~Change how tracking directories are chosen so that the source image doesn't need to be selected anymore~~
- * Finish tracking code for measurements
+ * ~~Finish tracking code for measurements~~
  * ~~Torsion calculation~~
  
 ### 17 Oct 2016

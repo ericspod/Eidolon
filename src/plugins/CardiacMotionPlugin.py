@@ -1075,10 +1075,13 @@ class CardiacMotionProject(Project):
 		self.CardiacMotion.emptyCropObject(srcname)
 
 	def _loadCineSeries(self):
-		param=ParamDef('showCrop','Show Crop Dialog',ParamType._bool,False)
+		params=[
+			#ParamDef('mergeMulti','Merge Selected Series Into One Object',ParamType._bool,False),
+			ParamDef('showCrop','Show Crop Dialog',ParamType._bool,False)
+		]
 		results={}
 		
-		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE',params=([param],lambda n,v:results.update({n:v})))
+		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE',params=(params,lambda n,v:results.update({n:v})))
 		if len(series)>0:
 			if results.get('showCrop',False):
 				objs=[]

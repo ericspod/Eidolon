@@ -166,6 +166,23 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
 	return newcontour
 
 
+def getContourRelativeDir(contours,pos):
+	'''
+	Given a list of unsorted contours `contours' and a position `pos', returns a direction in plane with the largest
+	contour which points from the contour center to `pos'.
+	'''
+	con=max(contours,key=lambda c:BoundBox(c).radius) # get largest contour
+	
+	# ensure pos is on the plane of con
+	if pos.isZero():
+		pos=con[0]
+	else:
+		pc,pn=getContourPlane(con)
+		pos=pos.planeProject(pc,pn)
+
+	return (pos-avg(con)).norm() # vector pointing in the rightwards direction
+	
+
 def sortContours(contours,startdir=None):
 	'''
 	Accepts a 2D matrix of contour vec3 points `contours' plus a vector `startdir' pointing in the, direction considered 
@@ -387,16 +404,19 @@ def generateApexContours(contours,scale=0.5,givenapex=None):
 
 
 @timing
-def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,include17):
+def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 	'''
 	Calculates an AHA field for the hemisphere defined by (nodes,inds,xis). The plane defined by (topcenter,norm) should be
 	the top of the hemisphere aligned with the center axis. The `apex' node should be node at the bottom of the inside
-	surface. If `include17' is True then region 17 at the apex is defined, otherwise regions 13-16 extend to the bottom
-	(eg. for pool meshes). Vector `norm' should be the long axis normal pointing from top to apex.
+	surface. The `startpos' vector is a point in space which marks the plane the regions should start from, so if this is
+	below `topcenter' then nodes above that plane will be put in region 18. If `include17' is True then region 17 at 
+	the apex is defined, otherwise regions 13-16 extend to the bottom (eg. for pool meshes). Vector `norm' should be 
+	the long axis normal pointing from top to apex.
 	'''
 		
 	# AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
-	aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17])
+	aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17],[18])
+	ahaheights=(1/3.0,2/3.0,1.0)
 	
 	aha=RealMatrix('AHA',len(inds))
 	aha.meta(StdProps._elemdata,'True')
@@ -404,8 +424,9 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,include17):
 	apexdist=apex.planeDist(topcenter,norm)
 	nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))]
 	maxheight=max(nodeheights)
-	apexheight=lerpXi(apexdist,0,maxheight) if include17 else 1.0
-	thresholds=[apexheight/3,apexheight/1.5,apexheight]
+	minheight=startpos.planeDist(topcenter,norm)
+	apexheight=lerpXi(apexdist,minheight,maxheight) if include17 else 1.0
+	thresholds=[apexheight*h for h in ahaheights]
 	
 	# choose X and Y values to determine which region an element belongs to
 	xvals=[]
@@ -415,7 +436,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,include17):
 		theights=indexList(ind,nodeheights)
 		txis=indexList(ind,xis)
 		xvals.append(min(n.x() for n in txis if not 0<n.z()<1)) # use the minimal x values since triangles straddling the seam won't have adjacent xi values
-		yvals.append(lerpXi(max(theights),0,maxheight))
+		yvals.append(lerpXi(max(theights),minheight,maxheight))
 		
 	# fill in the field aha to assign a region to each element
 	for i in xrange(len(inds)):
@@ -423,7 +444,10 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,include17):
 		avgy=yvals[i]
 		minx=xvals[i]
 
-		if avgy<thresholds[0]: # regions 1-6
+		if avgy<0: # region 18
+			row=4
+			sector=0
+		elif avgy<thresholds[0]: # regions 1-6
 			sector=clamp(int(minx*6),0,5)
 			row=0
 		elif avgy<thresholds[1]: # regions 7-12
@@ -592,7 +616,7 @@ def generateDefaultHemisphereMesh(refine,center,scale,outerrad,innerrad,numctrls
 
 
 @timing
-def generateHemisphereSurface(name,contours,refine, startdir, apex=None, reinterpolateVal=0,calcAHA=False,elemtype=None,innerSurface=True,task=None):
+def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinterpolateVal=0,calcAHA=False,elemtype=None,innerSurface=True,task=None):
 	'''
 	Create a hemisphere triangle mesh for the contour set `contours' which are expected to define a tube for which an
 	apex will be added. The contours will be sorted in order along a common axis with the largest topmost since this
@@ -611,6 +635,7 @@ def generateHemisphereSurface(name,contours,refine, startdir, apex=None, reinter
 	produce a mesh with 10*(4**(refine+1)) triangles. A field defining which regions of the AHA division scheme each
 	element belongs to is also generated, assuming that `startdir' points towards the center of the RV.
 	'''
+	startdir=getContourRelativeDir(contours,startpos)
 	contours=sortContours(contours,startdir)
 
 	# extract into ctrls only the contours for the cavity, if there's 2 contours per plane select the smallest if innerSurface==True
@@ -639,13 +664,13 @@ def generateHemisphereSurface(name,contours,refine, startdir, apex=None, reinter
 		#topcenter,norm=getContourPlane(ctrls[0])
 		topcenter=avg(ctrls[0])
 		norm=getHemiAxis(ctrls)
-		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,apex,not innerSurface))
+		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,not innerSurface))
 
 	return TriDataSet(name+'DS',nodes,inds,fields)
 
 
 @timing
-def generateHemisphereVolume(name,contours,refine, startdir, apex=None,reinterpolateVal=0,calcAHA=False,elemtype=None,innerOnly=True,task=None):
+def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpolateVal=0,calcAHA=False,elemtype=None,innerOnly=True,task=None):
 	'''
 	Create a hemisphere tetrahedral mesh for the contour set `contours' which are expected to define a tube for which an
 	apex will be added. The contours will be sorted in order along a common axis with the largest topmost since this
@@ -667,7 +692,7 @@ def generateHemisphereVolume(name,contours,refine, startdir, apex=None,reinterpo
 	hemispherical mesh will be produced.
 	'''
 	elemtype=elemtype or ElemType.Line1PCR
-
+	startdir=getContourRelativeDir(contours,startpos)
 	contours=sortContours(contours,startdir) # sort contours from the top of the hemisphere down
 
 	# extract into ctrls only the contours for the cavity, if there's 2 contours per plane select the smallest
@@ -719,7 +744,7 @@ def generateHemisphereVolume(name,contours,refine, startdir, apex=None,reinterpo
 	
 		topcenter=avg(ctrls[0][0])
 		norm=getHemiAxis(listSum(ctrls))
-		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,not innerOnly))
+		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,startpos,not innerOnly))
 
 	return PyDataSet(name+'DS',nodes,[inds],fields)
 
@@ -1328,6 +1353,12 @@ class SegmentPlugin(ScenePlugin):
 				#	raise ValueError('Segmentation provides no apex points')
 					
 				genfunc=generateHemisphereVolume if isVolume else generateHemisphereSurface
+				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex,(0,0,0)))
+				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex,(0,0,0)))
+				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex,(0,0,0)))				
+				rightpos=vec3(*segobj.get(SegViewPoints._rvAttach,(0,0,0))) # position in the rightwards direction
+				apex=None
+
 				contours=zip(*segobj.enumContours())[0]
 				contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
 
@@ -1335,29 +1366,25 @@ class SegmentPlugin(ScenePlugin):
 					plane=getContourPlane(c)
 					if not contourOnPlane(c,*plane):
 						raise ValueError('Contours are not all defined on planes (ie. they are not flat)')
-				
-				con=max(contours,key=lambda c:BoundBox(c).radius)
-				rightpos=vec3(*segobj.get(SegViewPoints._rvAttach,(0,0,0))) # position in the rightwards direction
-				
-				# ensure rightpos is on the plane of con
-				if rightpos.isZero():
-					rightpos=con[0]
-				else:
-					pc,pn=getContourPlane(con)
-					rightpos=rightpos.planeProject(pc,pn)
-	
-				rightvec=(rightpos-avg(con,vec3())).norm() # vector pointing in the rightwards direction
 					
-				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex,(0,0,0)))
-				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex,(0,0,0)))
-				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex,(0,0,0)))
+#				con=max(contours,key=lambda c:BoundBox(c).radius) # get largest contour
+#				
+#				# ensure rightpos is on the plane of con
+#				if rightpos.isZero():
+#					rightpos=con[0]
+#				else:
+#					pc,pn=getContourPlane(con)
+#					rightpos=rightpos.planeProject(pc,pn)
+#	
+#				rightvec=(rightpos-avg(con)).norm() # vector pointing in the rightwards direction
 				
 				# choose the apex position by averaging any provided values, or None if none are given
-				apex=avg((c for c in [ch2,ch3,ch4] if not c.isZero()),vec3())
-				if apex.isZero():
-					apex=None
+				if any(not c.isZero() for c in [ch2,ch3,ch4]):
+					apex=avg(c for c in [ch2,ch3,ch4] if not c.isZero())
+					if apex.isZero():
+						apex=None
 
-				ds=genfunc(name+'DS',contours,refine,rightvec,apex,reinterpolateVal,calcAHA,None,inner,task)
+				ds=genfunc(name+'DS',contours,refine,rightpos,apex,reinterpolateVal,calcAHA,None,inner,task)
 				f.setObject(MeshSceneObject(name,ds,plugin))
 
 		return self.mgr.runTasks(_create(segobj,name,refine,reinterpolateVal,calcAHA,isVolume,inner),f)

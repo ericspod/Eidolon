@@ -1181,10 +1181,14 @@ class IRTKPluginMixin(object):
 
 			return pickle.loads(received) # return the unpickled response
 
-	def startMotionTrackServer(self):
+	def startMotionTrackServer(self,addr=None,port=None):
 		'''Starts the server on the local machine if it isn't running and returns the process object, does nothing otherwise.'''
+		
+		# TODO: need to fix this, the processes aren't spawning correctly, especially in packed app form, need to spawn new copy of eidolon and run from there
 
-		addr,port=self.getServerAddrPort()
+		if not addr or not port:
+			addr,port=self.getServerAddrPort()
+			
 		newport=port
 		startserver=False
 
