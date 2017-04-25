@@ -62,6 +62,9 @@ NonstandardTags=enum(
 )
 
 
+digestFilename='dicomdataset.ini'
+
+
 keywordToTag={v[4]:(k>>16,k&0xffff) for k,v in DicomDictionary.items()} # maps tag keywords to 2 part tag numbers
 
 
@@ -170,12 +173,8 @@ def createDicomDatasets(process,rootdir,files):
 
 			series=dds.getSeries(ds.SeriesInstanceUID,True)
 			series.addFile(os.path.relpath(f,rootdir))
-
-			if len(series.desc)==0:
-				series.desc=str(ds.get('SeriesDescription',series.desc)).strip()
-
-			if series.seriesNum==0:
-				series.seriesNum=int(ds.get('SeriesNumber',series.seriesNum))
+			series.desc=series.desc or str(ds.get('SeriesDescription',series.desc)).strip()
+			series.seriesNum=series.seriesNum or int(ds.get('SeriesNumber',series.seriesNum))
 
 			counter+=1
 			process.setProgress(counter)
@@ -633,11 +632,11 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 
 class DicomSeries(object):
 	'''Represent a list of Dicom images which are members of a series. Changing will break existing .pickle files.'''
-	def __init__(self,parent,seriesID,filenames=[]):
+	def __init__(self,parent,seriesID,filenames=[],seriesNum=0,desc=''):
 		self.parent=parent
 		self.seriesID=seriesID
-		self.seriesNum=0
-		self.desc=''
+		self.seriesNum=seriesNum
+		self.desc=desc
 		self.filenames=list(filenames)
 		self.simgs=[] #[None]*len(filenames) # initially empty list of ShareImage objects which will be loaded from Dicoms
 		#self.tagmap=OrderedDict()
@@ -651,6 +650,13 @@ class DicomSeries(object):
 			('Description',self.desc),
 			('# Images',str(len(self.filenames)))
 		]
+		
+	def getDatasetMap(self):
+		return {
+			'seriesNum':self.seriesNum,
+			'desc': self.desc,
+			'filenames':self.filenames
+		}
 
 	def addFile(self,filename):
 		if filename not in self.filenames:
@@ -698,7 +704,7 @@ class DicomDataset(object):
 		seriesID=str(seriesID)
 
 		s=first(s for s in self.series if s.seriesID==seriesID)
-		if s==None and createNew:
+		if s is None and createNew:
 			s=DicomSeries(self,seriesID)
 			self.series.append(s)
 
@@ -711,7 +717,36 @@ class DicomDataset(object):
 			func=desc_or_func
 
 		return first(s for s in self.series if func(s))
+		
+	def getDatasetMap(self):
+		result={
+			'rootdir':self.rootdir,
+			'series':[s.seriesID for s in self.series]
+		}
+		
+		for s in self.series:
+			result[s.seriesID]=s.getDatasetMap()
+			
+		return result
+		
+	def storeDataset(self,filename):
+		storeBasicConfig(filename,self.getDatasetMap())
+		
+	def loadDataset(self,filename):
+		dsmap=readBasicConfig(filename)
+		
+		# check that the root directory makes sense
+		if not isSameFile(self.rootdir,dsmap['rootdir']) or not os.path.isdir(dsmap['rootdir']):
+			raise ValueError('Digest file root directory %r not valid'%dsmap['rootdir'])
+			
+		for sid in dsmap['series']:
+			series=DicomSeries(self,sid,**dsmap[sid])
+			self.series.append(series)
 
+			# ensure the files referred to by the series still exist
+			if any(not os.path.isfile(f) for f in series.enumFilePaths()):
+				raise ValueError('Series %r out of sync with filesystem'%sid)
+			
 	def dump(self,filename):
 		'''Dump the data to a pickle file, assumes no image data is present in series objects.'''
 		with open(filename,'w') as o:
@@ -838,39 +873,76 @@ class DicomPlugin(ImageScenePlugin):
 		dirpath=os.path.abspath(dirpath)
 		dirfiles=list(enumAllFiles(dirpath))
 		picklefile=os.path.join(dirpath,'dicomdataset.pickle')
-
-		usePickleFile=False
-
-		# if the pickle file exists and is later than all the files in the directory, set 'usePickleFile' to true
+		digestfile=os.path.join(dirpath,digestFilename)
+		useDigestFile=False
+		
+		# delete legacy pickle file
 		if os.path.isfile(picklefile):
-			picklestat=os.stat(picklefile)
-			usePickleFile=all(os.stat(f).st_mtime<=picklestat.st_mtime for f in dirfiles)
+			os.remove(picklefile)
+			
+		# if the digest file exists and is later than all the files in the directory, set useDigestFile to True
+		if os.path.isfile(digestfile):
+			digeststat=os.stat(digestfile)
+			useDigestFile=all(os.stat(f).st_mtime<=digeststat.st_mtime for f in dirfiles)
 
-		if usePickleFile:
+		# if the digest file is present and later than the other files, try to load it
+		if useDigestFile:
 			try:
-				result=pickle.load(open(picklefile)) # load the pickle digest file
-				for s in result.series: # check that all the files exist, if they don't recreate the dataset
-					if not all(map(os.path.exists,s.enumFilePaths())):
-						usePickleFile=False
-						break
+				ds=DicomDataset(dirpath)
+				ds.loadDataset(digestfile)
 			except:
-				usePickleFile=False
-
-		if not usePickleFile:
-			result=DicomDataset(dirpath)
+				useDigestFile=False
+				
+		# if the digest file wasn't present or failed to load, create the dataset object by scanning the directory then try to save the digest
+		if not useDigestFile:
+			ds=DicomDataset(dirpath)
 
 			proccount=chooseProcCount(len(dirfiles),0,500)
 			ddsmap=createDicomDatasets(len(dirfiles),proccount,task,dirpath,dirfiles,partitionArgs=(dirfiles,))
 
 			for dds in ddsmap.values():
-				result.addDataset(dds)
+				ds.addDataset(dds)
 				
 			try:
-				result.dump(picklefile)
+				ds.storeDataset(digestfile)
 			except:
 				pass
 
-		return result
+		return ds
+				
+
+#		usePickleFile=False
+#
+#		# if the pickle file exists and is later than all the files in the directory, set 'usePickleFile' to true
+#		if os.path.isfile(picklefile):
+#			picklestat=os.stat(picklefile)
+#			usePickleFile=all(os.stat(f).st_mtime<=picklestat.st_mtime for f in dirfiles)
+#
+#		if usePickleFile:
+#			try:
+#				result=pickle.load(open(picklefile)) # load the pickle digest file
+#				for s in result.series: # check that all the files exist, if they don't recreate the dataset
+#					if not all(map(os.path.exists,s.enumFilePaths())):
+#						usePickleFile=False
+#						break
+#			except:
+#				usePickleFile=False
+#
+#		if not usePickleFile:
+#			result=DicomDataset(dirpath)
+#
+#			proccount=chooseProcCount(len(dirfiles),0,500)
+#			ddsmap=createDicomDatasets(len(dirfiles),proccount,task,dirpath,dirfiles,partitionArgs=(dirfiles,))
+#
+#			for dds in ddsmap.values():
+#				result.addDataset(dds)
+#				
+#			try:
+#				result.dump(picklefile)
+#			except:
+#				pass
+#
+#		return result
 
 	def loadDirDataset(self,dirpath,loadSequential=False):
 		'''Loads the dataset directory as an asset.'''
