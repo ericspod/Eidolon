@@ -94,6 +94,9 @@ IconName=Utils.enum(
 )
 
 
+mainTitleString='%s v%s (FOR RESEARCH ONLY)'
+
+
 def initUI(args=None):
 	'''Initialize the UI framework.'''
 	global globalApp
@@ -2161,34 +2164,35 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 	def __init__(self,conf,width=1200,height=600):
 		super(VisualizerWindow, self).__init__()
 
-		self.msgdialog=ShowMessageDialog(self)
+		self.setupUi(self)
+		self.setWindowTitle(mainTitleString%(eidolon.__appname__,eidolon.__version__))
+		self.setDockOptions(QtGui.QMainWindow.AllowNestedDocks)
 
 		self.objMap={} # maps UI items to ObjMapTuple instances
-		self.mgr=None
+		self.mgr=None # scene manager object, set later
+		self.dockWidgets=[] # list of docked widget objects
+		self.isExec=False # set to True when the event loop is started
+		self.timestepSliderMult=1.0 # number of ticks to divide timesteps by in the timestep slider
+		self.assetRootMap={} # maps asset types to the root tree item for each type in the asset tree widget
+		self.logfileView=None
 
-		self.dockWidgets=[]
+		self.msgdialog=ShowMessageDialog(self)
 
 		self.dialogDir=os.getcwd() # stored directory for open/save dialogs
 		if '.app' in self.dialogDir:
 			self.dialogDir=os.path.expanduser('~')
 
-		self.isExec=False
-
-		self.timestepSliderMult=1.0 # number of ticks to divide timesteps by in the timestep slider
-
-		self.setupUi(self)
-		self.setWindowTitle('%s v%s (FOR RESEARCH ONLY)'%(eidolon.__appname__,eidolon.__version__))
-
+		# connect list signals
 		self.treeWidget.currentItemChanged.connect(lambda:self._clickedTree(self.propScrollArea,self.treeWidget.currentItem()))
 		self.treeWidget.itemDoubleClicked.connect(lambda:self._doubleClickedTree(self.propScrollArea,self.treeWidget.currentItem()))
 		self.assetList.itemSelectionChanged.connect(lambda :self._clickedTree(self.assetScrollArea,self.assetList.currentItem()))
 		self.treeWidget.customContextMenuRequested.connect(lambda p:self._menuClickedTree(self.treeWidget,p))
 
+		# connect actions
 		self.action_Scene_Elements.triggered.connect(lambda:self.interfaceDock.setVisible(not self.interfaceDock.isVisible()))
 		self.action_Console.triggered.connect(lambda:self.consoleWidget.setVisible(not self.consoleWidget.isVisible()))
 		self.action_Time.triggered.connect(lambda:self.timeWidget.setVisible(not self.timeWidget.isVisible()))
 		self.actionScratch_Pad.triggered.connect(lambda:self.scratchWidget.setVisible(not self.scratchWidget.isVisible()))
-
 		self.action_About.triggered.connect(self._showAbout)
 
 		self.execButton.clicked.connect(self._executeScratch)
@@ -2196,12 +2200,6 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		self.saveScratchButton.clicked.connect(self._saveScratch)
 
 		setCollapsibleGroupbox(self.treeGroup)
-
-		# reset self.viz to use Eidolon renderer widget
-		self.mainLayout.removeWidget(self.viz)
-		self.viz=RenderWidget(conf,self)
-		self.mainLayout.addWidget(self.viz)
-		self.viz.initViz()
 
 		# add the progress bar and text box to the status bar
 		self.statusProgressBar=QtGui.QProgressBar()
@@ -2216,31 +2214,14 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		self.statusBar.addWidget(self.statusText)
 		self.setStatus('Ready')
 
-		self.assetRootMap={} # maps asset types to the root tree item for each type in the asset tree widget
-
 		for key,name,desc in AssetType:
 			self.assetRootMap[key]=QtGui.QTreeWidgetItem(self.assetList)
 			self.assetRootMap[key].setText(0,name)
 			self.assetRootMap[key].setToolTip(0,desc)
 
-		# force a relayout
-		self.resize(width, height+1)
-		self.show()
-		self.setRenderWinSize(width, height)
-
-		self.scene=self.viz.getRenderScene() # must be after show() since rendering is prevented until the RenderScene is created
-
-		self.scene.logMessage('Eidolon Version: '+eidolon.__version__)
-		self.scene.logMessage('Qt Version: '+str(QtCore.qVersion()))
-		self.scene.logMessage('Python Version: '+sys.version)
-		self.scene.logMessage('Python exe: '+sys.executable)
-		self.scene.logMessage('Python path: '+str(sys.path))
-
 		self.console=ConsoleWidget(self,conf)
 		self.consoleLayout.addWidget(self.console)
 		self.consoleWidget.setVisible(False) # hide the console by default
-
-		self.logfileView=None
 
 		self.timeWidget.setVisible(False) # hide the time dialog by default
 		self.scratchWidget.setVisible(False) # hide the scratch pad by default
@@ -2254,6 +2235,25 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 				oldkeypress(e)
 
 		setattr(self.scratchWidget,'keyPressEvent',_keyPress)
+		
+		# reset self.viz to use Eidolon renderer widget
+		self.mainLayout.removeWidget(self.viz)
+		self.viz=RenderWidget(conf,self)
+		self.mainLayout.addWidget(self.viz)
+		self.viz.initViz()
+
+		# force a relayout
+		self.resize(width, height+1)
+		self.show()
+		self.setRenderWinSize(width, height)
+
+		self.scene=self.viz.getRenderScene() # must be after show() since rendering is prevented until the RenderScene is created
+		
+		self.scene.logMessage('Eidolon Version: '+eidolon.__version__)
+		self.scene.logMessage('Qt Version: '+str(QtCore.qVersion()))
+		self.scene.logMessage('Python Version: '+sys.version)
+		self.scene.logMessage('Python exe: '+sys.executable)
+		self.scene.logMessage('Python path: '+str(sys.path))
 
 		self.raise_() # bring window to front in OS X
 		self.activateWindow() # bring window to front in Windows (?)

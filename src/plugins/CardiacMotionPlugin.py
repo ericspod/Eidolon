@@ -1077,20 +1077,24 @@ class CardiacMotionProject(Project):
 	def _loadCineSeries(self):
 		params=[
 			#ParamDef('mergeMulti','Merge Selected Series Into One Object',ParamType._bool,False),
-			ParamDef('showCrop','Show Crop Dialog',ParamType._bool,False)
+			ParamDef('showCrop','Show Multiseries/Crop Dialog',ParamType._bool,False)
 		]
 		results={}
 		
 		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE',params=(params,lambda n,v:results.update({n:v})))
 		if len(series)>0:
 			if results.get('showCrop',False):
-				objs=[]
-				for s in series:
-					obj=self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(s)
-					if obj:
-						objs.append(obj)
+				objs=[self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(series)]
 			else:
 				objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
+#				if results.get('mergeMulti',False):
+#					images=listSum(o.images for o in objs)
+#					ind=getStrListCommonality(o.getName() for o in objs)
+#					name=objs[0].getName()
+#					if ind:
+#						name=name[:ind]
+#						
+#					objs=[objs[0].plugin.createSceneObject(name,objs[0].source,images,objs[0].plugin,objs[0].isTimeDependent)]
 				
 			self._readDicomHeartRate(series[0])
 			filenames=self.CardiacMotion.saveToNifti(objs)

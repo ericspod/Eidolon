@@ -106,7 +106,7 @@ def readDicomHeartRate(series_or_dcm):
 		m1=re.search('RR\s*(\d+)\s*',comment)
 		
 		if m1:
-			heartrate=60000/int(m.groups()[0])
+			heartrate=60000/int(m1.groups()[0])
 		else:
 			m2=re.search('(\d+)\s*[Bb][Pp][Mm]',comment)
 			if m2:
@@ -652,6 +652,7 @@ class DicomSeries(object):
 		]
 		
 	def getDatasetMap(self):
+		'''Returns a dictionary containing the members of the object to store in a digest file.'''
 		return {
 			'seriesNum':self.seriesNum,
 			'desc': self.desc,
@@ -701,6 +702,10 @@ class DicomDataset(object):
 		self.rootdir=rootdir
 
 	def getSeries(self,seriesID,createNew=False):
+		'''
+		Get the series with the given ID `seriesID'. If no such series is present, create a new series object if 
+		`createNew' is True and return that, otherwise return None.
+		'''
 		seriesID=str(seriesID)
 
 		s=first(s for s in self.series if s.seriesID==seriesID)
@@ -711,6 +716,11 @@ class DicomDataset(object):
 		return s
 
 	def findSeries(self,desc_or_func):
+		'''
+		Return the series which matches the criterion `desc_or_func'. If this is a string then return the first series
+		which contains it in its description. If not a string, it's assumed to be a callable returning True when the
+		desired series object is given as the sole argument. 
+		'''
 		if isinstance(desc_or_func,str):
 			func=lambda s:desc_or_func in s.desc
 		else:
@@ -719,6 +729,11 @@ class DicomDataset(object):
 		return first(s for s in self.series if func(s))
 		
 	def getDatasetMap(self):
+		'''
+		Returns a dictionary containing the condensed information for this dataset. The `rootdir' value is keyed
+		to itself, and there is a list of series IDs keyed to `series'. Each series object in self.series is also 
+		keyed to its series ID in the result. 
+		'''
 		result={
 			'rootdir':self.rootdir,
 			'series':[s.seriesID for s in self.series]
@@ -730,14 +745,17 @@ class DicomDataset(object):
 		return result
 		
 	def storeDataset(self,filename):
+		'''Store the dataset dictionary to the basic config file `filename'.'''
 		storeBasicConfig(filename,self.getDatasetMap())
 		
 	def loadDataset(self,filename):
+		'''Load data into the dataset from the basic config file `filename' which was created with storeDataset().'''
 		dsmap=readBasicConfig(filename)
 		
 		# check that the root directory makes sense
-		if not isSameFile(self.rootdir,dsmap['rootdir']) or not os.path.isdir(dsmap['rootdir']):
-			raise ValueError('Digest file root directory %r not valid'%dsmap['rootdir'])
+		# TODO: not actually needed? If the whole directory is moved the root will be different but file paths relative to the digest file will be correct
+		#if not isSameFile(self.rootdir,dsmap['rootdir']) or not os.path.isdir(dsmap['rootdir']):
+		#	raise ValueError('Digest file root directory %r not valid'%dsmap['rootdir'])
 			
 		for sid in dsmap['series']:
 			series=DicomSeries(self,sid,**dsmap[sid])
@@ -747,11 +765,6 @@ class DicomDataset(object):
 			if any(not os.path.isfile(f) for f in series.enumFilePaths()):
 				raise ValueError('Series %r out of sync with filesystem'%sid)
 			
-	def dump(self,filename):
-		'''Dump the data to a pickle file, assumes no image data is present in series objects.'''
-		with open(filename,'w') as o:
-			pickle.dump(self,o)
-
 	def addDataset(self,dds):
 		'''Merge the dataset `dds' into this one, assuming both have the same root directory.'''
 		assert dds.rootdir==self.rootdir
@@ -867,7 +880,7 @@ class DicomPlugin(ImageScenePlugin):
 	@timing
 	def loadDigestFile(self,dirpath,task):
 		'''
-		Loads the directory digest pickle file in 'dirpath' if it exists, or creates it otherwise. Returns the loaded
+		Loads the directory digest ini file in 'dirpath' if it exists, or creates it otherwise. Returns the loaded
 		or created DicomDataset object.
 		'''
 		dirpath=os.path.abspath(dirpath)
@@ -891,7 +904,7 @@ class DicomPlugin(ImageScenePlugin):
 				ds=DicomDataset(dirpath)
 				ds.loadDataset(digestfile)
 			except:
-				useDigestFile=False
+				useDigestFile=False # digest file was bogus somehow, load the hard way
 				
 		# if the digest file wasn't present or failed to load, create the dataset object by scanning the directory then try to save the digest
 		if not useDigestFile:
@@ -903,46 +916,13 @@ class DicomPlugin(ImageScenePlugin):
 			for dds in ddsmap.values():
 				ds.addDataset(dds)
 				
+			# try to store the digest file but if it fails (ie. read-only filesystem) just continue since it's only an optimization
 			try:
 				ds.storeDataset(digestfile)
 			except:
 				pass
 
 		return ds
-				
-
-#		usePickleFile=False
-#
-#		# if the pickle file exists and is later than all the files in the directory, set 'usePickleFile' to true
-#		if os.path.isfile(picklefile):
-#			picklestat=os.stat(picklefile)
-#			usePickleFile=all(os.stat(f).st_mtime<=picklestat.st_mtime for f in dirfiles)
-#
-#		if usePickleFile:
-#			try:
-#				result=pickle.load(open(picklefile)) # load the pickle digest file
-#				for s in result.series: # check that all the files exist, if they don't recreate the dataset
-#					if not all(map(os.path.exists,s.enumFilePaths())):
-#						usePickleFile=False
-#						break
-#			except:
-#				usePickleFile=False
-#
-#		if not usePickleFile:
-#			result=DicomDataset(dirpath)
-#
-#			proccount=chooseProcCount(len(dirfiles),0,500)
-#			ddsmap=createDicomDatasets(len(dirfiles),proccount,task,dirpath,dirfiles,partitionArgs=(dirfiles,))
-#
-#			for dds in ddsmap.values():
-#				result.addDataset(dds)
-#				
-#			try:
-#				result.dump(picklefile)
-#			except:
-#				pass
-#
-#		return result
 
 	def loadDirDataset(self,dirpath,loadSequential=False):
 		'''Loads the dataset directory as an asset.'''
@@ -1081,7 +1061,7 @@ class DicomPlugin(ImageScenePlugin):
 				# TODO: are these correct UIDs?
 				'SOPInstanceUID' : defaultfiletags['MediaStorageSOPInstanceUID'],
 				'SOPClassUID' : defaultfiletags['MediaStorageSOPClassUID'], # UID for SOP "Secondary Capture Image Storage"
-				# TODO: need to choose instance UIDs this better
+				# TODO: need to choose instance UIDs better
 				'SeriesInstanceUID' : '1.3.6.1.4.1.9590.100.1.1.'+(''.join(str(randint(0,10)) for i in range(39))),
 				'StudyInstanceUID' :  '1.3.6.1.4.1.9590.100.1.1.'+(''.join(str(randint(0,10)) for i in range(39))),
 				'SecondaryCaptureDeviceManufctur' : sys.version,

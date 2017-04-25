@@ -368,11 +368,11 @@ class IRTKPluginMixin(object):
 
 				for obj in objs:
 					obj=Future.get(obj)
-
-					filename=self.getNiftiFile(getValidFilename(obj.getName()))
-					printFlush('Saving',filename)
-					self.Nifti.saveImage(filename,obj,setObjArgs)
-					filenames.append(filename)
+					if obj:
+						filename=self.getNiftiFile(getValidFilename(obj.getName()))
+						printFlush('Saving',filename)
+						self.Nifti.saveImage(filename,obj,setObjArgs)
+						filenames.append(filename)
 
 				f.setObject(filenames)
 
