@@ -93,6 +93,7 @@ distfile: # creates the universal distributable zip file with path DISTNAME.zip
 	find $(DISTNAME) -name .DS_Store -delete
 	find $(DISTNAME) -name \*~ -delete
 	find $(DISTNAME) -name \*.pickle -delete
+	find $(DISTNAME) -name dicomdataset.ini -delete
 	find $(DISTNAME) -name \*.pyc -delete
 	zip -r $(DISTNAME).zip $(DISTNAME)
 	rm -rf $(DISTNAME)

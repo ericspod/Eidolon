@@ -1894,10 +1894,14 @@ def generateIsoplaneDataSet(dataset,name,refine,pt,norm,indexAcceptFunc=None,tas
 	nodes,nodeprops,indices,extindices=createDataMatrices(name,MatrixType.tris)
 
 	if selected.n()>0:
-		selected.setShared(True)
-
+		dnodes=dataset.getNodes()
 		proccount=chooseProcCount(selected.n(),refine,500)
-		result=calculateIsoplaneRange(selected.n(),proccount,task,dataset.getNodes(),sortedindices,selected,refine,pt,norm)
+
+		if proccount!=1:
+			selected.setShared(True)
+			dnodes.setShared(True)
+
+		result=calculateIsoplaneRange(selected.n(),proccount,task,dnodes,sortedindices,selected,refine,pt,norm)
 
 		selected.clear()
 

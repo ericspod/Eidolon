@@ -1081,7 +1081,7 @@ class CardiacMotionProject(Project):
 		]
 		results={}
 		
-		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(subject='CINE',params=(params,lambda n,v:results.update({n:v})))
+		series=self.CardiacMotion.Dicom.showChooseSeriesDialog(subject='CINE',params=(params,lambda n,v:results.update({n:v})))
 		if len(series)>0:
 			if results.get('showCrop',False):
 				objs=[self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(series)]
@@ -1105,7 +1105,7 @@ class CardiacMotionProject(Project):
 		param=ParamDef('tsOffset','Dicom Trigger Time Additive Value',ParamType._int,50,-300,300,10)
 		results={}
 
-		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(allowMultiple=False,params=([param],lambda n,v:results.update({n:v})),subject='Morphology')
+		series=self.CardiacMotion.Dicom.showChooseSeriesDialog(allowMultiple=False,params=([param],lambda n,v:results.update({n:v})),subject='Morphology')
 		if len(series)>0:
 			ts=results.get('tsOffset',40)
 			suffix='_offset%i'%ts
@@ -1123,7 +1123,7 @@ class CardiacMotionProject(Project):
 			ParamDef('loadPlanes','Include Plane-aligned Images',ParamType._bool,False)
 		]
 		results={}
-		series=self.CardiacMotion.Dicom.openChooseSeriesDialog(allowMultiple=False,params=(params,lambda n,v:results.update({n:v})),subject='3D Tag')
+		series=self.CardiacMotion.Dicom.showChooseSeriesDialog(allowMultiple=False,params=(params,lambda n,v:results.update({n:v})),subject='3D Tag')
 
 		if len(series)>0:
 			obj=self.CardiacMotion.Dicom.loadSeries(series[0])
@@ -1439,12 +1439,13 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		return addr,port
 
 	def setServerAddrPort(self,addr,port):
-		if addr!=None:
-			self.project.configMap[ConfigNames._serveraddr]=addr
-		if port!=None:
-			self.project.configMap[ConfigNames._serverport]=port
-
-		self.project.saveConfig()
+		if self.project:
+			if addr!=None:
+				self.project.configMap[ConfigNames._serveraddr]=addr
+			if port!=None:
+				self.project.configMap[ConfigNames._serverport]=port
+	
+			self.project.saveConfig()
 
 	@taskmethod('Load Nifti Files')
 	def loadNiftiFiles(self,filenames,task=None):

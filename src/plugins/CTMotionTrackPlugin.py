@@ -147,7 +147,7 @@ class CTMotionTrackProject(Project):
 				filenames=self.CTMotion.saveToNifti([obj])
 				self.CTMotion.loadNiftiFiles(filenames)
 			
-		series=self.Dicom.openChooseSeriesDialog(subject='CT Series')
+		series=self.Dicom.showChooseSeriesDialog(subject='CT Series')
 		
 		if len(series)>0:
 			f=self.Dicom.showTimeMultiSeriesDialog(series)

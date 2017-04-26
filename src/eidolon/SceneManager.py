@@ -827,6 +827,7 @@ class SceneManager(TaskQueue):
 		Forces 'func' to be called by the main/UI thread, which is necessary for many graphics operations. The values
 		'args' and 'kwargs' are used as the arguments, and the return value of the function is returned when the
 		main thread has completed the call. If there is no window then the function is called directly in this thread.
+		This blocks until the call completes, and is both thread-safe and thread-reentrant if there is a UI window.
 		'''
 		if self.win and not isMainThread():
 			return self.win.callFuncUIThread(func,*args,**kwargs)
@@ -1233,7 +1234,7 @@ class SceneManager(TaskQueue):
 	def addSceneObject(self,obj,category=None):
 		'''
 		Adds the SceneObject instance to the scene. If `obj' has no plugin, the appropriate default is assigned. If
-		the name of `obj' is not unique, it will be changed to a unique name by suffixing a number. 
+		the name of `obj' is not unique, it will be changed to a unique name by suffixing a number. (`category' not used) 
 		'''
 		obj=Future.get(obj)
 		assert isinstance(obj,SceneObject),'%r is type %r'%(obj,type(obj))

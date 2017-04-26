@@ -1207,7 +1207,8 @@ class IRTKPluginMixin(object):
 		if startserver or newport!=port: # save the address and port if it's changed
 			self.setServerAddrPort('localhost' if startserver else addr,newport)
 
-#		if startserver: # if we can't find a server run by the current user, start one locally
+		if startserver: # if we can't find a server run by the current user, start one locally
+			return self.mgr.callThreadSafe(MotionTrackServerDialog,self.serverdir,newport,self.motiontrack)
 #			scriptfile=inspect.getfile(inspect.currentframe())
 #			logfile=self.mgr.getUserAppFile('motionserver.log')
 #			args=[sys.executable,'-s',scriptfile,self.serverdir,str(newport),self.motiontrack]
@@ -1215,10 +1216,10 @@ class IRTKPluginMixin(object):
 #			time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
 #			return proc
 							
-		msp=MotionServerProcess(self.serverdir,newport,self.motiontrack)
-		msp.start()
-		time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
-		return msp
+#		msp=MotionServerProcess(self.serverdir,newport,self.motiontrack)
+#		msp.start()
+#		time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
+#		return msp
 
 	def startMotionTrackJob(self,trackname,maskname,dirname,adaptive,chosenparam):
 		f=Future()
@@ -1518,14 +1519,14 @@ class IRTKPluginMixin(object):
 		return self.mgr.runTasks(_checkJobs(jids),f,False)
 
 
-class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
+class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
 	def __init__(self,serverdir,serverport,motiontrackpath):
-		QtGui.QMainWindow.__init__(self)
+		QtGui.QWidget.__init__(self)
 		self.setupUi(self)
-		self.setWindowTitle('%s (Port: %i)'%(self.windowTitle(),serverport))
+		
 		self.serverdir=serverdir
 		self.jidfile=os.path.join(self.serverdir,'motion_jid.txt')
-		self.serverport=serverport
+		self.serverport=int(serverport)
 		self.motiontrackpath=motiontrackpath
 		self.username=getUsername()
 		self.runningProcs=[] # list of (Subprocess,jid,directory) triples
@@ -1549,9 +1550,7 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		self.timer=QtCore.QTimer()
 		self.timer.timeout.connect(self._updateList)
 		self.timer.start(3000)
-
-		self.show()
-
+		
 	def getJID(self):
 		with open(self.jidfile) as o:
 			return int(o.read().strip())
@@ -1602,27 +1601,13 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 			if reply == QtGui.QMessageBox.Yes:
 				proc=self.runningProcs[ind][0]
 				proc.kill()
+				
+	def stopServer(self):
+		self.server.shutdown()
 
-	def keyPressEvent(self,e):
-		if e.key() == QtCore.Qt.Key_Escape:
-			self.close()
-		else:
-			QtGui.QDialog.keyPressEvent(self,e)
-
-	def closeEvent(self,event):
-		msg='Closing the server will kill all running jobs, are you sure?'
-		reply = QtGui.QMessageBox.question(self, 'Quit', msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-
-		if reply == QtGui.QMessageBox.Yes:
-			self.server.shutdown()
-
-			for proc,jid,jdir in self.runningProcs:
-				if proc.returncode==None:
-					proc.kill()
-
-			event.accept()
-		else:
-			event.ignore()
+		for proc,jid,jdir in self.runningProcs:
+			if proc.returncode==None:
+				proc.kill()
 
 	def handleRequest(self,rfile,wfile):
 		try:
@@ -1737,18 +1722,33 @@ class MotionTrackServer(QtGui.QDialog,Ui_mtServerForm):
 		storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
 		self.runningProcs.append((proc,jid,jobdir))
 		return jid
-
-
-class MotionServerProcess(multiprocessing.Process):
-	def __init__(self,serverdir,port,motiontrack):
-		multiprocessing.Process.__init__(self)
-		self.serverdir=serverdir
-		self.port=port
-		self.motiontrack=motiontrack
 		
-	def run(self):
-		printFlush('Starting MotionTrackServer on port',self.port,'using directory',self.serverdir)
+
+class MotionTrackServerDialog(MotionTrackServerWidget):
+	def __init__(self,serverdir,serverport,motiontrackpath):
+		MotionTrackServerWidget.__init__(self,serverdir,serverport,motiontrackpath)
+		self.setWindowTitle('%s (Port: %i)'%(self.windowTitle(),self.serverport))
+		self.show()
+
+	def keyPressEvent(self,e):
+		if e.key() == QtCore.Qt.Key_Escape:
+			self.close()
+		else:
+			QtGui.QDialog.keyPressEvent(self,e)
+
+	def closeEvent(self,event):
+		msg='Closing the server will kill all running jobs, are you sure?'
+		reply = QtGui.QMessageBox.question(self, 'Quit', msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+		if reply == QtGui.QMessageBox.Yes:
+			self.stopServer()
+			event.accept()
+		else:
+			event.ignore()
+			
+	@staticmethod
+	def run():
+		printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
 		app = QtGui.QApplication(sys.argv)
-		mt=MotionTrackServer(self.serverdir,self.port,self.motiontrack)
+		mt=MotionTrackServerDialog(*sys.argv[-3:])
 		sys.exit(app.exec_())
-		

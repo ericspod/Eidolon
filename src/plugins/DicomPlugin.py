@@ -313,6 +313,7 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
 		QtGui.QDialog.__init__(self,parent)
 		self.setupUi(self)
 		self.plugin=plugin
+		self.mgr=plugin.mgr
 		self.dirpath=None
 		self.resultf=resultf
 		self.dds=None
@@ -353,20 +354,27 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
 		self.dirEdit.setText(os.path.abspath(dirpath))
 		fillList(self.seriesList,['Loading Directory, please wait'])
 		f=self.plugin.loadDirDataset(dirpath)
-		self.plugin.mgr.addFuncTask(lambda:self.plugin.mgr.callThreadSafe(self._setDataset,f()))
+		self._setDataset(f)
 
-	def _setDataset(self,dds):
-		self.dds=dds
-		if dds==None or len(dds.series)==0:
-			fillList(self.seriesList,['No DICOM series found'])
-		else:
-			fillList(self.seriesList,map(str,dds.series),curitem=(0 if not self.allowMultiple else None))
+	@taskmethod('Filling list')
+	def _setDataset(self,dds,task=None):
+		self.dds=Future.get(dds)
+		series=[]
+		curitem=None
+		
+		if self.dds is not None and len(self.dds.series)>0:
+			series=map(str,self.dds.series)
+			if self.allowMultiple:
+				curitem=0
+			
+		self.mgr.callThreadSafe(fillList,self.seriesList,series or ['No Dicom Files Found'],curitem=curitem)
 
 	def accept(self):
 		selected=[]
 		for i in self.seriesList.selectedItems():
 			ind=self.seriesList.indexFromItem(i)
-			selected.append(self.dds.series[ind.row()])
+			if ind<len(self.dds.series):
+				selected.append(self.dds.series[ind.row()])
 
 		self.resultf.setObject(selected)
 		self.done(1)
@@ -792,9 +800,21 @@ class DicomPlugin(ImageScenePlugin):
 	def init(self,plugid,win,mgr):
 		ImageScenePlugin.init(self,plugid,win,mgr)
 		if win:
-			win.addMenuItem('Import','DicomLoad'+str(plugid),'&Dicom Directory',self._openDirMenuItem)
+			win.addMenuItem('Import','DicomLoad'+str(plugid),'&Dicom Directory',self._openDicomDirMenuItem)
 			win.addMenuItem('Import','DicomVLoad'+str(plugid),'&Dicom Volume File',self._openVolumeMenuItem)
 			win.addMenuItem('Export','DicomExport'+str(plugid),'&Dicom Files',self._exportMenuItem)
+			
+			# if the dicomdir argument is given open up the series load dialog with the given directory (or current directory if not given)
+			if mgr.conf.hasValue('args','--dicomdir'):
+				dicomdir=mgr.conf.get('args','--dicomdir')
+				if dicomdir=='--dicomdir':
+					dicomdir='.'
+					
+				# add a task which will call loadDicomDir() asynchronous so that the task queue is freed for dicom loading
+				mgr.addFuncTask(lambda:asyncfunc(self.loadDicomDir)(dicomdir))
+
+	def getHelp(self):
+		return '\nUsage: --dicomdir[=scan-dir-path]'
 
 	def getDatasets(self):
 		return list(self.dirobjs.values())
@@ -1113,34 +1133,6 @@ class DicomPlugin(ImageScenePlugin):
 				
 		return self.mgr.runTasks(_save(obj,path,datasetTags,fileMetaTags))
 
-	def openChooseSeriesDialog(self,dirpath=None,allowMultiple=True,params=None,subject=None):
-		'''
-		Opens a dialog for choosing a series to load. The starting directory is given by `dirpath', this path is used
-		in the dialog, but if left as None an open directory dialog is presented for choosing one. If `allowMultiple'
-		is true then multiple series can be returned. If `params' is a pair containing a list of ParamDef objects and
-		a callable accepting 2 arguments, then a ParamPanel is created in the series choose dialog using the given
-		callable as the callback for changed values. The `subject' parameter, if given, should be a string describing
-		what is being chosen which is used in the dialog title. The method blocks so long as the dialog is open, and
-		returns an iterable of zero or more DicomSeries objects once it is closed.
-		'''
-		f=Future()
-		@self.mgr.callThreadSafe
-		def showDialog():
-			with f:
-				d=ChooseSeriesDialog(self,f,dirpath,self.win,allowMultiple,params,subject)
-				d.exec_()
-
-		return f(None)
-
-	def showTimeMultiSeriesDialog(self,series):
-		f=Future()
-		@self.mgr.callThreadSafe
-		def showDialog():
-			d=TimeMultiSeriesDialog(toIterable(series),f,self.mgr,self,self.mgr.win)
-			d.exec_()
-
-		return f#(None)
-
 	def getScriptCode(self,obj,**kwargs):
 		configSection=kwargs.get('configSection',False)
 		namemap=kwargs.get('namemap',{})
@@ -1188,16 +1180,52 @@ class DicomPlugin(ImageScenePlugin):
 
 		return setStrIndent(script % args).strip()+'\n'
 
-	def _openDirMenuItem(self):
-		series=self.openChooseSeriesDialog()
-		objs=[]
+	def showChooseSeriesDialog(self,dirpath=None,allowMultiple=True,params=None,subject=None):
+		'''
+		Opens a dialog for choosing a series to load. The starting directory is given by `dirpath', this path is used
+		in the dialog, but if left as None an open directory dialog is presented for choosing one. If `allowMultiple'
+		is true then multiple series can be returned. If `params' is a pair containing a list of ParamDef objects and
+		a callable accepting 2 arguments, then a ParamPanel is created in the series choose dialog using the given
+		callable as the callback for changed values. The `subject' parameter, if given, should be a string describing
+		what is being chosen which is used in the dialog title. The method blocks so long as the dialog is open, and
+		returns an iterable of zero or more DicomSeries objects once it is closed. Internally a task is create so this
+		must not be called within a task but in a separate thread.
+		'''
+		f=Future()
+		@self.mgr.callThreadSafe
+		def showDialog():
+			with f:
+				d=ChooseSeriesDialog(self,f,dirpath,self.win,allowMultiple,params,subject)
+				d.exec_()
 
+		return f(None) # block since the result will be known once the dialog closes so there's nothing to do asynchronously
+
+	def showTimeMultiSeriesDialog(self,series):
+		'''
+		Shows the multi-series dialog box for the given series list, returning the Future object which will contain the 
+		results from the user cropping and ordering the images of the series. This does block and is thread-safe.
+		'''
+		f=Future()
+		@self.mgr.callThreadSafe
+		def showDialog():
+			with f:
+				d=TimeMultiSeriesDialog(toIterable(series),f,self.mgr,self,self.mgr.win)
+				d.exec_()
+
+		return f # do not block on f since data is loaded in a task and stored in f
+		
+	def loadDicomDir(self,dirpath=None,allowMultiple=True,params=None,subject=None):
+		'''
+		Shows the choose series dialog using the same arguments as showChooseSeriesDialog() then loads any selected
+		series as ImageSceneObject instances. This will block so long as the dialog is open but otherwise will use
+		tasks to load the data. It is thread-safe.
+		'''
+		series=self.showChooseSeriesDialog(dirpath,allowMultiple,params,subject)
 		for s in series:
-			obj=self.loadSeries(s)
-			objs.append(obj)
-
-		if len(objs)>0:
-			self.mgr.addFuncTask(lambda:[self.mgr.addSceneObject(o()) for o in objs],'Adding Series Object')
+			self.mgr.addSceneObjectTask(self.loadSeries(s))
+						
+	def _openDicomDirMenuItem(self):
+		self.loadDicomDir()
 			
 	def _openVolumeMenuItem(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Dicom filename')
