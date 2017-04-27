@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -260,7 +260,7 @@ def applyCoeffsReal(tuple vals,tuple coeffs):
 def createDataMatrices(name,indextype,includeUVW=False):
 	'''
 	This returns 4 matrices for the expected data suitable as renderable input for MeshSceneObject instances. The `name'
-	value is used to as the prefix for the matrix names, the suffices are standard names from MatrixType which the 
+	value is used to as the prefix for the matrix names, the suffices are standard names from MatrixType which the
 	MeshSceneObject will understand. The `indextype' parameter is MatrixType.tri or MatrixType.line to choose whether to
 	define triangle or line render objects, or None if no index matrix is to be created. The return values are:
 		nodes -- Vec3Matrix with 4 columns (node, normal, xi, uvw) if `includeUVW' or 3 (node, normal, xi) if not
@@ -365,7 +365,7 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
 	cdef list ocmatinds,subinds
 	cdef dict trees={}
 	cdef object acceptedInds=filter(acceptFunc,dataset.enumIndexSets())
-	
+
 	for inds in acceptedInds:
 		ocname=inds.getName()+MatrixType.octree[1]
 		ocmat=dataset.getIndexSet(ocname)
@@ -596,15 +596,15 @@ def generateMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,Vec
 		for e in range(*slicedleaves[p]):
 			elem=octree.mat.atc(e,0)
 			elemxis=None
-			
+
 			if isTri:
 				e1,e2,e3=innodes.mapIndexRow(inds,elem)
 				elemxis=SceneUtils.calculateLinearTriIsoline(e1.planeDist(pt,norm),e2.planeDist(pt,norm),e3.planeDist(pt,norm))
-	
+
 				if elemxis:
 					ec1,ec2,ec3=nodecolors.mapIndexRow(inds,elem)
 					xi1,xi2=elemxis
-	
+
 					n1=SceneUtils.linTriInterp(xi1.x(),xi1.y(),e1,e2,e3)
 					n2=SceneUtils.linTriInterp(xi2.x(),xi2.y(),e1,e2,e3)
 					c1=SceneUtils.linTriInterp(xi1.x(),xi1.y(),ec1,ec2,ec3)
@@ -615,17 +615,17 @@ def generateMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,Vec
 				if elemxis:
 					ec1,ec2=nodecolors.mapIndexRow(inds,elem)
 					n1=e1.lerp(clamp(elemxis[1]-0.01,0,1),e2).planeProject(pt,norm)
-					
+
 					if width>0: # make the line `width' long in the direction of the line's projection on the plane
 						n1=(n1-elemxis[0]).norm()*(width/2)
 						n2=elemxis[0]-n1
 						n1=elemxis[0]+n1
 					else:
 						n2=e1.lerp(clamp(elemxis[1]+0.01,0,1),e2).planeProject(pt,norm)
-						
+
 					c1=ec1.interpolate(elemxis[1],ec2)
 					c2=ec2
-					
+
 			if elemxis:
 				n=nodes.n()
 				if width==0: # 1D line
@@ -657,7 +657,7 @@ def generateMeshPlanecut(dataset,str name,vec3 pt,vec3 norm,float width,int tree
 	cdef Vec3Matrix nodes=None,dnodes,inodes
 	cdef IndexMatrix indices=None,indmat=None,octree=None,iinds,
 	cdef ColorMatrix cols=None,icols
-	
+
 	if trees:
 		indmat,octree=first(trees.items()) # TODO: cut only the first topology for now
 		dnodes=dataset.getNodes()
@@ -996,6 +996,12 @@ def calculateLinearTriangulationRange(process,int numnodes,IndexMatrix ind,Index
 
 
 def generateLinearTriangulation(dataset,str name,int refine,bint externalOnly=False,task=None,**kwargs):
+	'''
+	Generate a triangulation of triangle, quad, hex, and tet topologies in the Dataset object `dataset'. This will create
+	1 or 2 triangles per face always using the vertices of the original element as triangle vertices, so `refine' is
+	ignored. Returns a (dataset,indlist) pair where the node matrix and per-node fields of the dataset are the same as
+	those for `dataset'.
+	'''
 	cdef Vec3Matrix nodes=dataset.getNodes()
 	cdef list indlist=[]
 	cdef Vec3Matrix outnodes
@@ -1033,7 +1039,7 @@ def generateLinearTriangulation(dataset,str name,int refine,bint externalOnly=Fa
 				oinds.clear()
 				oext.clear()
 
-	ds=PyDataSet(name,nodes,[outprops,outext,outinds],dataset.fields)
+	ds=PyDataSet(name,nodes,[outprops,outext,outinds],[f for f in dataset.fields if f.n()==nodes.n()])
 	return ds,indlist
 
 
@@ -1491,7 +1497,7 @@ def generateCylinderDataSet(dataset,str name,int refine,bint externalOnly=False,
 		checkResultMap(result)
 
 		collectResults(outnodes,nodeprops,indices,extindices,result)
-		
+
 	if indices.n()==0:
 		raise ValueError,'Dataset contains no data suitable for line generation'
 
@@ -1599,24 +1605,24 @@ def generateGlyphDataSet(dataset,name,refine,externalOnly=False,task=None,**kwar
 def generateRibbonDataSet(dataset,str name,int refine,bint externalOnly=False,task=None,**kwargs):
 	rangeinds=kwargs.get('rangeinds',True)
 	maxlen=kwargs.get('rangeinds',0.0)
-	
+
 	if rangeinds:
 		nodes=dataset.getNodes()
 		lineinds=first(i for i in dataset.enumIndexSets() if isSpatialIndex(i))
-		
+
 		outnodes,nodeprops,extindices,indices=createDataMatrices(name,MatrixType.lines,True)
 		indices.append(lineinds)
-		
+
 		for ind in xrange(len(lineinds)):
 			if n in xrange(*lineinds[ind]):
 				outnodes.append(nodes[n],vec3(),vec3(),vec3())
 				nodeprops.append(ind,0,0)
 				extindices.append(len(extindices))
-			
+
 		ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
 		return ds,[lineinds]
 
-		
+
 @concurrent
 def reinterpolateVerticesRange(process,Vec3Matrix vertices,Vec3Matrix newnodes,Vec3Matrix oldnodes,IndexMatrix oldnodeprops,indlist):
 	cdef int n,elem,indnum,ind
@@ -1919,7 +1925,7 @@ def generateIsoplaneDataSet(dataset,name,refine,pt,norm,indexAcceptFunc=None,tas
 		extindices.setN(indices.n())
 		for n in xrange(indices.n()):
 			extindices.setAt(n,n)
-			
+
 	if indices.n()==0:
 		raise ValueError,'Dataset contains no data suitable for triangle generation'
 
@@ -2195,7 +2201,7 @@ def generateIsoObjectDataSet(dataset,name,refine,externalOnly=False,task=None,**
 	extindices.addRows(indices.n())
 	for i in xrange(extindices.n()):
 		extindices.setAt(i,i)
-		
+
 	if indices.n()==0:
 		raise ValueError,'Dataset contains no data suitable for triangle generation'
 
@@ -2317,7 +2323,7 @@ def calculateMeshSurfNormals(nodes,inds,ext):
 	'''
 	Returns a Vec3Matrix object containing the normals for each point in Vec3Matrix `nodes' given topology IndexMatrix
 	`inds' with external IndexMatrix `ext' (or None if every index is external).
-	''' 
+	'''
 	results=Vec3Matrix('normals',nodes.n())
 	elemtype=ElemType[inds.getType()]
 	facerange=range(elemtype.numFaces())
@@ -2330,7 +2336,7 @@ def calculateMeshSurfNormals(nodes,inds,ext):
 			if ext!=None and ext.getAt(elem,face)!=1: # skip internal faces
 				continue
 
-			# for each node of the face, calculate the normal at that node's xi position 
+			# for each node of the face, calculate the normal at that node's xi position
 			for v in finds[face]:
 				xi=elemtype.xis[v]
 				norm=SceneUtils.calculatePointNormal(elemnodes,elemtype,face,elemnodes[v],xi[0],xi[1])
@@ -2343,5 +2349,5 @@ def calculateMeshSurfNormals(nodes,inds,ext):
 			results.setAt(v.norm(),r)
 
 	return results
-	
+
 

@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -121,7 +121,7 @@ def execUI(doExit=True):
 
 	if globalWin:
 		globalWin.isExec=True
-		
+
 	# ensure the keyboard interrupt signal causes a forced unclean exit
 	if doExit:
 		signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -243,20 +243,20 @@ def centerWindow(wind):
 	geom = wind.geometry()
 	geom.moveCenter(QtGui.QDesktopWidget().availableGeometry().center())
 	wind.move(geom.topLeft())
-	
+
 
 def resizeScreenRelative(wind,w,h):
 	geom = wind.geometry()
 	desk=QtGui.QDesktopWidget().availableGeometry()
 	nw=geom.width()
 	nh=geom.height()
-	
+
 	if nw>desk.width():
 		nw=int(desk.width()*w)
-		
+
 	if nh>desk.height():
 		nh=int(desk.height()*h)
-		
+
 	wind.resize(nw,nh)
 
 
@@ -398,7 +398,7 @@ def createSplitWidget(parent,widg1,widg2,isVertical=True):
 	widg1.setParent(split)
 	widg2.setParent(split)
 	return split
-	
+
 
 def createMenu(title,values,defaultFunc=lambda v:None,parent=None):
 	'''
@@ -1036,10 +1036,10 @@ class GPUProgramPropertyWidget(QtGui.QWidget,Ui_gpuProp):
 class Base2DWidget(QtGui.QWidget):
 	'''
 	Defines the base class for 2D views, handling the redraw cycle and mouse and key input callback methods. The method
-	modifyDrawWidget() modifies its argument widget by replacing the paintEvent, wheelEvent, and mouse*Event, and 
-	key*Event methods. The new paintEvent() method first calls updateView(), creates a QImage to cover the screen, calls 
-	fillImage() with that QImage object as the argument, and then draws the QImage to screen. The update cycle expects 
-	updateView() to setup scene and UI values then fillImage() draws whatever's necessary to the QImage object. This 
+	modifyDrawWidget() modifies its argument widget by replacing the paintEvent, wheelEvent, and mouse*Event, and
+	key*Event methods. The new paintEvent() method first calls updateView(), creates a QImage to cover the screen, calls
+	fillImage() with that QImage object as the argument, and then draws the QImage to screen. The update cycle expects
+	updateView() to setup scene and UI values then fillImage() draws whatever's necessary to the QImage object. This
 	class therefore represents the boundary between the UI and 2D rendering subsystems. The methods of this class
 	except modifyDrawWidget(), getDrawDims(), and getBoxFitScale() must be overridden to implement behaviour.
 	'''
@@ -1084,7 +1084,7 @@ class Base2DWidget(QtGui.QWidget):
 		setattr(drawWidget,'wheelEvent',self.mouseWheelMove)
 		setattr(drawWidget,'keyPressEvent',self.keyPress)
 		setattr(drawWidget,'keyReleaseEvent',self.keyRelease)
-		
+
 	def updateView(self):
 		'''Called before `fillImage()', used to update the scene and UI before draw.'''
 		pass
@@ -1111,11 +1111,11 @@ class Base2DWidget(QtGui.QWidget):
 
 	def mouseDoubleClick(self,e):
 		pass
-	
+
 	def keyPress(self,e):
 		'''By default passes the event `e' to QtGui.QWidget.keyPressEvent.'''
 		QtGui.QWidget.keyPressEvent(self,e)
-	
+
 	def keyRelease(self,e):
 		'''By default passes the event `e' to QtGui.QWidget.keyReleaseEvent.'''
 		QtGui.QWidget.keyReleaseEvent(self,e)
@@ -1171,23 +1171,23 @@ class Draw2DView(Ui_Draw2DView):
 
 	def fillSecondsMenu(self,seconds):
 		'''Fill the selection menu with the list of named secondary objects `seconds.'''
-		
+
 		def _addAction(label,name):
 			'''Use a subroutine to ensure `label' and `name' are fresh variables for each call to connect().'''
 			action=self.secondsMenu.addAction(label)
 			action.setCheckable(True)
 			action.setChecked(name in self.secondsSelected)
 			action.toggled.connect(lambda b:self.setSecondary(name,b))
-		
+
 		if seconds and not isinstance(seconds[0],str):
 			labels,names=zip(*seconds) # assume `seconds' is a list of label-name pairs and separate them out into lists of each
 		else:
 			labels=seconds # use names as labels
 			names=seconds
-			
+
 		self.secondsSelected.intersection_update(set(names))
 		self.secondsMenu.clear()
-			
+
 		for label,name in zip(labels,names):
 			_addAction(label,name)
 
@@ -1253,7 +1253,7 @@ class Draw2DView(Ui_Draw2DView):
 
 	def setImageStackPosition(self,val):
 		'''
-		Set the position index within the image stack of the source object to `val', callable by clients or through 
+		Set the position index within the image stack of the source object to `val', callable by clients or through
 		the UI but must be called in the main thread.
 		'''
 		assert Utils.isMainThread()
@@ -1271,11 +1271,11 @@ class Draw2DView(Ui_Draw2DView):
 	def getImageStackMax(self):
 		'''Get the maximum stack index.'''
 		return self.imageSlider.maximum()
-		
+
 	def setLeftSideVisible(self,isVisible):
 		self.vsplit.moveSplitter(100 if isVisible else 0,1)
 		self.vsplit.widget(0).setVisible(isVisible)
-		
+
 	def isLeftSideVisible(self):
 		return self.vsplit.isEnabled()
 
@@ -1442,28 +1442,28 @@ class ConsoleWidget(QtGui.QTextEdit):
 		self.metadown=0
 
 		self.orig_stdout=sys.stdout
-		self.orig_stderr=sys.stderr	
-		
+		self.orig_stderr=sys.stderr
+
 		# try to read the setting for number of log file lines, default to 10000 if not present or the value is not a number
 		try:
 			self.loglines=int(conf.get(platformID,ConfVars.consoleloglen))
 		except:
 			self.loglines=10000
-		
+
 		# try to set the log filename, if there's no user directory this won't be set so no logging will occur
 		if os.path.isdir(conf.get(platformID,ConfVars.userappdir)):
 			self.logfile=os.path.join(conf.get(platformID,ConfVars.userappdir),conf.get(platformID,ConfVars.consolelogfile))
-			
+
 		# read the log file
 		if os.path.isfile(self.logfile):
 			try:
 				with open(self.logfile) as o:
 					log=[s.rstrip() for s in o.readlines()]
-					
+
 				self.history=log[-self.loglines:] # add no more than self.loglines values to the history
 			except Exception as e:
 				self.write('Cannot open console log file %r:\n%r\n'%(self.logfile,e))
-				
+
 		try:
 			self.ps1=sys.ps1
 		except:
@@ -1524,7 +1524,7 @@ class ConsoleWidget(QtGui.QTextEdit):
 			# append only if not a duplicate of previous entry
 			if historyAppend and len(line.strip())>0 and (len(self.history)==0 or self.history[-1]!=line):
 				self.history.append(line)
-				
+
 				# write to log file if present
 				if self.logfile:
 					try:
@@ -1581,7 +1581,7 @@ class ConsoleWidget(QtGui.QTextEdit):
 			self.linebuffer.append(line)
 			comp = self.comp('\n'.join(self.linebuffer), '<console>')
 
-			if comp==None: # expecting more statements to fill in an indented block, return true to indicate this
+			if comp is None: # expecting more statements to fill in an indented block, return true to indicate this
 				return True
 
 			sys.stdout=self # reroute stdout/stderr to print to the widget
@@ -2235,7 +2235,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 				oldkeypress(e)
 
 		setattr(self.scratchWidget,'keyPressEvent',_keyPress)
-		
+
 		# reset self.viz to use Eidolon renderer widget
 		self.mainLayout.removeWidget(self.viz)
 		self.viz=RenderWidget(conf,self)
@@ -2248,7 +2248,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		self.setRenderWinSize(width, height)
 
 		self.scene=self.viz.getRenderScene() # must be after show() since rendering is prevented until the RenderScene is created
-		
+
 		self.scene.logMessage('Eidolon Version: '+eidolon.__version__)
 		self.scene.logMessage('Qt Version: '+str(QtCore.qVersion()))
 		self.scene.logMessage('Python Version: '+sys.version)
@@ -2549,7 +2549,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 		reply=QtGui.QMessageBox.question(self, title, msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
 		if reply==QtGui.QMessageBox.Yes:
 			callback()
-			
+
 	@signalmethod
 	def getYesNoDialogValue(self,msg,title,future):
 		'''
@@ -2564,7 +2564,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 	def chooseStrDialog(self,title,defaultval,callback):
 		'''
 		Opens a dialog box asking for an input string with title string `title' and default string value `defaultval'.
-		When the dialog closes, the callable `callback' is called with the given string value as the only argument. 
+		When the dialog closes, the callable `callback' is called with the given string value as the only argument.
 		This is threadsafe and non-blocking.
 		'''
 		text, ok = QtGui.QInputDialog.getText(self, 'Input String',title,text=defaultval)
@@ -2743,7 +2743,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 	@signalmethod
 	def addMaterial(self,mat,updateFunc):
 		self.addAsset(mat,mat.getName(),AssetType._mat,MaterialPropertyWidget(),updateFunc)
-		
+
 	@signalmethod
 	def addSpectrum(self,spec):
 #		prop=QtGui.QWidget()
@@ -2751,14 +2751,14 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 #		prop.groupBox.setTitle('Spectrum')
 #		prop.groupBox.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
 #		prop.gridLayout = QtGui.QGridLayout(prop.groupBox)
-		
+
 		prop=QtGui.QGroupBox()
 		prop.setTitle('Spectrum')
 		prop.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
 		prop.gridLayout = QtGui.QGridLayout(prop)
-		
+
 		self.addAsset(spec,spec.getName(),AssetType._spec,prop)
-		
+
 	@signalmethod
 	def addTexture(self,tex):
 		self.addAsset(tex,tex.getName(),AssetType._tex)

@@ -2,19 +2,19 @@
 
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -26,7 +26,6 @@ import itertools
 import atexit
 import os
 import glob
-import compiler
 
 import renderer.Renderer as ren
 cimport renderer.Renderer as ren
@@ -98,7 +97,7 @@ RenderQueues=enum(
 	('UI',100),
 )
 
-		
+
 # divide a hex into 6 tets by choosing combinations of vertices, this ensures that adjacent hexes divide into tets with matching faces
 hexTo6TetInds=( (1,0,2,4), (4,5,6,2), (2,1,4,5), (5,6,2,3), (1,2,3,5), (5,6,7,3) )
 # hexes can be divided into 5 tets only, but these can't be used to subdivide a tet, or subdivide a hex and get matching faces
@@ -611,15 +610,15 @@ cdef class BoundBox(object):
 	#	'''Returns True if `other' is not None and represents the same BoundBox as `self' (ie. equal corners).'''
 	#	return other!=None and self.minv==other.minv and self.maxv==other.maxv
 
-	def __richcmp__(BoundBox self,v,int op):		
+	def __richcmp__(BoundBox self,v,int op):
 		#< 0, > 4, != 3, <= 1, == 2, >= 5
-		
+
 		if v is None or not isinstance(v,BoundBox):
 			return op==3
 
 		if v is self:
 			return op in (1,2,5)
-			
+
 		if op==3:
 			return self.minv!=v.minv or self.maxv!=v.maxv
 
@@ -853,7 +852,7 @@ def cleanupMatrices():
 	'''
 	Do cleanup of shared memory segments created for this process. On Linux this relies on
 	the naming convention Matrix uses, which for now is to prepend __viz__ to the shared name.
-	In OSX this uses the directory returned by the renderer function getSharedDir() which will 
+	In OSX this uses the directory returned by the renderer function getSharedDir() which will
 	store the names of open shared memory segments as file names.
 	'''
 	pid=os.getpid()
@@ -1110,7 +1109,7 @@ def validIndices(mat,n,m=0):
 def applyMatOpRange(process,mat,opstring,localmap,minn,minm,maxm):
 	'''Applies `opstring' to `mat' concurrently with `localmap' as added variables to the evaluating environment.'''
 
-	matcomp=compiler.compile(opstring,'<<opstring>>','eval')
+	matcomp=compile(opstring,'<<opstring>>','eval')
 
 	def op(val,n,m):
 		return eval(matcomp,globals(),locals())
@@ -1438,7 +1437,7 @@ def calculateLinePlaneIntersect(vec3 start,vec3 end,vec3 planept, vec3 planenorm
 	cdef float d1=start.planeDist(planept,planenorm)
 	cdef float d2=end.planeDist(planept,planenorm)
 	cdef float xi=0
-	
+
 	if d1==0:
 		return (start,0.0)
 	elif d2==0:
@@ -1759,7 +1758,7 @@ def generateHexBox(dimx,dimy,dimz):
 	dimy+=1
 	dimz+=1
 	dimxy=dimx*dimy
-	
+
 	ind=lambda i,j,k:i+j*dimx+k*dimxy
 	hexes=[(ind(i,j,k),ind(i+1,j,k),ind(i,j+1,k),ind(i+1,j+1,k),ind(i,j,k+1),ind(i+1,j,k+1),ind(i,j+1,k+1),ind(i+1,j+1,k+1)) for k,j,i in trange(dimz-1,dimy-1,dimx-1)]
 
@@ -2118,7 +2117,7 @@ def divideHextoHex(order,refine,expand=0.0):
 		)
 
 		yield tuple(linhex.applyBasis(hexxis,*xi) for xi in orderhex.xis)
-		
+
 
 @memoized(tuple)
 def divideHextoTet(order,refine=0, use5Tets=False):

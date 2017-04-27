@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -28,7 +28,7 @@ from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary
 from pydicom.tag import Tag
 from pydicom.dataset import Dataset,FileDataset
-	
+
 import os
 import sys
 import pickle
@@ -47,9 +47,13 @@ from ui.SeriesProp import Ui_ObjProp
 from ui.ChooseSeries import Ui_ChooseSeriesDialog
 from ui.Dicom2DView import Ui_Dicom2DView
 
+
 AssetType.append('dcm','Dicom Sources','Dicom Datasets (Directory References)') # adds the DICOM directory asset type to the asset panel
+digestFilename='dicomdataset.ini' # name of digest file
+headerPrecision=4 # precision of float values in DICOM headers, values are only correct to this number plus one of significant figures
+keywordToTag={v[4]:(k>>16,k&0xffff) for k,v in DicomDictionary.items()} # maps tag keywords to 2 part tag numbers
 
-
+# non-standard Dicom tags that are used by different groups
 NonstandardTags=enum(
 	('USpixdimx',  Tag(0x0018, 0x602c)),
 	('USpixdimy',  Tag(0x0018, 0x602e)),
@@ -60,15 +64,6 @@ NonstandardTags=enum(
 	('USdepth',    Tag(0x3001, 0x1001)),
 	('USpixeldata',Tag(0x7fe0, 0x0010))
 )
-
-
-digestFilename='dicomdataset.ini'
-
-
-keywordToTag={v[4]:(k>>16,k&0xffff) for k,v in DicomDictionary.items()} # maps tag keywords to 2 part tag numbers
-
-
-headerPrecision=4 # precision of float values in DICOM headers, values are only correct to this number plus one of significant figures
 
 
 def roundHeaderVals(*vals):
@@ -89,7 +84,7 @@ def readDicomMMap(fullpath,**kwargs):
 def readDicomHeartRate(series_or_dcm):
 	'''
 	Attempt to retrieve the heart rate in BPM from the DicomSeries or Dicom object `series_or_dcm'. If the "HeartRate"
-	tag is present then this is used, otherwise attempt to parse the RR or bpm value from the "ImageComments" tag if 
+	tag is present then this is used, otherwise attempt to parse the RR or bpm value from the "ImageComments" tag if
 	this is present. The comment should be something like "RR 1153 +/- 41; 138 heartbeats" or contain a BPM value like
 	"56 bpm" for this to work. If no heart rate is found then return None.
 	'''
@@ -97,24 +92,24 @@ def readDicomHeartRate(series_or_dcm):
 		dcm=series_or_dcm.loadDicomFile(0)
 	else:
 		dcm=series_or_dcm
-		
+
 	heartrate=dcm.get('HeartRate',None)
 
 	# if the HeartRate tag isn't given attempt to parse the RR time from the comment field
 	if not heartrate:
 		comment=dcm.get('ImageComments','')
 		m1=re.search('RR\s*(\d+)\s*',comment)
-		
+
 		if m1:
 			heartrate=60000/int(m1.groups()[0])
 		else:
 			m2=re.search('(\d+)\s*[Bb][Pp][Mm]',comment)
 			if m2:
 				heartrate=int(m2.groups()[0])
-			
+
 	return heartrate
-	
-	
+
+
 def readDicomTimeValue(series_or_dcm):
 	'''
 	Attempt to determine a timing value from the DicomSeries or Dicom object `series_or_dcm'. This will try to use the
@@ -125,17 +120,17 @@ def readDicomTimeValue(series_or_dcm):
 		dcm=series_or_dcm.loadDicomFile(0)
 	else:
 		dcm=series_or_dcm
-		
+
 	trigger=dcm.get('TriggerTime',None)
 	if trigger is not None:
 		return float(trigger)
-		
+
 	m=re.search('(\d+)\s*%',dcm.get('ImageComments',''))
 	if m:
 		return float(m.groups()[0])
-		
+
 	return -1
-	
+
 
 def createDicomReadThread(rootpath,files,readPixels=True):
 	'''
@@ -204,8 +199,8 @@ def loadSharedImages(process,rootdir,files,crop=None):
 			#pass # ignore Dicoms that don't have pixel information
 
 	return result
-	
-	
+
+
 def convertToDict(dcm):
 	def _datasetToDict(dcm):
 		result=OrderedDict()
@@ -216,7 +211,7 @@ def convertToDict(dcm):
 
 			if value:
 				result[tag]=(name,value)
-				
+
 		return result
 
 	def _elemToValue(elem):
@@ -233,10 +228,10 @@ def convertToDict(dcm):
 		return value
 
 	return _datasetToDict(dcm)
-	
-	
+
+
 def addDicomTagsToMap(dcm,tagmap):
-	
+
 	def _datasetToDict(dcm):
 		result=OrderedDict()
 		for elem in dcm:
@@ -246,7 +241,7 @@ def addDicomTagsToMap(dcm,tagmap):
 
 			if value:
 				result[tag]=(name,value)
-				
+
 		return result
 
 	def _elemToValue(elem):
@@ -261,7 +256,7 @@ def addDicomTagsToMap(dcm,tagmap):
 				value=str(value)
 
 		return value
-		
+
 	for elem in dcm:
 		name=elem.name
 		value=_elemToValue(elem)
@@ -272,35 +267,35 @@ def addDicomTagsToMap(dcm,tagmap):
 				tagmap[name]=[value]
 			elif len(tagmap[name])>1 or (len(tagmap[name])==1 and tagmap[name][0]!=value):
 				tagmap[name].append(value)
-				
-				
+
+
 def getSeriesTagMap(series):
 	tags={}
-	
+
 	for i in xrange(len(series.filenames)):
 		addDicomTagsToMap(series.loadDicomFile(i),tags)
-		
+
 	for k,v in tags.items():
 		try:
 			if len(set(v))==1:
 				tags[k]=[v[0]]
 		except TypeError:
 			pass
-		
+
 	return tags
-	
-				
+
+
 def isPhaseImage(image):
 	'''Returns True if the SharedImage or Dicom image object `image' has a tag field indicating the image is phase.'''
 	imagetype=list(getattr(image,'imageType',None) or image.get('ImageType',[])) # imageType in SharedImage, ImageType in Dicom
-	
+
 	# these are the members of imagetype which should indicate phase image for the different manufacturers
 	# (see https://uk.mathworks.com/matlabcentral/fileexchange/31978-readdicomdir-indir-debuglevel-reply-/content/ReadDicomDir.m)
 	phasevalue1='PHASE MAP' # philips?
 	phasevalue2='P' # Siemens?
-	
+
 	return phasevalue1 in imagetype or phasevalue2 in imagetype
-			
+
 
 class SeriesPropertyWidget(QtGui.QWidget,Ui_ObjProp):
 	def __init__(self, parent=None):
@@ -361,12 +356,12 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
 		self.dds=Future.get(dds)
 		series=[]
 		curitem=None
-		
+
 		if self.dds is not None and len(self.dds.series)>0:
 			series=map(str,self.dds.series)
 			if self.allowMultiple:
 				curitem=0
-			
+
 		self.mgr.callThreadSafe(fillList,self.seriesList,series or ['No Dicom Files Found'],curitem=curitem)
 
 	def accept(self):
@@ -546,7 +541,7 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 
 		self.recthandle.boxcol=color(0,1,0) if start<=current<=end else color(1,0,0)
 		self.recthandle.updateHandle()
-		
+
 		#self._updateHandles(self.viewplane)
 		#BaseCamera2DWidget.updateView(self)
 		self.setFigTransforms()
@@ -559,13 +554,13 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 					name='%sto%s'%(self.serieslist[0].desc,self.serieslist[-1].desc)
 				else:
 					name=self.serieslist[0].desc
-					
+
 				images=[]
 				name=getValidFilename(name)
 				start,end,minx,miny,maxx,maxy=self.state
 				selection=range(start,end+1)
 				crop=(minx,miny,maxx,maxy)
-				
+
 				for i,series in enumerate(self.serieslist):
 					simgs=self.plugin.loadSeriesImages(series,selection,False,crop)
 					images+=simgs
@@ -598,7 +593,7 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 
 	a,b,c,d,e,f=roundHeaderVals(*dcm.get('ImageOrientationPatient',[1,0,0,0,-1,0]))
 	orientation=rotator(vec3(a,b,c).norm(),vec3(d,e,f).norm(),vec3(1,0,0),vec3(0,-1,0))
-	
+
 	si=SharedImage(filename,position,orientation,dimensions,spacing)
 
 	try:
@@ -607,7 +602,7 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 		validPixelArray=False
 
 	si.index=index
-	
+
 	# extract Dicom properties of interest
 	si.seriesID=str(dcm.get('SeriesInstanceUID',''))
 	si.imageType=list(dcm.get('ImageType',[]))
@@ -625,16 +620,16 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 		rslope=float(dcm.get('RescaleSlope',1))
 		rinter=float(dcm.get('RescaleIntercept',0))
 		#rtype=dcm.get('RescaleType',None)
-		
+
 		# TODO: proper rescaling?
 		if not rescale or rslope==0:
 			rslope=1.0
 			rinter=0.0
-		
+
 		si.allocateImg(si.seriesID+str(si.index),isShared)
 		np.asarray(si.img)[:,:]=dcm.pixel_array*rslope+rinter
 		si.setMinMaxValues(*minmaxMatrixReal(si.img))
-		
+
 	return si
 
 
@@ -650,7 +645,7 @@ class DicomSeries(object):
 		#self.tagmap=OrderedDict()
 #		self.lastLoadArgs=() # last arguments used when loading images, pair of (selection,crop) values
 #		self.selectCrop=None # (selection range, crop value) pair indicating the loading parameters used
-		
+
 	def getPropTuples(self):
 		return [
 			('Series ID',self.seriesID),
@@ -658,7 +653,7 @@ class DicomSeries(object):
 			('Description',self.desc),
 			('# Images',str(len(self.filenames)))
 		]
-		
+
 	def getDatasetMap(self):
 		'''Returns a dictionary containing the members of the object to store in a digest file.'''
 		return {
@@ -671,7 +666,7 @@ class DicomSeries(object):
 		if filename not in self.filenames:
 			self.filenames.append(filename)
 			#self.simgs.append(None)
-			
+
 	def addSharedImages(self,images):
 		self.simgs+=images
 #		for img in images:
@@ -682,7 +677,7 @@ class DicomSeries(object):
 
 	def getSharedImage(self,filename):
 		return first(s for s in self.simgs if s and s.filename.endswith(filename))
-		
+
 	def clearSharedImages(self):
 		del self.simgs[:]
 
@@ -711,7 +706,7 @@ class DicomDataset(object):
 
 	def getSeries(self,seriesID,createNew=False):
 		'''
-		Get the series with the given ID `seriesID'. If no such series is present, create a new series object if 
+		Get the series with the given ID `seriesID'. If no such series is present, create a new series object if
 		`createNew' is True and return that, otherwise return None.
 		'''
 		seriesID=str(seriesID)
@@ -727,7 +722,7 @@ class DicomDataset(object):
 		'''
 		Return the series which matches the criterion `desc_or_func'. If this is a string then return the first series
 		which contains it in its description. If not a string, it's assumed to be a callable returning True when the
-		desired series object is given as the sole argument. 
+		desired series object is given as the sole argument.
 		'''
 		if isinstance(desc_or_func,str):
 			func=lambda s:desc_or_func in s.desc
@@ -735,36 +730,36 @@ class DicomDataset(object):
 			func=desc_or_func
 
 		return first(s for s in self.series if func(s))
-		
+
 	def getDatasetMap(self):
 		'''
 		Returns a dictionary containing the condensed information for this dataset. The `rootdir' value is keyed
-		to itself, and there is a list of series IDs keyed to `series'. Each series object in self.series is also 
-		keyed to its series ID in the result. 
+		to itself, and there is a list of series IDs keyed to `series'. Each series object in self.series is also
+		keyed to its series ID in the result.
 		'''
 		result={
 			'rootdir':self.rootdir,
 			'series':[s.seriesID for s in self.series]
 		}
-		
+
 		for s in self.series:
 			result[s.seriesID]=s.getDatasetMap()
-			
+
 		return result
-		
+
 	def storeDataset(self,filename):
 		'''Store the dataset dictionary to the basic config file `filename'.'''
 		storeBasicConfig(filename,self.getDatasetMap())
-		
+
 	def loadDataset(self,filename):
 		'''Load data into the dataset from the basic config file `filename' which was created with storeDataset().'''
 		dsmap=readBasicConfig(filename)
-		
+
 		# check that the root directory makes sense
 		# TODO: not actually needed? If the whole directory is moved the root will be different but file paths relative to the digest file will be correct
 		#if not isSameFile(self.rootdir,dsmap['rootdir']) or not os.path.isdir(dsmap['rootdir']):
 		#	raise ValueError('Digest file root directory %r not valid'%dsmap['rootdir'])
-			
+
 		for sid in dsmap['series']:
 			series=DicomSeries(self,sid,**dsmap[sid])
 			self.series.append(series)
@@ -772,7 +767,7 @@ class DicomDataset(object):
 			# ensure the files referred to by the series still exist
 			if any(not os.path.isfile(f) for f in series.enumFilePaths()):
 				raise ValueError('Series %r out of sync with filesystem'%sid)
-			
+
 	def addDataset(self,dds):
 		'''Merge the dataset `dds' into this one, assuming both have the same root directory.'''
 		assert dds.rootdir==self.rootdir
@@ -803,13 +798,13 @@ class DicomPlugin(ImageScenePlugin):
 			win.addMenuItem('Import','DicomLoad'+str(plugid),'&Dicom Directory',self._openDicomDirMenuItem)
 			win.addMenuItem('Import','DicomVLoad'+str(plugid),'&Dicom Volume File',self._openVolumeMenuItem)
 			win.addMenuItem('Export','DicomExport'+str(plugid),'&Dicom Files',self._exportMenuItem)
-			
+
 			# if the dicomdir argument is given open up the series load dialog with the given directory (or current directory if not given)
 			if mgr.conf.hasValue('args','--dicomdir'):
 				dicomdir=mgr.conf.get('args','--dicomdir')
 				if dicomdir=='--dicomdir':
 					dicomdir='.'
-					
+
 				# add a task which will call loadDicomDir() asynchronous so that the task queue is freed for dicom loading
 				mgr.addFuncTask(lambda:asyncfunc(self.loadDicomDir)(dicomdir))
 
@@ -838,7 +833,7 @@ class DicomPlugin(ImageScenePlugin):
 
 					if self.selectCropMap.get(series,None)!=(selection,crop):
 						series.clearSharedImages()
-						
+
 					self.selectCropMap[series]=(selection,crop)
 
 					# get the series filenames or a selected range thereof if `selection' is given
@@ -908,11 +903,11 @@ class DicomPlugin(ImageScenePlugin):
 		picklefile=os.path.join(dirpath,'dicomdataset.pickle')
 		digestfile=os.path.join(dirpath,digestFilename)
 		useDigestFile=False
-		
+
 		# delete legacy pickle file
 		if os.path.isfile(picklefile):
 			os.remove(picklefile)
-			
+
 		# if the digest file exists and is later than all the files in the directory, set useDigestFile to True
 		if os.path.isfile(digestfile):
 			digeststat=os.stat(digestfile)
@@ -925,7 +920,7 @@ class DicomPlugin(ImageScenePlugin):
 				ds.loadDataset(digestfile)
 			except:
 				useDigestFile=False # digest file was bogus somehow, load the hard way
-				
+
 		# if the digest file wasn't present or failed to load, create the dataset object by scanning the directory then try to save the digest
 		if not useDigestFile:
 			ds=DicomDataset(dirpath)
@@ -935,7 +930,7 @@ class DicomPlugin(ImageScenePlugin):
 
 			for dds in ddsmap.values():
 				ds.addDataset(dds)
-				
+
 			# try to store the digest file but if it fails (ie. read-only filesystem) just continue since it's only an optimization
 			try:
 				ds.storeDataset(digestfile)
@@ -985,25 +980,25 @@ class DicomPlugin(ImageScenePlugin):
 			f.setObject(self.dirobjs[dirpath])
 
 		return self.mgr.runTasks(tasklist,f,loadSequential)
-		
+
 	def acceptFile(self,filename):
 		try:
 			read_file(filename) # attempt to read as a Dicom, file extensions aren't always present so this is necessary
 			return True
 		except:
 			return False
-			
+
 	def loadObject(self,filename,name=None,*args,**kwargs):
 		dcm=read_file(filename)
-		
+
 		if str(dcm.Modality)=='US' and NonstandardTags.USpixeldata in dcm: # ultrasound volume
 			return self.loadDicomVolume(filename,name,*args,**kwargs)
-		else: 
+		else:
 			# load the directory the file is in then load the series the file was from
 			seriesID=str(dcm.get('SeriesInstanceUID',''))
 			self.loadDirDataset(os.path.dirname(filename))
 			return self.loadSeries(seriesID)
-		
+
 	def loadDicomVolume(self,filename,name=None,interval=1.0,toffset=0.0,position=vec3(),rot=rotator()):
 		'''Load a single DICOM file containing a 3D or 4D image volume (ie. ultrasound) using nonstandard tags.'''
 		f=Future()
@@ -1012,27 +1007,27 @@ class DicomPlugin(ImageScenePlugin):
 			with f:
 				dcm=read_file(filename)
 				name=name or splitPathExt(filename)[1]
-				
+
 				NT=NonstandardTags
-				spacing=vec3(dcm[NT.USpixdimx].value,dcm[NT.USpixdimy].value,dcm[NT.USpixdimz].value)*10	
+				spacing=vec3(dcm[NT.USpixdimx].value,dcm[NT.USpixdimy].value,dcm[NT.USpixdimz].value)*10
 				dimsize=(dcm[NT.USnumframes].value,dcm[NT.USdepth].value,dcm[NT.USheight].value,dcm[NT.USwidth].value)
 				pixeldata=dcm[NT.USpixeldata].value
-				
+
 				assert len(pixeldata)==prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),prod(dimsize))
-				
+
 				dat=np.ndarray(dimsize,dtype=np.uint8,buffer=pixeldata,order='C')
 				dat=np.transpose(dat,(3,2,1,0))
-				
+
 				obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot*rotator(halfpi,0,0),spacing,task=task)
 				obj.source=convertToDict(dcm)
 				f.setObject(obj)
-			
+
 		return self.mgr.runTasks([_loadFile(filename,name,interval,toffset,position,rot)],f)
 
 	def saveImage(self,dirpath,obj,datasetTags={},fileMetaTags={}):
 		'''Deprecated, for compatibility only.'''
 		return self.saveObject(obj,dirpath,datasetTags=datasetTags,fileMetaTags=fileMetaTags)
-		
+
 	def saveObject(self,obj,path,overwrite=False,setFilenames=False,datasetTags={},fileMetaTags={}, *args,**kwargs):
 		@taskroutine('Saving DICOM Files')
 		def _save(path,obj,datasetTags,fileMetaTags,task=None):
@@ -1049,9 +1044,9 @@ class DicomPlugin(ImageScenePlugin):
 			matrix=iobj['dat']
 			imgmin=matrix.min() # recall the minimal image value, this will become the intercept
 			matrix=(matrix-imgmin).astype(np.uint16) # convert to unsigned short, adding imgmin to ensure negative values don't overflow
-			
+
 			# TODO: rescale matrix into unsigned 16 bit space properly
-			
+
 			timeseqs=obj.getVolumeStacks()
 			shape=list(matrix.shape)
 			dims=len(shape)
@@ -1104,7 +1099,7 @@ class DicomPlugin(ImageScenePlugin):
 					task.setProgress(t+s*timesteps+1)
 
 				pixel_array=stdat(s,t)
-				
+
 				index=s+t*slices
 				img=obj.images[timeseqs[t][s]]
 				filename='%s_%.5i.dcm'%(rootpath,index)
@@ -1128,9 +1123,9 @@ class DicomPlugin(ImageScenePlugin):
 				ds.SliceLocation=s*ds.SliceThickness
 				ds.SeriesDescription=obj.getName()
 				ds.PixelData = pixel_array.tostring()
-				
+
 				ds.save_as(filename)
-				
+
 		return self.mgr.runTasks(_save(obj,path,datasetTags,fileMetaTags))
 
 	def getScriptCode(self,obj,**kwargs):
@@ -1202,7 +1197,7 @@ class DicomPlugin(ImageScenePlugin):
 
 	def showTimeMultiSeriesDialog(self,series):
 		'''
-		Shows the multi-series dialog box for the given series list, returning the Future object which will contain the 
+		Shows the multi-series dialog box for the given series list, returning the Future object which will contain the
 		results from the user cropping and ordering the images of the series. This does block and is thread-safe.
 		'''
 		f=Future()
@@ -1213,7 +1208,7 @@ class DicomPlugin(ImageScenePlugin):
 				d.exec_()
 
 		return f # do not block on f since data is loaded in a task and stored in f
-		
+
 	def loadDicomDir(self,dirpath=None,allowMultiple=True,params=None,subject=None):
 		'''
 		Shows the choose series dialog using the same arguments as showChooseSeriesDialog() then loads any selected
@@ -1223,10 +1218,10 @@ class DicomPlugin(ImageScenePlugin):
 		series=self.showChooseSeriesDialog(dirpath,allowMultiple,params,subject)
 		for s in series:
 			self.mgr.addSceneObjectTask(self.loadSeries(s))
-						
+
 	def _openDicomDirMenuItem(self):
 		self.loadDicomDir()
-			
+
 	def _openVolumeMenuItem(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Dicom filename')
 		if filename:

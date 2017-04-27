@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -33,21 +33,23 @@ from ui.CardiacMotionProp import Ui_CardiacMotionProp
 
 
 def avgDevRange(vals,stddevDist=1.0):
+	'''Calculate the average of values from `vals' which are within `stddevDist' standard deviations of the average.'''
 	if not vals:
 		return 0
 
+	vals=list(vals)
 	a=avg(vals)
 	sd=stddev(vals)*stddevDist
 	return avg(v for v in vals if abs(v-a)<=sd)
 
-	
+
 @timing
 def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
-	
+
 	spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
 	indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
 	indname=indmat.getName()
-	
+
 	nodes=ds.getNodes().clone()
 	length=nodes.n()
 
@@ -57,27 +59,27 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 
 	orient=rotator(longaxis,vec3(0,0,1))
 	nodes.mul(transform(-BoundBox(nodes).center,vec3(1),orient))  # transforms the mesh so that the centerline is Z axis
-	
+
 	# calculate the bound boxes of the nodes near the mitral plane and apex
 	minz,maxz=minmax([n.z() for n in nodes]) # determine the min and max distance from the origin in the Z dimension, ie. height
 	mitralaabb=BoundBox([n for n in nodes if n.z()<(minz+(maxz-minz)*0.1)])
 	apexaabb=BoundBox([n for n in nodes if n.z()>(minz+(maxz-minz)*0.9)])
-	
+
 	# `longaxis' is pointing from apex to mitral so reverse it, this assumes apex is small which may be wrong
 	if mitralaabb.radius<apexaabb.radius:
 		longaxis=-longaxis
 		mitralaabb,apexaabb=apexaabb,mitralaabb
-		
+
 	#nodes.sub(apexaabb.center*vec3(1,1,0)) # try to center on the apex
-	
+
 	apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
-	
+
 	for n in xrange(length):
 		node=nodes[n]
 		d=apexray.distTo(node) #*0.9 # scale the distance along the ray so that apex directions are more rounded
 		rad=orient/((node-apexray.getPosition(d))*vec3(1,1,0)).norm()
 		#rad=orient/(node*vec3(1,1,0)).norm()
-		
+
 		radialmat.setRow(n,*rad)
 		longmat.setRow(n,*longaxis)
 		circummat.setRow(n,*(longaxis.cross(rad)))
@@ -155,7 +157,7 @@ def strainTensor(px,mx,py,my,pz,mz,hh):
 	x3 = b*x0 + e*x1 + h*x2
 	x4 = c*x0 + f*x1 + i*x2
 	x5 = 0.5*b*c + 0.5*e*f + 0.5*h*i
-	
+
 	return 0.5*a**2 + 0.5*d**2 + 0.5*g**2 - 0.5, x3, x4, x3, 0.5*b**2 + 0.5*e**2 + 0.5*h**2 - 0.5, x5, x4, x5, 0.5*c**2 + 0.5*f**2 + 0.5*i**2 - 0.5
 
 
@@ -210,87 +212,55 @@ def calculateTensorMul(tensors,vecmat,name):
 
 
 @concurrent
-def divideTrisByElemValRange(process,tris,nodeprops,elemvals,choosevals):
-	matrices=dict((cv,IndexMatrix('choose_%i_%r'%(process.index,cv),tris.getType(),0,tris.m())) for cv in choosevals)
+def divideTrisByElemValRange(process,tris,nodeprops,regionfield,choosevals):
+	'''
+	Returns matrices containing the indices of the triangles belonging to the regions given in `choosevals' as defined
+	by the region field `regionfield'. The matrix `tris' is the original triangle index matrix and `nodeprops' the
+	associated node properties matrix, these are expected to have heen derived from generateLinearTriangulation() so
+	are not from the original dataset whereas `regionfield' is. Return value is list of matrices for each chosen region
+	in no particular order.
+	'''
+	matrices={cv:IndexMatrix('choose_%i_%r'%(process.index,cv),tris.getType(),0,tris.m()) for cv in choosevals}
 
+	# For each triangle, determine what region the original element it was derived from was part of
+	# and store the triangle's indices in the appropriate region matrix.
 	for n in xrange(tris.n()):
 		process.setProgress((n+1)/process.total)
 		nodeinds=tris.getRow(n) # node indices for this triangle
 		origind=nodeprops.getAt(nodeinds[0]) # original element index
-		val=elemvals.getAt(origind) # the value for the original element
+		val=regionfield.getAt(origind) # the region value for the original element in the original dataset
 
-		if val in matrices:
+		if val in matrices: # original element was part of one of the regions being selected so add the triangle indices
 			matrices[val].append(*nodeinds)
 
 	return shareMatrices(*matrices.values())
 
 
 @timing
-def divideMeshSurfaceByElemVal(dataset,elemvals,choosevals,task=None):
+def divideMeshSurfaceByElemVal(dataset,regionfield,choosevals,task=None):
+	'''
+	Define a triangle mesh surface for the topologies in `dataset' and divide them into the regions chosen in `choosevals'
+	as drawn from the region field `regionfield'. Returns the triangle dataset, index list from `dataset', and list of
+	matrices containing the triangle indices for each region selected in `choosevals'. Returns the triangulation dataset,
+	index matrix list, and the list of per-region matrices in no particular order.
+	'''
 	calculateElemExtAdj(dataset,task=task)
 
+	# calculate the triangulation of the original dataset and extract the triangle index and node properties matrices
 	trids,indlist=generateLinearTriangulation(dataset,'dividetris',0,True,task)
 	tris=trids.getIndexSet(trids.getName()+MatrixType.tris[1])
 	nodeprops=trids.getIndexSet(trids.getName()+MatrixType.props[1])
 
 	assert len(indlist)==1,'Multiple spatial topologies found in mesh, cannot determine element value field association'
-	assert indlist[0].n()==elemvals.n(),'Element value field length (%i) does not match topology length (%i)'%(elemvals.n(),indlist[0].n())
+	assert indlist[0].n()==regionfield.n(),'Element value field length (%i) does not match topology length (%i)'%(regionfield.n(),indlist[0].n())
 
+	# calculate the region division matrices
 	proccount=chooseProcCount(tris.n(),0,2000)
-	shareMatrices(tris,nodeprops,elemvals)
-	results= divideTrisByElemValRange(tris.n(),proccount,task,tris,nodeprops,elemvals,choosevals,partitionArgs=(choosevals,))
-
+	shareMatrices(tris,nodeprops,regionfield)
+	results= divideTrisByElemValRange(tris.n(),proccount,task,tris,nodeprops,regionfield,choosevals,partitionArgs=(choosevals,))
 	matrices=listSum(map(list,results.values()))
 
 	return trids,indlist,matrices
-
-
-def divideMeshByElemFunc(datasets,oldinds,choosefunc):
-	oldnodes=datasets[0].getNodes()
-
-	nodes=Vec3Matrix('nodes',0,1)
-	inds=IndexMatrix(oldinds.getName(),0,oldinds.m())
-	inds.meta(StdProps._isspatial,'True')
-	inds.setType(oldinds.getType())
-
-	chosen=[]
-	nodemap={}
-
-	for n in xrange(oldinds.n()):
-		if choosefunc(n):
-			chosen.append(n)
-			row=oldinds.getRow(n)
-			for i in xrange(len(row)):
-				if row[i] not in nodemap:
-					nodes.append(oldnodes.getAt(row[i]))
-					nodemap[row[i]]=nodes.n()-1
-
-			inds.append(*[nodemap[r] for r in row])
-
-	fields=[]
-	for oldfield in datasets[0].enumDataFields():
-		if oldfield.n()==oldinds.n():
-			field=RealMatrix(oldfield.getName(),0,oldfield.m())
-			fields.append(field)
-			for ch in chosen:
-				field.append(*oldfield.getRow(ch))
-		elif oldfield.n()==oldnodes.n():
-			field=RealMatrix(oldfield.getName(),nodes.n(),oldfield.m())
-			fields.append(field)
-			for oldind,newind in nodemap.items():
-				field.setRow(newind,*oldfield.getRow(oldind))
-
-	dsout=[PyDataSet(datasets[0].getName()+'Div',nodes,[inds],fields)]
-
-	for ds in datasets[1:]:
-		olddsnodes=ds.getNodes()
-		dsnodes=Vec3Matrix('nodes',nodes.n(),1)
-		for oldind,newind in nodemap.items():
-			dsnodes.setAt(olddsnodes.getAt(oldind),newind)
-
-		dsout.append(PyDataSet(ds.getName()+'Div',dsnodes,[inds],fields))
-
-	return dsout,chosen,nodemap
 
 
 @concurrent
@@ -309,15 +279,16 @@ def calculateRegionThicknessesRange(process,trinodes,stddevRange,triindlist):
 	radii2=RealMatrix('radii2',maxlen)
 
 	for triind in triindlist:
+		# for each triangle, store the center, norm, and radius in the above matrices
 		for n in xrange(triind.n()):
-			nodes=trinodes.mapIndexRow(triind,n)#getElemNodes(n,triind,trinodes)
-			center=(nodes[0]+nodes[1]+nodes[2])/3.0
-			centers.setAt(center,n)
-			norms.setAt(nodes[0].planeNorm(nodes[1],nodes[2]),n)
-			radii2.setAt(max(center.distToSq(v) for v in nodes),n)
+			nodes=trinodes.mapIndexRow(triind,n) # triangle nodes
+			center=(nodes[0]+nodes[1]+nodes[2])/3.0 # triangle center
+			centers.setAt(center,n) # store center
+			norms.setAt(nodes[0].planeNorm(nodes[1],nodes[2]),n) # store triangle norm
+			radii2.setAt(max(center.distToSq(v) for v in nodes),n) # store triangle radius**2
 
+		# for each triangle, project a ray inward and store in `lengths' the distance of the first intersection with the mesh
 		lengths=[]
-
 		for n in xrange(triind.n()):
 			center=centers.getAt(n)
 			norm=norms.getAt(n)
@@ -329,26 +300,26 @@ def calculateRegionThicknessesRange(process,trinodes,stddevRange,triindlist):
 				lengths.append(intres[0][1])
 
 		avglen=avgDevRange(lengths,stddevRange)
-
-		results.append((int(triind.getName().split('_')[2]),avglen))
+		region=int(triind.getName().split('_')[2])
+		results.append((region,avglen))
 
 	return results
 
 
 @timing
-def calculateRegionThicknesses(datasetlist,elemvals,choosevals,stddevRange=1.0,task=None):
+def calculateRegionThicknesses(datasetlist,regionfield,choosevals,stddevRange=1.0,task=None):
 	'''
 	Computes the region thicknesses for each mesh defines by the list of datasets in `datasetlist'. The value list
-	`choosevals' defines the region numbers of interest, and `elemvals' is a field which labels each element of the
+	`choosevals' defines the region numbers of interest, and `regionfield' is a field which labels each element of the
 	mesh with a number; each value of `choosevals' must be found in this set of labels. For each dataset, the resulting
 	list will contain a list of thickness values, one for each label in `choosevals'. Assuming the datasets represent
 	a moving mesh in time, the rows of the returned matrix represent thickness in time, and the columns represent the
 	thicknesses for each region.
 	'''
 	results=[]
-	regionmap=dict((v,i) for i,v in enumerate(choosevals)) # maps region # to index in `choosevals'
+	regionmap={v:i for i,v in enumerate(choosevals)} # maps region # to index in `choosevals'
 
-	trids,indlist,triindlist=divideMeshSurfaceByElemVal(datasetlist[0],elemvals,choosevals,None)
+	_,_,triindlist=divideMeshSurfaceByElemVal(datasetlist[0],regionfield,choosevals,None)
 
 	if task:
 		task.setMaxProgress(len(datasetlist))
@@ -365,14 +336,15 @@ def calculateRegionThicknesses(datasetlist,elemvals,choosevals,stddevRange=1.0,t
 
 		thicknesslist=[v for i,v in sorted(listSum(thicknesses.values()))] # in same order as `choosevals'
 
-		thicknessfield=RealMatrix('RegionThickness',elemvals.n())
-		thicknessfield.meta(StdProps._spatial,elemvals.meta(StdProps._spatial))
-		thicknessfield.meta(StdProps._topology,elemvals.meta(StdProps._topology))
+		# calculate the per-region thickness field
+		thicknessfield=RealMatrix('RegionThickness',regionfield.n())
+		thicknessfield.meta(StdProps._spatial,regionfield.meta(StdProps._spatial))
+		thicknessfield.meta(StdProps._topology,regionfield.meta(StdProps._topology))
 		thicknessfield.meta(StdProps._elemdata,'True')
 		thicknessfield.fill(0)
 
-		for n in xrange(elemvals.n()):
-			region=regionmap.get(int(elemvals.getAt(n)),-1)
+		for n in xrange(regionfield.n()):
+			region=regionmap.get(int(regionfield.getAt(n)),-1)
 			if region>=0:
 				thicknessfield.setAt(thicknesslist[region],n)
 
@@ -401,10 +373,10 @@ def calculateAvgDisplacementRange(process,orignodes,trinodes,stddevRange,triindl
 
 
 @timing
-def calculateAvgDisplacement(datasetlist,elemvals,choosevals,stddevRange=1.0,task=None):
+def calculateAvgDisplacement(datasetlist,regionfield,choosevals,stddevRange=1.0,task=None):
 	results=[]
 	orignodes=None
-	trids,indlist,triindlist=divideMeshSurfaceByElemVal(datasetlist[0],elemvals,choosevals,None)
+	trids,indlist,triindlist=divideMeshSurfaceByElemVal(datasetlist[0],regionfield,choosevals,None)
 
 	regionmap=dict((v,i) for i,v in enumerate(choosevals)) # maps region # to index in `choosevals'
 
@@ -424,14 +396,14 @@ def calculateAvgDisplacement(datasetlist,elemvals,choosevals,stddevRange=1.0,tas
 
 		displist=[v for i,v in sorted(listSum(dists.values()))]
 
-		dispfield=RealMatrix('RegionDisplacement',elemvals.n())
-		dispfield.meta(StdProps._spatial,elemvals.meta(StdProps._spatial))
-		dispfield.meta(StdProps._topology,elemvals.meta(StdProps._topology))
+		dispfield=RealMatrix('RegionDisplacement',regionfield.n())
+		dispfield.meta(StdProps._spatial,regionfield.meta(StdProps._spatial))
+		dispfield.meta(StdProps._topology,regionfield.meta(StdProps._topology))
 		dispfield.meta(StdProps._elemdata,'True')
 		dispfield.fill(0)
 
-		for n in xrange(elemvals.n()):
-			region=regionmap.get(int(elemvals.getAt(n)),-1)
+		for n in xrange(regionfield.n()):
+			region=regionmap.get(int(regionfield.getAt(n)),-1)
 			if region>=0:
 				dispfield.setAt(displist[region],n)
 
@@ -443,17 +415,17 @@ def calculateAvgDisplacement(datasetlist,elemvals,choosevals,stddevRange=1.0,tas
 
 
 @concurrent
-def calculateLinTetVolumeRange(process,nodelist,fieldlist,inds,elemvals,choosevals):
+def calculateLinTetVolumeRange(process,nodelist,fieldlist,inds,regionfield,choosevals):
 	results=[]
 	counter=1
-	
+
 	for nodes,volfield in zip(nodelist,fieldlist):
 		process.setProgress(counter)
 		counter+=1
-		
+
 		nodevols=dict((cv,0) for cv in choosevals)
 		for n in xrange(inds.n()):
-			val=elemvals.getAt(n)
+			val=regionfield.getAt(n)
 			if val in nodevols:
 				elemnodes=nodes.mapIndexRow(inds,n)
 				vol=calculateTetVolume(*elemnodes)
@@ -463,19 +435,19 @@ def calculateLinTetVolumeRange(process,nodelist,fieldlist,inds,elemvals,chooseva
 		results.append([nodevols[cv] for cv in choosevals])
 
 		for n in xrange(inds.n()):
-			volfield.setAt(nodevols.get(elemvals.getAt(n),0),n)
+			volfield.setAt(nodevols.get(regionfield.getAt(n),0),n)
 
 	return results
 
 
 @timing
-def calculateLinTetVolume(datasetlist,elemvals,choosevals,task=None):
+def calculateLinTetVolume(datasetlist,regionfield,choosevals,task=None):
 	nodelist=[ds.getNodes() for ds in datasetlist]
-	inds=datasetlist[0].getIndexSet(elemvals.meta(StdProps._spatial)) #or first(datasetlist[0].enumIndexSets())
+	inds=datasetlist[0].getIndexSet(regionfield.meta(StdProps._spatial)) #or first(datasetlist[0].enumIndexSets())
 
-	assert inds,'Cannot find index set with name %r'%elemvals.meta(StdProps._spatial)
+	assert inds,'Cannot find index set with name %r'%regionfield.meta(StdProps._spatial)
 	assert inds.n()>0
-	shareMatrices(inds,elemvals)
+	shareMatrices(inds,regionfield)
 	shareMatrices(*nodelist)
 
 	fieldlist=[RealMatrix('volumes',inds.n(),1,True) for i in xrange(len(nodelist))]
@@ -485,8 +457,8 @@ def calculateLinTetVolume(datasetlist,elemvals,choosevals,task=None):
 		f.meta(StdProps._topology,inds.getName())
 		f.meta(StdProps._spatial,inds.getName())
 
-	results=calculateLinTetVolumeRange(len(nodelist),0,task,nodelist,fieldlist,inds,elemvals,choosevals,partitionArgs=(nodelist,fieldlist))
-	
+	results=calculateLinTetVolumeRange(len(nodelist),0,task,nodelist,fieldlist,inds,regionfield,choosevals,partitionArgs=(nodelist,fieldlist))
+
 	return sumResultMap(results)
 
 
@@ -495,16 +467,16 @@ def calculateTorsion(datasetlist,aha,choosevals):
 	nodes=[ds.getNodes().clone() for ds in datasetlist]
 	nodes0=nodes[0]
 	length=nodes0.n()
-	inds=datasetlist[0].getIndexSet(aha.meta(StdProps._spatial)) 
+	inds=datasetlist[0].getIndexSet(aha.meta(StdProps._spatial))
 	results=[]
 	apextwists=[]
 	basetwists=[]
-	
+
 	assert inds and inds.n()>0,'Cannot find index set with name %r'%aha.meta(StdProps._spatial)
-	
+
 	baseinds=set()
 	apexinds=set()
-	
+
 	for i in xrange(len(inds)):
 		region=aha[i]
 		if region in range(1,7):
@@ -513,17 +485,17 @@ def calculateTorsion(datasetlist,aha,choosevals):
 		elif region in range(13,17):
 			for ind in inds[i]:
 				apexinds.add(ind)
-				
+
 	basepos=avg(nodes0[i] for i in baseinds) or vec3()
 	apexpos=avg(nodes0[i] for i in apexinds) or vec3()
 	longaxis=apexpos-basepos
 
 	orient=rotator(longaxis,-vec3.Z())
 	trans=transform(-basepos,vec3(1,1),orient,True)
-	
+
 	for n in nodes:
 		n.mul(trans)  # transforms the meshes so that the centerline is Z axis and points are projected onto the XY plane
-	
+
 	for n,ds in zip(nodes,datasetlist):
 		twist=RealMatrix('PointTwist',length,1)
 		twist.fill(0)
@@ -531,19 +503,19 @@ def calculateTorsion(datasetlist,aha,choosevals):
 		twist.meta(StdProps._topology,aha.meta(StdProps._topology))
 		ds.setDataField(twist)
 		results.append(twist)
-		
+
 		for i in xrange(length):
 			startnode=nodes0[i]
 			stepnode=n[i]
 			crossz=startnode.cross(stepnode).z()
 			twist[i]=math.degrees(startnode.angleTo(stepnode)*(1 if crossz<0 else -1))
-		
+
 		apextwists.append(avg(twist[i] for i in apexinds))
 		basetwists.append(avg(twist[i] for i in baseinds))
-			
+
 	return results,apextwists,basetwists,longaxis.len()
-	
-	
+
+
 @concurrent
 def calculateTriAreasRange(process,nodes,inds,result):
 	for i in process.prange():
@@ -551,35 +523,35 @@ def calculateTriAreasRange(process,nodes,inds,result):
 		result.setAt(max(epsilon*10,a.triArea(b,c)),i) # ensure no 0-area triangles just in case
 
 
-def calculateTriAreas(nodes,inds,task=None):	
+def calculateTriAreas(nodes,inds,task=None):
 	assert inds.getType()==ElemType._Tri1NL and inds.m()==3,'Not a triangle topology'
 	result=RealMatrix('areas',inds.n(),1,True)
 	result.meta(StdProps._topology,inds.getName())
 	result.meta(StdProps._spatial,inds.getName())
-	
+
 	shareMatrices(nodes,inds)
 	proccount=chooseProcCount(inds.n(),1,5000)
 	calculateTriAreasRange(inds.n(),proccount,task,nodes,inds,result)
 	return result
-	
-	
+
+
 def calculateRegionSumField(field,regionfield,choosevals):
 	sumfield=field.clone(field.getName()+'_'+regionfield.getName())
 	sumfield.fill(0)
-	
+
 	summap={r:0 for r in choosevals}
-	
+
 	for n in xrange(field.n()): # sum per-region values
 		v=field.getAt(n)
 		r=int(regionfield.getAt(n))
 		if r in summap:
 			summap[r]=summap[r]+v
-	
+
 	for n in xrange(field.n()):	# fill sumfield with region summations
 		r=int(regionfield.getAt(n))
 		if r in summap:
 			sumfield.setAt(summap[r],n)
-			
+
 	return summap,sumfield
 
 
@@ -630,11 +602,11 @@ class CardiacMotionProject(Project):
 
 		self.logdir=self.getProjectFile('logs')
 		self.backDir=self.logdir
-		
+
 	def create(self):
 		'''Task routine set to run after the project is loaded which does extra setup or config operations.'''
 		Project.create(self)
-		
+
 		if not os.path.isdir(self.logdir):
 			os.mkdir(self.logdir)
 
@@ -647,7 +619,7 @@ class CardiacMotionProject(Project):
 			#self.save()
 		else:
 			pass
-		
+
 	def getPropBox(self):
 		prop=Project.getPropBox(self)
 
@@ -655,7 +627,7 @@ class CardiacMotionProject(Project):
 		cppdel(prop.chooseLocLayout)
 		cppdel(prop.dirButton)
 		cppdel(prop.chooseLocLabel)
-		
+
 		self.alignprop=CardiacMotionPropWidget()
 		prop.verticalLayout.insertWidget(prop.verticalLayout.count()-1,self.alignprop)
 
@@ -666,7 +638,7 @@ class CardiacMotionProject(Project):
 		self.alignprop.loadVTKMeshButton.clicked.connect(self._loadVTKFile)
 		self.alignprop.loadCHeartButton.clicked.connect(self._loadCHeartFiles)
 		self.alignprop.magphaseButton.clicked.connect(self._loadMagFlow)
-		
+
 		self.alignprop.saveCHeartCheck.clicked.connect(self.updateConfigFromProp)
 
 #		self.alignprop.alignCheckButton.clicked.connect(lambda:self.CardiacMotion.checkLongAxisAlign(str(self.alignprop.alignCheckBox.currentText()),str(self.alignprop.checkTargetBox.currentText())))
@@ -753,7 +725,7 @@ class CardiacMotionProject(Project):
 	@timing
 	def updatePropBox(self,proj,prop):
 		Project.updatePropBox(self,proj,prop)
-		
+
 		setChecked(self.configMap[ConfigNames._savecheart].lower()=='true',self.alignprop.saveCHeartCheck)
 
 		sceneimgs=filter(lambda o:isinstance(o,ImageSceneObject),self.memberObjs)
@@ -825,12 +797,12 @@ class CardiacMotionProject(Project):
 		fillList(self.alignprop.trackDataBox,trackdirs)
 		fillList(self.alignprop.strainTrackBox,trackdirs)
 		fillList(self.alignprop.strainMeshTrackBox,trackdirs)
-						
+
 		# refill the measurement plugin's known tracking sources
 		self.Measure.removeTrackSource(self.CardiacMotion.applyMotionTrackPoints)
 		for td in trackdirs:
 			self.Measure.addTrackSource(td,self.CardiacMotion.applyMotionTrackPoints)
-		
+
 		# set heart rate if stored in the config map
 		heartrate=self.configMap[ConfigNames._heartrateBPM]
 		if heartrate and self.alignprop.bpmBox.value()==0:
@@ -870,12 +842,12 @@ class CardiacMotionProject(Project):
 			style='color: rgb(255,0,0)'
 
 		self.alignprop.svrAddrBox.setStyleSheet(style)
-		
+
 	def _readDicomHeartRate(self,series):
-		heartrate=readDicomHeartRate(series)		
+		heartrate=readDicomHeartRate(series)
 		if heartrate is not None and not self.configMap[ConfigNames._heartrateBPM]:
 			self.configMap[ConfigNames._heartrateBPM]=int(heartrate)
-			
+
 			rc=self.getReportCard()
 			if rc:
 				rc.setValue(series.seriesID,'Heart Rate (bpm)',heartrate)
@@ -883,7 +855,7 @@ class CardiacMotionProject(Project):
 	def renameObject(self,obj,oldname):
 		newname=getValidFilename(obj.getName())
 		obj.setName(newname)
-		
+
 		conflicts=obj.plugin.checkFileOverwrite(obj,self.getProjectDir())
 		if conflicts:
 			raise IOError('Renaming object would overwrite the following project files: '+', '.join(map(os.path.basename,conflicts)))
@@ -899,7 +871,7 @@ class CardiacMotionProject(Project):
 				self.configMap[n]=newname
 
 		self.save()
-		
+
 	def getReportCard(self):
 		return first(obj for obj in self.memberObjs if obj.getName()==self.name and isinstance(obj,ReportCardSceneObject))
 
@@ -911,7 +883,7 @@ class CardiacMotionProject(Project):
 		# Important: this task method will be called after the project has loaded so won't ask to add things already in the project
 		if not isinstance(obj,SceneObject) or obj in self.memberObjs or obj.plugin.getObjFiles(obj) is None:
 			return
-			
+
 		def _copy():
 			self.mgr.removeSceneObject(obj)
 			newname=self.CardiacMotion.getUniqueObjName(obj.getName())
@@ -919,12 +891,12 @@ class CardiacMotionProject(Project):
 			obj.setName(newname)
 			filename=self.getProjectFile(obj.getName())
 			savecheart=self.configMap[ConfigNames._savecheart].lower()=='true'
-			
+
 			if isinstance(obj,ImageSceneObject):
 				self.CardiacMotion.saveToNifti([obj],True)
 			elif isinstance(obj,MeshSceneObject):
 				if savecheart: # force CHeart saving is selected
-					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True) 
+					self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True)
 				else:
 					self.CardiacMotion.VTK.saveObject(obj,filename,setFilenames=True)
 			else:
@@ -941,12 +913,12 @@ class CardiacMotionProject(Project):
 		if not files or any(not f.startswith(pdir) for f in files):
 			msg="Do you want to add %r to the project? This requires saving/copying the object's file data into the project directory."%(obj.getName())
 			self.mgr.win.chooseYesNoDialog(msg,'Adding Object',_copy)
-			
+
 	def _checkTrackDirs(self):
 		'''
-		Check tracking directories for a file named `trackconfname', this should appear in tracking directories made 
-		later and will contain more information than the original job.ini files. If the file is missing, create it 
-		based on the source image chosen by the user if there is a choice, guess otherwise. 
+		Check tracking directories for a file named `trackconfname', this should appear in tracking directories made
+		later and will contain more information than the original job.ini files. If the file is missing, create it
+		based on the source image chosen by the user if there is a choice, guess otherwise.
 		'''
 		def _fixDir(sceneimgs,trackdir,index):
 			index=index[0]
@@ -954,7 +926,7 @@ class CardiacMotionProject(Project):
 			tfile=os.path.join(trackdir,trackconfname)
 			jdata=readBasicConfig(jfile) if os.path.isfile(jfile) else {}
 			imgobj=self.mgr.findObject(sceneimgs[index])
-			
+
 			if imgobj:
 				name=imgobj.getName()
 				timesteps=imgobj.getTimestepList()
@@ -965,7 +937,7 @@ class CardiacMotionProject(Project):
 				timesteps=range(len(glob(os.path.join(trackdir,'*.dof.gz')))+1)
 				trans=(0,0,0,1,1,1,0,0,0,False)
 				vox=(1,1,1)
-				
+
 			jdata.update({
 				JobMetaValues._trackobj     :name,
 				JobMetaValues._numtrackfiles:len(timesteps)-1,
@@ -974,32 +946,32 @@ class CardiacMotionProject(Project):
 				JobMetaValues._transform    :trans,
 				JobMetaValues._pixdim       :vox,
 			})
-			
+
 			printFlush('Writing %r with data from %r'%(tfile,name))
 			storeBasicConfig(tfile,jdata)
-			
+
 		def _chooseSource(sceneimgs,trackdir):
 			msg='''
 			Due to developer oversight, the source image of tracking directories wasn't saved.
 			Please select which object was tracked in directory %r:
 			'''%os.path.basename(trackdir)
-			
+
 			callback=lambda i:_fixDir(sceneimgs,trackdir,i)
-			
+
 			# important: this is called in a function so that `callback' binds with fresh variables
 			self.mgr.win.chooseListItemsDialog('Choose Source Image',textwrap.dedent(msg).strip(),sceneimgs,callback)
-			
+
 		imgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
-		
+
 		for d in glob(self.getProjectFile('*/')): # check each directory `d' to see if it has dof files but no `trackconfname' file
 			numdofs=len(glob(os.path.join(d,'*.dof.gz')))
-			
+
 			if not os.path.isfile(os.path.join(d,trackconfname)) and numdofs:
 				trackdir=d[:-1] # remove trailing /
-				
+
 				# choose correct length images
-				sceneimgs=[o.getName() for o in imgs if len(o.getTimestepList())==(numdofs+1)]+["Don't know"] 
-				
+				sceneimgs=[o.getName() for o in imgs if len(o.getTimestepList())==(numdofs+1)]+["Don't know"]
+
 				if len(sceneimgs)<=2: # 0 or 1 possibilities, choose first option which will be "Don't know" if no suitable images found
 					_fixDir(sceneimgs,trackdir,[0])
 				else:
@@ -1080,7 +1052,7 @@ class CardiacMotionProject(Project):
 			ParamDef('showCrop','Show Multiseries/Crop Dialog',ParamType._bool,False)
 		]
 		results={}
-		
+
 		series=self.CardiacMotion.Dicom.showChooseSeriesDialog(subject='CINE',params=(params,lambda n,v:results.update({n:v})))
 		if len(series)>0:
 			if results.get('showCrop',False):
@@ -1093,9 +1065,9 @@ class CardiacMotionProject(Project):
 #					name=objs[0].getName()
 #					if ind:
 #						name=name[:ind]
-#						
+#
 #					objs=[objs[0].plugin.createSceneObject(name,objs[0].source,images,objs[0].plugin,objs[0].isTimeDependent)]
-				
+
 			self._readDicomHeartRate(series[0])
 			filenames=self.CardiacMotion.saveToNifti(objs)
 			f=self.CardiacMotion.loadNiftiFiles(filenames)
@@ -1154,12 +1126,12 @@ class CardiacMotionProject(Project):
 		if params:
 			f=self.CardiacMotion.loadCHeartMesh(*params)
 			self.mgr.checkFutureResult(f)
-			
+
 	def _setTimestep(self):
 		objname=str(self.alignprop.tsSetObjBox.currentText())
 		start=self.alignprop.tsStartBox.value()
 		step=self.alignprop.tsStepBox.value()
-		
+
 		if objname:
 			self.CardiacMotion.setObjectTimestep(objname,start,step)
 
@@ -1187,7 +1159,7 @@ class CardiacMotionProject(Project):
 		name=str(self.alignprop.reorderSrcBox.currentText())
 		f=self.CardiacMotion.reorderMulticycleImage(name,self.alignprop.reorderStartBox.value(),self.alignprop.reorderStepBox.value())
 		self.mgr.checkFutureResult(f)
-		
+
 	def _chooseParamFile(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Parameter file')
 		if filename:
@@ -1262,12 +1234,12 @@ class CardiacMotionProject(Project):
 		trackname=str(self.alignprop.trackingNregName.text())
 		paramfile=str(self.alignprop.paramNRegEdit.text())
 		onefile=self.alignprop.oneFileCheck.isChecked()
-		
+
 		if self.alignprop.gpuNregCheck.isChecked():
 			f=self.CardiacMotion.startGPUNRegMotionTrack(imgname,maskname,trackname,paramfile)
 		else:
 			f=self.CardiacMotion.startRegisterMotionTrack(imgname,maskname,trackname,paramfile,None,onefile)
-			
+
 		self.mgr.checkFutureResult(f)
 		self.mgr.addFuncTask(lambda:self.mgr.callThreadSafe(self.updatePropBox,self,self.prop))
 
@@ -1294,7 +1266,7 @@ class CardiacMotionProject(Project):
 		isIso=self.alignprop.resampleIsoCheck.isChecked()
 		f=self.CardiacMotion.resampleObject(objname,tmpltname,isIso)
 		self.mgr.checkFutureResult(f)
-		
+
 	def _extendImage(self):
 		objname=str(self.alignprop.extendSrcBox.currentText())
 		x=self.alignprop.extendXBox.value()
@@ -1347,7 +1319,7 @@ class CardiacMotionProject(Project):
 		spacing=self.alignprop.strainSpacingBox.value()
 		trackname=str(self.alignprop.strainTrackBox.currentText())
 		griddims=(self.alignprop.strainWBox.value(),self.alignprop.strainHBox.value(),self.alignprop.strainDBox.value())
-		
+
 		f=self.CardiacMotion.calculateImageStrainField(name,griddims,spacing,trackname)
 		self.mgr.checkFutureResult(f)
 
@@ -1356,21 +1328,21 @@ class CardiacMotionProject(Project):
 		ahafieldname=str(self.alignprop.strainMeshAHABox.currentText())
 		trackname=str(self.alignprop.strainMeshTrackBox.currentText())
 		spacing=self.alignprop.strainSpacingMeshBox.value()
-		
+
 		f=self.CardiacMotion.calculateMeshStrainField(objname,ahafieldname,spacing,trackname)
 		self.mgr.checkFutureResult(f)
-		
+
 	def _calculateTorsionButton(self):
 		objname=str(self.alignprop.torsionMeshBox.currentText())
 		ahafieldname=str(self.alignprop.torsionFieldBox.currentText())
-		
+
 		f=self.CardiacMotion.calculateTorsion(objname,ahafieldname)
 		self.mgr.checkFutureResult(f)
-		
+
 	def _calculateSqueezeButton(self):
 		objname=str(self.alignprop.squeezeMeshBox.currentText())
 		ahafieldname=str(self.alignprop.squeezeFieldBox.currentText())
-		
+
 		f=self.CardiacMotion.calculateSqueeze(objname,ahafieldname)
 		self.mgr.checkFutureResult(f)
 
@@ -1444,7 +1416,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				self.project.configMap[ConfigNames._serveraddr]=addr
 			if port!=None:
 				self.project.configMap[ConfigNames._serverport]=port
-	
+
 			self.project.saveConfig()
 
 	@taskmethod('Load Nifti Files')
@@ -1455,7 +1427,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		if isEmpty:
 			self.mgr.callThreadSafe(self.project.updateConfigFromProp)
 			self.project.save()
-	
+
 		return objs
 
 	def loadMetaFiles(self,filenames):
@@ -1498,13 +1470,13 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					copyfileSafe(xfile,newxfile,True)
 					newtfile=self.project.getProjectFile(os.path.split(tfile)[1])
 					copyfileSafe(tfile,newtfile,True)
-		
+
 					obj=self.CHeart.loadSceneObject(newxfile,newtfile,elemtype,objname=splitPathExt(xfile)[1])
 				else:
 					objname=splitPathExt(xfile)[1]
 					obj=self.CHeart.loadSceneObject(xfile,tfile,elemtype,objname=objname)
 					self.VTK.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
-					
+
 				self.addObject(obj)
 				f.setObject(obj)
 
@@ -1518,14 +1490,14 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				basename=self.getUniqueObjName(splitPathExt(filename)[1])
 				vobj=self.VTK.loadFile(filename)
 				vobj.datasets[0].getNodes().mul(trans)
-				
+
 				savecheart=self.project.configMap[ConfigNames._savecheart].lower()=='true'
-				
+
 				if savecheart:
 					self.CHeart.saveObject(vobj,self.getLocalFile(basename),setFilenames=True)
 				else:
 					vobj.plugin.copyObjFiles(vobj,self.getLocalFile('.'))
-					
+
 				self.addObject(vobj)
 				f.setObject(vobj)
 
@@ -1537,10 +1509,10 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		def _load(filename,task):
 			with f:
 				objs=self.ParRec.loadObject(filename)
-				
+
 				if len(objs)!=2:
 					raise IOError('Loaded ParRec does not have 2 orientations, is this mag/phase?')
-					
+
 				magname=self.getUniqueShortName('Mag',objs[0].getName())
 				phasename=self.getUniqueShortName('Phase',objs[0].getName())
 				self.Nifti.saveObject(objs[0],self.getNiftiFile(magname))
@@ -1566,7 +1538,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				results=calculateRegionThicknesses(obj.datasets,regionfield,range(1,18),stddevRange,task)
 
 				obj.plugin.saveObject(obj,self.project.getProjectFile(obj.getName()),setFilenames=True)
-				
+
 				if percentThickness:
 					for m in range(len(results[0])):
 						val=results[0][m]/100.0
@@ -1579,7 +1551,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				plot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,obj.getTimestepList(),self.Plot.AHADockWidget,obj,isPercent=percentThickness)
 				plot.save()
-				
+
 				rc=self.mgr.project.getReportCard()
 				if rc:
 					value='(%% of initial)' if percentThickness else 'mm'
@@ -1587,7 +1559,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					rc.setValue(objname,'Min Thickness %s'%value, minthick)
 					rc.setValue(objname,'Max Thickness %s'%value, maxthick)
 					rc.save()
-					
+
 				self.mgr.addSceneObject(plot)
 				self.project.addObject(plot)
 				self.project.save()
@@ -1617,7 +1589,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
 				plot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,obj.getTimestepList(),self.Plot.AHADockWidget,obj)
 				plot.save()
-				
+
 				rc=self.mgr.project.getReportCard()
 				if rc:
 					mindisp,maxdisp=minmax(listSum(results))
@@ -1655,12 +1627,12 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				ejectfrac=(maxv-minv)*(100.0/maxv) # calculate ejection fraction percentage
 				mincc=minv
 				maxcc=maxv
-				
+
 				mintimes=[]
 				for region in range(len(results[0])):
 					regionvals=[results[i][region] for i in xrange(len(results))]
 					mintimes.append(min(zip(regionvals,timesteps))[1])
-					
+
 				mintimestddev=stddev(mintimes)
 				sdiperc=mintimestddev*(100.0/duration)
 
@@ -1668,7 +1640,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				# BPM
 				# duration
 					('Timestep Volumes (mL)',totals),
-					('ESV Volume (mL)',mincc), 
+					('ESV Volume (mL)',mincc),
 					('EDV Volume (mL)',maxcc),
 					('Stroke Volume (mL)',maxcc-mincc),
 					('Ejection Fraction (%)',ejectfrac),
@@ -1706,7 +1678,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				if rc:
 					for n,v in resultItems:
 						rc.setValue(objname,n,v)
-						
+
 					rc.save()
 
 				f.setObject([plot,plot1])
@@ -1724,19 +1696,19 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 			self.mgr.addSceneObject(plot)
 			self.project.addObject(plot)
 			return plot
-			
-		
+
+
 		obj=self.findObject(objname)
 		timesteps=obj.getTimestepList()
 		trackdir=self.project.getProjectFile(trackname)
 		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
-		
+
 		if not ahafieldname:
 			raise ValueError('Need to provide an AHA field name''')
-			
+
 		if len(conf[JobMetaValues._timesteps])!=len(timesteps):
 			raise ValueError('Mesh object has %i timesteps but tracking data has %i'%(len(timesteps),len(conf[JobMetaValues._timesteps])))
-					
+
 		f=Future()
 		@taskroutine('Calculating strains')
 		def _calc(task):
@@ -1746,16 +1718,16 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				aha=ds.getDataField(ahafieldname)
 				aharegions=range(1,18)
 				imgtrans=transform(*conf[JobMetaValues._transform])
-				
+
 				task.setMaxProgress(len(timesteps))
-				
+
 				# get the index matrix defining the topology the AHA field is defined for
 				if ds.hasIndexSet(aha.meta(StdProps._spatial)):
 					indmat=ds.getIndexSet(aha.meta(StdProps._spatial))
 				else:
 					spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
 					indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
-					
+
 				# create a matrix assigning an AHA region to each node
 				nodeaha=IndexMatrix('nodeaha',nodes.n(),1)
 				nodeaha.fill(0) # assumes 0 is never used for a region number
@@ -1769,7 +1741,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				if not ds.hasDataField('radial'):
 					longaxis=imgtrans.getRotation()*vec3.Z()
 					radialf,longf,circumf=calculateLVDirectionalFields(ds,longaxis,'radial','longitudinal','circumferential')
-		
+
 					for d in obj.datasets:
 						d.setDataField(radialf)
 						d.setDataField(longf)
@@ -1778,10 +1750,10 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					radialf=ds.getDataField('radial')
 					longf=ds.getDataField('longitudinal')
 					circumf=ds.getDataField('circumferential')
-						
+
 				strainnodes=createStrainField(nodes,radialf,longf,circumf,spacing)
 				strainnodes.setM(1) # make the nodes one long column so that they will be tracked like regular nodes
-				
+
 				# apply motion tracking using a dummy scene object
 				initobj=MeshSceneObject(obj.getName()+'_Strains',PyDataSet('initds',strainnodes,[indmat]))
 				trackobj=self.applyMotionTrack(initobj,trackname,False)
@@ -1793,13 +1765,13 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				lavgstrains=[] # averages of longitudinal strain
 				ravgstrains=[] # averages of radial strain
 				cavgstrains=[] # averages of circumferential strain
-				
+
 				globalmavgstrains=[]
 				globalminavgstrains=[]
 				globallavgstrains=[]
 				globalravgstrains=[]
 				globalcavgstrains=[]
-				
+
 				# for each pairing of a dataset from the original object and from the tracked strain object,
 				# compute the strain from the tracked object's data, storing the results in the original's
 				# dataset and in the arrays of results above from which plots shall be made
@@ -1810,7 +1782,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					tensors=calculateStrainTensors(inodes,spacing) # calculate tensor matrices from each set of 7 points
 					maxeig,mineig=calculateTensorIndicatorEigen(tensors) # maximal/minimal eigenvector values
 					# strain in each direction computed by multiplying tensors by directions
-					longstrain=calculateTensorMul(tensors,longf,'longstrain') 
+					longstrain=calculateTensorMul(tensors,longf,'longstrain')
 					radstrain=calculateTensorMul(tensors,radialf,'radstrain')
 					circstrain=calculateTensorMul(tensors,circumf,'circstrain')
 
@@ -1851,9 +1823,9 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					lavgstrains.append(map(avg,lavgstrain))
 					ravgstrains.append(map(avg,ravgstrain))
 					cavgstrains.append(map(avg,cavgstrain))
-					
+
 					# global average strains minus last region (17)
-					globalmavgstrains.append(avg(matIter(mavgstrain[:-1]))) 
+					globalmavgstrains.append(avg(matIter(mavgstrain[:-1])))
 					globalminavgstrains.append(avg(matIter(minavgstrain[:-1])))
 					globallavgstrains.append(avg(matIter(lavgstrain[:-1])))
 					globalravgstrains.append(avg(matIter(ravgstrain[:-1])))
@@ -1869,7 +1841,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				p2=_makePlot('_longstrain',' Region Average of Magnitude of Longitudinal Strain',lavgstrains,obj)
 				p3=_makePlot('_radstrain',' Region Average of Magnitude of Radial Strain',ravgstrains,obj)
 				p4=_makePlot('_circstrain',' Region Average of Magnitude of Circumferential Strain',cavgstrains,obj)
-				
+
 				# create a graph plot of the global average strain maxima, minima, and average strain in the three directions
 				plotname=self.mgr.getUniqueObjName(objname+'_globalstrain')
 				plottitle=objname+' Global Average Strain'
@@ -1882,7 +1854,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				# add the plot this way to avoid saving the project multiple times
 				self.mgr.addSceneObject(gplot)
 				self.project.addObject(gplot)
-				
+
 				# fill in the report card
 				rc=self.mgr.project.getReportCard()
 				if rc:
@@ -1898,7 +1870,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					minm,maxm=minmax(matIter(cavgstrains))
 					rc.setValue(objname,'Min Avg Circumferential Strain', minm)
 					rc.setValue(objname,'Max Avg Circumferential Strain',maxm)
-					
+
 					maxvt=max(zip(map(abs,globalmavgstrains),timesteps))
 					rc.setValue(objname,'Maximal Global Strain Peak (value,time)', maxvt)
 					minvt=max(zip(map(abs,globalminavgstrains),timesteps))
@@ -1909,12 +1881,12 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 					rc.setValue(objname,'Minimal Radial Strain Peak (value,time)', rvt)
 					cvt=max(zip(map(abs,globalcavgstrains),timesteps))
 					rc.setValue(objname,'Minimal Circumferential Strain Peak (value,time)', cvt)
-					
+
 					rc.save()
 
 				self.project.save()
 				f.setObject((p1,p2,p3,p4,gplot))
-			
+
 		return self.mgr.runTasks(_calc(),f)
 
 	def calculateImageStrainField(self,objname,griddims,spacing,trackname):
@@ -1924,34 +1896,34 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 			with f:
 				indname='inds'
 				obj=self.findObject(objname)
-				
+
 				nodes,inds=generateHexBox(*griddims)
 				strainnodes=createStrainGrid(nodes,transform(),obj.getVolumeTransform(),spacing)
 				strainnodes.setM(1)
 				initobj=MeshSceneObject(obj.getName()+'_Grid',PyDataSet('initds',strainnodes,[(indname,ElemType._Hex1NL,inds)]))
 				trackobj=self.applyMotionTrack(initobj,trackname,False)
-				
+
 				task.setMaxProgress(len(trackobj.datasets))
-				
+
 				for i,ds in enumerate(trackobj.datasets):
 					nodes=ds.getNodes()
 					nodes.setM(7)
-					
+
 					tensors=calculateStrainTensors(nodes,spacing)
 					strain,_=calculateTensorIndicatorEigen(tensors)
 					strain.meta(StdProps._topology,indname)
 					strain.meta(StdProps._spatial,indname)
 					ds.setDataField(strain)
 					ds.setNodes(nodes.subMatrix(nodes.getName(),nodes.n()))
-					
+
 					task.setProgress(i+1)
 
 				self.VTK.saveObject(trackobj,self.getLocalFile(trackobj.getName()),setFilenames=True)
 				self.addObject(trackobj)
 				f.setObject(trackobj)
-			
+
 		return self.mgr.runTasks(_calcStrains(),f)
-	
+
 	def calculateTorsion(self,objname,fieldname):
 		f=Future()
 		@taskroutine('Calculating Torsion')
@@ -1961,40 +1933,40 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 				timesteps=obj.getTimestepList()
 				sectimesteps=[t/1000.0 for t in timesteps]
 				field=obj.datasets[0].getDataField(fieldname)
-				
+
 				twists,apextwists,basetwists,axislen=calculateTorsion(obj.datasets,field,range(1,18))
-	
+
 				twists=[a-b for a,b in zip(apextwists,basetwists)]
 				torsions=[t/axislen for t in twists]
-				
+
 				results={'Apex Rotation (Degrees)':apextwists,'Base Rotation (Degrees)':basetwists,'Twist (Degrees)':twists}
-				
+
 				plotname=self.mgr.getUniqueObjName(objname+'_torsion')
 				plottitle=objname+' Average Torsion'
 				plotfilename=self.project.getProjectFile(plotname+'.plot')
 				gplot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,timesteps,self.Plot.TimePlotWidget,obj)
 				gplot.save()
-	
+
 				self.mgr.addSceneObject(gplot)
 				self.project.addObject(gplot)
-				
+
 				rc=self.mgr.project.getReportCard()
 				if rc:
 					maxtwist=max(zip(twists,sectimesteps))
 					rc.setValue(objname,'Max Twist (degrees) and Time (seconds)',maxtwist)
-					
+
 					maxtorsion=max(zip(torsions,sectimesteps))
 					rc.setValue(objname,'Max Torsion (degrees/mm) and Time (seconds)',maxtorsion)
-					
+
 					rc.save()
 
 				obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
 
 				self.project.save()
 				f.setObject((twists,gplot))
-		
+
 		return self.mgr.runTasks(_calcTorsion(objname,fieldname),f)
-		
+
 	@taskmethod('Calculating Mesh Squeeze')
 	def calculateSqueeze(self,objname,regionfieldname=None,regionvals=None,task=None):
 		obj=self.findObject(objname)
@@ -2005,14 +1977,14 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 		initsumlist=None
 		results=[]
 		dss=[]
-		
+
 		for ds in obj.datasets:
 			nodes=ds.getNodes()
 			inds=first(i for i in ds.enumIndexSets() if i.m()==3)
 			areas=calculateTriAreas(nodes,inds,task)
 			summap,sumareas=calculateRegionSumField(areas,regionfield,regionvals)
 			sumlist=[summap[i] for i in summap]
-			
+
 			if initareas==None: # store the first results for scaling subsequent results
 				initareas=areas
 				initsums=sumareas
@@ -2020,27 +1992,27 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 			else: # store the areas as proportions of the initial areas
 				areas.div(initareas)
 				sumareas.div(initsums)
-			
+
 			ds.setDataField(areas)
 			ds.setDataField(sumareas)
 			results.append([(a/b if b!=0 else 0) for a,b in zip(sumlist,initsumlist)])
-			
+
 			dss.append((ds,nodes,inds,sumareas))
-			
+
 		# set the initial areas to be proportions of themselves to match subsequent frames
 		initareas.fill(1)
 		initsums.fill(1)
-			
+
 		plotname=objname+'_squeeze'
 		plottitle=objname+' Region Squeeze'
 		plotfilename=self.project.getProjectFile(plotname+'.plot')
-		
+
 		plot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,results,obj.getTimestepList(),self.Plot.AHADockWidget,obj)
 		plot.save()
 		self.addObject(plot)
-			
+
 		obj.plugin.saveObject(obj,self.project.getProjectFile(objname),setFilenames=True)
-		
+
 		return dss
 
 	def calculatePhaseKineticEnergy(self,maskname,phaseXname,phaseYname,phaseZname,maskval=2):
