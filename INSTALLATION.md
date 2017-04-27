@@ -8,7 +8,8 @@ For all platforms it requires:
  * PyQt 4.10.4+ (earlier 4.\* versions may work, 5 will not for now)
  * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
  * SciPy 0.13.3+ (earlier versions may work)
-
+ * Cg (Linux only, Windows/OSX included with EidolonLibs)
+ 
 ----
 
 ## Windows
@@ -45,7 +46,7 @@ Installing Python manually is easiest with MacPorts (https://www.macports.org/):
 
 A few other things may need to be installed if packages are missing:
 
-    sudo port install py27-pip py27-appdirs py27-pyqtgraph py27-matplotlib py27-nose py27-pip
+    sudo port install py27-pip py27-appdirs py27-nose py27-pip
     sudo pip install nose-cprof packaging
 
 ----
