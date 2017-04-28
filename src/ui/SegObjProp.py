@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/SegObjProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Fri Apr 28 18:18:30 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -127,7 +128,7 @@ class Ui_SegObjProp(object):
         self.horizontalLayout_2.addWidget(self.label_2)
         self.refineBox = QtGui.QSpinBox(self.groupBox)
         self.refineBox.setMinimum(1)
-        self.refineBox.setMaximum(6)
+        self.refineBox.setMaximum(9)
         self.refineBox.setObjectName(_fromUtf8("refineBox"))
         self.horizontalLayout_2.addWidget(self.refineBox)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)

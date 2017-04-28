@@ -416,7 +416,6 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 	'''
 	# AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
 	aharegions=([2,3,4,5,6,1],[8,9,10,11,12,7],[13,14,15,16],[17],[18])
-	#aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17],[18])
 	ahaheights=(1/3.0,2/3.0,1.0) # bottom heights of each region
 
 	aha=RealMatrix('AHA',len(inds))
@@ -456,7 +455,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 			sector=clamp(int(minx*6),0,5)
 			row=1
 		elif avgy<thresholds[2] or not include17: # regions 13-16
-			sub=75/360.0#(1.0/4-1.0/6)/2 # rotate the quarter sections by half the angle difference between them and sixth sections
+			sub=(1.0/4+1.0/6)/2 # rotate the quarter sections by half the angle difference between them and sixth sections
 			sector=int((minx+sub)*4)%4
 			row=2
 		else: # region 17 (apex)

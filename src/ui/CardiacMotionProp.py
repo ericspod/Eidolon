@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/CardiacMotionProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Fri Apr 28 18:18:30 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -436,7 +437,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_10.addWidget(self.legacyBox)
         self.toolBox.addItem(self.page_3, _fromUtf8(""))
         self.page_5 = QtGui.QWidget()
-        self.page_5.setGeometry(QtCore.QRect(0, 0, 667, 1389))
+        self.page_5.setGeometry(QtCore.QRect(0, -648, 667, 1389))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -1370,7 +1371,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_4.addWidget(self.toolBox)
 
         self.retranslateUi(CardiacMotionProp)
-        self.toolBox.setCurrentIndex(2)
+        self.toolBox.setCurrentIndex(3)
         self.toolBox.layout().setSpacing(0)
         QtCore.QMetaObject.connectSlotsByName(CardiacMotionProp)
 
@@ -1487,7 +1488,7 @@ class Ui_CardiacMotionProp(object):
         self.label_42.setText(_translate("CardiacMotionProp", "H", None))
         self.label_43.setText(_translate("CardiacMotionProp", "D", None))
         self.label_37.setText(_translate("CardiacMotionProp", "Spacing", None))
-        self.label_39.setText(_translate("CardiacMotionProp", "(strain vector length in mm)", None))
+        self.label_39.setText(_translate("CardiacMotionProp", "(strain vector length)", None))
         self.strainButton.setText(_translate("CardiacMotionProp", "Calculate", None))
         self.groupBox_16.setTitle(_translate("CardiacMotionProp", "Kinetic Energy Calculation", None))
         self.label_58.setText(_translate("CardiacMotionProp", "Mask Image", None))
