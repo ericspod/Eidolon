@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -32,7 +32,7 @@ SegViewPoints=enum(
 	('rvAttach','RV Anterior Attachment',color(1,0,1)),
 	('ch2Apex','2 Chamber Long Axis Apex',color(1,0,0)),
 	('ch3Apex','3 Chamber Long Axis Apex',color(0,1,0)),
-	('ch4Apex','4 Chamber Long Axis Apex',color(0,0,1))		
+	('ch4Apex','4 Chamber Long Axis Apex',color(0,0,1))
 )
 
 
@@ -60,7 +60,7 @@ def getContourPlane(contour):
 	avgdist=avg(c1.distTo(c2) for c1,c2 in successive(contour)) # average distance between successive values in the contour
 
 	# choose a point at least as far from contour[0] as the average distance between points, or the next point in the contour
-	farpt=first(c for c in contour if c.distTo(contour[0])>=avgdist) or contour[1] 
+	farpt=first(c for c in contour if c.distTo(contour[0])>=avgdist) or contour[1]
 
 	norm=center.planeNorm(contour[0],farpt) # calculate the norm from the far point
 
@@ -98,10 +98,10 @@ def pointInContour(pt,contour,plane=None,bb=None,center=None):
 		return False
 
 	plane=plane or getContourPlane(contour)
-	
+
 	if not contourOnPlane(contour,*plane): # if contour isn't on a plane then the point can't be in the contour
 		return False
-		
+
 	if not pt.onPlane(*plane): # if the point isn't on the plane then it can't be in the contour
 		return False
 
@@ -124,18 +124,18 @@ def reinterpolateContour(contour,elemtype,refine,numnodes):
 	step=1.0/(len(contour)*refine)
 	pts=[elemtype.applyBasis(contour,i,0,0,len(contour),limits=[(0,-1)],circular=(True,)) for i in frange(0,1,step)]
 	newcontour=[]
-	nodelen=0	
+	nodelen=0
 	# total length of the contour divided by the number of nodes we want to return, ie. distance between returned nodes
 	steplen=sum(a.distTo(b) for a,b in successive(pts,2,True))/numnodes
-	
+
 	for a,b in successive(pts,2,True):
 		nodelen+=a.distTo(b)
 		if nodelen>steplen:
 			newcontour.append(b)
 			nodelen-=steplen
-			
+
 	return newcontour
-	
+
 
 def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
 	'''
@@ -172,7 +172,7 @@ def getContourRelativeDir(contours,pos):
 	contour which points from the contour center to `pos'.
 	'''
 	con=max(contours,key=lambda c:BoundBox(c).radius) # get largest contour
-	
+
 	# ensure pos is on the plane of con
 	if pos.isZero():
 		pos=con[0]
@@ -181,14 +181,14 @@ def getContourRelativeDir(contours,pos):
 		pos=pos.planeProject(pc,pn)
 
 	return (pos-avg(con)).norm() # vector pointing in the rightwards direction
-	
+
 
 def sortContours(contours,startdir=None):
 	'''
-	Accepts a 2D matrix of contour vec3 points `contours' plus a vector `startdir' pointing in the, direction considered 
-	to be to the right of the contour stack and sorts the contours in order from top to bottom. The `startdir' value is 
-	used to reorder the points of each contour so that the first point is on the ray pointing from the center of the 
-	contour in the direction of `startdir'. If this argument isn't given then this sorting isn't done. The resulting 
+	Accepts a 2D matrix of contour vec3 points `contours' plus a vector `startdir' pointing in the, direction considered
+	to be to the right of the contour stack and sorts the contours in order from top to bottom. The `startdir' value is
+	used to reorder the points of each contour so that the first point is on the ray pointing from the center of the
+	contour in the direction of `startdir'. If this argument isn't given then this sorting isn't done. The resulting
 	contour 2D matrix contains vec3 objects.
 	'''
 	#assert len(contours)>1, 'Must have more than 1 contour'
@@ -235,9 +235,9 @@ def triangulateContour(contour,skipErrors=False):
 	this ensures the algorithm works if `contour' overlaps itself but will likely produce an overlapping triangulation.
 	'''
 	results=[]
-	plane=getContourPlane(contour) 
+	plane=getContourPlane(contour)
 	cinds=[(i,c.planeProject(*plane)) for i,c in enumerate(contour)] # list of (index,node) pairs
-	
+
 	while len(cinds)>2:
 		found=None
 		currentcontour=[c[1] for c in cinds] # get the nodes of the current reduced contour
@@ -247,47 +247,47 @@ def triangulateContour(contour,skipErrors=False):
 				results.append((a[0],b[0],c[0])) # add the ear's indices to the results
 				found=b
 				break
-			
+
 		if skipErrors and not found:
 			found=cinds[1]
 			results.append((cinds[0][0],cinds[1][0],cinds[2][0]))
-		
+
 		assert found, 'Could not find ear to reduce for triangulation: '+str(currentcontour)
-		
+
 		cinds.remove(found) # remove the outside vertex of the ear
 		if len(cinds)==3:
 			a,b,c=cinds
 			results.append((a[0],b[0],c[0]))
 			del cinds[:]
-		
+
 	return results
-	
+
 
 def estimateHemiThickness(contours):
 	'''
 	Estimate the thickness of the hemisphere defined by sorted contour list `contours' by averaging the difference in
 	bound box radii of coplanar contours. If `contours' defines a surface, 0 is returned.
 	'''
-	
+
 	# surface contour only, so thickness of 0
 	if not contoursCoplanar(contours[0],contours[1]):
 		return 0
-		
+
 	radii=[]
 	for c1,c2 in group(contours):
 		r1=BoundBox(c1).radius
 		r2=BoundBox(c2).radius
 		radii.append(abs(r1-r2))
-		
+
 	return avg(radii)
-	
+
 
 def getHemiAxis(contours):
 	'''For the given sorted hemisphere contours, returns the normal of the shape pointing from top to apex.'''
 	_,norm=getContourPlane(contours[0])
 	realaxis=(avg(contours[-1])-avg(contours[0])).norm() # vector pointing from middle of top contour to middle of bottom
 	return norm if norm.angleTo(realaxis)<halfpi else -norm
-	
+
 
 def getHemisphereControls(contours,inner=True):
 	'''
@@ -333,49 +333,49 @@ def mapContoursToPlanes(contours):
 
 def generateContoursFromMask(images,numctrls,stype):
 	result=[]
-	
+
 	for img in images:
 		minx,miny,maxx,maxy=calculateBoundSquare(img.img,img.imgmin)
 		assert minx>=0, 'Empty image?'
 		minc,maxc=vec3(minx,miny),vec3(maxx,maxy)
 		mid=lerp(0.5,minc,maxc)
 		rad=(mid-minc).len()*1.2
-	
+
 		contour1=[]
 		contour2=[]
-	
+
 		# cast `numctrls' rays out from the center of the bound box and position control points along each ray where mask values change
 		for angle in frange(0,math.pi*2,(math.pi*2)/numctrls):
 			ray=vec3(angle,halfpi,rad).fromPolar()
 			addvec=vec3(0.5,0.5)
 			numsamples=max(maxx-minx,maxy-miny)*2
-	
+
 			samples=sampleImageRay(img.img,mid,ray,numsamples) # get the sample of pixels along the ray
 			transitions=[i for i,(a,b) in enumerate(successive(samples)) if a!=b]
-	
+
 			if not transitions:
 				raise ValueError('Mask does not appear to be mostly convex')
-	
+
 			contour1.append(mid+addvec+ray*(float(transitions[0]+1)/numsamples))
 			if stype==SegmentTypes._LV and len(transitions)>1:
 				contour2.append(mid+addvec+ray*(float(transitions[-1]+1)/numsamples))
-	
+
 		# if this is an LV type but the second contour wasn't found, add nothing because we're probably at the base
 		if stype!=SegmentTypes._LV or len(contour2)==len(contour1):
 			assert len(contour1)==numctrls
 			result.append([img.getPlanePos(c,False) for c in contour1])
-	
+
 			if stype==SegmentTypes._LV:
 				assert len(contour2)==numctrls
 				result.append([img.getPlanePos(c,False) for c in contour2])
-				
+
 	return result
-	
+
 
 def generateApexContours(contours,scale=0.5,givenapex=None):
 	'''
 	Given contours for a hemisphere in top-to-bottom sorted order, define extra contours and an apex point which will
-	close off the bottom of the hemisphere and maintain continuity. Return the final apex and a list of contour lists 
+	close off the bottom of the hemisphere and maintain continuity. Return the final apex and a list of contour lists
 	containing the mid ring, a contour entirely composed of final apex points, and the inverted mid ring needed for
 	continuity when interpolating up to the apex.
 	'''
@@ -388,13 +388,13 @@ def generateApexContours(contours,scale=0.5,givenapex=None):
 	planeshift=getHemiAxis(contours)*(planedist*0.2)
 
 	# if no apex point given calculate one
-	if givenapex==None: 
+	if givenapex==None:
 		# define an initial apex point by interpolating between the last 2 contours as defined by `scale'
-		initialapex=avg(i+(i-j)*scale for i,j in zip(c1,c2)) 
+		initialapex=avg(i+(i-j)*scale for i,j in zip(c1,c2))
 		finalapex=initialapex+planeshift # define a final apex point
 	else:
 		finalapex=initialapex=givenapex # define the initial and final apex points as the given one
-		
+
 	# define a middle ring of control points as the median between the initial apex point and the last contour
 	midring=[lerp(0.5,i,initialapex)+planeshift for i in c1]
 	# define an inverted or crossed-over ring segment to allow interpolation to cross over the xi_2=1 boundary
@@ -409,18 +409,19 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 	Calculates an AHA field for the hemisphere defined by (nodes,inds,xis). The plane defined by (topcenter,norm) should be
 	the top of the hemisphere aligned with the center axis. The `apex' node should be node at the bottom of the inside
 	surface. The `startpos' vector is a point in space which marks the plane the regions should start from, so if this is
-	below `topcenter' then nodes above that plane will be put in region 18. If `include17' is True then region 17 at 
-	the apex is defined, otherwise regions 13-16 extend to the bottom (eg. for pool meshes). Vector `norm' should be 
+	below `topcenter' then nodes above that plane will be put in region 18. If `include17' is True then region 17 at
+	the apex is defined, otherwise regions 13-16 extend to the bottom (eg. for pool meshes). Vector `norm' should be
 	the long axis normal pointing from top to apex. The return value is a RealMatrix defining a per-element field which
 	assigns each element to a AHA region or 18 if below `startpos'.
 	'''
 	# AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
-	aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17],[18])
+	aharegions=([2,3,4,5,6,1],[8,9,10,11,12,7],[13,14,15,16],[17],[18])
+	#aharegions=([1,6,5,4,3,2],[7,12,11,10,9,8],[13,16,15,14],[17],[18])
 	ahaheights=(1/3.0,2/3.0,1.0) # bottom heights of each region
-	
+
 	aha=RealMatrix('AHA',len(inds))
 	aha.meta(StdProps._elemdata,'True')
-		
+
 	nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))] # heights of each node from the top plane
 	maxheight=max(nodeheights) # node farthest from top plane, should be in apex
 	minheight=max(0,startpos.planeDist(topcenter,norm)) # starting position for assign regions, everything between here and the top plane becomes region 18
@@ -428,7 +429,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 	apexdist=apex.planeDist(topcenter,norm) # distance from top plane to inner apex point
 	apexheight=lerpXi(apexdist,minheight,maxheight) if include17 else 1.0 # height of apex relative to (minheight,maxheight) range
 	thresholds=[apexheight*h for h in ahaheights] # thresholds for each layer of regions
-	
+
 	# choose X and Y values to determine which region an element belongs to
 	xvals=[]
 	yvals=[]
@@ -438,7 +439,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 		txis=indexList(ind,xis)
 		xvals.append(min(n.x() for n in txis if not 0<n.z()<1)) # use the minimal x values since triangles straddling the seam won't have adjacent xi values
 		yvals.append(lerpXi(max(theights),minheight,maxheight)) # calculate height relative to the (minheight,maxheight) range
-		
+
 	# fill in the field aha to assign a region to each element
 	for i in xrange(len(inds)):
 		ind=inds[i]
@@ -455,7 +456,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
 			sector=clamp(int(minx*6),0,5)
 			row=1
 		elif avgy<thresholds[2] or not include17: # regions 13-16
-			sub=(1.0/4-1.0/6)/2 # rotate the quarter sections by half the angle difference between them and sixth sections
+			sub=75/360.0#(1.0/4-1.0/6)/2 # rotate the quarter sections by half the angle difference between them and sixth sections
 			sector=int((minx+sub)*4)%4
 			row=2
 		else: # region 17 (apex)
@@ -484,7 +485,7 @@ def calculateCavityField(xis,inds):
 		txis=indexList(ind,xis)
 		minx=min(n.x() for n in txis if n.z() in (0.0,1.0)) # use the minimal x values since triangles straddling the seam won't have adjacent xi values
 		aha.setAt(aharegions[clamp(int(minx*len(aharegions)),0,5)],i)
-		
+
 	return aha
 
 
@@ -524,7 +525,7 @@ def generatePCRTriHemisphere(ctrls,refine,task=None):
 @timing
 def generatePCRTetHemisphere(ctrls,refine,task=None):
 	'''
-	Generate a hemispherical tet mesh from the control point lattice `ctrls' with refinement value `refine'. The number 
+	Generate a hemispherical tet mesh from the control point lattice `ctrls' with refinement value `refine'. The number
 	of total tets is 140*(4**(`refine'+1)). The `ctrls' lattice is expected to be indexed in ZYX order, len(ctrls)==2.
 	'''
 	assert all(len(c)==len(ctrls[0]) for c in ctrls)
@@ -607,12 +608,12 @@ def generateDefaultHemisphereMesh(refine,center,scale,outerrad,innerrad,numctrls
 		ctrls+=[[inner,outer]]
 
 	ctrls=map(list,zip(*ctrls))
-	
+
 	_,apexctrls1=generateApexContours(ctrls[0],0.25)
 	_,apexctrls2=generateApexContours(ctrls[1],0.5)
 	ctrls[0]+=apexctrls1[:1]
 	ctrls[1]+=apexctrls2[:1]
-	
+
 	return generatePCRTetHemisphere(ctrls,refine)
 
 
@@ -645,7 +646,7 @@ def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinter
 	if reinterpolateVal: # reinterpolate contours starting from `startdir'
 		elemtype=elemtype or ElemType.Line1PCR
 		ctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,len(cc)) for cc in ctrls]
-		
+
 	# if this is for the inner surface, move the supplied apex up an amount proportionate to the average thickness
 	if innerSurface and apex:
 		thickness=estimateHemiThickness(contours)
@@ -654,7 +655,7 @@ def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinter
 
 	apex,apexctrls=generateApexContours(ctrls,0.25 if innerSurface else 0.5,apex) # generate apex contour(s)
 	ctrls+=apexctrls
-	
+
 	assert all(len(c)==len(ctrls[0]) for c in ctrls),'Contour lengths do not match, sorting failure?'
 
 	nodes,inds,xis=generatePCRTriHemisphere(ctrls,refine,task)
@@ -701,7 +702,7 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
 
 	if reinterpolateVal: # reinterpolate contours starting from `startdir'
 		ctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,len(cc)) for cc in ctrls]
-		
+
 	# if present, move the supplied apex up an amount proportionate to the average thickness
 	if apex:
 		thickness=estimateHemiThickness(contours)
@@ -742,7 +743,7 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
 #			topcenter,norm=getContourPlane(ctrls[0][0])
 #			fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,True))
 		#topcenter,norm=getContourPlane(ctrls[0][0])
-	
+
 		topcenter=avg(ctrls[0][0])
 		norm=getHemiAxis(listSum(ctrls))
 		fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,startpos,not innerOnly))
@@ -772,8 +773,8 @@ def generateImageMaskRange(process,contours,planes,images,labelfunc):
 
 		if len(imgcontours)==0:
 			continue
-		
-		# iterate over every pixel in the image and set to the value specified by `labelfunc', this clearly could be optimized 
+
+		# iterate over every pixel in the image and set to the value specified by `labelfunc', this clearly could be optimized
 		for n,m in matIterate(img.img):
 			pt=vec3(float(m)/img.img.m(),float(n)/img.img.n())
 			incontours=[c for c,bb,ce in imgcontours if pointInContour(pt,c,(vec3(),vec3(0,0,1)),bb,ce)]
@@ -803,7 +804,7 @@ def generateImageMask(name,contours,template,labelfunc='1',task=None):
 		i.imgmin,i.imgmax=minmaxMatrixReal(i.img)
 
 	return mask
-	
+
 
 class LVSeg2DMixin(DrawContourMixin):
 	'''
@@ -929,9 +930,9 @@ class LVSeg2DMixin(DrawContourMixin):
 		if listitem:
 			with signalBlocker(self.uiobj.contourList):
 				self.uiobj.contourList.setCurrentItem(listitem)
-				
+
 		self._repaintDelay()
-		
+
 	def handleSelected(self,handle):
 		index=self.handles.index(handle)
 		if index in self.contourNames:
@@ -981,7 +982,7 @@ class LVSeg2DMixin(DrawContourMixin):
 			self.addContour(self.contour)
 		else:
 			Camera2DView.mouseRelease(self,e)
-			
+
 		if self.isContoursVisible():
 			self.mgr.repaint()
 
@@ -1053,7 +1054,7 @@ class LVSegView(LVSeg2DMixin,PointChooseMixin,Camera2DView):
 
 	def setSegObject(self,segobj):
 		LVSeg2DMixin.setSegObject(self,segobj)
-		
+
 		for p in SegViewPoints:
 			pt=self.segobj.get(p[0]) or (0,0,0)
 			self.pointMap[p[0]][0].pt=vec3(*pt)
@@ -1211,7 +1212,7 @@ class SegmentPlugin(ScenePlugin):
 
 		prop.genMeshButton.clicked.connect(lambda:self._generateMeshButton(prop,obj))
 		prop.genMaskButton.clicked.connect(lambda:self._generateMaskButton(prop,obj))
-		
+
 		return prop
 
 	def updateObjPropBox(self,obj,prop):
@@ -1222,14 +1223,14 @@ class SegmentPlugin(ScenePlugin):
 
 		fillTable(obj.getPropTuples(),prop.propTable)
 		fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
-		
+
 		# if not source object has been selected, select the first one
 		if not obj.get(DatafileParams.srcimage) and len(imgnames)>0:
 			prop.srcBox.activated.emit(0)
-		
+
 	def acceptFile(self,filename):
 		return splitPathExt(filename)[2].lower() == segExt
-		
+
 	def checkFileOverwrite(self,obj,dirpath,name=None):
 		outfile=os.path.join(dirpath,name or obj.getName())+segExt
 		if os.path.exists(outfile):
@@ -1247,11 +1248,11 @@ class SegmentPlugin(ScenePlugin):
 
 	def copyObjFiles(self,obj,sdir,overwrite=False):
 		assert os.path.isfile(obj.filename),'Nonexistent filename: %r'%obj.filename
-		
+
 		newfilename=os.path.join(sdir,os.path.basename(obj.filename))
 		if not overwrite and os.path.exists(newfilename):
 			raise IOError('File already exists: %r'%newfilename)
-			
+
 		obj.filename=newfilename
 		obj.save()
 
@@ -1280,7 +1281,7 @@ class SegmentPlugin(ScenePlugin):
 			with f:
 				res=[]
 				sobj=self.mgr.findObject(obj.get(DatafileParams._srcimage))
-				
+
 				# make a representation of the source object visible if one doesn't already exist
 				if isinstance(sobj,ImageSceneObject) and not len(sobj.reprs):
 					isEmpty=first(self.mgr.enumSceneObjectReprs())==None
@@ -1313,33 +1314,33 @@ class SegmentPlugin(ScenePlugin):
 	def loadSegObject(self,filename,name=None):
 		'''Deprecated, for compatibility only.'''
 		return self.loadObject(filename,name)
-		
+
 	def loadObject(self,filename,name=None,**kwargs):
 		name=name or splitPathExt(filename)[1]
 		obj=SegSceneObject(name,filename,self)
 		obj.load()
-		
+
 		if not obj.get(DatafileParams.srcimage):
 			fstimg=first(o.getName() for o in self.mgr.objs if isinstance(o,ImageSceneObject))
 			obj.set(DatafileParams.srcimage,fstimg)
-			
+
 		return obj
-		
+
 	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
 		if not isinstance(obj,SegSceneObject) or not isinstance(obj.plugin,SegmentPlugin):
 			raise ValueError('Can only save segment objects with SegmentPlugin')
-			
+
 		if os.path.isdir(path):
 			path=os.path.join(path,getValidFilename(obj.getName()))
-			
+
 		path=ensureExt(path,segExt)
 		oldpath=obj.filename
 		obj.filename=path
 		obj.save()
-		
+
 		if not setFilenames: # set the filename back to the original if we're not supposed to change it
 			obj.filename=oldpath
-		
+
 		return path
 
 	def createHemisphereMesh(self,segobj,name,refine,reinterpolateVal=20,calcAHA=False,isVolume=False,inner=True,plugin=None):
@@ -1352,11 +1353,11 @@ class SegmentPlugin(ScenePlugin):
 
 				#if not segobj.get(SegViewPoints._ch2Apex) or not segobj.get(SegViewPoints._ch3Apex) or not segobj.get(SegViewPoints._ch4Apex):
 				#	raise ValueError('Segmentation provides no apex points')
-					
+
 				genfunc=generateHemisphereVolume if isVolume else generateHemisphereSurface
 				ch2=vec3(*segobj.get(SegViewPoints._ch2Apex,(0,0,0)))
 				ch3=vec3(*segobj.get(SegViewPoints._ch3Apex,(0,0,0)))
-				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex,(0,0,0)))				
+				ch4=vec3(*segobj.get(SegViewPoints._ch4Apex,(0,0,0)))
 				rightpos=vec3(*segobj.get(SegViewPoints._rvAttach,(0,0,0))) # position in the rightwards direction
 				apex=None
 
@@ -1367,18 +1368,18 @@ class SegmentPlugin(ScenePlugin):
 					plane=getContourPlane(c)
 					if not contourOnPlane(c,*plane):
 						raise ValueError('Contours are not all defined on planes (ie. they are not flat)')
-					
+
 #				con=max(contours,key=lambda c:BoundBox(c).radius) # get largest contour
-#				
+#
 #				# ensure rightpos is on the plane of con
 #				if rightpos.isZero():
 #					rightpos=con[0]
 #				else:
 #					pc,pn=getContourPlane(con)
 #					rightpos=rightpos.planeProject(pc,pn)
-#	
+#
 #				rightvec=(rightpos-avg(con)).norm() # vector pointing in the rightwards direction
-				
+
 				# choose the apex position by averaging any provided values, or None if none are given
 				if any(not c.isZero() for c in [ch2,ch3,ch4]):
 					apex=avg(c for c in [ch2,ch3,ch4] if not c.isZero())
@@ -1425,7 +1426,7 @@ class SegmentPlugin(ScenePlugin):
 		# get all non-blank images for the first timestep
 		inds = mask.getVolumeStacks()[maskindex] # extract indices for segmenting, default is first timestep
 		imgs=[mask.images[i] for i in inds if mask.images[i].imgmax>mask.images[i].imgmin] # keep non-blank images
-					
+
 		contours=generateContoursFromMask(imgs,numctrls,stype)
 		for c in contours:
 			obj.addContour(c)
@@ -1462,7 +1463,7 @@ class SegmentPlugin(ScenePlugin):
 		w=obj.getWidget()
 		if w:
 			w.save()
-			
+
 		conmap=mapContoursToPlanes(obj.enumContours())
 		lens=map(len,conmap.values())
 		msg=None
