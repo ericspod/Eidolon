@@ -1057,6 +1057,7 @@ class CardiacMotionProject(Project):
 		if len(series)>0:
 			if results.get('showCrop',False):
 				objs=[self.CardiacMotion.Dicom.showTimeMultiSeriesDialog(series)]
+				self.mgr.checkFutureResult(objs[0])
 			else:
 				objs=[self.CardiacMotion.Dicom.loadSeries(s) for s in series]
 #				if results.get('mergeMulti',False):

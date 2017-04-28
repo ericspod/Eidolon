@@ -368,7 +368,7 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
 		selected=[]
 		for i in self.seriesList.selectedItems():
 			ind=self.seriesList.indexFromItem(i)
-			if ind<len(self.dds.series):
+			if ind.row()<len(self.dds.series):
 				selected.append(self.dds.series[ind.row()])
 
 		self.resultf.setObject(selected)
