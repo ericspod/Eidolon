@@ -1039,7 +1039,7 @@ def generateLinearTriangulation(dataset,str name,int refine,bint externalOnly=Fa
 				oinds.clear()
 				oext.clear()
 
-	ds=PyDataSet(name,nodes,[outprops,outext,outinds],[f for f in dataset.fields if f.n()==nodes.n()])
+	ds=PyDataSet(name,nodes,[outprops,outext,outinds],[f for f in dataset.enumDataFields() if f.n()==nodes.n()])
 	return ds,indlist
 
 
