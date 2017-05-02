@@ -66,7 +66,7 @@ PYUIC=$(PYTHON) $(QTDIR)/uic/pyuic.py
 
 #--------------------------------------------------------------------------------------
 
-.PHONY: clean clean_gen header all ui renderer pyxlibs resource distfile appfile package tutorialfile
+.PHONY: clean clean_gen header all ui renderer pyxlibs resource distfile tutorialfile
 
 all: header ui renderer pyxlibs
 
@@ -152,10 +152,6 @@ endif
 
 clean_gen:
 	rm -rf $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui $(PLUGINS)/*.ui))
-
-epydoc:
-	-mkdir ./docs/epydoc
-	PYTHONPATH=./EidolonLibs/python/epydoc-3.0.1-py2.7.egg $(PYTHON) -c 'from epydoc.cli import cli;cli()' $(SRC)/* --graph=all -o ./docs/epydoc
 
 header:
 	@echo "---------------------------------"
