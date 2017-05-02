@@ -212,7 +212,7 @@ def calculateTensorMul(tensors,vecmat,name):
 
 
 @concurrent
-def divideTrisByElemValRange(process,tris,nodeprops,regionfield,choosevals):
+def divideTrisByRegionRange(process,tris,nodeprops,regionfield,choosevals):
 	'''
 	Returns matrices containing the indices of the triangles belonging to the regions given in `choosevals' as defined
 	by the region field `regionfield'. The matrix `tris' is the original triangle index matrix and `nodeprops' the
@@ -237,7 +237,7 @@ def divideTrisByElemValRange(process,tris,nodeprops,regionfield,choosevals):
 
 
 @timing
-def divideMeshSurfaceByElemVal(dataset,regionfield,choosevals,task=None):
+def divideMeshSurfaceByRegion(dataset,regionfield,choosevals,task=None):
 	'''
 	Define a triangle mesh surface for the topologies in `dataset' and divide them into the regions chosen in `choosevals'
 	as drawn from the region field `regionfield'. Returns the triangle dataset, index list from `dataset', and list of
@@ -257,7 +257,7 @@ def divideMeshSurfaceByElemVal(dataset,regionfield,choosevals,task=None):
 	# calculate the region division matrices
 	proccount=chooseProcCount(tris.n(),0,2000)
 	shareMatrices(tris,nodeprops,regionfield)
-	results= divideTrisByElemValRange(tris.n(),proccount,task,tris,nodeprops,regionfield,choosevals,partitionArgs=(choosevals,))
+	results= divideTrisByRegionRange(tris.n(),proccount,task,tris,nodeprops,regionfield,choosevals,partitionArgs=(choosevals,))
 	matrices=listSum(map(list,results.values()))
 
 	return trids,indlist,matrices
@@ -319,7 +319,7 @@ def calculateRegionThicknesses(datasetlist,regionfield,choosevals,stddevRange=1.
 	results=[]
 	regionmap={v:i for i,v in enumerate(choosevals)} # maps region # to index in `choosevals'
 
-	_,_,triindlist=divideMeshSurfaceByElemVal(datasetlist[0],regionfield,choosevals,None)
+	_,_,triindlist=divideMeshSurfaceByRegion(datasetlist[0],regionfield,choosevals,None)
 
 	if task:
 		task.setMaxProgress(len(datasetlist))
@@ -376,7 +376,7 @@ def calculateAvgDisplacementRange(process,orignodes,trinodes,stddevRange,triindl
 def calculateAvgDisplacement(datasetlist,regionfield,choosevals,stddevRange=1.0,task=None):
 	results=[]
 	orignodes=None
-	trids,indlist,triindlist=divideMeshSurfaceByElemVal(datasetlist[0],regionfield,choosevals,None)
+	trids,indlist,triindlist=divideMeshSurfaceByRegion(datasetlist[0],regionfield,choosevals,None)
 
 	regionmap=dict((v,i) for i,v in enumerate(choosevals)) # maps region # to index in `choosevals'
 
