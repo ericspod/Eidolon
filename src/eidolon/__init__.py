@@ -35,7 +35,7 @@ from eidolon.ScenePlugin import *
 from eidolon.Application import *
 
 __appname__='Eidolon Biomedical Framework'
-__version_info__=(0,3,99) # global application version, major/minor/patch, patch value 99 means development code directly from the repo
+__version_info__=(0,3,2) # global application version, major/minor/patch, patch value 99 means development code directly from the repo
 __version__='%i.%i.%i'%__version_info__
 __author__='Eric Kerfoot'
 __copyright__="Copyright (c) 2016-7 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
