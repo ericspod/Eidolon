@@ -1,25 +1,25 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 '''
 These are utility functions and classes defined in pure Python. They do not use libraries like Numpy or the renderer.
-Routines are provided for file handling, file path manipulation, process handling and execution, routine utilities, 
-task handling, and a large number of mathematical utilities. 
+Routines are provided for file handling, file path manipulation, process handling and execution, routine utilities,
+task handling, and a large number of mathematical utilities.
 
 The class enum is used throughout the framework to define enumerations sort of like Java. These consist of list/dict
 hybrid types where a tuple of values is associated with a string name, for example:
@@ -40,12 +40,12 @@ if the result is present and then to get it directly. For example:
 
 	f=someAsyncOp() #  f is the Future
 	print f() # wait 10 seconds by default for f to be given its value
-	
+
 If a value is returned or passed as an argument which is either a Future or the object itself, the function Future.get()
 can be used to get the object regardless:
 
 	print Future.get(f)
-	
+
 The Future type can be used as the object in a with-block to automatically catch exceptions or ensure that a value was
 eventually given. This is done in the asynchronous operation itself to ensure correct communication with its client. If
 an exception is raised, it becomes the stored object, which is then raised by the client when the value is queried:
@@ -55,8 +55,8 @@ an exception is raised, it becomes the stored object, which is then raised by th
 			...
 			raise SomeError()
 	...
-	print f() # raises SomeError here	
-	
+	print f() # raises SomeError here
+
 Asynchronous operations are often defined as tasks represented by the Task type. Instances of this type store a callable
 and variables indicating progress and current state. The callable is what defines the actual behaviour, the Task object's
 role is to represent the operation's current status and interface with the TaskQueue object responsible for running the
@@ -66,7 +66,7 @@ tasks. For example, a simple task printing a string to stdout:
 	q=TaskQueue()
 	q.addTasks(Task('test 1',func))
 	q.processTaskQueue() # note this never returns, should be a separate thread
-	
+
 Decorating a function with @taskroutine creates a wrapped version which returns a Task object when called, this object
 will execute the function's body when used in a TaskQueue. Decorating a method with @taskmethod produces a method which
 will enqueue a Task executing its body on the TaskQueue the receiver refers to in a member variable, by default called
@@ -129,9 +129,9 @@ class enum(object):
 	with _ is a valid Python identifier.
 
 	A second member with the same name prepended with _ returns the name itself. The [] operator can query
-	values by index or by name. Containment (in/not in) is defined as name membership in the enum. 
+	values by index or by name. Containment (in/not in) is defined as name membership in the enum.
 	The members of the enum are also iterable in the given order, each element being a tuple of the name+values.
-	
+
 	The constructor accepts keyword arguments to define secondary properties of the enum: "doc" should contain a
 	documentation string describing the members of the enum, and "valtype" should be a tuple stating the type for each
 	value in the entries, which assumes all entries have values of the same type.
@@ -150,7 +150,7 @@ class enum(object):
 			kwargs['doc']=kwargs.get('doc',vals[0].doc)
 			kwargs['valtype']=kwargs.get('valtype',vals[0].valtype)
 			vals=list(vals[0])
-			
+
 		if all(isinstance(v,str) for v in vals):
 			vals=[(v,) for v in vals]
 
@@ -181,7 +181,7 @@ class enum(object):
 
 	def findName(self,item):
 		return first(n for n,i in self.valdict.items() if i==item)
-		
+
 	def indexOf(self,name):
 		return first(i for i,v in enumerate(self.vals) if v[0]==name)
 
@@ -235,9 +235,9 @@ class FutureError(Exception):
 			msg='Future object left control block with exception:\n'+'\n'.join(traceback.format_exception(exc_type, exc_value, tb))
 		else:
 			msg='Future object left control block without a value'
-			
+
 		Exception.__init__(self,msg)
-		
+
 
 class Future(object):
 	'''
@@ -268,7 +268,7 @@ class Future(object):
 	def isSet(self):
 		'''Returns True if the event has been set, ie. a result is stored.'''
 		return self.event.isSet()
-		
+
 	def isEmpty(self):
 		'''Returns True if there is no result and the event is not set.'''
 		return self.obj is None and not self.event.isSet()
@@ -289,15 +289,15 @@ class Future(object):
 		# if an exception was raised instead of setting a value, raise it
 		if isinstance(self.obj,FutureError) and self.obj.exc_value:
 			if hasattr(self.obj,'with_traceback'): # Python3 compatibility
-				raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb) 
+				raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
 			else:
 				raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
-				
+
 		elif isinstance(self.obj,Exception):
 			raise self.obj
 
 		# return the stored value, or if the value is a Future get the stored value from it
-		return Future.get(self.obj,timeout) 
+		return Future.get(self.obj,timeout)
 
 	def __call__(self,timeout=10.0):
 		'''Same as getObjectWait().'''
@@ -306,7 +306,7 @@ class Future(object):
 	def __enter__(self):
 		'''
 		Used to define with-blocks in which the Future must be given a value. If the block exits without a value set,
-		__exit__ will set the object to a FutureError indicating this. This also includes the case where the block 
+		__exit__ will set the object to a FutureError indicating this. This also includes the case where the block
 		exits because of a raised exception, the details of which will be stored in the FutureError object.
 		'''
 		return self
@@ -315,7 +315,7 @@ class Future(object):
 		'''Sets the stored object to a FutureError if block exits without a value or because of a raised exception.'''
 		if exc_value or self.isEmpty(): # if there's no value or an exception was raised, store a FutureError
 			self.setObject(FutureError(self,exc_type, exc_value, tb))
-			
+
 		return True
 
 	@staticmethod
@@ -359,7 +359,7 @@ ParamType=enum(
 class ParamDef(object):
 	'''
 	Definition of a parameter for various uses, eg. representation object settings, UI definitions. Parameters consist
-	of a name, description (for use in tooltips), a value type such as str or int, default value, value range, value 
+	of a name, description (for use in tooltips), a value type such as str or int, default value, value range, value
 	step, and whether None is accepted as a value. A ParamDef represents a named value of some sort defined within these
 	parameters, this can be used to define a generic interface for parameters into objects and to automatically define
 	GUI elements for inputting these values.
@@ -446,8 +446,8 @@ class EventHandler(object):
 	An event broadcast class which invokes callable objects when an EventType event occurs. For every named event, this
 	maintains a list of callback callable objects which accept a set of parameters specific for each event type. When
 	_triggerEvent() is called, each callback associated with the given event name is called with the given arguments
-	passed in. 
-	'''	
+	passed in.
+	'''
 	def __init__(self):
 		self.eventHandlers=dict((i,[]) for i,j in EventType)
 		self.handleLock=threading.Lock()
@@ -498,16 +498,16 @@ class ObjectLocker(object):
 	'''
 	This maintains a dictionary relating weak references to threading.RLock objects. This allows a lock to be associated
 	uniquely with any provided object compatible with the weakref interface. The method getLock() returns the lock for
-	the provided object, creating one if needed. When the object is removed the associated lock is also removed from 
-	the dictonary. The global instance `globalLocker` is created to provide a global default lock for the decorators 
+	the provided object, creating one if needed. When the object is removed the associated lock is also removed from
+	the dictonary. The global instance `globalLocker` is created to provide a global default lock for the decorators
 	which rely on this type.
 	'''
 	globalLocker=None
-	
+
 	def __init__(self):
 		self.objLocks={} # map of objects to locks used to store unique locks for every requested object
 		self.thisLock=RLock() # a lock for this object
-		
+
 	def getLock(self,obj):
 		'''
 		Get a threading.RLock object uniquely associated with `obj'. If this method is subsequently called with the
@@ -515,26 +515,26 @@ class ObjectLocker(object):
 		'''
 		with self.thisLock:
 			lock=first(self.objLocks[w] for w in self.objLocks if id(w())==id(obj))
-	
+
 			if not lock:
 				w=weakref.ref(obj,self._removeLock)
 				lock=RLock()
 				self.objLocks[w]=lock
-	
+
 			return lock
-			
+
 	def _removeLock(self,obj):
 		with self.thisLock:
 			self.objLocks.pop(obj)
-			
+
 	@staticmethod
 	def getGlobalLocker():
 		'''Returns the global locker object, instantiating it if necessary.'''
 		if ObjectLocker.globalLocker is None:
 			ObjectLocker.globalLocker=ObjectLocker()
-			
+
 		return ObjectLocker.globalLocker
-		
+
 
 def lockobj(obj,locker=None):
 	'''
@@ -575,7 +575,7 @@ def trylocking(func,locker=None):
 				lock.release()
 
 	return funcwrap
-		
+
 
 class Task(object):
 	'''
@@ -585,7 +585,7 @@ class Task(object):
 	argument, which must be a callable accepting the positional and keyword arguments given by `args' and `kwargs'.
 	When a Task object is executed, it's start() method is called which will call self.func either in the calling thread
 	or a new one, depending on the `useThread' argument. A Task object can have a parent Task, which occurs when the body
-	of one task invokes an operation that normally adds a task to a queue. When this occurs the progress and label 
+	of one task invokes an operation that normally adds a task to a queue. When this occurs the progress and label
 	methods call into the parent Task object.
 	'''
 	@staticmethod
@@ -692,7 +692,7 @@ class TaskQueue(object):
 		self.finishedtasks=[] # list of completed Task objects
 		self.currentTask=None # the current running task, None if there is none
 		self.doProcess=True # loop condition in processTaskQueue
-		
+
 	def processTaskQueue(self):
 		'''
 		Process the tasks in the queue, looping so long as self.doProcess is True. This method will not return so long
@@ -705,7 +705,7 @@ class TaskQueue(object):
 				with lockobj(self):
 					if len(self.tasklist)>0:
 						self.currentTask=self.tasklist.pop(0)
-	
+
 				# attempt to run the task by calling its start() method, on exception report and clear the queue
 				try:
 					if self.currentTask:
@@ -717,7 +717,7 @@ class TaskQueue(object):
 					exc=fe.exc_value
 					while exc!=fe and isinstance(exc,FutureError):
 						exc=exc.exc_value
-						
+
 					self.taskExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
 					self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
 				except Exception as e:
@@ -730,12 +730,12 @@ class TaskQueue(object):
 						# clear the queue if there's a task and it wants to remove all current tasks
 						if self.currentTask!=None and self.currentTask.flushQueue:
 							del self.tasklist[:]
-	
+
 						self.currentTask=None
 			except:
-				pass # ignore errors during shutdown 
-		
-	@locking		
+				pass # ignore errors during shutdown
+
+	@locking
 	def addTasks(self,*tasks):
 		'''Adds the given tasks to the task queue whether called in another task or not.'''
 		assert all(isinstance(t,Task) for t in tasks)
@@ -749,16 +749,16 @@ class TaskQueue(object):
 	def listTasks(self):
 		'''Returns a list of the labels of all queued tasks.'''
 		return [t.getLabel() for t in self.tasklist]
-		
+
 	@locking
 	def getNumTasks(self):
 		'''Returns the number of queued tasks.'''
 		return len(self.tasklist)
-				
+
 	def taskExcept(self,ex,msg,title):
 		'''Called when the task queue encounters exception `ex' with message `msg' and report window title `title'.'''
 		pass
-	
+
 
 class DelayThread(Thread):
 	'''
@@ -836,7 +836,7 @@ class DelayThread(Thread):
 				del DelayThread.globalDelayMap[d]
 				break
 
-	
+
 def wrapper(func):
 	'''
 	This decorator is applied to functions to simplify the definitions of decorators. A function this is applied to
@@ -844,33 +844,33 @@ def wrapper(func):
 	and the dictionary of keyword arguments. The remaining arguments are those provided by the decorator call itself.
 	The body of the function is responsible for replacing or augmenting the behaviour of the provided function just like
 	any other decorator. This results in a decorator function which expects the arguments after the first three to be
-	provided, and so must always be called with (), but which doesn't require the definition of nested functions. 
-	
+	provided, and so must always be called with (), but which doesn't require the definition of nested functions.
+
 	For example, the following decorator prints the function and a message provided through the decorator before calling
 	the wrapped function and returning the result:
-	
+
 		@wrapper
 		def printdeco(func,args,kwargs,msg='No Message'):
 			print 'Calling',func,msg
-			return func(*args,**kwargs) 
-			
+			return func(*args,**kwargs)
+
 	This is equivalent to:
-	
+
 		def printdeco(msg='No Message'):
 			def _outer(func):
 				@wraps(func)
 				def _wrapper(*args,**kwargs):
 					print 'Calling',func,msg
-					return func(*args,**kwargs) 
-		
+					return func(*args,**kwargs)
+
 	This is used as such:
-	
+
 		@printdeco('Ni!')
 		def spam(x):
 			print 'Spam and',x
-		
+
 	Calling this function with "Eggs" as the argument prints the following:
-	
+
 		Calling <function tostr at 0x7f91d747a1b8> Ni!
 		Spam and Eggs
 	'''
@@ -883,11 +883,11 @@ def wrapper(func):
 			def _wrapper(*wargs,**wkwargs):
 				'''This is the actual wrapper function which calls `func' passing in the decorator and call arguments.'''
 				return func(func1,wargs,wkwargs,*args,**kwargs)
-				
+
 			return _wrapper
-			
+
 		return _outer
-		
+
 	return _newdecorator
 
 
@@ -956,20 +956,20 @@ def delayedMethodWeak(obj,methname,delay=0):
 #	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
 #	object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
 #	The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
-#	
+#
 #	For example, the method:
-#	
+#
 #		def meth(self,*args,**kwargs):
 #			f=Future()
 #			@taskroutine('msg')
 #			def _func(task):
 #				with f:
 #					f.setObject(doSomething())
-#					
+#
 #			return self.mgr.runTasks(_func(),f)
-#		
+#
 #	is equivalent to:
-#		
+#
 #		@taskmethod('msg')
 #		def meth(self,*args,**kwargs):
 #			return doSomething()
@@ -982,11 +982,11 @@ def delayedMethodWeak(obj,methname,delay=0):
 #				with f:
 #					kwargs[selfName]=task
 #					f.setObject(meth(self,*args,**kwargs))
-#				
+#
 #			return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
-#		
+#
 #		return taskmethod
-#		
+#
 #	return methwrap
 
 
@@ -1009,20 +1009,20 @@ def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
 	Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
 	object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
 	The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
-	
+
 	For example, the method:
-	
+
 		def meth(self,*args,**kwargs):
 			f=Future()
 			@taskroutine('msg')
 			def _func(task):
 				with f:
 					f.setObject(doSomething())
-					
+
 			return self.mgr.runTasks(_func(),f)
-		
+
 	is equivalent to:
-		
+
 		@taskmethod('msg')
 		def meth(self,*args,**kwargs):
 			return doSomething()
@@ -1030,12 +1030,12 @@ def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
 	self,args=args[0],args[1:]
 	mgr=getattr(self,mgrName)
 	f=Future()
-	
+
 	def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
 		with f:
 			kwargs[selfName]=task
 			f.setObject(meth(self,*args,**kwargs))
-		
+
 	return mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
 
 
@@ -1098,7 +1098,7 @@ def setTrace():
 
 def getAppDir():
 	'''Returns the application's directory as stored in the APPDIRVAR environment variable.'''
-	import __init__ 
+	import __init__
 	return os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
 
 
@@ -1130,7 +1130,7 @@ def addLibraryFile(lib):
 	lib=os.path.join(getAppDir(),__init__.LIBSDIR,'python',lib)
 	egg=ensureExt(lib,'.egg')
 	whl=ensureExt(lib,'.whl')
-	
+
 	if os.path.exists(egg):
 		sys.path.insert(0,egg)
 	elif os.path.exists(whl):
@@ -1166,8 +1166,8 @@ def processExists(pid):
 			return True
 		except OSError:
 			return False
-			
-			
+
+
 def getWinDrives():
 	'''Returns available Windows drive letters.'''
 	import win32api
@@ -1184,8 +1184,8 @@ def getUsername():
 	else:
 		import pwd
 		return pwd.getpwuid(os.getuid()).pw_name
-		
-		
+
+
 def addPathVariable(varname,path,append=True):
 	'''
 	Add the string `path' to the environment variable `varname' by appending (if `append` is True) or prepending `path'
@@ -1194,7 +1194,7 @@ def addPathVariable(varname,path,append=True):
 	`varname' does not name a variable with text it will be set to `path'.
 	'''
 	var=os.environ.get(varname,'').strip()
-	
+
 	if var: # if the variable exists and has text
 		paths=[p.strip() for p in var.split(os.pathsep)] # split by the separator and strip whitespace just in case
 		paths.insert(len(paths) if append else 0,path) # append or prepend `path'
@@ -1202,7 +1202,7 @@ def addPathVariable(varname,path,append=True):
 			paths=filter(bool,paths)+['']
 	else:
 		paths=[path] # variable is new so only text is `path'
-		
+
 	os.environ[varname]=os.pathsep.join(paths)
 
 
@@ -1289,7 +1289,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 	keyword value `timeout' can be given indicating how long to wait for the program in seconds before killing it,
 	otherwise the routine will wait forever. If the keyword `logcmd' is True then the command line to be executed is
 	printed to stdout before being run. If a log file path is given in keyword `logfile', the output from the program
-	will be piped to that file. 
+	will be piped to that file.
 	'''
 	timeout=kwargs.get('timeout',None) # timeout time value in seconds
 	cwd=kwargs.get('cwd',None)
@@ -1305,7 +1305,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 
 	if not os.path.isfile(exefile):
 		raise IOError('Cannot find program %r' %exefile)
-		
+
 	# if log file given, open it to receive output, otherwise send output to pipe
 	if 'logfile' in kwargs:
 		stdout=open(kwargs['logfile'],'w+')
@@ -1331,13 +1331,13 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
 
 	out,_ = proc.communicate()
 	returncode= errcode if errcode!=0 and proc.returncode==0 else proc.returncode # choose errcode if the process was killed
-	
+
 	# if a log file was specified, read it into `out' since it will be empty in this case
 	if 'logfile' in kwargs:
 		stdout.seek(0)
 		out=stdout.read()
 		stdout.close()
-		
+
 	return (returncode,output+(out or ''))
 
 
@@ -1391,14 +1391,14 @@ def splitPathExt(path,fullExt=False):
 	'''
 	For the given path, return the containing directory, filename without extension, and extension. If `fullExt' is
 	True, consider everything to the right of the first period as the extension rather than from the last. For example,
-	splitPathExt('foo.bar.baz')[2] produces '.baz' whereas splitPathExt('foo.bar.baz',True)[2] produces '.bar.baz'. 
+	splitPathExt('foo.bar.baz')[2] produces '.baz' whereas splitPathExt('foo.bar.baz',True)[2] produces '.bar.baz'.
 	'''
 	path,basename=os.path.split(path)
-	
+
 	if fullExt and '.' in basename:
 		basename,ext=basename.split('.',1) # consider everything to the right of the first . as the extension
 		ext='.'+ext
-	else: 
+	else:
 		basename,ext=os.path.splitext(basename) # consider everything to the right of the last . as the extension
 
 	return path,basename,ext
@@ -1455,15 +1455,15 @@ def copyfileSafe(src,dst,overwriteFile=False):
 	if not isSameFile(src,dst):
 		if not overwriteFile and os.path.exists(dst):
 			raise IOError('File already exists: %r'%dst)
-			
+
 		shutil.copyfile(src,dst)
 
 
 def renameFile(oldpath,newname,moveFile=True,overwriteFile=False):
 	'''
 	Replace the basename without extension in `oldpath' with `newname' and keeping the old extension. If `moveFile' is
-	True, copy the old file to the new location and overwrite existing file if `overwriteFile' is True; IOError 
-	is thrown if this isn't possible or if the file exists and `overwriteFile' is False. Setting `moveFile' to False 
+	True, copy the old file to the new location and overwrite existing file if `overwriteFile' is True; IOError
+	is thrown if this isn't possible or if the file exists and `overwriteFile' is False. Setting `moveFile' to False
 	allows a "dry run" where the checks are performed but the file isn't moved. Returns the new path.
 	Eg. renameFile('/foo/bar.baz.plonk','thunk') -> '/foo/thunk.baz.plonk'
 	'''
@@ -1480,6 +1480,24 @@ def renameFile(oldpath,newname,moveFile=True,overwriteFile=False):
 		shutil.move(oldpath,newpath)
 
 	return newpath
+
+
+cumulativeTimes={}
+
+def addCumulativeTime(name,val):
+	global cumulativeTimes
+	if len(cumulativeTimes)==0:
+		atexit.register(printCumulativeTimes)
+
+	cumulativeTimes[name]=val+cumulativeTimes.get(name,0.0)
+
+
+def printCumulativeTimes():
+	'''Print the cumulative times to the stdout.'''
+	global cumulativeTimes
+	printFlush('Total Global dT (s):')
+	for i in cumulativeTimes.items():
+		printFlush(' %s = %f'% i)
 
 
 def timing(func):
@@ -1499,30 +1517,6 @@ def timing(func):
 	return timingwrap
 
 
-@contextlib.contextmanager
-def timingBlock(name,printEntry=True):
-	'''
-	Provides a timing facility for 'with' code blocks. Argument `name' is printed when entering if `printEntry', and
-	always printed when exiting. The returned value is the starting time of the block.
-	'''
-	if printEntry:
-		printFlush('>',name)
-	start=time.time()
-	yield start  # execute code in 'with' block
-	end=time.time()
-	printFlush('<',name,'dT (s) =',(end-start))
-
-
-cumulativeTimes={}
-
-def printCumulativeTimes():
-	'''Print the cumulative times to the stdout.'''
-	global cumulativeTimes
-	printFlush('Total Global dT (s):')
-	for i in cumulativeTimes.items():
-		printFlush(' %s = %f'% i)
-
-
 def cumulativeTime(func):
 	'''Add the time taken to execute `func' to a stored cumulative time counter for that function.'''
 	@wraps(func)
@@ -1530,15 +1524,26 @@ def cumulativeTime(func):
 		start=time.time()
 		res=func(*args,**kwargs)
 		end=time.time()
-
-		global cumulativeTimes
-		if len(cumulativeTimes)==0:
-			atexit.register(printCumulativeTimes)
-
-		cumulativeTimes[func.__name__]=(end-start)+cumulativeTimes.get(func.__name__,0.0)
-		return res
+		addCumulativeTime(func.__name,end-start)
 
 	return timingwrap
+
+
+@contextlib.contextmanager
+def timingBlock(name,printEntry=True,addCumulative=False):
+	'''
+	Provides a timing facility for 'with' code blocks. Argument `name' is printed when entering if `printEntry', and
+	always printed when exiting. If `addCumulative' is True then add the value to the cumulative time counter.
+	The yielded value is the starting time of the block.
+	'''
+	if printEntry:
+		printFlush('>',name)
+	start=time.time()
+	yield start  # execute code in 'with' block
+	end=time.time()
+	printFlush('<',name,'dT (s) =',(end-start))
+	if addCumulative:
+		addCumulativeTime(name,end-start)
 
 
 def argtiming(func):
@@ -1553,8 +1558,8 @@ def argtiming(func):
 		return res
 
 	return _wrap
-	
-	
+
+
 def tracing(func):
 	'''This decorator prints a stack trace when the wrapped function is called.'''
 	@wraps(func)
@@ -1566,19 +1571,19 @@ def tracing(func):
 			if filename!=lastfile:
 				printFlush(filename)
 				lastfile=filename
-				
+
 			printFlush(' %i: %s'%(line,routine))
-			
+
 		printFlush(args,kwargs)
 		return func(*args,**kwargs)
-		
+
 	return _wrap
-	
+
 
 def traverseObj(obj,func,visited=set()):
 	'''
 	Attempt to visit every member of `obj' and every member of members etc. recursively. The callable `func' is applied
-	to `obj' to determine when to stop traversing, returning False if a stop is requested. The set `visited' is the 
+	to `obj' to determine when to stop traversing, returning False if a stop is requested. The set `visited' is the
 	recursive accumulated list of visited objects used to prevent cycles.
 	'''
 	result=func(obj)
@@ -1649,7 +1654,7 @@ def asyncfunc(func):
 	'''
 	Wraps the function `func' with a asynchronous version which executes the function's body in a daemon thread. The
 	return value is the threading.Thread object executing the function, which an extra member `result' containing the
-	Future object which will eventually store the return value or raised exception from calling `func'. 
+	Future object which will eventually store the return value or raised exception from calling `func'.
 	'''
 	@wraps(func)
 	def funcwrap(*args,**kwargs):
@@ -1657,13 +1662,13 @@ def asyncfunc(func):
 		def _call():
 			with f:
 				f.setObject(func(*args,**kwargs))
-				
+
 		t=threading.Thread(target=_call)
 		t.daemon=True
 		t.result=f
 		t.start()
 		return t
-		
+
 	return funcwrap
 
 
@@ -1859,7 +1864,7 @@ def setStrIndent(s,indent=0,useTab=False):
 
 def getUnitValue(val):
 	'''
-	Given a size `val' in bytes, returns a string with the size rounded to the nearest base 2 unit (B, kB, MB, etc.) 
+	Given a size `val' in bytes, returns a string with the size rounded to the nearest base 2 unit (B, kB, MB, etc.)
 	with the appropriate unit suffix addded to the end.
 	'''
 	suffixes=['B','kB','MB','GB','TB','PB']
@@ -2223,7 +2228,7 @@ def clamp(val,minv,maxv):
 def lerp(val,v1,v2):
 	'''Linearly interpolate between `v1' and `v2', val==0 results in `v1'.'''
 	return v1+(v2-v1)*val
-	
+
 
 def lerpXi(val,minv,maxv):
 	'''

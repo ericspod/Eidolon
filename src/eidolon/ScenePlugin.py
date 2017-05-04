@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -40,12 +40,12 @@ def getReprTypeFromStrBox(strbox):
 	'''
 	tstr=strbox if isinstance(strbox,str) else str(strbox.currentText())
 	return first(i[0] for i in ReprType if i[1]==tstr)
-		
+
 
 class ScenePlugin(object):
 	'''
 	Base class for all plugins, includes code for a basic properties box for scene objects and representations.
-	
+
 	The file interface is defined by these methods, overriding any one is optional unless specified otherwise:
 		- acceptFile - returns True if the given file can be loaded with loadObject (which must also be overridden)
 		- loadObject - load a file(s)
@@ -75,7 +75,7 @@ class ScenePlugin(object):
 	def findObject(self,name,assertFound=True):
 		'''
 		Attempt to find the file specified by `name', which is a str or a Future containing one, otherwise it's returned
-		instead of a found object. If `name' is an existing filename, the basename without extension is used as the 
+		instead of a found object. If `name' is an existing filename, the basename without extension is used as the
 		name. If an object with the given name can't be found and `assertFound' is True, then an assertion error is
 		raised. The found object is returned or None if not found.
 		'''
@@ -97,22 +97,22 @@ class ScenePlugin(object):
 	def getScriptCode(self,obj,**kwargs):
 		'''
 		Return the Python code string to create, load, or initialize the given object. This is called by ScriptWriter
-		to write plugin-specific loading code to a script. The object `obj' is expected to be a SceneObject or 
-		SceneObjectRepr instance whose plugin is the receiver object (ie. obj.plugin==self). 
-		
-		The `kwargs' value will contain important information about what code to generate: 
-		 - "namemap" is keyed to the object->variable  dictionary used to determine what variable name refers to `obj' 
-		   and other objects such as materials. This must be used to get variable names for all objects, simply 
-		   declaring a new variable can lead to conflicts in other parts of the code. 
+		to write plugin-specific loading code to a script. The object `obj' is expected to be a SceneObject or
+		SceneObjectRepr instance whose plugin is the receiver object (ie. obj.plugin==self).
+
+		The `kwargs' value will contain important information about what code to generate:
+		 - "namemap" is keyed to the object->variable  dictionary used to determine what variable name refers to `obj'
+		   and other objects such as materials. This must be used to get variable names for all objects, simply
+		   declaring a new variable can lead to conflicts in other parts of the code.
 		 - "configSection" is True if code to configure an object is to be generated rather than creation code
-		 - "setMaterial" is True if the material for a rep object should be set in configuration code. 
-		 - "scriptdir" may be present in `kwargs', if so then a script file is being generated and all file paths 
-		   should be specified relative to the variable of the same name. A convenience function keyed to "convertPath" 
+		 - "setMaterial" is True if the material for a rep object should be set in configuration code.
+		 - "scriptdir" may be present in `kwargs', if so then a script file is being generated and all file paths
+		   should be specified relative to the variable of the same name. A convenience function keyed to "convertPath"
 		   may be present in `kwargs' which accepts a path and returns code stating the path relative to "scriptdir".
-		
+
 		Code should not assume these values are present always, use "kwargs.get()" with an appropriate default value.
-		The default implementation of this method provides the config code for a SceneObjectRepr object, other 
-		functionality must be provided by overrides. 
+		The default implementation of this method provides the config code for a SceneObjectRepr object, other
+		functionality must be provided by overrides.
 		'''
 		configSection=kwargs.get('configSection',False)
 		setMaterial=kwargs.get('setMaterial',True)
@@ -167,7 +167,7 @@ class ScenePlugin(object):
 		params=self.getReprParams(obj,reprtype)
 		s='Representation type "%s":\n   ' %reprtype
 		return s+'\n   '.join(map(str,params))
-		
+
 	def acceptFile(self,filename):
 		'''
 		Return True if `filename' is a file which can be loaded by this plugin, and if other preconditions are met.
@@ -175,7 +175,7 @@ class ScenePlugin(object):
 		every loaded plugin as a receiver. The first plugin to return True then loads the file through loadObject().
 		'''
 		return False
-		
+
 	def loadObject(self,filename,name=None,**kwargs):
 		'''
 		Load SceneObject(s) from the file `filename' and gives the object the name `name' or one based off the filename
@@ -186,19 +186,19 @@ class ScenePlugin(object):
 		The return value varies by plugin and can be a Future object.
 		'''
 		raise NotImplementedError('Cannot load files as SceneObjects')
-		
+
 	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
 		'''
 		Save a SceneObject `obj' to the file or directory `path'. The plugin for `obj' need not necessarily be `self' if
 		a plugin wants to handle saving arbitrary objects of the right type. If the plugin must be `self' then raise a
-		ValueError if its not. Files are written into the directory component of `path' which must exist, the name of 
-		the files will be derived from that of `obj' if `path' is a directory and not a full filename. An IOError is 
-		raised if files would be overwritten and `overwrite' is False, in which case no files must be created or altered. 
-		The internal representation of `obj' should be changed to record what the saved filenames are if `setFilenames' 
+		ValueError if its not. Files are written into the directory component of `path' which must exist, the name of
+		the files will be derived from that of `obj' if `path' is a directory and not a full filename. An IOError is
+		raised if files would be overwritten and `overwrite' is False, in which case no files must be created or altered.
+		The internal representation of `obj' should be changed to record what the saved filenames are if `setFilenames'
 		is True, it's up to the plugin to determine how. The return value varies by plugin and can be a Future object.
 		'''
 		raise NotImplementedError('Cannot save files for this object')
-		
+
 	def checkFileOverwrite(self,obj,dirpath,name=None):
 		'''
 		Returns the list of file paths which would be overwritten if `obj' was saved to the directory `dirpath' with
@@ -214,7 +214,7 @@ class ScenePlugin(object):
 		saved to files, or the default None if it can't be saved to a file (ie. a transitive object with no data).
 		'''
 		return None
-		
+
 	def renameObjFiles(self,obj,oldname,overwrite=False):
 		'''
 		Rename files for object `obj' so that their names match the current name, previous name being `oldname'. This
@@ -253,7 +253,7 @@ class ScenePlugin(object):
 
 	def createHandles(self,rep,**kwargs):
 		'''
-		Create a list of Handle objects for representation `rep'. By default this creates a single TransFormHandle 
+		Create a list of Handle objects for representation `rep'. By default this creates a single TransFormHandle
 		object on every call. This method must safely return the handle list regardless of how many times its called.
 		'''
 		return [TransformHandle(rep)]
@@ -284,7 +284,7 @@ class ScenePlugin(object):
 		setChecked(rep.isVisible(),prop.visibleCheckbox)
 		setChecked(self.mgr.isBoundBoxShown(rep),prop.bbCheckbox)
 		setChecked(self.mgr.isHandleShown(rep),prop.handleCheckbox)
-		
+
 		pname=rep.rparent.name if rep.getParent() else '<None>'
 		fillList(prop.parentBox,[r.name for r in self.mgr.enumSceneObjectReprs() if r!=rep],pname,'None')
 
@@ -308,7 +308,7 @@ class ScenePlugin(object):
 	def createReprPropBox(self,rep):
 		'''Creates a properties dialog box for SceneObjectRepr 'rep'. This should be a new instance of a QWidget subclass.'''
 		prop=ObjectReprPropertyWidget()
-		
+
 		prop.spectrumBox.setVisible(False) # don't use spectrum box by default
 
 		params=rep.getParamDefs()
@@ -489,7 +489,7 @@ class MeshScenePlugin(ScenePlugin):
 
 	def getIcon(self,obj):
 		return IconName.Mesh
-		
+
 	def getObjFiles(self,obj):
 		'''By default there is no way to save a mesh but they are savable so return [] instead of None.'''
 		return []
@@ -788,7 +788,7 @@ class MeshScenePlugin(ScenePlugin):
 #				ParamDef('rangeinds','Range Indices',ParamType._bool,True),
 #				ParamDef('maxlen','Max Length',ParamType._real,0.0,1.0,9999,0.0),
 #			]
-			
+
 #		elif reprtype in (ReprType._bbpoint,ReprType._bbline,ReprType._bbplane):
 #			rad=BoundBox(obj.datasets[0].getNodes()).radius
 #			params+=[
@@ -824,7 +824,7 @@ class MeshScenePlugin(ScenePlugin):
 			reprs.append(ReprType._isosurf)
 
 		reprs.append(ReprType._glyph)
-		
+
 		if len(obj.datasets)>1 and ElemType._Line1NL in elemtypes:
 			reprs.append(ReprType._ribbon)
 
@@ -961,7 +961,7 @@ class MeshScenePlugin(ScenePlugin):
 		refine=int(prop.refineBox.value())
 		params=prop.getParamPanel()
 		conf=params.getParamMap() if params else {}
-		
+
 		return [reprtype,refine],conf
 
 	def _setReprInternalCheckbox(self,rep):
@@ -978,7 +978,7 @@ class ImageScenePlugin(ScenePlugin):
 
 	def getIcon(self,obj):
 		return IconName.Image
-		
+
 	def getObjFiles(self,obj):
 		'''By default there is no way to save an image but they are savable so return [] instead of None.'''
 		return []
@@ -1087,7 +1087,7 @@ class ImageScenePlugin(ScenePlugin):
 
 	def createReprPropBox(self,rep):
 		prop=ScenePlugin.createReprPropBox(self,rep)
-		
+
 		prop.spectrumBox.setVisible(True)
 
 		label,check=prop.addProperty('depthCheck','Depth Check',CustomUIType._checkbox)
@@ -1114,14 +1114,14 @@ class ImageScenePlugin(ScenePlugin):
 		prop.spectrum=SpectrumWidget(rep.enumInternalMaterials,self.mgr,prop)
 		layout=prop.spectrumBox.layout()
 		layout.addWidget(prop.spectrum)
-		
+
 		def _setSpectrum():
 			spec=self.mgr.getSpectrum(prop.specnameBox.currentText())
 			if spec:
 				rep.applySpectrum(spec)
 				prop.spectrum.repaint()
 				self.mgr.repaint()
-				
+
 		prop.setSpecButton.clicked.connect(_setSpectrum)
 
 		return prop
@@ -1156,24 +1156,24 @@ class ImageScenePlugin(ScenePlugin):
 				f.setObject(rep)
 
 		return self.mgr.runTasks(createReprTask(),f)
-		
+
 	def createSceneObject(self,name,images,source=None,isTimeDependent=None):
 		return ImageSceneObject(name,source,images,self,isTimeDependent)
-		
+
 	def clone(self,obj,name):
 		return self.createSceneObject(name,[i.clone() for i in obj.images],obj.source,obj.isTimeDependent)
 
 	def cropXY(self,obj,name,minx,miny,maxx,maxy):
 		return self.createSceneObject(name,[i.crop(minx,miny,maxx,maxy) for i in obj.images],obj.source,obj.isTimeDependent)
-		
+
 	def extractTimesteps(self,obj,name,indices=None,timesteps=None,setTimestep=False):
 		'''
 		Create a clone of 'obj' containing only the images of the selected timesteps. Exactly one of `indices'
 		or `timesteps' must be non-None. If `indices' is not None, it must be a list of indices of timesteps to extract,
 		eg. to extract the first timestep a value of [0] would be used. If `timesteps' is not None, it must be a list
 		of times for each of which the closest timestep is chosen, eg. a value of [30] extracts the timestep closest
-		to 30. If `setTimestep' is True then the time values for the extract images are changed to ascending integer 
-		values if `indices' is used or to that specified in `timesteps' if `timesteps' is used. This ensures duplicate 
+		to 30. If `setTimestep' is True then the time values for the extract images are changed to ascending integer
+		values if `indices' is used or to that specified in `timesteps' if `timesteps' is used. This ensures duplicate
 		timesteps have different time values.
 		'''
 		assert (indices!=None)!=(timesteps!=None)
@@ -1181,7 +1181,7 @@ class ImageScenePlugin(ScenePlugin):
 		inds=obj.getTimestepIndices()
 		isTimeDependent=None if obj.isTimeDependent else False # if `obj' is time dependent, need to evaluate if returned object is
 		clonedimages=[]
-		
+
 		if indices!=None:
 			for ts,ind in enumerate(indices):
 				images=[obj.images[i].clone() for i in inds[ind][1]]
@@ -1197,7 +1197,7 @@ class ImageScenePlugin(ScenePlugin):
 				if setTimestep:
 					for img in images:
 						img.timestep=ts
-				
+
 		return self.createSceneObject(name,clonedimages,obj.source,isTimeDependent)
 
 	def createImageStackObject(self,name,width,height,slices,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1)):
@@ -1211,11 +1211,11 @@ class ImageScenePlugin(ScenePlugin):
 		trans=obj.getVolumeTransform()
 		t=obj.getTimestepList()
 		w,h,d=map(fcomp(int,abs,round),trans.getScale()/spacing)
-		
+
 		imgobj=obj.plugin.createImageStackObject(name,w,h,d,len(t),trans.getTranslation(),trans.getRotation(),spacing)
 		imgobj.setTimestepList(t)
 		return imgobj
-		
+
 	def createIntersectObject(self,name,objs,timesteps=1,spacing=vec3(1)):
 		assert all(not o.is2D for o in objs)
 
@@ -1224,7 +1224,7 @@ class ImageScenePlugin(ScenePlugin):
 		mincorner=vec3(0)
 		maxcorner=vec3(1)
 		#corners=[]
-		
+
 		for o in objs[1:]:
 			bb=BoundBox(inv*c for c in o.getVolumeCorners())
 			mincorner.setMaxVals(bb.minv)
@@ -1239,19 +1239,20 @@ class ImageScenePlugin(ScenePlugin):
 		'''Generate a test image object with the given dimensions (w,h,d) with image values range (minv,maxv).'''
 		images=generateTestImageStack(w,h,d,timesteps,pos,rot,spacing)
 		return self.createSceneObject('TestImage',images,(w,h,d,timesteps,pos,rot,spacing),timesteps>1)
-		
+
 	def createSequence(self,name,objs,timesteps=None):
 		timesteps=timesteps or range(len(objs))
-		
+
 		images=[]
 		for t,o in zip(timesteps,objs):
 			for i in o.images:
 				i=i.clone()
 				i.timestep=t
 				images.append(i)
-				
+
 		return self.createSceneObject(name,images,objs[0].source,len(timesteps)>1)
 
+	@timing
 	def createObjectFromArray(self,name,array,interval=1.0,toffset=0,pos=vec3(),rot=rotator(),spacing=vec3(1),task=None):
 		'''
 		Create an image object from the 4D Numpy array and the given parameters, `interval' denoting timestep
@@ -1260,37 +1261,33 @@ class ImageScenePlugin(ScenePlugin):
 		dimensions (X,Y,1,T) is a 2D time-dependent image series of dimensions (X,Y), while an array with (X,Y,Z,1)
 		is a single volume of dimensions (X,Y,Z).
 		'''
-		shape=list(array.shape)
-		dims=len(shape)
-		height,width,slices,timesteps=shape+[1]*(4-dims)
-		
+		shape=tuple(array.shape)+(1,1) # add extra dimensions to the shape to make a 4D shape
+		shape=shape[:4] # clip extra dimensions off so that this is a 4D shape description
+		height,width,slices,timesteps=shape
+
 		obj=self.createImageStackObject(name,width,height,slices,timesteps,pos,rot,spacing)
+
+		#if array.dtype.byteorder=='>': # convert from big endian to little endian
+		#	array=array.astype(array.dtype.newbyteorder())
+
+		array=array.astype(np.dtype('<f8')).reshape(shape) # convert to little endian double and reshape into a 4D array
 
 		if task:
 			task.setMaxProgress(slices*timesteps)
-
-		if array.dtype.byteorder=='>': # convert from big endian to little endian
-			array=array.astype(array.dtype.newbyteorder())
-
-		if dims==4:
-			stdat=lambda s,t: array[:,:,s,t]
-		elif dims==3:
-			stdat=lambda s,t: array[:,:,s]
-		else:
-			stdat=lambda s,t: array
 
 		for s,t in trange(slices,timesteps):
 			if task:
 				task.setProgress(t+s*timesteps+1)
 
 			i=obj.images[s+t*slices]
-			i.timestep=i.timestep*interval+toffset
-			np.asarray(i.img)[:,:]=stdat(s,t)
-			i.setMinMaxValues(*minmaxMatrixReal(i.img))
+			np.asarray(i.img)[:,:]=array[:,:,s,t] # fill the array for this image by slicing the volume
+			i.setMinMaxValues(*minmaxMatrixReal(i.img)) # set the min/max values for the array
+			i.timestep=i.timestep*interval+toffset # set the timestep based off of the interval, offset, and default time number for this image
 
 		if task:
 			task.setProgress(slices*timesteps)
 
+		printCumulativeTimes()
 		return obj
 
 	def getImageObjectArray(self,obj,datatype=float):
@@ -1301,7 +1298,7 @@ class ImageScenePlugin(ScenePlugin):
 			pos : position in space
 			spacing : pixel/voxel dimensions
 			rot : spatial rotation
-			dat : numpy array, shape is (width,height,depth,timestep) for time images, (width,height,depth) for 
+			dat : numpy array, shape is (width,height,depth,timestep) for time images, (width,height,depth) for
 				static volume, (width,height) for 2D image
 			toffset : time offset
 			interval : time interval
@@ -1357,6 +1354,6 @@ class ImageScenePlugin(ScenePlugin):
 		pos=img1.position
 		spacing=vec3(img1.spacing[0],img1.spacing[1],pos.distTo(img2.position))
 		shape=(rows,cols,depth,numsteps)
-		
+
 		return dict(pos=pos,spacing=spacing,rot=img1.orientation,dat=dat,toffset=toffset,interval=interval,shape=shape)
-		
+

@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -26,7 +26,7 @@ import SocketServer
 import pickle
 import traceback
 import shutil
-import itertools 
+import itertools
 import multiprocessing
 import threading
 
@@ -89,16 +89,16 @@ def isTrackDir(path):
 	def _check():
 		if not os.path.isdir(path):
 			return False
-			
+
 		if not os.path.isfile(os.path.join(path,trackconfname)):
 			return False
-			
+
 		return len(glob.glob(path+'/*.dof*'))>0
-		
+
 	t=_check()
-	
+
 	return t.result(1.0) or False
-		
+
 
 def isPositiveDefinite(mat):
 	'''Returns True if `mat' is a positive definite matrix (ie. all positive eigenvalues).'''
@@ -164,12 +164,12 @@ def detagImage(obj,coresize,revert=False):
 		ys = int(math.floor(ymax/2))
 		zs = int(math.floor(zmax/2))
 		x,y,z =np.meshgrid(range(-ys,ys+ymax%2),range(-xs,xs+xmax%2),range(-zs,zs+zmax%2))
-	
+
 		dist=np.sqrt(x**2+y**2+z**2)
 		c=(dist < math.sqrt(3*(coresize**2)))
 		if revert:
 			c=(c==0)
-			
+
 		for t in range(tmax):
 			mat1 = fftshift(fftn(im[...,t]))
 			mat2=mat1*c
@@ -182,7 +182,7 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs,envir
 
 	for ev,val in environ.items():
 		os.environ[ev]=val
-		
+
 	results=[]
 	for i,(infile,outfile,doffile,ttime) in enumerate(filelists):
 		args=[infile,outfile,'-dofin',doffile]
@@ -192,18 +192,18 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs,envir
 
 		if ttime>=0: # timestep selection
 			args+=['-St',str(ttime)]
-			
+
 		args+=extraArgs
 
 		ret,out=execBatchProgram(exefile,*args,cwd=cwd)
 		results.append((ret,out,args))
 		process.setProgress(i+1)
-		
+
 	for ev,val in oldenviron.items():
 		os.environ[ev]=val
 
 	return results
-	
+
 
 @taskroutine('Applying Transformation')
 def applyMotionTrackTask(exefile,cwd,isInvert,filelists,extraArgs=[],task=None):
@@ -243,8 +243,8 @@ class IRTKPluginMixin(object):
 		# by default setup the IRTK executable paths to be those that come with the visualizer
 		localirtkpath=lambda i:os.path.join(self.irtkdir,i)+self.exesuffix
 		self.irtkpath=localirtkpath
-		
-		# if the system-installed IRTK is present, use it instead 
+
+		# if the system-installed IRTK is present, use it instead
 		if isLinux and mgr.conf.get(platformID,'usesystemirtk').lower()!='false' and os.path.exists('/usr/bin/irtk-rreg'):
 			self.irtkpath=lambda i:('/usr/bin/irtk-'+i) if os.path.exists('/usr/bin/irtk-'+i) else localirtkpath(i)
 		else:
@@ -254,7 +254,7 @@ class IRTKPluginMixin(object):
 		self.rreg=self.irtkpath('rreg')
 		self.motiontrack=self.irtkpath('motiontrackmultimage')
 		self.gpu_nreg=self.irtkpath('gpu_nreg') # not part of IRTK
-		
+
 		# setup MIRTK variables
 		if isWindows:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Win64')
@@ -265,9 +265,9 @@ class IRTKPluginMixin(object):
 		else:
 			self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
 			addPathVariable(EnvironVars.DYLD_LIBRARY_PATH,self.mirtkdir)
-			
+
 		self.ffd_motion=os.path.join(getAppDir(),LIBSDIR,'MIRTK','ffd_motion.cfg')
-		
+
 		self.register=os.path.join(self.mirtkdir,'register')+self.exesuffix
 		self.info=os.path.join(self.mirtkdir,'info')+self.exesuffix
 		self.transimage=os.path.join(self.mirtkdir,'transform-image')+self.exesuffix
@@ -329,7 +329,7 @@ class IRTKPluginMixin(object):
 
 	def getUniqueObjName(self,name):
 		'''
-		Returns an object name guaranteed to be unique, a valid filename, and not overwrite an existing file in the 
+		Returns an object name guaranteed to be unique, a valid filename, and not overwrite an existing file in the
 		current context when saved.
 		'''
 		name=getValidFilename(name)
@@ -340,7 +340,7 @@ class IRTKPluginMixin(object):
 	def getUniqueShortName(self,*comps,**kwargs):
 		'''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
 		return self.getUniqueObjName(createShortName(*comps,**kwargs))
-		
+
 	def getUniqueLocalFile(self,name):
 		'''Get a version of the filename `name' which is guarranteed to be unique in the current context.'''
 		_,name,ext=splitPathExt(name)
@@ -445,26 +445,26 @@ class IRTKPluginMixin(object):
 				coresize=4
 				objs=[]
 				loadnames=[]
-				
+
 				tagobj=Future.get(tagobj)
 				#magimgs=[i for i in tagobj.images if i.imgmin>=0] # magnitude images only, remove phase images
 				magimgs=tagobj.images[:len(tagobj.images)/2] # magnitude images only, remove phase images assuming these are the last half of the series
 				tagobj=ImageSceneObject('tempobj',tagobj.source,magimgs,tagobj.plugin)
-				
+
 				tsinds=tagobj.getTimestepIndices()
 				tso=tagobj.getOrientMap()
 				ts=[t[0] for t in tsinds]
-				
+
 				if len(tso)!=3:
 					raise IOError('Should have 3 orientations: %r'%tso.keys())
-					
+
 				#isorthos=[o1.isOrthogonalTo(o2) or o1.isOrthogonalTo(o3) for o1,o2,o3 in successive(tso,3,True)]
-				
+
 				if makeProspective: # prospective timing, add half the average difference between timesteps to each timestep
 					value=avgspan(ts)/2
 					ts=[t+value for t in ts]
-					
-				# For each of the 3 orientations, take the magnitude images for that orientation and create a temporary 
+
+				# For each of the 3 orientations, take the magnitude images for that orientation and create a temporary
 				# image object. Each object will then have all the images over time for one of the tag orientations.
 				for o,olist in enumerate(tso.values()):
 					oimages=indexList(olist,magimgs)
@@ -472,10 +472,10 @@ class IRTKPluginMixin(object):
 					plane.setTimestepList(ts)
 					plane.calculateAABB(True)
 					objs.append(plane)
-					
-#					# TODO: Sort out the definite positive issue to remove or otherwise handle bad tag volumes	
-#					# NOTE: Sometimes a positive definite image is in the correct position, this isn't a reliable mechanism for 
-#					#       identifying bad tag series anymore	
+
+#					# TODO: Sort out the definite positive issue to remove or otherwise handle bad tag volumes
+#					# NOTE: Sometimes a positive definite image is in the correct position, this isn't a reliable mechanism for
+#					#       identifying bad tag series anymore
 #					mat=np.matrix(plane.images[0].orientation.toMatrix())
 #					# flip volume if its matrix is bogus
 #					if tryFix and isPositiveDefinite(mat):
@@ -483,14 +483,14 @@ class IRTKPluginMixin(object):
 #							sx,sy=i.spacing
 #							i.spacing=(sx,-sy)
 #							i.calculateDimensions()
-#							
+#
 #						plane.calculateAABB(True)
-					
+
 				if tryFix:
 					bbs=[o.aabb for o in objs]
 					#avgcenter=avg((b.center for b in bbs),vec3())
 					dist,mid=min((b1.center.distTo(b2.center),(b1.center+b2.center)*0.5) for b1,b2 in itertools.product(bbs,repeat=2) if b1 is not b2)
-					
+
 					for bb,o in zip(bbs,objs):
 						#if bb.center.distTo(avgcenter)>bb.radius/3:
 						if bb.center.distTo(mid)>dist*3:
@@ -498,12 +498,12 @@ class IRTKPluginMixin(object):
 								sx,sy=i.spacing
 								i.spacing=(sx,-sy)
 								i.calculateDimensions()
-								
+
 							o.calculateAABB(True)
 							break
-				
+
 				# create an image within the plane-aligned series, disregarding those volumes that may be in an incorrect orientation
-				tag=tagobj.plugin.createIntersectObject(tagged,objs,len(ts),spacing)				
+				tag=tagobj.plugin.createIntersectObject(tagged,objs,len(ts),spacing)
 				tag.setTimestepList(ts)
 
 				mergefunc='(prod(v/100.0 for v in vals)**(1.0/len(vals)))*100.0'
@@ -572,9 +572,9 @@ class IRTKPluginMixin(object):
 				assert len(tempts)<=len(stackts),'Template has more timesteps than stack, %r>%r' %(len(tempts),len(stackts))
 
 				obj=stack.plugin.extractTimesteps(stack,trname,None,tempts,True)
-				
+
 				assert obj.getTimestepList()==tempts,'%r != %r'%(obj.getTimestepList(),tempts)
-				
+
 				if loadObject:
 					filenames=self.saveToNifti([obj])
 					self._removeNamedObjs(trname)
@@ -783,7 +783,7 @@ class IRTKPluginMixin(object):
 		nodes,header=self.VTK.loadPolydataNodes(filename)
 		nodes.mul(vec3(-1,-1,1))
 		return nodes,header
-		
+
 	def writePolyNodes(self,filename,nodes):
 		return self.VTK.savePolydataNodes(filename,nodes,lambda v:(-v.x(),-v.y(),v.z()))
 
@@ -827,7 +827,7 @@ class IRTKPluginMixin(object):
 
 		outname=self.getUniqueShortName(obj.getName(),'Iso')
 		outfile=self.getNiftiFile(outname)
-		
+
 		if cropEmpty:
 			obj=self.emptyCropObject(obj,False)
 
@@ -837,17 +837,17 @@ class IRTKPluginMixin(object):
 		self.addObject(isoobj)
 
 		return isoobj
-			
+
 	@taskmethod('Setting Timestep')
 	def setObjectTimestep(self,objname,start,step,task=None):
 		obj=self.findObject(objname)
-		
+
 		obj.setTimestepScheme(start,step)
-		
+
 		if isinstance(obj,ImageSceneObject):
 			obj.proptuples=[]
 			self.saveToNifti([obj])
-		
+
 		return obj
 
 	def invertTimesteps(self,sourceobj):
@@ -874,7 +874,7 @@ class IRTKPluginMixin(object):
 
 		if makeProspective:
 			timesteps=sourceobj.getTimestepList()
-			avgdiff=avgspan(timesteps) 
+			avgdiff=avgspan(timesteps)
 			value=avgdiff/2
 
 		for i in sourceobj.images:
@@ -898,12 +898,12 @@ class IRTKPluginMixin(object):
 
 				name=self.getUniqueShortName(templatename,'Res')
 				reobj=tmplt.plugin.extractTimesteps(tmplt,name,timesteps=obj.getTimestepList())
-				
+
 				if isIsotropic:
 					tslist=reobj.getTimestepList()
 					reobj=reobj.plugin.createIntersectObject(name,[reobj,obj],len(tslist),vec3(min(obj.getVoxelSize())))
 					reobj.setTimestepList(tslist)
-					
+
 				resampleImage(obj,reobj)
 
 				filename=self.saveToNifti([reobj])
@@ -933,7 +933,7 @@ class IRTKPluginMixin(object):
 		startind=min((abs(timeinds[i][0]-starttime),i) for i in range(len(timeinds)))[1]
 		rinds=rotateIndices(startind,len(timeinds))
 		images=[]
-		
+
 		for i,ri in enumerate(rinds):
 			for ind in timeinds[ri][1]:
 				img=obj.images[ind].clone()
@@ -986,16 +986,16 @@ class IRTKPluginMixin(object):
 		def _crop(imgname,refname,mx,my,task):
 			with f:
 				cropname=self.getUniqueShortName(imgname,'Crop',complen=20)
-			
+
 				imgobj=self.findObject(imgname)
 				ref=self.findObject(refname)
 				cropobj=cropRefImage(imgobj,ref,cropname,mx,my)
 				self.addObject(cropobj)
-				
+
 				f.setObject(self.saveToNifti([cropobj],True))
 
 		return self.mgr.runTasks([_crop(imgname,refname,mx,my)],f)
-		
+
 	def extendImageStack(self,stack,mx=0,my=0,mz=0,value=0):
 		'''
 		Given image stack named by `stack', extend the images by `mx' and `my' and add `mz' images on the above and
@@ -1006,7 +1006,7 @@ class IRTKPluginMixin(object):
 		ext=extendImage(obj,self.getUniqueShortName(obj.getName(),'Ext'),mx,my,mz,value)
 		return ext,self.saveToNifti([ext],True)
 
-	@taskmethod('Extending image object')		
+	@taskmethod('Extending image object')
 	def extendImageObject(self,obj,mx=0,my=0,mz=0,value=0,task=None):
 		'''
 		Given image object or name `obj', extend the images by `mx' and `my' and add `mz' images on the above and
@@ -1029,13 +1029,13 @@ class IRTKPluginMixin(object):
 		context. Return value is the time-dependent SceneObject containing the tracking information, or a Future
 		containing this object if the method was called outside of the task thread.
 		'''
-		obj=self.findObject(obj_or_name) 
-		
+		obj=self.findObject(obj_or_name)
+
 		if os.path.isdir(trackname_or_dir):
 			trackdir=os.path.abspath(trackname_or_dir)
 		else:
 			trackdir=self.getLocalFile(trackname_or_dir)
-			
+
 		conf=readBasicConfig(os.path.join(trackdir,trackconfname))
 		timesteps=conf[JobMetaValues._timesteps]
 		trackfiles=sorted(glob.glob(os.path.join(trackdir,'*.dof*')))
@@ -1043,10 +1043,10 @@ class IRTKPluginMixin(object):
 		isFrameByFrame=conf[JobMetaValues._tracktype] in (TrackTypes._gpunreg,TrackTypes._mirtkregister) and not isSingleDof
 		resultname=self.getUniqueShortName(obj.getName(),'Tracked',trackname_or_dir)
 		f=Future()
-		
+
 		assert isinstance(obj,(ImageSceneObject,MeshSceneObject))
 		assert trackfiles
-		
+
 		if isinstance(obj,MeshSceneObject):
 			# single dof file for multiple timesteps rather than on file per step
 			if len(trackfiles)==1:
@@ -1083,10 +1083,10 @@ class IRTKPluginMixin(object):
 					for i,ff in enumerate(filenames):
 						nodes,_=self.readPolyNodes(ff)
 						dds.append(PyDataSet('%sclone%i'%(objds.getName(),i+1),nodes,indices,fields))
-						
+
 					# if the dofs are frame-by-frame transformations, rejig the node data to reflect this transformation
 					# since the default is assuming each dof is the transformation from frame 0 to frame n
-					if isFrameByFrame: 
+					if isFrameByFrame:
 						n0=dds[0].getNodes()
 						for i in range(1,len(dds)):
 							n=dds[i].getNodes()
@@ -1095,7 +1095,7 @@ class IRTKPluginMixin(object):
 
 					result=MeshSceneObject(name,dds,filenames=filenames)
 					result.setTimestepList(timesteps)
-					
+
 					if addObject:
 						# attempt to save the object with its own plugin, defaulting to VTK if this doesn't work
 						try:
@@ -1104,15 +1104,15 @@ class IRTKPluginMixin(object):
 							self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
 						except NotImplementedError:
 							self.VTK.saveObject(result,self.getLocalFile(name),setFilenames=True)
-					
+
 						self.addObject(result)
-						
+
 					f.setObject(result)
 
 			return self.mgr.runTasks(_loadSeq(obj,[ff[1] for ff in filelists],timesteps,resultname),f)
 		else:
 			assert not isFrameByFrame,'Frame-by-frame not supported for images yet'
-			
+
 			objnii=self.getNiftiFile(obj.getName())
 			resultnii=self.getNiftiFile(resultname)
 
@@ -1126,14 +1126,14 @@ class IRTKPluginMixin(object):
 					result=self.Nifti.createSequence(resultname,objs,timesteps)
 					self.Nifti.saveObject(result,resultnii,setFilenames=True)
 					self.mgr.addSceneObject(result)
-					
+
 					if addObject:
 						self.addObject(result)
-						
+
 					f.setObject(result)
-					
+
 			return self.mgr.runTasks(_loadSeq(),f)
-		
+
 	@timing
 	def applyMotionTrackPoints(self,dirname,pts):
 		'''
@@ -1183,12 +1183,12 @@ class IRTKPluginMixin(object):
 
 	def startMotionTrackServer(self,addr=None,port=None):
 		'''Starts the server on the local machine if it isn't running and returns the process object, does nothing otherwise.'''
-		
+
 		# TODO: need to fix this, the processes aren't spawning correctly, especially in packed app form, need to spawn new copy of eidolon and run from there
 
 		if not addr or not port:
 			addr,port=self.getServerAddrPort()
-			
+
 		newport=port
 		startserver=False
 
@@ -1215,7 +1215,7 @@ class IRTKPluginMixin(object):
 #			proc=subprocess.Popen(args,stderr = subprocess.STDOUT, stdout=open(logfile,'w'), close_fds=not isWindows)
 #			time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
 #			return proc
-							
+
 #		msp=MotionServerProcess(self.serverdir,newport,self.motiontrack)
 #		msp.start()
 #		time.sleep(5) # wait for the program to launch, especially in OSX which is slow to do anything
@@ -1230,7 +1230,7 @@ class IRTKPluginMixin(object):
 				timesteps=trackobj.getTimestepList()
 				isTagged='tagged' in trackname
 				paramfile=self.patient1e6 if isTagged else self.patient1e4
-				
+
 				conf={
 					JobMetaValues._trackobj     :trackname,
 					JobMetaValues._maskobj      :maskname,
@@ -1263,7 +1263,7 @@ class IRTKPluginMixin(object):
 
 				if not os.path.exists(paramfile):
 					paramfile=self.patient1e6 if isTagged else self.patient1e4
-					
+
 				#if dirname:
 				#	dirname=self.getUniqueObjName(dirname)
 
@@ -1283,7 +1283,7 @@ class IRTKPluginMixin(object):
 			with f:
 				if not isLinux:
 					raise Exception('GPU NReg is Linux only')
-					
+
 				imgobj=self.mgr.findObject(imgname)
 				indices=imgobj.getTimestepIndices()
 				timesteps=imgobj.getTimestepList()
@@ -1296,7 +1296,7 @@ class IRTKPluginMixin(object):
 				trackname=self.getUniqueObjName(trackname)
 				trackdir=self.getLocalFile(trackname)
 				maskfile=None
-				
+
 				if maskname and maskname!='None':
 					mask=self.findObject(maskname)
 					maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
@@ -1307,7 +1307,7 @@ class IRTKPluginMixin(object):
 				os.mkdir(trackdir)
 				names=[]
 				results=[]
-				
+
 				conf={
 					JobMetaValues._trackobj     :imgname,
 					JobMetaValues._maskobj      :maskname,
@@ -1322,9 +1322,9 @@ class IRTKPluginMixin(object):
 					JobMetaValues._maskfile     :maskname,
 					JobMetaValues._startdate    :time.asctime()
 				}
-		
+
 				storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
-				
+
 #				# dilate mask
 #				if os.path.isfile(maskfile):
 #					maskfile=os.path.join(trackdir,'mask.nii')
@@ -1341,7 +1341,7 @@ class IRTKPluginMixin(object):
 
 				task.setMaxProgress(len(names)-1)
 				task.setLabel('Tracking Image With GPU NReg')
-				
+
 				for i,(img1,img2) in enumerate(successive(names)):
 					logfile=os.path.join(trackdir,'%.4i.log'%i)
 					args=[img1,img2,'-parin',paramfile,'-dofout','%.4i.dof.gz'%i]
@@ -1350,14 +1350,14 @@ class IRTKPluginMixin(object):
 					r=execBatchProgram(self.gpu_nreg,*args,cwd=trackdir,logfile=logfile)
 					results.append(r)
 					task.setProgress(i+1)
-					
+
 					if r[0]:
 						raise IOError('GPU nreg failed with error code %i (%s)'%r)
 
 				f.setObject(results)
 
 		return self.mgr.runTasks(_GPUTrack(imgname,maskname,trackname,paramfile),f,False)
-		
+
 	@taskmethod('Tracking Image With MIRTK register')
 	@timing
 	def startRegisterMotionTrack(self,imgname,maskname,trackname,paramfile,model=None,onefile=False,task=None):
@@ -1378,7 +1378,9 @@ class IRTKPluginMixin(object):
 		results=[]
 
 		os.mkdir(trackdir) # create the directory to contain all the tracking information
-		
+
+		shutil.copy(paramfile,os.path.join(trackdir,'original.cfg')) # copy the original param file into the directory as well
+
 		# if a mask object is provided, reimage it to the same space as the tracked image and save to the tracking directory
 		if maskname and maskname!='None':
 			mask=self.findObject(maskname)
@@ -1406,13 +1408,13 @@ class IRTKPluginMixin(object):
 		}
 
 		storeBasicConfig(os.path.join(trackdir,trackconfname),conf) # store initial config values in the tracking ini file
-		
+
 		if onefile:
 			logfile=os.path.join(trackdir,'track.log')
 			args=[imgobj.source['filename'],'-parin',paramfile,'-model',model,'-dofout','track.dof.gz','-parout','register.cfg']
 			if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
 				args+=['-mask',maskfile]
-				
+
 			task.setMaxProgress(1)
 			task.setProgress(0)
 			r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
@@ -1427,24 +1429,24 @@ class IRTKPluginMixin(object):
 				names.append(filename)
 				subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
 				self.Nifti.saveObject(subobj,filename)
-	
+
 			task.setMaxProgress(len(names)-1)
-			
+
 			# iterate over every successive timestep pairing and run register
 			for i,(img1,img2) in enumerate(successive(names)):
 				logfile=os.path.join(trackdir,'%.4i.log'%i)
 				args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
-	
+
 				if maskfile and os.path.isfile(maskfile): # add the mask parameter if present
 					args+=['-mask',maskfile]
-					
+
 				if i==0: # spit out the parameter file for the first invocation so that config values are preserved for later inspection
 					args+=['-parout',os.path.join(trackdir,'register.cfg')]
-					
+
 				r=execBatchProgram(self.register,*args,cwd=trackdir,logfile=logfile)
 				results.append(r)
 				task.setProgress(i+1)
-				
+
 				if r[0]: # stop immediately if register failed
 					break
 
@@ -1481,7 +1483,7 @@ class IRTKPluginMixin(object):
 						trackfile='???'
 						trackdir=self.getLocalFile(os.path.basename(jobdir))
 						inifile=os.path.join(trackdir,trackconfname)
-						
+
 						if os.path.isfile(inifile):
 							conf=readBasicConfig(inifile)
 							trackfile=os.path.split(conf[JobMetaValues._trackfile])[1]
@@ -1523,7 +1525,7 @@ class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
 	def __init__(self,serverdir,serverport,motiontrackpath):
 		QtGui.QWidget.__init__(self)
 		self.setupUi(self)
-		
+
 		self.serverdir=serverdir
 		self.jidfile=os.path.join(self.serverdir,'motion_jid.txt')
 		self.serverport=int(serverport)
@@ -1550,7 +1552,7 @@ class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
 		self.timer=QtCore.QTimer()
 		self.timer.timeout.connect(self._updateList)
 		self.timer.start(3000)
-		
+
 	def getJID(self):
 		with open(self.jidfile) as o:
 			return int(o.read().strip())
@@ -1601,7 +1603,7 @@ class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
 			if reply == QtGui.QMessageBox.Yes:
 				proc=self.runningProcs[ind][0]
 				proc.kill()
-				
+
 	def stopServer(self):
 		self.server.shutdown()
 
@@ -1672,12 +1674,12 @@ class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
 
 		dirname=dirname or 'motiontrack'
 		jobdir=os.path.join(rootdir,'%s_%i'%(dirname,jid))
-		
+
 		for i in range(100): # ensure jobdir doesn't exist but don't loop forever
 			if not os.path.exists(jobdir):
 				break
 			jobdir=os.path.join(rootdir,'%s%i_%i'%(dirname,i,jid))
-			
+
 		os.makedirs(jobdir)
 
 		self.setJID(jid)
@@ -1722,7 +1724,7 @@ class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
 		storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
 		self.runningProcs.append((proc,jid,jobdir))
 		return jid
-		
+
 
 class MotionTrackServerDialog(MotionTrackServerWidget):
 	def __init__(self,serverdir,serverport,motiontrackpath):
@@ -1745,7 +1747,7 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
 			event.accept()
 		else:
 			event.ignore()
-			
+
 	@staticmethod
 	def run():
 		printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
