@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -30,9 +30,9 @@ class BaseCamera2DWidget(Base2DWidget):
 	which will create Figure objects only visible to the internal camera. This class has no UI components and relies on
 	inheriting subtypes calling modifyDrawWidget() to perform the correct association between the widget to draw into
 	and the fillImage() method which updates the camera and copies its data over.
-	
+
 	The following methods return default values and must be overridden in a subtype for this class to function:
-	getImageStackPosition(), getImageStackMax(), getSecondaryNames(), 
+	getImageStackPosition(), getImageStackMax(), getSecondaryNames(),
 	'''
 
 	defaultQuad=(
@@ -57,7 +57,7 @@ class BaseCamera2DWidget(Base2DWidget):
 
 		self.sourceName=None
 		self.planeName=None
-		
+
 		self.scroll=vec3()
 		self.zoom=1.0
 		self.viewplane=transform() # the plane in world space corresponding to the current 2D view
@@ -82,7 +82,7 @@ class BaseCamera2DWidget(Base2DWidget):
 		self.indicatorPlane.setMaterial(self.indicatorMaterial)
 		self.indicatorPlane.setTransparent(True)
 		self.indicatorPlane.setVisible(False)
-		
+
 		self.indicatorVisible=True
 
 		# construct a quad with a cylinder rim for the indicator plane
@@ -92,33 +92,33 @@ class BaseCamera2DWidget(Base2DWidget):
 		nodes=list(BaseCamera2DWidget.defaultQuad[0])+cnodes
 		inds=list(BaseCamera2DWidget.defaultQuad[1])+cinds
 		self.indicatorPlane.fillData(PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),[indicatorCol]*len(nodes)),PyIndexBuffer(inds),False,True)
-		
+
 		delayedMethodWeak(self,'_repaintDelay') #delay method for repainting allows safe calling multiple times and from task threads
 
 		mgr.addEventHandler(EventType._widgetPreDraw,self._repaintDelay)
-		
+
 	def _repaintDelay(self):
 		self.mgr.callThreadSafe(self.repaint)
 
 	@delayedcall(0.5) # only need/want 1 delay thread for repainting the 3D scene, don't want to do this often
 	def _repaint3DDelay(self):
 		self.mgr.callThreadSafe(self.mgr.repaint)
-	
+
 	def getImageStackPosition(self):
 		'''Get the index in the image stack of the source object. This must be overridden to set the stack position.'''
 		return 0
-	
+
 	def getImageStackMax(self):
 		'''Get the maximum stack index. This must be overridden to define the max value as something other than 0.'''
 		return 0
-		
+
 	def getSecondaryNames(self):
 		'''Get the names of secondary viewable objects. This must be overridden to return something other than [].'''
 		return []
-		
+
 	def getObjectNames(self):
 		return [self.sourceName]+list(self.getSecondaryNames())
-	
+
 	def getImageXiPosition(self):
 		'''Get the xi value on the unit interval representing Z position within the stack the current view represents.'''
 		maxv=self.getImageStackMax()
@@ -131,13 +131,13 @@ class BaseCamera2DWidget(Base2DWidget):
 			for h in self.handles:
 				if h.checkSelected(vec3(e.x(),e.y())):
 					selected=selected or h
-					
+
 			# if a handle was selected, call the notice method and set all other handles to be inactive
 			if selected:
 				self.handleSelected(selected)
 				for h in self.handles:
 					h.setActive(h==selected)
-					
+
 				self._repaintDelay()
 		else:
 			for h in self.handles:
@@ -159,7 +159,7 @@ class BaseCamera2DWidget(Base2DWidget):
 			self.zoom=max(0.01,self.zoom-dy*0.01)
 
 		self._repaintDelay()
-		
+
 	def mouseRelease(self,e):
 		for h in self.handles:
 			h.setSelected(False)
@@ -188,7 +188,7 @@ class BaseCamera2DWidget(Base2DWidget):
 		this isn't provided. If `planename' names a representation object then its transform is used to define the
 		plane, specifically if its a ImageSceneObjectRepr then getDefinedTransform() is called to get this transform.
 		If `planename' is one of the standard plane names (XY, YZ, or XZ) then the transform is defined to represent
-		this plane at image xi value `imgxi' in the direction normal to the plane (ie. this is Z axis xi value for 
+		this plane at image xi value `imgxi' in the direction normal to the plane (ie. this is Z axis xi value for
 		plane XY). The `reptrans' transform represents the transformation from xi space to world of the object the
 		plane bisects, thus if the object is a volume this is the transformation from texture coordinates to world
 		coordinates. This used to transform the standard plane definitions to world coordinates, and to define the
@@ -277,11 +277,11 @@ class BaseCamera2DWidget(Base2DWidget):
 
 		self.handles=[]
 		self._repaintDelay()
-		
+
 	def getHandle(self,index):
 		'''Return handle at position `index' in the list of handles.'''
 		return self.handles[index]
-		
+
 	def handleSelected(self,handle):
 		'''
 		Called when the given handle object is selected by mouse click. If this is not overridden, handles are not
@@ -331,14 +331,14 @@ class BaseCamera2DWidget(Base2DWidget):
 		else:
 			bb=obj.getAABB()
 			trans=transform(planetrans.getTranslation(),planetrans.getScale()*vec3(bb.radius*1.5),planetrans.getRotation())
-			
+
 			# needed to prevent update loops with _repaintDelay and _repaint3DDelay
 			if trans!=self.indicatorTrans or self.indicatorPlane.isVisible()!=self.indicatorVisible:
 				self.indicatorTrans=trans
 				self.indicatorPlane.setTransform(trans)
 				self.indicatorPlane.setVisible(self.indicatorVisible)
 				self._repaint3DDelay()
-				
+
 	def setIndicatorVisible(self,visible):
 		'''Set whether the 3D plane indicator is visible or not.'''
 		self.indicatorVisible=visible
@@ -411,7 +411,7 @@ class BaseCamera2DWidget(Base2DWidget):
 				planept=planetrans.getTranslation()
 				planerot=planetrans.getRotation()
 				planenorm=planerot*vec3(0,0,1)
-				
+
 				assert tslen==len(figs)
 				task.setMaxProgress(tslen)
 
@@ -442,8 +442,8 @@ class BaseCamera2DWidget(Base2DWidget):
 		Update the visible data for the current view's position. This will update the quad for the main image, secondary
 		images, and refill the isoline meshes for the secondary meshes. The plane in world space the 2D view currently
 		shows will be set to self.viewplane. Handles will also be updated as necessary, and all figures will be transformed
-		to fit into the current viewing position. If this method is overridden, the override should call this one to 
-		perform these operations after updating subtype-specific state, ie. as the last statement in the method. 
+		to fit into the current viewing position. If this method is overridden, the override should call this one to
+		perform these operations after updating subtype-specific state, ie. as the last statement in the method.
 		'''
 		assert isMainThread()
 		rep=self.mgr.findObject(self.sourceName) # get the main object, this is None if it's been deleted since the last update
@@ -451,10 +451,10 @@ class BaseCamera2DWidget(Base2DWidget):
 			return
 
 		imgstackpos=self.getImageStackPosition()
-		
+
 		self.retainObjFigures([r.getName() for r in self.mgr.enumSceneObjectReprs()]) # remove reprs that don't exist anymore
 
-		# calculate the plane in space this view is located at		
+		# calculate the plane in space this view is located at
 		self.viewplane=self.calculateViewPlane(rep.getDefinedTransform(imgstackpos),self.planeName,self.getImageXiPosition())
 
 		self.setPlaneIndicator(rep,self.viewplane)
@@ -480,7 +480,7 @@ class BaseCamera2DWidget(Base2DWidget):
 			s=s.split('<',1)[0].strip()
 			srep=self.mgr.findObject(s) # split the label by <, assuming there's no < in the repr or object names
 			assert srep,'Cannot find %r'%s
-			
+
 			# image repr, 1 plane for volumes since they slice through at the view plane, 1 plane per slice of image series since they're 2D
 			if isinstance(srep,ImageSceneObjectRepr):
 				numslices=srep.getNumStackSlices() if isinstance(srep,ImageSeriesRepr) else 1
@@ -530,9 +530,9 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 	def __init__(self,mgr,camera,parent=None):
 		BaseCamera2DWidget.__init__(self,mgr,camera,parent=parent)
 		Draw2DView.__init__(self)
-		
+
 		delayedMethodWeak(self,'_updateUIDelay')
-		
+
 		mgr.addEventHandler(EventType._objectAdded,self.updateUI)
 		mgr.addEventHandler(EventType._objectRemoved,self.updateUI)
 
@@ -542,17 +542,17 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 		self.indicatorBox.clicked.connect(self.setIndicatorVisible)
 		setCollapsibleGroupbox(self.dataGroup)
 		self._updateUIDelay()
-		
+
 	def _updateUIDelay(self):
 		self.mgr.callThreadSafe(self.updateUI)
-		
+
 	def parentClosed(self,e):
 		self.mgr.removeEventHandler(self.updateUI)
 		BaseCamera2DWidget.parentClosed(self,e)
-		
+
 	def getSecondaryNames(self):
 		return self.secondsSelected
-		
+
 	def setSourceName(self,name):
 		if name!=self.sourceName:
 			self.setFigsVisible(self.sourceName,False)
@@ -584,7 +584,7 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 		Draw2DView.setSecondary(self,name,isVisible)
 		self.setFigsVisible(name,isVisible)
 		self._updateUIDelay()
-		
+
 	def updateUI(self,_=None):
 		stdPlanes=list(BaseCamera2DWidget.standardPlanes)
 		reprs=sorted(self.mgr.enumSceneObjectReprs())
@@ -597,7 +597,7 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 
 		notsource=[o for o in reprs if o.getName()!=self.sourceName]
 		seconds=[o for o in notsource if isinstance(o,(ImageSceneObjectRepr,MeshSceneObjectRepr,TDMeshSceneObjectRepr)) ]
-		
+
 		planes=stdPlanes+[o.getName() for o in notsource]
 
 		if self.planeName not in planes:
@@ -615,16 +615,16 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 
 		# construct namelabels as a list of pairs associating each object's label to its name
 		namelabels=zip([o.getLabel() for o in imgreprs],names)
-		# construct planelabels similarly as a list of label-name pairs		
+		# construct planelabels similarly as a list of label-name pairs
 		planelabels=zip(stdPlanes+[o.getLabel() for o in notsource],planes)
-		
+
 		# set the list, choosing the label associated with the object named in self.sourceName
 		fillList(self.sourceBox,namelabels,first(l for l,n in namelabels if n==self.sourceName))
 		# similarly fill the list and choose default by label
 		fillList(self.planeBox,planelabels,first(l for l,n in planelabels if n==self.planeName))
-		
+
 		self.fillSecondsMenu([(s.getLabel(),s.getName()) for s in seconds])
-		
+
 		self.setPlaneBoxVisible(isinstance(rep,ImageVolumeRepr))
 		self.indicatorBox.setVisible(not rep or not rep.parent.is2D)
 		self.setImageStackMax(stackmax)
@@ -649,7 +649,7 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 	def mouseWheelMove(self,e):
 		'''Need to override mouseWheelMove() since it's inherited twice and the one from Draw2DView is what should be called.'''
 		Draw2DView.mouseWheelMove(self,e)
-		
+
 	def keyPress(self,e):
 		if e.key() in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right):
 			rep=self.mgr.findObject(self.sourceName)
@@ -658,13 +658,15 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 				nearest,_=minmaxIndices(abs(self.mgr.timestep-v) for v in timesteps)# index of the nearest timestep to the current time
 				nearest=clamp(nearest+(1 if e.key()==QtCore.Qt.Key_Right else -1),0,len(timesteps)-1)
 				self.mgr.setTimestep(timesteps[nearest])
+		elif e.key() in (QtCore.Qt.Key_Up, QtCore.Qt.Key_Down):
+			self.setImageStackPosition(self.getImageStackPosition()+(1 if e.key()==QtCore.Qt.Key_Up else -1))
 		else:
 			QtGui.QWidget.keyPressEvent(self,e)
 
 
 class PointChooseMixin(object):
 	'''
-	Mixin for adding the functionality to choose a fixed number of named points on an image within a 2D window. Mix this 
+	Mixin for adding the functionality to choose a fixed number of named points on an image within a 2D window. Mix this
 	with a type implementing _repaintDelay(), getWorldPosition(), and addHandle() as expected in BaseCamera2DWidget.
 	'''
 	def __init__(self,layout,showBox=False,grouplabel='Landmark Points'):
@@ -725,10 +727,10 @@ class PointChooseMixin(object):
 	def updateView(self):
 		for h,_,_,e in self.pointMap.values():
 			e.setText('%.3f, %.3f, %.3f'%tuple(h.pt))
-			
+
 	def getPoint(self,name):
 		return self.pointMap[name][0].pt
-		
+
 	def setPoint(self,name,pt):
 		self.pointMap[name][0].pt=pt
 
@@ -745,7 +747,7 @@ class DrawContourMixin(object):
 		self.drawingContour=False
 		self.contour=[]
 		self.drawcolor=drawcolor
-		
+
 		self.contourMat=self.mgr.getMaterial(matname) or self.mgr.createMaterial(matname)
 		self.contourMat.useLighting(False)
 		self.contourMat.useVertexColor(True)
@@ -754,10 +756,10 @@ class DrawContourMixin(object):
 		self.contourFig.setVisible(False)
 		self.contourFig.setOverlay(True)
 		self.contourFig.setMaterial(self.contourMat)
-		
+
 	def startContourDraw(self):
 		self.drawingContour=True
-	
+
 	def fillContourFig(self):
 		'''Fills the figure representing the drawn contour with lines so that it is visible on screen while drawing.'''
 		if self.drawingContour:
@@ -773,12 +775,12 @@ class DrawContourMixin(object):
 		'''Start drawing the contour, returns True if drawing was enabled and the contour started, False otherwise.'''
 		if e.buttons()!=Qt.LeftButton or not self.drawingContour:
 			return False
-			
+
 		pt=self.getWorldPosition(e.x(),e.y())
 		self.contour=[pt,pt]
 		self.contourFig.setVisible(True)
 		return True
-		
+
 	def drawMouseDrag(self,e,dx,dy):
 		'''
 		Add points to the contour when the mouse is dragged with position delta (dx,dy). This will interpolate over
@@ -787,10 +789,10 @@ class DrawContourMixin(object):
 		'''
 		if not self.drawingContour:
 			return False
-			
+
 		p=self.getWorldPosition(e.x(),e.y())
 		dlen=int(vec3(dx,dy).len())
-		
+
 		if dlen: # if the mouse was moved relatively fast, add uniformly-spaced points along the drag path
 			self.contour+=[lerp(i/dlen,self.contour[-1],p) for i in frange(dlen)]
 		else:
@@ -805,10 +807,10 @@ class DrawContourMixin(object):
 		'''
 		if not self.drawingContour:
 			return False
-			
+
 		self.drawingContour=False
 		self.contourFig.setVisible(False)
-		
+
 		if len(self.contour)>self.numNodes:
 			# select evenly spaced values from self.contour and store these back into self.contour
 			inds=[partitionSequence(len(self.contour),i,self.numNodes)[0] for i in range(self.numNodes)]
@@ -830,7 +832,7 @@ class DrawLineMixin(object):
 		self.lineStart=None
 		self.lineEnd=None
 		self.drawcolor=drawcolor
-		
+
 		self.lineMat=self.mgr.getMaterial(matname) or self.mgr.createMaterial(matname)
 		self.lineMat.useLighting(False)
 		self.lineMat.useVertexColor(True)
@@ -839,10 +841,10 @@ class DrawLineMixin(object):
 		self.lineFig.setVisible(False)
 		self.lineFig.setOverlay(True)
 		self.lineFig.setMaterial(self.lineMat)
-		
+
 	def startLineDraw(self):
 		self.drawingLine=True
-	
+
 	def fillLineFig(self):
 		'''Fills the figure representing the drawn line so that it is visible on screen while drawing.'''
 		if self.drawingLine:
@@ -855,16 +857,16 @@ class DrawLineMixin(object):
 		'''Start drawing the line, returns True if drawing was enabled and the line started, False otherwise.'''
 		if e.buttons()!=Qt.LeftButton or not self.drawingLine:
 			return False
-			
+
 		self.lineStart=self.lineEnd=self.getWorldPosition(e.x(),e.y())
 		self.lineFig.setVisible(True)
 		return True
-		
+
 	def drawMouseDrag(self,e,dx,dy):
 		'''Move the end point to the position in `e'. Returns True if the line was moved, False otherwise.'''
 		if not self.drawingLine:
 			return False
-			
+
 		self.lineEnd=self.getWorldPosition(e.x(),e.y())
 		return True
 
@@ -872,10 +874,9 @@ class DrawLineMixin(object):
 		'''Finish drawing the line, returns True if the drawing was enabled, False otherwise.'''
 		if not self.drawingLine:
 			return False
-			
+
 		self.drawingLine=False
 		self.lineFig.setVisible(False)
-		
+
 		return True
-			
-			
+
