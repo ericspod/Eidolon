@@ -358,6 +358,10 @@ class RegionPlotWidget(BasePlotWidget):
 		if self.plugin:
 			self.plugin.mgr.addEventHandler(EventType._widgetPreDraw,self.setCurrentTime)
 
+	def paintEvent(self,e):
+		self.colorbar.setParentHeight(self.height())
+		BasePlotWidget.paintEvent(self,e)
+
 	def parentClosed(self,e):
 		self.plugin.mgr.removeEventHandler(self.setCurrentTime)
 
@@ -409,8 +413,6 @@ class RegionPlotWidget(BasePlotWidget):
 		self.colorbar.setValRange(*self.dataRange)
 
 	def updateGraph(self):
-		self.colorbar.setParentHeight(self.height())
-
 		for i,data in enumerate(self.matrix[self.currentTimeIndex]):
 			xi=clamp(lerpXi(data,*self.dataRange),0.0,1.0)
 			q=self.colormap.mapToQColor(xi)
