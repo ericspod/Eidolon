@@ -180,7 +180,7 @@
              </size>
             </property>
             <property name="text">
-             <string>Set Start</string>
+             <string>Start</string>
             </property>
            </widget>
           </item>
@@ -210,7 +210,7 @@
              </size>
             </property>
             <property name="text">
-             <string>Set End</string>
+             <string>End</string>
             </property>
            </widget>
           </item>

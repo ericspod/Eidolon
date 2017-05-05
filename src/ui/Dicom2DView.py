@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/Dicom2DView.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Fri May  5 14:57:50 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -208,9 +209,9 @@ class Ui_Dicom2DView(object):
         self.groupBox.setTitle(_translate("Dicom2DView", "Stack Image Index", None))
         self.groupBox_2.setTitle(_translate("Dicom2DView", "Stack Range", None))
         self.label_3.setText(_translate("Dicom2DView", "Start", None))
-        self.setStartButton.setText(_translate("Dicom2DView", "Set Start", None))
+        self.setStartButton.setText(_translate("Dicom2DView", "Start", None))
         self.label_4.setText(_translate("Dicom2DView", "End", None))
-        self.setEndButton.setText(_translate("Dicom2DView", "Set End", None))
+        self.setEndButton.setText(_translate("Dicom2DView", "End", None))
         self.groupBox_3.setTitle(_translate("Dicom2DView", "Clip Rect", None))
         self.label_7.setText(_translate("Dicom2DView", "Min Row", None))
         self.label_9.setText(_translate("Dicom2DView", "Max Row", None))

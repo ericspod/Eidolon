@@ -186,17 +186,17 @@ def loadSharedImages(process,rootdir,files,crop=None):
 
 	for i in range(len(files)):
 		process.setProgress(i+1)
-		try:
-			filename=os.path.join(rootdir,files[i])
-			dcm=DicomSharedImage(filename,i+process.startval,False)
-			if crop!=None and (crop[0]>0 or crop[1]>0 or crop[2]<dcm.dimensions[0]-1 or crop[3]<dcm.dimensions[1]-1):
-				dcm=dcm.crop(*crop)
+		filename=os.path.join(rootdir,files[i])
+		dcm=DicomSharedImage(filename,i+process.startval,False)
 
+		# crop the image if a valid crop rectangle is given and the object has image data
+		if dcm.img is not None and crop!=None and (crop[0]>0 or crop[1]>0 or crop[2]<dcm.dimensions[0]-1 or crop[3]<dcm.dimensions[1]-1):
+			dcm=dcm.crop(*crop)
+
+		# if the img member is None and this isn't a compressed image then it's non-image data so discard
+		if dcm.img is not None or dcm.isCompressed:
 			dcm.setShared(True)
 			result.append(dcm)
-		except TypeError as te:
-			printFlush(te)
-			#pass # ignore Dicoms that don't have pixel information
 
 	return result
 
@@ -499,9 +499,10 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 			self.imgfig.fillData(vb,ib)
 			self.sceneBB=BoundBox(nodes)
 
-		assert (w,h)==(self.imgwidth,self.imgheight),'(%r,%r)!=(%r,%r)'%(w,h,self.imgwidth,self.imgheight)
-		self.tex.fillColor(self.simg.img,0,self.simg.imgmin*2-self.simg.imgmax,self.simg.imgmax)
-		self._repaintDelay()
+		if w>0 and h>0:
+			assert (w,h)==(self.imgwidth,self.imgheight),'(%r,%r)!=(%r,%r)'%(w,h,self.imgwidth,self.imgheight)
+			self.tex.fillColor(self.simg.img,0,self.simg.imgmin*2-self.simg.imgmax,self.simg.imgmax)
+			self._repaintDelay()
 
 	def _loadImage(self):
 		seriesindex=self.seriesListWidget.currentRow()
@@ -550,13 +551,11 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 		@taskroutine('Loading Multiseries Image')
 		def _load(task=None):
 			with self.resultf:
-				if len(self.serieslist)>1:
-					name='%sto%s'%(self.serieslist[0].desc,self.serieslist[-1].desc)
-				else:
-					name=self.serieslist[0].desc
-
+				firstname=self.serieslist[0].desc
+				lastname=self.serieslist[-1].desc
+				name='%sto%s'%(firstname,lastname) if firstname!=lastname else firstname
+				name=self.mgr.getUniqueObjName(getValidFilename(name))
 				images=[]
-				name=getValidFilename(name)
 				start,end,minx,miny,maxx,maxy=self.state
 				selection=range(start,end+1)
 				crop=(minx,miny,maxx,maxy)
@@ -578,7 +577,7 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 		QtGui.QDialog.reject(self)
 
 
-def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
+def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
 	'''
 	This pseudo-constructor creates a SharedImage object from a DICOM file. If `dcm' is None then the file is read
 	from `filename', which must always be the valid path to the loaded DICOM. The `index' value is for the ordering the
@@ -602,7 +601,6 @@ def DicomSharedImage(filename,index,isShared=True,rescale=True,dcm=None):
 		validPixelArray=False
 
 	si.index=index
-
 	# extract Dicom properties of interest
 	si.seriesID=str(dcm.get('SeriesInstanceUID',''))
 	si.imageType=list(dcm.get('ImageType',[]))
