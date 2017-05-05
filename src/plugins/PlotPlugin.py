@@ -83,8 +83,11 @@ AHARegionNames=enum(
 
 
 class ColorBar(pg.GraphicsObject):
-
-	def __init__(self, colormap, x,y,width, height, numticks):# ticks=None, tick_labels=None, label=None):
+	'''
+	Basic vertical color bar with labels ranging from a minimal to maximal value. The intent is for this to be embedded
+	in a scene with another graph and share its color graph and height.
+	'''
+	def __init__(self, colormap, x,y,width, height, numticks):
 		pg.GraphicsObject.__init__(self)
 
 		self.colormap=colormap
@@ -101,19 +104,10 @@ class ColorBar(pg.GraphicsObject):
 		self.translate(self.cx,self.cy)
 
 	def drawBar(self):
+		'''Redraw the bar into the self.pic value. This should be called after changing any stored value.'''
 		stops, colors = self.colormap.getStops('float')
 
-#		self.label = label or ''
-#		smn, spp = stops.min(), stops.ptp()
-#		stops = (stops - stops.min())/spp
-#		self.ticks = ticks or np.r_[0.0:1.0:5j, 1.0] * spp + smn
-#		tick_labels = tick_labels or ["%0.2g" % (t,) for t in ticks]
-
-		# setup picture
-
 		with pg.QtGui.QPainter(self.pic) as p:
-
-			# draw bar with gradient following colormap
 			p.setPen(pg.mkPen('w'))
 			grad = pg.QtGui.QLinearGradient(self.cwidth/2.0, 0.0, self.cwidth/2.0, self.cheight*1.0)
 
@@ -132,37 +126,22 @@ class ColorBar(pg.GraphicsObject):
 				br = p.boundingRect(0, 0, 0, 0, pg.QtCore.Qt.AlignLeft, label)
 				p.drawText(self.cwidth+8.0,y+br.height()/4,label)
 
-#			# draw ticks & tick labels
-#			mintx = 0.0
-#			for tick, tick_label in zip(ticks, tick_labels):
-#				y_ = (1.0 - (tick - smn)/spp) * h
-#				p.drawLine(0.0, y_, -5.0, y_)
-#				br = p.boundingRect(0, 0, 0, 0, pg.QtCore.Qt.AlignRight, tick_label)
-#				if br.x() < mintx:
-#					mintx = br.x()
-#				p.drawText(br.x() - 10.0, y_ + br.height() / 4.0, tick_label)
-
-		# compute rect bounds for underlying mask
-		#self.zone = mintx - 12.0, -15.0, br.width() - mintx, h + br.height() + 30.0
-
 	def paint(self, p, *args):
-		# paint underlying mask
 		p.setPen(pg.QtGui.QColor(255, 255, 255, 0))
 		p.setBrush(pg.QtGui.QColor(255, 255, 255, 0))
-		#p.drawRoundedRect(*(self.zone + (9.0, 9.0)))
-
-		# paint colorbar
 		p.drawPicture(0, 0, self.pic)
 
 	def boundingRect(self):
 		return pg.QtCore.QRectF(self.pic.boundingRect())
 
 	def setValRange(self,minval,maxval):
+		'''Set the bar's value range.'''
 		self.minval=minval
 		self.maxval=maxval
 		self.drawBar()
 
 	def setParentHeight(self,h):
+		'''Set the height of the bar based on the containing parent's height `h'.'''
 		self.cheight=h-self.cy*2
 		self.drawBar()
 
@@ -379,10 +358,6 @@ class RegionPlotWidget(BasePlotWidget):
 		if self.plugin:
 			self.plugin.mgr.addEventHandler(EventType._widgetPreDraw,self.setCurrentTime)
 
-	def paintEvent(self,e):
-		self.colorbar.setParentHeight(self.height())
-		BasePlotWidget.paintEvent(self,e)
-
 	def parentClosed(self,e):
 		self.plugin.mgr.removeEventHandler(self.setCurrentTime)
 
@@ -434,6 +409,8 @@ class RegionPlotWidget(BasePlotWidget):
 		self.colorbar.setValRange(*self.dataRange)
 
 	def updateGraph(self):
+		self.colorbar.setParentHeight(self.height())
+
 		for i,data in enumerate(self.matrix[self.currentTimeIndex]):
 			xi=clamp(lerpXi(data,*self.dataRange),0.0,1.0)
 			q=self.colormap.mapToQColor(xi)
