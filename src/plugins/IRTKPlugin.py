@@ -447,10 +447,14 @@ class IRTKPluginMixin(object):
 				loadnames=[]
 
 				tagobj=Future.get(tagobj)
-				#magimgs=[i for i in tagobj.images if i.imgmin>=0] # magnitude images only, remove phase images
-				magimgs=tagobj.images[:len(tagobj.images)/2] # magnitude images only, remove phase images assuming these are the last half of the series
-				tagobj=ImageSceneObject('tempobj',tagobj.source,magimgs,tagobj.plugin)
 
+				magimgs=tagobj.images
+				img1=magimgs[0]
+				# magnitude images only, remove phase images assuming these are the last half of the series
+				if any(i.isSameLocation(img1) and i.timestep==img1.timestep for i in magimgs[1:]):
+					magimgs=tagobj.images[:len(tagobj.images)/2]
+
+				tagobj=ImageSceneObject('tempobj',tagobj.source,magimgs,tagobj.plugin)
 				tsinds=tagobj.getTimestepIndices()
 				tso=tagobj.getOrientMap()
 				ts=[t[0] for t in tsinds]

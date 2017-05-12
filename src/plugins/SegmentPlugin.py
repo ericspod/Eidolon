@@ -977,10 +977,11 @@ class LVSeg2DMixin(DrawContourMixin):
 
 	def mouseRelease(self,e):
 		if self.drawMouseRelease(e):
-			self.uiobj.addButton.setStyleSheet('')
 			self.addContour(self.contour)
 		else:
 			Camera2DView.mouseRelease(self,e)
+
+		self.uiobj.addButton.setStyleSheet('')
 
 		if self.isContoursVisible():
 			self.mgr.repaint()
