@@ -1026,105 +1026,91 @@ class DicomPlugin(ImageScenePlugin):
 		'''Deprecated, for compatibility only.'''
 		return self.saveObject(obj,dirpath,datasetTags=datasetTags,fileMetaTags=fileMetaTags)
 
-	def saveObject(self,obj,path,overwrite=False,setFilenames=False,datasetTags={},fileMetaTags={}, *args,**kwargs):
-		@taskroutine('Saving DICOM Files')
-		def _save(path,obj,datasetTags,fileMetaTags,task=None):
-			if not path: # if not path given, choose the one the first source file is in or the current directory
-				files=obj.plugin.getObjFiles(obj)
-				if files:
-					path=os.path.dirname(files[0])
-				else:
-					path=os.getcwd()
+	@taskmethod('Saving DICOM Files')
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,datasetTags={},fileMetaTags={},task=None, *args,**kwargs):
+		defaultfiletags={
+			# TODO: are these correct? I'm just copy-pasting from http://stackoverflow.com/questions/14350675/create-pydicom-file-from-numpy-array
+			'MediaStorageSOPClassUID' : '1.2.840.10008.5.1.4.1.1.7', # UID for SOP "Secondary Capture Image Storage", same as SOPClassUID
+			'MediaStorageSOPInstanceUID' : '1.3.6.1.4.1.9590.100.1.1.111165684411017669021768385720736873780',
+			'ImplementationClassUID' : '1.3.6.1.4.1.9590.100.1.0.100.4.0'
+		}
 
-			rootpath=os.path.join(path,getValidFilename(obj.getName()))
+		defaultdatasettags={
+			'ContentDate' : str(datetime.date.today()).replace('-',''),
+			'ContentTime' : str(time.time()),
+			'Modality' : 'WSD',
+			# TODO: are these correct UIDs?
+			'SOPInstanceUID' : defaultfiletags['MediaStorageSOPInstanceUID'],
+			'SOPClassUID' : defaultfiletags['MediaStorageSOPClassUID'], # UID for SOP "Secondary Capture Image Storage"
+			# TODO: need to choose instance UIDs better
+			'SeriesInstanceUID' : '1.3.6.1.4.1.9590.100.1.1.'+(''.join(str(randint(0,10)) for i in range(39))),
+			'StudyInstanceUID' :  '1.3.6.1.4.1.9590.100.1.1.'+(''.join(str(randint(0,10)) for i in range(39))),
+			'SecondaryCaptureDeviceManufctur' : sys.version,
+			'SamplesPerPixel' : 1,
+			'PhotometricInterpretation' : "MONOCHROME2",
+			'PixelRepresentation' : 0,
+			'HighBit' : 15,
+			'BitsStored' : 16,
+			'BitsAllocated' : 16,
+			'RescaleSlope' : 1,
+			'RescaleIntercept' : 0,
+			'PatientName' : 'Anon',
+			'SmallestImagePixelValue' : '\\x00\\x00', # these are both default values, the actual image contents may not reflect this
+			'LargestImagePixelValue' : '\\xff\\xff',
+			'SliceThickness': obj.getVoxelSize().z()
+		}
 
-			iobj=self.getImageObjectArray(obj)
-			matrix=iobj['dat']
-			imgmin=matrix.min() # recall the minimal image value, this will become the intercept
-			matrix=(matrix-imgmin).astype(np.uint16) # convert to unsigned short, adding imgmin to ensure negative values don't overflow
+		if not path: # if no path given, choose the one the first source file is in or the current directory
+			files=obj.plugin.getObjFiles(obj)
+			path=os.path.dirname(files[0]) if files else os.getcwd()
 
-			# TODO: rescale matrix into unsigned 16 bit space properly
+		rootpath=os.path.join(path,getValidFilename(obj.getName()))
+		dtype=np.uint16
+		maxrange=np.iinfo(dtype).max-np.iinfo(dtype).min
 
-			timeseqs=obj.getVolumeStacks()
-			shape=list(matrix.shape)
-			dims=len(shape)
-			height,width,slices,timesteps=shape+[1]*(4-dims)
+		if task:
+			task.setMaxProgress(len(obj.images))
 
-			if dims==4:
-				stdat=lambda s,t: matrix[:,:,s,t]
-			elif dims==3:
-				stdat=lambda s,t: matrix[:,:,s]
-			else:
-				stdat=lambda s,t: matrix
-
+		# write out each image in the order the object stores them, this should preserve order between Dicom import/export operations
+		for index,image in enumerate(obj.images):
 			if task:
-				task.setMaxProgress(slices*timesteps)
+				task.setProgress(index+1)
 
-			defaultfiletags={
-				# TODO: are these correct? I'm just copy-pasting from http://stackoverflow.com/questions/14350675/create-pydicom-file-from-numpy-array
-				'MediaStorageSOPClassUID' : '1.2.840.10008.5.1.4.1.1.7', # UID for SOP "Secondary Capture Image Storage", same as SOPClassUID
-				'MediaStorageSOPInstanceUID' : '1.3.6.1.4.1.9590.100.1.1.111165684411017669021768385720736873780',
-				'ImplementationClassUID' : '1.3.6.1.4.1.9590.100.1.0.100.4.0'
-			}
+			filename='%s_%.5i.dcm'%(rootpath,index)
 
-			defaultdatasettags={
-				'ContentDate' : str(datetime.date.today()).replace('-',''),
-				'ContentTime' : str(time.time()),
-				'Modality' : 'WSD',
-				# TODO: are these correct UIDs?
-				'SOPInstanceUID' : defaultfiletags['MediaStorageSOPInstanceUID'],
-				'SOPClassUID' : defaultfiletags['MediaStorageSOPClassUID'], # UID for SOP "Secondary Capture Image Storage"
-				# TODO: need to choose instance UIDs better
-				'SeriesInstanceUID' : '1.3.6.1.4.1.9590.100.1.1.'+(''.join(str(randint(0,10)) for i in range(39))),
-				'StudyInstanceUID' :  '1.3.6.1.4.1.9590.100.1.1.'+(''.join(str(randint(0,10)) for i in range(39))),
-				'SecondaryCaptureDeviceManufctur' : sys.version,
-				'SamplesPerPixel' : 1,
-				'PhotometricInterpretation' : "MONOCHROME2",
-				'PixelRepresentation' : 0,
-				'HighBit' : 15,
-				'BitsStored' : 16,
-				'BitsAllocated' : 16,
-				'RescaleSlope' : 1,
-				'RescaleIntercept' : int(imgmin),
-				'PatientName' : 'Anon',
-				'SmallestImagePixelValue' : '\\x00\\x00', # these are both default values, the actual image contents may not reflect this
-				'LargestImagePixelValue' : '\\xff\\xff',
-				'SliceThickness': obj.getVoxelSize().z()
-			}
+			# calculate intercept and slope
+			intercept=image.imgmin
+			imgrange=image.imgmax-intercept
+			slope=max(1,imgrange/float(maxrange)) # slope is 1 if values are all within the range of dtype, otherwise is a scaling value
 
-			for s,t in trange(slices,timesteps):
-				if task:
-					task.setProgress(t+s*timesteps+1)
+			# convert pixel array to the correct data type and scaling by slope/intercept
+			pixel_array=((np.asarray(image.img)-intercept)/slope).astype(dtype)
 
-				pixel_array=stdat(s,t)
+			# create and fill in a dataset object the file requires
+			file_meta = Dataset()
+			for k,v in defaultfiletags.items()+fileMetaTags.items():
+				setattr(file_meta,k,v)
 
-				index=s+t*slices
-				img=obj.images[timeseqs[t][s]]
-				filename='%s_%.5i.dcm'%(rootpath,index)
+			# create and fill in the file-specific dataset
+			ds = FileDataset(filename, {},file_meta = file_meta,preamble="\0"*128)
+			for k,v in defaultdatasettags.items()+datasetTags.items():
+				setattr(ds,k,v)
 
-				file_meta = Dataset()
+			# set specific values for this image
+			ds.RescaleSlope=slope
+			ds.RescaleIntercept=intercept
+			ds.Columns = pixel_array.shape[1]
+			ds.Rows = pixel_array.shape[0]
+			ds.ImagePositionPatient=list(image.position)
+			ds.ImageOrientationPatient=list(image.orientation*vec3(1,0,0))+list(image.orientation*vec3(0,-1,0))
+			ds.TriggerTime=int(image.timestep)
+			ds.PixelSpacing=list(image.spacing)
+			ds.SliceLocation=0#s*ds.SliceThickness
+			ds.SeriesDescription=obj.getName()
+			ds.PixelData = pixel_array.tostring()
+			ds.LargestImagePixelValue=pixel_array.max()
 
-				for k,v in defaultfiletags.items()+fileMetaTags.items():
-					setattr(file_meta,k,v)
-
-				ds = FileDataset(filename, {},file_meta = file_meta,preamble="\0"*128)
-
-				for k,v in defaultdatasettags.items()+datasetTags.items():
-					setattr(ds,k,v)
-
-				ds.Columns = pixel_array.shape[1]
-				ds.Rows = pixel_array.shape[0]
-				ds.ImagePositionPatient=list(img.position)
-				ds.ImageOrientationPatient=list(img.orientation*vec3(1,0,0))+list(img.orientation*vec3(0,-1,0))
-				ds.TriggerTime=int(img.timestep)
-				ds.PixelSpacing=list(img.spacing)
-				ds.SliceLocation=s*ds.SliceThickness
-				ds.SeriesDescription=obj.getName()
-				ds.PixelData = pixel_array.tostring()
-
-				ds.save_as(filename)
-
-		return self.mgr.runTasks(_save(obj,path,datasetTags,fileMetaTags))
+			ds.save_as(filename)
 
 	def getScriptCode(self,obj,**kwargs):
 		configSection=kwargs.get('configSection',False)
@@ -1260,7 +1246,8 @@ class DicomPlugin(ImageScenePlugin):
 
 			outdir=self.mgr.win.chooseDirDialog('Choose directory to save Dicoms to')
 			if outdir:
-				self.saveObject(outdir,obj,overwrite=True)
+				f=self.saveObject(obj,outdir,overwrite=True)
+				self.mgr.checkFutureResult(f)
 
 
 addPlugin(DicomPlugin())
