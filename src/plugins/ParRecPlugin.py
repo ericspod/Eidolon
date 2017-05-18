@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -126,43 +126,43 @@ def parseParFile(filename):
 	geninfo={}
 	imginfo=[]
 	numinfocols=sum(f[-2] for f in imgInfoFields)
-	
+
 	with open(filename) as o:
 		lines=[l.strip() for l in o.readlines() if l.strip() and l.strip()[0]!='#']
-		
+
 	# parse the header values, this assumes the header values are always in the same order and does not check names
 	for i in xrange(len(genInfoFields)):
 		name,value=lines.pop(0).split(':',1)
 		assert name[0]=='.'
-		
+
 		if genInfoFields[i][2]==str:
 			value=value.strip()
 		else:
 			value=map(genInfoFields[i][2],value.split())
-			
+
 		geninfo[i]=value
-		
+
 	# parse the image info lines, this assumes the columns are always in the same order and does not check names as specified
 	for line in lines:
 		vals=map(float,line.split()) # convert to float now so that a column that's supposed to be int but is given as float will convert correctly
 		assert len(vals)==numinfocols
 		imgdef=[]
-		
+
 		for _,_,vtype,dim,_ in imgInfoFields:
 			if dim==1:
 				imgdef.append(vtype(vals.pop(0)))
 			else:
 				imgdef.append(tuple(vtype(vals.pop(0)) for i in range(dim)))
-				
+
 		imginfo.append(imgdef)
-		
+
 	return geninfo,imginfo
 
 
 def getTransformFromInfo(offcenter,angulation,sliceorient,spacing,dimensions):
 	'''
 	Returns a (vec3,rotator) pair for the position and orientation of an image given the ParRec parameters for
-	offcenter position, angulation in degrees, slice orientation value from SliceOrientations, pixel spacing, 
+	offcenter position, angulation in degrees, slice orientation value from SliceOrientations, pixel spacing,
 	and image dimensions.
 	'''
 	cy,cz,cx=offcenter
@@ -170,7 +170,7 @@ def getTransformFromInfo(offcenter,angulation,sliceorient,spacing,dimensions):
 	refmat=np.array([[-1,0,0],[0,0,1],[0,-1,0]])
 	AFRtoLPS=np.array([[0,0,1],[1,0,0],[0,1,0]])
 	torient=np.eye(3)
-	
+
 	# get the slice orientation transform matrix
 	if sliceorient==SliceOrientations.Transverse:
 		torient=np.array([[0,1,0],[-1,0,0],[0,0,-1]])
@@ -178,33 +178,33 @@ def getTransformFromInfo(offcenter,angulation,sliceorient,spacing,dimensions):
 		torient=np.array([[-1,0,0],[0,0,-1],[0,1,0]])
 	elif sliceorient==SliceOrientations.Coronal:
 		torient=np.array([[0,0,-1],[1,0,0],[0,1,0]])
-	
+
 	# convert angulation values to rotation matrices
 	tap=np.array([[1,0,0],[0,math.cos(theta),-math.sin(theta)],[0,math.sin(theta),math.cos(theta)]])
 	tfh=np.array([[math.cos(phi),0,math.sin(phi)],[0,1,0],[-math.sin(phi),0,math.cos(phi)]])
 	trl=np.array([[math.cos(rho),-math.sin(rho),0],[math.sin(rho),math.cos(rho),0],[0,0,1]])
-	
+
 	# compose transformations and convert to a rotator object
 	dirmat=AFRtoLPS.dot(trl).dot(tap).dot(tfh).dot(refmat).dot(torient)
 	rot=rotator(*dirmat.flat)
-	
-	# Since rotation is defined at the center of the image, need to add a rotated mid vector to the 
+
+	# Since rotation is defined at the center of the image, need to add a rotated mid vector to the
 	# position which is instead defined at the top left corner.
 	midoffset=((spacing*vec3(1,-1,1))*(dimensions-vec3(1)))*0.5-spacing*vec3(0.5,-0.5,0)
 	pos=vec3(cx,cy,cz)-(rot*midoffset)
-	
+
 	return pos,rot
-		
+
 
 class ParRecPlugin(ImageScenePlugin):
 	def __init__(self):
 		ImageScenePlugin.__init__(self,'ParRec')
-		
+
 	def init(self,plugid,win,mgr):
 		ImageScenePlugin.init(self,plugid,win,mgr)
 		if win:
 			win.addMenuItem('Import','ParRecLoad'+str(plugid),'&Par File (Par-Rec)',self._openFileDialog)
-		
+
 		# read command line argument, loading files as requested, note these tasks are queued at module load time
 		if mgr.conf.hasValue('args','--parrec'):
 			loadvals=mgr.conf.get('args','--parrec').split(',')
@@ -214,63 +214,63 @@ class ParRecPlugin(ImageScenePlugin):
 					filereprs[-1][1]=v
 				else:
 					filereprs.append([v,None])
-					
+
 			@taskroutine('Loading Par-Rec File(s)')
 			def _loadTask(filereprs,task=None):
 				for v,reprtype in filereprs:
 					for obj in self.loadObject(v):
 						self.mgr.addSceneObject(obj)
-						
+
 						if reprtype!=None:
 							rep=obj.createRepr(reprtype)
 							self.mgr.addSceneObjectRepr(rep)
 							self.mgr.setCameraSeeAll()
-			
+
 			self.mgr.runTasks([_loadTask(filereprs)])
-			
+
 	def getHelp(self):
 		return '\nUsage: --parrec=par-file-path[,representation-type][,...]'
-		
+
 	def acceptFile(self,filename):
 		return splitPathExt(filename)[2].lower() == '.par'
-		
+
 	def checkFileOverwrite(self,obj,dirpath,name=None):
 		outfile=os.path.join(dirpath,name or obj.getName())
 		result=[]
-		
+
 		if os.path.exists(outfile+'.par'):
 			result.append(outfile+'.par')
-			
+
 		if os.path.exists(outfile+'.rec'):
 			result.append(outfile+'.rec')
-		
+
 		return result
-		
+
 	def getObjFiles(self,obj):
 		filename=obj.source['filename']
 		recfile=os.path.splitext(filename)[0]
-		
+
 		if os.path.exists(recfile+'.rec'):
 			recfile=recfile+'.rec'
 		elif os.path.exists(recfile+'.REC'):
 			recfile=recfile+'.REC'
-			
+
 		return [filename,recfile]
-		
+
 	def copyObjFiles(self,obj,sdir,overwrite=False):
 		par,rec=self.getObjFiles(obj)
 		filename=os.path.join(sdir,os.path.basename(par))
 		obj.source['filename']=filename
 		copyfileSafe(par,filename,overwrite)
 		copyfileSafe(rec,os.path.join(sdir,os.path.basename(rec)),overwrite)
-		
+
 	def renameObjFiles(self,obj,oldname,overwrite=False):
 		assert isinstance(obj,SceneObject) and obj.plugin==self
 		oldpath=obj.source['filename']
 		recfile=ensureExt(oldpath,'.rec' if os.path.splitext(oldpath)[1]=='.par' else '.REC',True)
 		renameFile(recfile,obj.getName(),overwriteFile=overwrite)
 		obj.source['filename']=renameFile(oldpath,obj.getName(),overwriteFile=overwrite)
-			
+
 	def loadObject(self,filename,name=None,scalemethod=None,**kwargs):
 		f=Future()
 		@taskroutine('Loading ParRec Files')
@@ -278,7 +278,7 @@ class ParRecPlugin(ImageScenePlugin):
 			with f:
 				filename=Future.get(filename)
 				name=name or self.mgr.getUniqueObjName(splitPathExt(filename)[1])
-				
+
 				recfile=os.path.splitext(filename)[0]
 				if os.path.exists(recfile+'.rec'):
 					recfile=recfile+'.rec'
@@ -286,40 +286,40 @@ class ParRecPlugin(ImageScenePlugin):
 					recfile=recfile+'.REC'
 				else:
 					raise IOError("Cannot find rec file '%s.rec'"%recfile)
-					
+
 				geninfo,imginfo=parseParFile(filename) # read par file
 				rec=np.fromfile(recfile,np.uint8) # read rec file
-				
+
 #				numorients=geninfo[genInfoFields.maxgrad[2]][0]
 #				numslices=geninfo[genInfoFields.maxloc[2]][0]
 #				numsteps=geninfo[genInfoFields.maxphase[2]][0]
-				
+
 #				slicenum=imgInfoFields.slicenum[-1]
 #				trigger=imgInfoFields.trigger[-1]
-				
+
 #				numslices=len(set(i[slicenum] for i in imginfo))
 #				# count the number of times the slice number decreases one slice to the next, this indicates how many times the slice index loops back
 #				numorients=1+sum(1 if imginfo[i][slicenum]>imginfo[i+1][slicenum] else 0 for i in range(len(imginfo)-1))
 #				# count the number of times the trigger time decreases one slice to the next, this indicates when the images transition between volumes
 #				numvols=1+sum(1 if imginfo[i][trigger]>imginfo[i+1][trigger] else 0 for i in range(len(imginfo)-1))/(numorients*numslices)
-				
+
 #				if len(imginfo)!=(numvols*numorients*numslices*numsteps):
 #					raise IOError,'Mismatch between stated orient, slice, and step numbers and number of images (%r != %r*%r*%r*%r)'%(len(imginfo),numorients,numslices,numsteps,numvols)
-				
+
 #				orientsize=len(imginfo)/numorients
 				datasize=0
 				objs=[]
 				rpos=0
 				typemap={} # maps type ID to dict mapping dynamic ID to SharedImage lists
-				
+
 				for imgi in imginfo: # sum up the sizes of each image to compare against the actual size of the rec file
 					w,h=imgi[imgInfoFields.reconres[-1]]
 					pixelsize=imgi[imgInfoFields.imgpix[-1]]/8 # convert from bits to bytes
 					datasize+=w*h*pixelsize
-				
+
 				if rec.shape[0]!=datasize:
 					raise IOError('Rec file incorrect size, should be %i but is %i'%(datasize,rec.shape[0]))
-					
+
 				for imgi in imginfo:
 					dynamic=imgi[imgInfoFields.dynnum[-1]]
 					itype=imgi[imgInfoFields.imgtypemr[-1]]
@@ -332,44 +332,44 @@ class ParRecPlugin(ImageScenePlugin):
 					pixelsize=imgi[imgInfoFields.imgpix[-1]]
 					reslope=imgi[imgInfoFields.rescalesl[-1]]
 					intercept=imgi[imgInfoFields.rescalein[-1]]
-					
+
 					if itype not in typemap:
 						typemap[itype]=dict()
-						
+
 					if dynamic not in typemap[itype]:
 						typemap[itype][dynamic]=[]
-						
+
 					images=typemap[itype][dynamic]
-						
+
 					dtype=np.dtype('uint'+str(pixelsize))
-					
+
 					pos,rot=getTransformFromInfo(offcenter,angulation,orientation,vec3(*spacing),vec3(*dims))
 
 					imgsize=dims[0]*dims[1]*dtype.itemsize
 					arr=rec[rpos:rpos+imgsize].view(dtype).reshape(dims)
 					rpos+=imgsize
-					
+
 					if scalemethod in ('dv','DV'):
-						arr=(arr.astype(float)*reslope)+intercept # DV scaling method							
+						arr=(arr.astype(float)*reslope)+intercept # DV scaling method
 
 					simg=SharedImage(recfile,pos,rot,dims,spacing,trigger)
 					simg.allocateImg('%s_t%i_d%i_img%i'%(name,itype,dynamic,len(images)))
 					#simg.setArrayImg(arr)
 					simg.setMinMaxValues(arr.min(),arr.max())
 					np.asarray(simg.img)[:,:]=arr
-						
-					images.append(simg)	
-				
+
+					images.append(simg)
+
 				for itype in typemap:
 					for dynamic,images in typemap[itype].items():
 						vname='%s_t%i_d%i'%(name,itype,dynamic)
 						source={'geninfo':geninfo,'imginfo':imginfo,'filename':filename,'scalemethod':scalemethod,'loadorder':len(objs)}
 						obj=ImageSceneObject(vname,source,images,self)
 						objs.append(obj)
-				
+
 #				for numo in xrange(numorients):
 #					orientimgs=imginfo[numo*orientsize:(numo+1)*orientsize]
-#					
+#
 #					for numv in xrange(numvols):
 #						volsimgs=[img for i,img in enumerate(orientimgs) if i%numvols==numv]
 #						images=[]
@@ -382,40 +382,40 @@ class ParRecPlugin(ImageScenePlugin):
 #							offcenter=imgi[imgInfoFields.imgoff[-1]]
 #							angulation=imgi[imgInfoFields.imgang[-1]]
 #							pixelsize=imgi[imgInfoFields.imgpix[-1]]
-#							
+#
 #							reslope=imgi[imgInfoFields.rescalesl[-1]]
 #							intercept=imgi[imgInfoFields.rescalein[-1]]
-#							
+#
 #							dtype=np.dtype('uint'+str(pixelsize))
-#							
+#
 #							pos,rot=self._getTransformFromInfo(offcenter,angulation,orientation,vec3(*spacing),vec3(*dims))
-#		
+#
 #							imgsize=dims[0]*dims[1]*dtype.itemsize
 #							arr=rec[rpos:rpos+imgsize].view(dtype).reshape(dims)
 #							rpos+=imgsize
-#							
+#
 #							if scalemethod in ('dv','DV'):
-#								arr=(arr.astype(float)*reslope)+intercept # DV scaling method							
-#	
+#								arr=(arr.astype(float)*reslope)+intercept # DV scaling method
+#
 #							simg=SharedImage(recfile,pos,rot,dims,spacing,trigger)
 #							simg.allocateImg('%s_img%i'%(vname,len(images)))
 #							simg.setArrayImg(arr)
 #							images.append(simg)
-#						
+#
 #						obj=ImageSceneObject(vname,{'geninfo':geninfo,'imginfo':imginfo,'filename':filename},images,self)
 #						objs.append(obj)
 
 				assert rpos==rec.shape[0],'%i != %i'%(rpos,rec.shape[0])
-					
+
 				f.setObject(objs)
-					
+
 		return self.mgr.runTasks([_loadFile(filename,name)],f)
-			
+
 	def _openFileDialog(self):
 		filename=self.mgr.win.chooseFileDialog('Choose Par filename',filterstr='Par Files (*.par *.PAR)')
 		if filename!='':
 			self.mgr.addFuncTask(lambda:map(self.mgr.addSceneObject,self.loadObject(filename)),'Importing ParRec files')
-			
+
 	def getScriptCode(self,obj,**kwargs):
 		configSection=kwargs.get('configSection',False)
 		namemap=kwargs.get('namemap',{})
@@ -423,20 +423,20 @@ class ParRecPlugin(ImageScenePlugin):
 		varname=namemap[obj]
 		script=''
 		args={}
-		
+
 		if not configSection and isinstance(obj,ImageSceneObject):
 			filename=convertpath(obj.source['filename'])
-			
+
 			args={
 				'varname':varname,
 				'objname':obj.name,
 				'filename':filename,
-				'loadorder':obj.source['loadorder'],
+				'loadorder':obj.source['loadorder'], # load order is used to load the same Parrec file multiple times once for each image
 				'scalemethod':obj.source['scalemethod'],
 			}
-					
+
 			script+='%(varname)s = ParRec.loadObject(%(filename)s,%(objname)r,%(scalemethod)r)[%(loadorder)i]\n'
-			
+
 		elif isinstance(obj,ImageSceneObjectRepr):
 			args={
 				'varname':varname,
@@ -444,12 +444,12 @@ class ParRecPlugin(ImageScenePlugin):
 				'reprtype':obj.reprtype,
 				'matname':namemap.get(obj.getMaterialName(),'Greyscale')
 			}
-			
+
 			if configSection:
 				script= ImageScenePlugin.getScriptCode(self,obj,setMaterial=False,**kwargs)
 			else:
 				script= "%(varname)s=%(pname)s.createRepr(ReprType._%(reprtype)s,imgmat=%(matname)s)\n"
-			
-		return setStrIndent(script % args).strip()+'\n'		
-		
+
+		return setStrIndent(script % args).strip()+'\n'
+
 addPlugin(ParRecPlugin())

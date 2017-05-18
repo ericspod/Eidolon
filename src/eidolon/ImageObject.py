@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -36,18 +36,18 @@ def isImageVolume(images,err=1e-3):
 	'''
 	if len(images)==1:
 		return True
-		
+
 	_,start,end=max((i.position.distTo(j.position),i.position,j.position) for i in images for j in images)
 	diags=[i.center-i.position for i in images]
-	
+
 	sameaxis=all(0<=i.position.lineDist(start,end)<=err for i in images)
 	samenorm=all(abs(i.norm.angleTo(start-end))<=err or abs(i.norm.angleTo(end-start))<=err for i in images)
 	samediags=all(d.distTo(diags[0])<=err for d in diags)
-	
+
 	if not sameaxis and samenorm and samediags:
 		#printFlush(images,sameaxis,samenorm,samediags)
 		return False
-		
+
 	return True
 
 
@@ -149,17 +149,17 @@ class SharedImage(object):
 		newimg=self.img.subMatrix(self.img.getName()+'crop',rows,cols,miny,minx,self.img.isShared())
 		newmin,newmax=minmaxMatrixReal(newimg)
 		return SharedImage(self.filename,newpos,self.orientation,(cols,rows),self.spacing,self.timestep,newimg,newmin,newmax)
-		
+
 	def resize(self,x,y,fillVal=0):
 		'''
-		Extend or contract the image by `x' pixels on the left and right and `y' pixels on the top and bottom. This 
+		Extend or contract the image by `x' pixels on the left and right and `y' pixels on the top and bottom. This
 		will change the column count by x*2 and row count by y*2.
 		'''
 		newpos=self.getPlanePos(vec3(-x-0.5,-y-0.5),False)
 		rows=2*y+self.dimensions[1]
 		cols=2*x+self.dimensions[0]
 		newimg=RealMatrix(self.img.getName()+'resize',rows,cols,self.img.isShared())
-		
+
 		for n,m in trange(rows,cols):
 			ny=n-y
 			mx=m-x
@@ -167,12 +167,12 @@ class SharedImage(object):
 				newimg.setAt(self.img.getAt(ny,mx),n,m)
 			else:
 				newimg.setAt(fillVal,n,m)
-				
+
 		if x>0 or y>0:
 			newmin,newmax=minmax(fillVal,self.imgmin,self.imgmax)
 		else:
 			newmin,newmax=minmaxMatrixReal(newimg)
-				
+
 		return SharedImage(self.filename,newpos,self.orientation,(cols,rows),self.spacing,self.timestep,newimg,newmin,newmax)
 
 	def allocateImg(self,name,isShared=True):
@@ -185,7 +185,7 @@ class SharedImage(object):
 			self.img=None
 			self.imgmin=0.0
 			self.imgmax=0.0
-			
+
 #	def setArrayImg(self,arr):
 #		self.setMinMaxValues(arr.min(),arr.max())
 #		arrayToMatrix(arr,self.img)
@@ -220,7 +220,7 @@ class SharedImage(object):
 		from the plane, positive values above and negative below. Top left corner is (0,0,0), bottom right (1,1,0).
 		'''
 		return getPlaneXi(pos,self.position,self.orientinv,self.dimvec)
-		
+
 	def getPlaneDir(self,pos):
 		'''Returns the directional vector `pos' as the equivalent direction in plane xi coordinates.'''
 		return (self.orientinv*pos)*(self.dimvec+vec3(0,0,1))
@@ -261,9 +261,9 @@ class SharedImage(object):
 
 	def setTransform(self,trans):
 		'''
-		Apply the transform object `trans' to this image. The translation component is used as the new position, the 
-		voxel size is scaled by the scale component (ie. scale of (1,1,1) preserves voxel size), and the rotational 
-		component is used as the orientation. 
+		Apply the transform object `trans' to this image. The translation component is used as the new position, the
+		voxel size is scaled by the scale component (ie. scale of (1,1,1) preserves voxel size), and the rotational
+		component is used as the orientation.
 		'''
 		self.position=trans.getTranslation()
 		self.orientation=trans.getRotation()
@@ -285,11 +285,13 @@ class ImageSceneObject(SceneObject):
 		else:
 			self.source=source
 
+		self.kwargs['source']=source
+
 		assert len(images)>0,'Empty series: '+name
 
 		self.images=list(images)
 		self.alphamasks=None # list of RealMatrix images, one for each in self.images, used as alpha masks, or None to not use masks
-		
+
 		self.is2D=sum([self.images[0].position-i.position for i in self.images],vec3()).isZero()
 		self.isTimeDependent=isTimeDependent
 		self.maxrows=max(s.img.n() for s in images)
@@ -374,7 +376,7 @@ class ImageSceneObject(SceneObject):
 		'''
 		Apply the transform object `trans' to this object. If this is a 2D object, `trans' is applied to every image
 		directly. If 3D, the translation component is used as the new origin, the voxel size is scaled by the scale
-		component (ie. scale of (1,1,1) preserves voxel size), and the rotational component is used as the orientation. 
+		component (ie. scale of (1,1,1) preserves voxel size), and the rotational component is used as the orientation.
 		'''
 		if self.is2D:
 			for i in self.images:
@@ -442,7 +444,7 @@ class ImageSceneObject(SceneObject):
 		Returns a map from (vec3,rotator) pairs to the indices of all images (in temporal order) having that
 		position and orientation. Each value in the map thus indexes the images defining a 2D slice in time. The
 		ordering of the indices is depedent on the ordering of self.images if multiple colinear images have the same
-		timestep. 
+		timestep.
 		'''
 		timeorientmap={}
 		for i,img in enumerate(self.images):
@@ -462,7 +464,7 @@ class ImageSceneObject(SceneObject):
 		Returns a list of pairs containing the time for each timestep (ie. the average timing value of the images
 		defining the timestep) and a list if image indices for those images at that time. If this image is not time-
 		dependent, then each member of the list has the same time value but represents an independent image series
-		which are differentiated by position and orientation. The indices are always sorted in stack order. The 
+		which are differentiated by position and orientation. The indices are always sorted in stack order. The
 		ordering of the indices is dependent on the ordering of self.images.
 		'''
 
@@ -476,10 +478,10 @@ class ImageSceneObject(SceneObject):
 			orientlists=self.getTimeOrientMap().values()
 
 			if len(orientlists)>0:
-				for ts in xrange(len(orientlists[0])): # ts is the index of a timestep, 
+				for ts in xrange(len(orientlists[0])): # ts is the index of a timestep,
 					# this ensures that all timesteps have the same number of images
 					assert all(ts<len(olist) for olist in orientlists),'Not all orient lists have value for timestep %s\norient list lengths are: %r'%(ts,map(len,orientlists))
-					
+
 					inds=[olist[ts] for olist in orientlists] # indices of all images for this timestep
 					images=indexList(inds,self.images) # get the SharedImage objects
 					sortorder=sortImageStack(images) # determine the ordering of the images which form a bottom-up stack
@@ -588,7 +590,7 @@ class ImageSceneObjectRepr(SceneObjectRepr):
 		'''
 		Get the transform representing the chosen image component of the current timestep. The component is either an
 		image plane in the stack of the current timestep, in which case the transform defines this plane in space, or
-		a volume of the current timestep, in which case the transform defines this volume in space. If `chosen' 
+		a volume of the current timestep, in which case the transform defines this volume in space. If `chosen'
 		is None, then an internal criteria can be use to select the component, ie. choose the first.
 		'''
 		pass
@@ -689,13 +691,13 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
 
 	def getCurrentTimestepMaterial(self,chosen=None):
 		chosen=first(c for c in (chosen,self.chosenSlice,0) if c!=None)
-			
+
 		imgind=self.getCurrentTimestepIndices()[clamp(chosen,0,self.getNumStackSlices()-1)]
 		return self.figmats[imgind]
 
 	def getDefinedTransform(self,chosen=None):
 		chosen=first(c for c in (chosen,self.chosenSlice,0) if c!=None)
-		
+
 		imgind=self.getCurrentTimestepIndices()[clamp(chosen,0,self.getNumStackSlices()-1)]
 		img=self.images[imgind]
 
@@ -721,7 +723,7 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
 		if isinstance(val,vec3):
 			trans=self.getTransform().inverse()
 			tdir=trans.directional()
-			
+
 			for img,mat in zip(self.parent.images,self.figmats):
 				if transformVec:
 					val1=img.getPlaneXi(trans*val)
@@ -740,13 +742,13 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
 		self._isVisible=False
 		for f in self.figs:
 			f.setVisible(False)
-			
+
 		self.figs=[]
 		self.figmats=[]
-		self.figtextures=[] 
-		self.buffs=[] 
+		self.figtextures=[]
+		self.buffs=[]
 
-		self.chosenSlice=None 
+		self.chosenSlice=None
 
 	def setVisible(self,isVisible):
 		if isVisible!=self._isVisible:
@@ -798,7 +800,7 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
 
 			snodes=[orient*(n*dv) for n in pnodes]
 			norms=[orient*vec3(0,0,1)]*len(snodes)
-			
+
 			vb=PyVertexBuffer(snodes,norms,None,xis)
 
 			self.buffs.append((fig,vb,ib))
@@ -904,7 +906,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 	def getDefinedTransform(self,chosen=None):
 		imgind=self.getCurrentTimestepIndices()[0]
 		tsind=self.timestepIndex
-		
+
 		if imgind>=len(self.images) or tsind>=len(self.figs):
 			return self.parent.getVolumeTransform()
 		else:
@@ -913,7 +915,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 			trans=self.figs[tsind].getPosition(True)-img.orientation*(vdims*vec3(0.5,-0.5,0))
 			scale=self.figs[tsind].getScale(True)*(vdims*vec3(1,-1,1))
 			rot=self.figs[tsind].getRotation(True)
-	
+
 			return transform(trans,scale,rot)
 
 	def getPlaneIntersects(self,planept,planenorm,transformPlane=False,isXiPoint=False):
@@ -963,11 +965,11 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 		self.figs=[]
 		self.figtexbb=[]
 		self.figmats=[]
-		self.figtextures=[] 
+		self.figtextures=[]
 		self.figpositions=[]
 		self.figorients=[]
 		self.figdims=[]
-		self.figinds=[] 
+		self.figinds=[]
 		self.fighexes=[]
 		self.submatrices=[]
 		self.subalphas=[]
