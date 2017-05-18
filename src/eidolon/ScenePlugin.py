@@ -1241,8 +1241,11 @@ class ImageScenePlugin(ScenePlugin):
 		return self.createSceneObject('TestImage',images,(w,h,d,timesteps,pos,rot,spacing),timesteps>1)
 
 	def createSequence(self,name,objs,timesteps=None):
+		'''
+		Create a time-dependent object from the static images `objs', each of which becomes a timestep in the result
+		object. The timesteps for the result is `timesteps' or range(len(objs)) if given as None.
+		'''
 		timesteps=timesteps or range(len(objs))
-
 		images=[]
 		for t,o in zip(timesteps,objs):
 			for i in o.images:

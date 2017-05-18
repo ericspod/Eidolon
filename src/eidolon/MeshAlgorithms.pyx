@@ -772,7 +772,7 @@ def calculateDataColorationRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,
 		fft=first((f,ft) for f,ft in fieldtopolist if f.meta(StdProps._spatial)==t.getName() or ft.getName()==t.getName())
 		if fft:
 			field,fieldtopo=fft
-			isPerElem=bool(field.meta(StdProps._elemdata)) or (field.n()!=nodes.n() and field.n()==fieldtopo.n())
+			isPerElem=field.meta(StdProps._elemdata).lower()=='true' or (field.n()!=nodes.n() and field.n()==fieldtopo.n())
 			fieldtype=ElemType[fieldtopo.getType()]
 
 			fieldmap[i]=(field,fieldtopo,isPerElem,fieldtype)

@@ -53,7 +53,7 @@ MatrixType=enum(
 
 # Defines standard properties that various matrices or datasets may have as metadata tags
 StdProps=enum(
-	# used to state the name of the topology the matrix or dataset uses as the spatial geometric topology
+	# used to state the name of the topology the matrix or data matrix uses as the spatial geometric topology
 	('spatial','Spatial Topology Name'),
 	# used to state which topology the data matrix uses for interpolation, same as 'spatial' if the topology is used for geometry and fields
 	('topology', 'Related Topology (eg. field) Name'),
