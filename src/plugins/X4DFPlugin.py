@@ -44,6 +44,7 @@ def array2MatrixForm(arr,dtype):
 	return arr.astype(dtype)
 
 
+@timing
 def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	'''
 	Convert the MeshSceneObject `obj' into a x4df structure. The arrays are all formatted the same using `arrayformat'
@@ -111,6 +112,7 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	return x4
 
 
+@timing
 def convertImage(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	if len(obj.getOrientMap())>1:
 		raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
@@ -362,7 +364,7 @@ class X4DFPlugin(CombinedScenePlugin):
 		else:
 			x4=convertImage(obj,arrayFormat,fileprefix)
 
-		writeFile(x4,path)
+		timing(writeFile)(x4,path)
 
 		# free array data but keep the rest
 		for a in x4.arrays:
