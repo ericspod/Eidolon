@@ -20,7 +20,15 @@ from eidolon import *
 
 addLibraryFile('x4df-0.1.0-py2-none-any')
 
+import x4df
 from x4df import readFile, writeFile, idTransform, validFormats, validFieldTypes
+
+ConfigArgs=enum(
+	('filename','Name of .x4df file the object is stored in'),
+	('filenames','Names of array files, may be [] or not present'),
+	('loadorder','Which mesh/image the object is loaded from in the original file'),
+	('source','Source object the data for this object was loaded from')
+)
 
 
 def array2MatrixForm(arr,dtype):
@@ -47,8 +55,8 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	if arrayformat in validFormats[3:5]:
 		filenamePrefix=filenamePrefix or obj.getName()
 
-	x4=x4df([],[],[],[])
-	m=mesh(obj.getName(),None,[],[],[],[])
+	x4=x4df.x4df([],[],[],[])
+	m=x4df.mesh(obj.getName(),None,[],[],[],[])
 	x4.meshes.append(m)
 
 	# nodes first
@@ -59,8 +67,8 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 		src='nodes_%i'%i
 		filename='%s_%s.dat'%(filenamePrefix,src) if filenamePrefix else None
 
-		nodes_=nodes(src,None,step,[])
-		arr=array(src,shape,'CR','f8',arrayformat,None,filename,nodesmat)
+		nodes_=x4df.nodes(src,None,step,[])
+		arr=x4df.array(src,shape,'CR','f8',arrayformat,None,filename,nodesmat)
 
 		m.nodes.append(nodes_)
 		x4.arrays.append(arr)
@@ -72,8 +80,8 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 			shape=' '.join(map(str,indmat.shape))
 			filename='%s_%s.dat'%(filenamePrefix,ind.getName()) if filenamePrefix else None
 
-			topo=topology(ind.getName(),ind.getName(),ind.getType(),ind.meta(StdProps._spatial),[])
-			arr=array(ind.getName(),shape,None,'u4',arrayformat,None,filename,indmat)
+			topo=x4df.topology(ind.getName(),ind.getName(),ind.getType(),ind.meta(StdProps._spatial),[])
+			arr=x4df.array(ind.getName(),shape,None,'u4',arrayformat,None,filename,indmat)
 			m.topologies.append(topo)
 			x4.arrays.append(arr)
 
@@ -92,19 +100,50 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 			if not isTimeCopy:
 				src='%s_%i'%(src,i)
 
-			f=field(df.getName(),src,step,topo,spatial,ftype,[])
+			f=x4df.field(df.getName(),src,step,topo,spatial,ftype,[])
 			m.fields.append(f)
 
 			if not isTimeCopy or i==0:
 				filename='%s_%s.dat'%(filenamePrefix,src) if filenamePrefix else None
-				arr=array(src,shape,'CR','f8',arrayformat,None,filename,dfmat)
+				arr=x4df.array(src,shape,'CR','f8',arrayformat,None,filename,dfmat)
 				x4.arrays.append(arr)
 
 	return x4
 
 
 def convertImage(obj,arrayformat=validFormats[0],filenamePrefix=None):
-	pass
+	if len(obj.getOrientMap())>1:
+		raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
+
+	tmpplugin=ImageScenePlugin('tmp')
+	start,step=obj.getTimestepScheme()
+	tscheme=(start,step) if start!=0 and step!=0 else None
+
+	if arrayformat in validFormats[3:5]:
+		filenamePrefix=filenamePrefix or obj.getName()
+
+	filename='%s.dat'%filenamePrefix if filenamePrefix else None
+
+	imgarrmap=tmpplugin.getImageObjectArray(obj)
+	imgarr=imgarrmap['dat']
+	pos=imgarrmap['pos']
+	shape=imgarrmap['shape']
+	spacing=imgarrmap['spacing']*vec3(shape[1],shape[0],shape[2])
+	rot=imgarrmap['rot']
+
+	trans=x4df.transform(np.asarray(list(pos)),np.asarray(rot.toMatrix())[:3,:3].flatten(),np.asarray(list(spacing)))
+
+	x4=x4df.x4df([],[],[],[])
+	im=x4df.image(obj.getName(),tscheme,trans,[],[])
+	x4.images.append(im)
+
+	imd=x4df.imagedata('image',None,idTransform,[])
+	im.imagedata.append(imd)
+
+	x4.arrays.append(x4df.array('image',' '.join(map(str,imgarr.shape)),None,'f64',arrayformat,None,filename,imgarr))
+
+	return x4
+
 
 def importMeshes(x4):
 	arrs={a.name:a for a in x4.arrays}
@@ -196,14 +235,43 @@ def importMeshes(x4):
 def importImages(x4):
 	arrs={a.name:a for a in x4.arrays}
 	results=[]
+	tmpplugin=ImageScenePlugin('tmp')
+
+	for im in x4.images:
+		name, timescheme, trans, imagedata,_=im
+		images=[]
+		filenames=[]
+		tstart,tstep=timescheme or (0,0)
+		trans=trans or idTransform
+
+
+		for i,imgdat in enumerate(imagedata):
+			src, timestep, imgtrans,_=imgdat
+			arr=arrs[src].data
+			imgtrans=imgtrans or trans
+
+			filenames.append(arrs[src].filename)
+
+			if timestep is None:
+				offset,interval=tstart+i*tstep,0
+			else:
+				offset,interval=tstart,tstep
+
+			pos=vec3(*imgtrans.position)
+			rot=rotator(*imgtrans.rmatrix.flatten())
+			spacing=vec3(*imgtrans.scale)#*vec3(arr.shape[1], arr.shape[0], arr.shape[2] if len(arr.shape)>2 else 0).inv()
+
+			obj=tmpplugin.createObjectFromArray('tmp',arr,interval,offset,pos,rot,spacing)
+			images+=obj.images
+
+		results.append(ImageSceneObject(name,None,images,filenames=filter(bool,filenames)))
 
 	return results
 
 
-class X4DFPlugin(MeshScenePlugin,ImageScenePlugin):
+class X4DFPlugin(CombinedScenePlugin):
 	def __init__(self):
-		ScenePlugin.__init__(self,'X4DF')
-		ImageScenePlugin.__init__(self,'X4DF')
+		CombinedScenePlugin.__init__(self,'X4DF')
 		self.objcount=0
 
 	def init(self,plugid,win,mgr):
@@ -213,32 +281,53 @@ class X4DFPlugin(MeshScenePlugin,ImageScenePlugin):
 			win.addMenuItem('Import','X4DFLoad'+str(plugid),'&X4DF File',self._openFileDialog)
 			win.addMenuItem('Export','X4DFSave'+str(plugid),'&X4DF File',self._saveFileDialog)
 
-		files=filter(bool,mgr.conf.get('args','--x4df').split(','))
-
-#		if len(files)>0:
-#			if len(vtkload)==1:
-#				obj=self.loadObject(vtkload[0])
-#			else:
-#				obj=self.loadSequence(vtkload)
-#			self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(obj))
-
-	def getHelp(self):
-		return '\nUsage: --x4df=x4df-file-path[,x4df-file-path]*'
-
 	def acceptFile(self,filename):
 		return splitPathExt(filename)[2].lower() == '.x4df'
 
 	def checkFileOverwrite(self,obj,dirpath,name=None):
-		pass
+		newname=name or obj.getName()
+		oldfiles=self.getObjFiles(obj)
+		oldbasename=splitPathExt(oldfiles[0])[1] # old basename of the x4df file
+		newfiles=[os.path.join(dirpath,os.path.basename(f).replace(oldbasename,newname)) for f in oldfiles]
+
+		return filter(os.path.exists,newfiles)
 
 	def getObjFiles(self,obj):
 		return [obj.kwargs['filename']]+obj.kwargs['filenames']
 
 	def copyObjFiles(self,obj,sdir,overwrite=False):
-		pass
+		overfiles=self.checkFileOverwrite(obj,sdir)
+		if not overwrite and overfiles:
+			raise IOError('Cannot overwrite files '+', '.join(overfiles))
+
+		newfiles=[]
+
+		for f in self.getObjFiles(obj):
+			newfile=os.path.join(sdir,os.path.basename(f))
+			copyfileSafe(f,newfile,overwrite)
+			newfiles.append(newfile)
+
+		obj.kwargs['filename']=newfiles[0]
+		obj.kwargs['filenames']=newfiles[1:]
 
 	def renameObjFiles(self,obj,oldname,overwrite=False):
-		pass
+		if obj.getName()==oldname:
+			return
+
+		newname=obj.getName()
+		newfiles=[]
+		oldbasename=splitPathExt(obj.kwargs['filename'])[1]
+
+		overfiles=self.checkFileOverwrite(obj,'',newname)
+		if not overwrite and overfiles:
+			raise IOError('Cannot overwrite files '+', '.join(overfiles))
+
+		for f in self.getObjFiles(obj):
+			newbasename=splitPathExt(f)[1].replace(oldbasename,newname)
+			newfiles.append(renameFile(f,newbasename,overwriteFile=overwrite))
+
+		obj.kwargs['filename']=newfiles[0]
+		obj.kwargs['filenames']=newfiles[1:]
 
 	@taskmethod('Loading X4DF Object')
 	def loadObject(self,filename,name=None,task=None,**kwargs):
@@ -253,14 +342,39 @@ class X4DFPlugin(MeshScenePlugin,ImageScenePlugin):
 		# set config data
 		for i,o in enumerate(objs):
 			o.plugin=self
-			o.kwargs['filename']=filename
-			o.kwargs['loadorder']=i
-			o.kwargs['source']=x4
+			o.kwargs[ConfigArgs._filename]=filename
+			o.kwargs[ConfigArgs._loadorder]=i
+			o.kwargs[ConfigArgs._source]=x4
 
 		return objs
 
-	def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
-		pass
+	@taskmethod('Saving X4DF Object')
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,**kwargs):
+		path=ensureExt(path,'.x4df')
+		fileprefix=os.path.splitext(path) if kwargs.get('separateFiles',False) else None
+		arrayFormat=kwargs.get('arrayFormat',validFormats[2])
+
+		if not overwrite and os.path.exists(path):
+			raise IOError('Cannot overwrite file %r'%path)
+
+		if isinstance(obj,MeshSceneObject):
+			x4=convertMesh(obj,arrayFormat,fileprefix)
+		else:
+			x4=convertImage(obj,arrayFormat,fileprefix)
+
+		writeFile(x4,path)
+
+		# free array data but keep the rest
+		for a in x4.arrays:
+			a.data=None
+
+		if setFilenames:
+			obj.plugin=self
+			obj.kwargs[ConfigArgs._filename]=path
+			obj.kwargs[ConfigArgs._filenames]=[a.filename for a in x4.arrays if a.filename]
+			obj.kwargs[ConfigArgs._loadorder]=0
+			obj.kwargs[ConfigArgs._source]=x4
+
 
 	def _openFileDialog(self):
 		filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='VTK Files (*.x4df)')
@@ -274,7 +388,8 @@ class X4DFPlugin(MeshScenePlugin,ImageScenePlugin):
 
 		filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='X4DF Files (*.x4df)',isOpen=False)
 		if filename!='':
-			self.saveObject(obj,filename)
+			f=self.saveObject(obj,filename,True)
+			self.mgr.checkFutureResult(f)
 
 	def getScriptCode(self,obj,**kwargs):
 		if isinstance(obj,MeshSceneObject):

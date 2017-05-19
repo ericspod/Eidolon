@@ -276,8 +276,8 @@ class SharedImage(object):
 
 
 class ImageSceneObject(SceneObject):
-	def __init__(self,name,source,images,plugin=None,isTimeDependent=None):
-		SceneObject.__init__(self,name,plugin)
+	def __init__(self,name,source,images,plugin=None,isTimeDependent=None,**kwargs):
+		SceneObject.__init__(self,name,plugin,**kwargs)
 		if isinstance(source,(list,tuple)):
 			self.source=list(source)
 		elif isinstance(source,dict):

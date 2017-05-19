@@ -1290,7 +1290,6 @@ class ImageScenePlugin(ScenePlugin):
 		if task:
 			task.setProgress(slices*timesteps)
 
-		printCumulativeTimes()
 		return obj
 
 	def getImageObjectArray(self,obj,datatype=float):
@@ -1359,4 +1358,88 @@ class ImageScenePlugin(ScenePlugin):
 		shape=(rows,cols,depth,numsteps)
 
 		return dict(pos=pos,spacing=spacing,rot=img1.orientation,dat=dat,toffset=toffset,interval=interval,shape=shape)
+
+
+class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
+	'''
+	This plugin type combines mesh and image plugins into one, overriding common methods which call the appropriate
+	inherited method depending on the type of the argument.
+	'''
+	def __init__(self,name):
+		MeshScenePlugin.__init__(self,name)
+		ImageScenePlugin.__init__(self,name)
+
+#		meshmems=set(s for s in dir(MeshScenePlugin) if s[0:2]!='__')
+#		imgmems=set(s for s in dir(ImageScenePlugin) if s[0:2]!='__')
+#		selfmems=set(s for s in type(self).__dict__.keys() if s[0:2]!='__')
+#
+#		printFlush(type(self),meshmems.intersection(imgmems).difference(selfmems))
+#
+#		for mem in meshmems.intersection(imgmems).difference(selfmems):
+#			def _call(*args,**kwargs):
+#				obj=first(args)
+#
+#				if isinstance(obj,(MeshSceneObject,MeshSceneObjectRepr)):
+#					ptype=MeshScenePlugin
+#				elif  isinstance(obj,(ImageSceneObject,ImageSceneObjectRepr)):
+#					ptype=ImageScenePlugin
+#				else:
+#					ptype=type(self)
+#
+#				try:
+#					return getattr(ptype,mem)(self,*args,**kwargs)
+#				except:
+#					printFlush(mem,self,args,kwargs)
+#					raise
+#
+#			setattr(self,mem,_call)
+
+	def _getSupertype(self,obj_or_rep):
+		if isinstance(obj_or_rep,(MeshSceneObject,MeshSceneObjectRepr)):
+			return MeshScenePlugin
+		else:
+			return ImageScenePlugin
+
+	def getIcon(self,obj):
+		return self._getSupertype(obj).getIcon(self,obj)
+
+	def getReprTypes(self,obj):
+		return self._getSupertype(obj).getReprTypes(self,obj)
+
+	def getReprParams(self,obj,reprtype):
+		return self._getSupertype(obj).getReprParams(self,obj,reprtype)
+
+	def getMenu(self,obj):
+		return self._getSupertype(obj).getMenu(self,obj)
+
+	def objectMenuItem(self,obj,item):
+		return self._getSupertype(obj).objectMenuItem(self,obj,item)
+
+	def _setParamPanel(self,obj,prop):
+		return self._getSupertype(obj)._setParamPanel(self,obj,prop)
+
+	def _getUIReprParams(self,obj,prop):
+		return self._getSupertype(obj)._getUIReprParams(self,obj,prop)
+
+	def objectMenuItem(self,obj,item):
+		return self._getSupertype(obj).objectMenuItem(self,obj,item)
+
+	def updateObjPropBox(self,obj,prop):
+		return self._getSupertype(obj).updateObjPropBox(self,obj,prop)
+
+	def updateReprPropBox(self,rep,prop):
+		return self._getSupertype(rep).updateReprPropBox(self,rep,prop)
+
+	def createObjPropBox(self,obj):
+		return self._getSupertype(obj).createObjPropBox(self,obj)
+
+	def createReprPropBox(self,rep):
+		return self._getSupertype(rep).createReprPropBox(self,rep)
+
+	def applyMaterial(self,rep,mat,**kwargs):
+		return self._getSupertype(rep).applyMaterial(self,rep,mat,**kwargs)
+
+	def createRepr(self,obj,reprtype,**kwargs):
+		return self._getSupertype(obj).createRepr(self,obj,reprtype,**kwargs)
+
 

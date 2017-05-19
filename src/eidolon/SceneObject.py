@@ -1,18 +1,18 @@
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
-# 
+#
 # This file is part of Eidolon.
 #
 # Eidolon is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # Eidolon is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
@@ -78,8 +78,8 @@ class SceneObject(object):
 	def getPropTuples(self):
 		'''
 		Returns a list of name/value pairs listing the properties to display for this scene object in the UI. This can
-		use self.proptuples as a cache for efficiency, so the method fills in self.proptuples if this attribute is 
-		empty and returns it thereafter. 
+		use self.proptuples as a cache for efficiency, so the method fills in self.proptuples if this attribute is
+		empty and returns it thereafter.
 		'''
 		return []
 
@@ -122,6 +122,10 @@ class SceneObject(object):
 		'''Returns the timestep values for each timestep of the object, or just [0] if it's not time-dependent.'''
 		return [0]
 
+	def getTimestepScheme(self):
+		ts=self.getTimestepList()
+		return ts[0],avgspan(ts) if len(ts)>1 else 0
+
 	def createRepr(self,reprtype,refine=0,**kwargs):
 		'''
 		Create a representation for this dataset. 'reprType' is a member of ReprType, 'refine' is the refinement level,
@@ -134,7 +138,7 @@ class SceneObject(object):
 #	def getScriptCode(self,**kwargs):
 #		'''Returns the code string to recreate this object given the code generation parameters in `kwargs.'''
 #		return self.plugin.getScriptCode(self,**kwargs)
-# 
+#
 #	def copyObjFiles(self,sdir):
 #		self.plugin.copyObjFiles(self,sdir)
 #
@@ -189,7 +193,7 @@ class SceneObjectRepr(object):
 		'''Returns the untransformed axis-aligned bound box enclosing the geometry of this representation.'''
 		if recalculate or self.aabb==None:
 			self.calculateAABB()
-			
+
 		if isTransformed and self.aabb:
 			return self.aabb.transform(self.getTransform(isDerived))
 		else:
@@ -398,7 +402,7 @@ class SceneObjectRepr(object):
 		this uses the plugin's method of the same name to implement its behaviour.
 		'''
 		self.plugin.applyMaterial(self,mat,**kwargs)
-		
+
 	def applySpectrum(self,spec):
 		'''Replaces the spectrum information for each internal material with that in `spec'.'''
 		for m in self.enumInternalMaterials():
@@ -580,7 +584,7 @@ class MeshSceneObject(SceneObject):
 
 	def getTimestepList(self):
 		return list(self.timestepList)
-		
+
 	def transformNodes(self,trans):
 		'''Transform the nodes for each dataset by the transform object `trans'.'''
 		for ds in self.datasets:
@@ -758,8 +762,8 @@ class MeshSceneObjectRepr(SceneObjectRepr):
 
 	def isInScene(self):
 		return len(self.figs)>0
-		
-# TODO: not used at all?		
+
+# TODO: not used at all?
 
 #	def getParamDefs(self):
 #		params=[]
