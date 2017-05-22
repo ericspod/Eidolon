@@ -119,7 +119,7 @@ def convertImage(obj,arrayformat=validFormats[0],filenamePrefix=None):
 
 	tmpplugin=ImageScenePlugin('tmp')
 	start,step=obj.getTimestepScheme()
-	tscheme=(start,step) if start!=0 and step!=0 else None
+	tscheme=(start,step) if start!=0 or step!=0 else None
 
 	if arrayformat in validFormats[3:5]:
 		filenamePrefix=filenamePrefix or obj.getName()
@@ -139,7 +139,7 @@ def convertImage(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	im=x4df.image(obj.getName(),tscheme,trans,[],[])
 	x4.images.append(im)
 
-	imd=x4df.imagedata('image',None,idTransform,[])
+	imd=x4df.imagedata('image',None,None,[])
 	im.imagedata.append(imd)
 
 	x4.arrays.append(x4df.array('image',' '.join(map(str,imgarr.shape)),None,'f64',arrayformat,None,filename,imgarr))
@@ -246,7 +246,6 @@ def importImages(x4):
 		tstart,tstep=timescheme or (0,0)
 		trans=trans or idTransform
 
-
 		for i,imgdat in enumerate(imagedata):
 			src, timestep, imgtrans,_=imgdat
 			arr=arrs[src].data
@@ -255,13 +254,15 @@ def importImages(x4):
 			filenames.append(arrs[src].filename)
 
 			if timestep is None:
-				offset,interval=tstart+i*tstep,0
-			else:
 				offset,interval=tstart,tstep
+			else:
+				offset,interval=tstart+i*tstep,0
+
+			printFlush(offset,interval)
 
 			pos=vec3(*imgtrans.position)
 			rot=rotator(*imgtrans.rmatrix.flatten())
-			spacing=vec3(*imgtrans.scale)#*vec3(arr.shape[1], arr.shape[0], arr.shape[2] if len(arr.shape)>2 else 0).inv()
+			spacing=vec3(*imgtrans.scale)*vec3(arr.shape[1], arr.shape[0], arr.shape[2] if len(arr.shape)>2 else 0).inv()
 
 			obj=tmpplugin.createObjectFromArray('tmp',arr,interval,offset,pos,rot,spacing)
 			images+=obj.images
@@ -333,8 +334,8 @@ class X4DFPlugin(CombinedScenePlugin):
 
 	@taskmethod('Loading X4DF Object')
 	def loadObject(self,filename,name=None,task=None,**kwargs):
-		x4=readFile(filename)
-		objs=importMeshes(x4)+importImages(x4)
+		x4=timing(readFile)(filename)
+		objs=timing(importMeshes)(x4)+timing(importImages)(x4)
 		basepath=os.path.dirname(filename)
 
 		# free array data but keep the rest
