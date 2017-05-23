@@ -113,7 +113,7 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 
 
 @timing
-def convertImage(obj,arrayformat=validFormats[0],filenamePrefix=None):
+def convertImage(obj,arrayformat=validFormats[0],dataFormat='f64',filenamePrefix=None):
 	if len(obj.getOrientMap())>1:
 		raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
 
@@ -142,7 +142,7 @@ def convertImage(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	imd=x4df.imagedata('image',None,None,[])
 	im.imagedata.append(imd)
 
-	x4.arrays.append(x4df.array('image',' '.join(map(str,imgarr.shape)),None,'f64',arrayformat,None,filename,imgarr))
+	x4.arrays.append(x4df.array('image',' '.join(map(str,imgarr.shape)),None,dataFormat,arrayformat,None,filename,imgarr))
 
 	return x4
 
@@ -258,8 +258,6 @@ def importImages(x4):
 			else:
 				offset,interval=tstart+i*tstep,0
 
-			printFlush(offset,interval)
-
 			pos=vec3(*imgtrans.position)
 			rot=rotator(*imgtrans.rmatrix.flatten())
 			spacing=vec3(*imgtrans.scale)*vec3(arr.shape[1], arr.shape[0], arr.shape[2] if len(arr.shape)>2 else 0).inv()
@@ -334,6 +332,7 @@ class X4DFPlugin(CombinedScenePlugin):
 
 	@taskmethod('Loading X4DF Object')
 	def loadObject(self,filename,name=None,task=None,**kwargs):
+		printFlush(task)
 		x4=timing(readFile)(filename)
 		objs=timing(importMeshes)(x4)+timing(importImages)(x4)
 		basepath=os.path.dirname(filename)
@@ -352,10 +351,11 @@ class X4DFPlugin(CombinedScenePlugin):
 		return objs
 
 	@taskmethod('Saving X4DF Object')
-	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,**kwargs):
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=validFormats[1],dataFormat='f64',separateFiles=False,**kwargs):
 		path=ensureExt(path,'.x4df')
-		fileprefix=os.path.splitext(path) if kwargs.get('separateFiles',False) else None
-		arrayFormat=kwargs.get('arrayFormat',validFormats[2])
+		fileprefix=os.path.splitext(path) if separateFiles else None
+
+		printFlush(arrayFormat,dataFormat)
 
 		if not overwrite and os.path.exists(path):
 			raise IOError('Cannot overwrite file %r'%path)
@@ -363,7 +363,7 @@ class X4DFPlugin(CombinedScenePlugin):
 		if isinstance(obj,MeshSceneObject):
 			x4=convertMesh(obj,arrayFormat,fileprefix)
 		else:
-			x4=convertImage(obj,arrayFormat,fileprefix)
+			x4=convertImage(obj,arrayFormat,dataFormat,fileprefix)
 
 		timing(writeFile)(x4,path)
 

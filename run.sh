@@ -16,8 +16,14 @@ function getFileDir() {
 
 # directory of this script
 export APPDIR=$(getFileDir "${BASH_SOURCE[0]}")
-export LIBSDIR=$APPDIR/EidolonLibs
-export PYTHONPATH=$APPDIR/src
+export LIBSDIR="$APPDIR/EidolonLibs"
+
+if [ -z "$PYTHONPATH" ]
+then
+	export PYTHONPATH="$APPDIR/src"
+else
+	export PYTHONPATH="$PYTHONPATH:$APPDIR/src"
+fi	
 
 if [ -f "$APPDIR/Eidolon" ] # generated executable, run this instead of the script
 then

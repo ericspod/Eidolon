@@ -1125,18 +1125,18 @@ def setLogging(logfile='eidolon.log',filemode='a'):
 
 
 def addLibraryFile(lib):
-	'''Add the nominated egg/wheel file to the front of the system path, assuming this is in ${APPDIR}/Libs/python.'''
+	'''Add the nominated egg/wheel file to the end of the system path, assuming this is in ${APPDIR}/Libs/python.'''
 	import __init__
 	lib=os.path.join(getAppDir(),__init__.LIBSDIR,'python',lib)
 	egg=ensureExt(lib,'.egg')
 	whl=ensureExt(lib,'.whl')
 
 	if os.path.exists(egg):
-		sys.path.insert(0,egg)
+		sys.path.append(egg)
 	elif os.path.exists(whl):
-		sys.path.insert(0,whl)
+		sys.path.append(whl)
 	else:
-		raise ValueError('Library file {}.* does not exist'.format(lib))
+		raise ValueError('Library file %s.egg/.whl does not exist'%lib)
 
 
 def processExists(pid):
