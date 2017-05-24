@@ -21,7 +21,7 @@ from eidolon import *
 addLibraryFile('x4df-0.1.0-py2-none-any')
 
 import x4df
-from x4df import readFile, writeFile, idTransform, validFormats, validFieldTypes
+from x4df import readFile, writeFile, idTransform, validFieldTypes, ASCII, BASE64, BASE64_GZ, BINARY, BINARY_GZ
 
 ConfigArgs=enum(
 	('filename','Name of .x4df file the object is stored in'),
@@ -45,7 +45,7 @@ def array2MatrixForm(arr,dtype):
 
 
 @timing
-def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
+def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 	'''
 	Convert the MeshSceneObject `obj' into a x4df structure. The arrays are all formatted the same using `arrayformat'
 	and are stored in files whose names begin with `filenamePrefix' if this is given (or if the format is binary in
@@ -53,7 +53,7 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 	The return value is a single x4df object containing a single mesh.
 	'''
 	ts=obj.getTimestepList()
-	if arrayformat in validFormats[3:5]:
+	if arrayformat in (BINARY, BINARY_GZ):
 		filenamePrefix=filenamePrefix or obj.getName()
 
 	x4=x4df.x4df([],[],[],[])
@@ -113,7 +113,7 @@ def convertMesh(obj,arrayformat=validFormats[0],filenamePrefix=None):
 
 
 @timing
-def convertImage(obj,arrayformat=validFormats[0],dataFormat='f64',filenamePrefix=None):
+def convertImage(obj,arrayformat=ASCII,dataFormat='f8',filenamePrefix=None):
 	if len(obj.getOrientMap())>1:
 		raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
 
@@ -121,7 +121,7 @@ def convertImage(obj,arrayformat=validFormats[0],dataFormat='f64',filenamePrefix
 	start,step=obj.getTimestepScheme()
 	tscheme=(start,step) if start!=0 or step!=0 else None
 
-	if arrayformat in validFormats[3:5]:
+	if arrayformat in  (BINARY, BINARY_GZ):
 		filenamePrefix=filenamePrefix or obj.getName()
 
 	filename='%s.dat'%filenamePrefix if filenamePrefix else None
@@ -351,11 +351,9 @@ class X4DFPlugin(CombinedScenePlugin):
 		return objs
 
 	@taskmethod('Saving X4DF Object')
-	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=validFormats[1],dataFormat='f64',separateFiles=False,**kwargs):
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64,dataFormat='f8',separateFiles=False,**kwargs):
 		path=ensureExt(path,'.x4df')
 		fileprefix=os.path.splitext(path) if separateFiles else None
-
-		printFlush(arrayFormat,dataFormat)
 
 		if not overwrite and os.path.exists(path):
 			raise IOError('Cannot overwrite file %r'%path)

@@ -271,7 +271,7 @@ class ParRecPlugin(ImageScenePlugin):
 		renameFile(recfile,obj.getName(),overwriteFile=overwrite)
 		obj.source['filename']=renameFile(oldpath,obj.getName(),overwriteFile=overwrite)
 
-	def loadObject(self,filename,name=None,scalemethod=None,**kwargs):
+	def loadObject(self,filename,name=None,scalemethod='DV',**kwargs):
 		f=Future()
 		@taskroutine('Loading ParRec Files')
 		def _loadFile(filename,name,position=None,rot=None,toffset=None,interval=None,task=None):
