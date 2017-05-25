@@ -376,7 +376,6 @@ class X4DFPlugin(CombinedScenePlugin):
             obj.kwargs[ConfigArgs._loadorder]=0
             obj.kwargs[ConfigArgs._source]=x4
 
-
     def _openFileDialog(self):
         filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='VTK Files (*.x4df)')
         if filename:
