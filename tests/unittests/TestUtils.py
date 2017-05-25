@@ -28,20 +28,20 @@ halfpi=math.pi/2
 quartpi=math.pi/4
 
 def neq_(a,b):
-	assert a!=b, '%r == %r' % (a, b)
-	
+    assert a!=b, '%r == %r' % (a, b)
+    
 
 def eqa_(a,b):
-	assert abs(a-b)<=epsilon, '%r != %r' % (a, b)
+    assert abs(a-b)<=epsilon, '%r != %r' % (a, b)
 
 
 def eqas_(a,b):
-	assert all(abs(i-j)<=epsilon for i,j in zip(a,b)), '%r != %r' % (a, b)
+    assert all(abs(i-j)<=epsilon for i,j in zip(a,b)), '%r != %r' % (a, b)
 
 
 def randnums(num,minv,maxv):
-	return tuple(triangular(minv,maxv) for _ in xrange(num))
-	
-	
+    return tuple(triangular(minv,maxv) for _ in xrange(num))
+    
+    
 def randangle():
-	return triangular(-math.pi*2,math.pi*2)
+    return triangular(-math.pi*2,math.pi*2)

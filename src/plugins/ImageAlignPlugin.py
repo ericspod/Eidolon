@@ -20,16 +20,16 @@ from eidolon import *
 
 
 class ImageAlignPlugin(ScenePlugin):
-	'''Legacy plugin to ensure old projects continue to work.'''
-	def __init__(self):
-		ScenePlugin.__init__(self,'ImgAlign')
+    '''Legacy plugin to ensure old projects continue to work.'''
+    def __init__(self):
+        ScenePlugin.__init__(self,'ImgAlign')
 
-	def init(self,plugid,win,mgr):
-		ScenePlugin.init(self,plugid,win,mgr)
-		self.CardiacMotion=mgr.getPlugin('CardiacMotion')
+    def init(self,plugid,win,mgr):
+        ScenePlugin.init(self,plugid,win,mgr)
+        self.CardiacMotion=mgr.getPlugin('CardiacMotion')
 
-	def createAlignProject(self,name,parentdir):
-		self.CardiacMotion.createProject(name,parentdir)
-		
+    def createAlignProject(self,name,parentdir):
+        self.CardiacMotion.createProject(name,parentdir)
+        
 
 addPlugin(ImageAlignPlugin())

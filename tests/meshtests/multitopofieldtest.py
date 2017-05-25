@@ -39,17 +39,17 @@ nodes=trinodes+quadnodes
 nodefield=list(frange(len(nodes)))
 
 inds=[
-	('tris',ElemType._Tri1NL,triinds),
-	('quads',ElemType._Quad1NL,quadinds),
-	('quadfieldtopo',ElemType._Quad1NL,quadfieldtopo,False)
+    ('tris',ElemType._Tri1NL,triinds),
+    ('quads',ElemType._Quad1NL,quadinds),
+    ('quadfieldtopo',ElemType._Quad1NL,quadfieldtopo,False)
 ]
 
 fields=[
-	('trifield',trifield,'tris'), # per-vertex field for triangles
-	('trielemfield',trielemfield,'tris'), # per-element field for triangles
-	('quadfield',quadfield,'quads','quadfieldtopo'), # per-vertex field for quads
-	('quadelemfield',quadelemfield,'quads'), # per-element field for quads
-	('nodefield',nodefield) # per-node field for whole mesh
+    ('trifield',trifield,'tris'), # per-vertex field for triangles
+    ('trielemfield',trielemfield,'tris'), # per-element field for triangles
+    ('quadfield',quadfield,'quads','quadfieldtopo'), # per-vertex field for quads
+    ('quadelemfield',quadelemfield,'quads'), # per-element field for quads
+    ('nodefield',nodefield) # per-node field for whole mesh
 ]
 
 ds=PyDataSet('MeshTest',nodes,inds,fields)

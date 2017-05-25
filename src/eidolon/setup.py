@@ -43,24 +43,24 @@ isLinux=platform.system().lower()=='linux'
 sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 
 if isDarwin:
-	platdir='osx'
-	extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
+    platdir='osx'
+    extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
 elif isWindows:
-	platdir='win64_mingw'
-	sys.argv.append('--compiler=mingw32') # force the use of mingw, there must be a proper programmatic way
+    platdir='win64_mingw'
+    sys.argv.append('--compiler=mingw32') # force the use of mingw, there must be a proper programmatic way
 else:
-	assert isLinux
-	libraries+=['m']
+    assert isLinux
+    libraries+=['m']
 
-	with open('/etc/lsb-release') as o:
-		lsb=dict(l.strip().split('=') for l in o.readlines() if l.strip())
+    with open('/etc/lsb-release') as o:
+        lsb=dict(l.strip().split('=') for l in o.readlines() if l.strip())
 
-	if lsb['DISTRIB_RELEASE'].startswith('12'):
-		platdir='ubuntu12'
-	elif lsb['DISTRIB_RELEASE'].startswith('14'):
-		platdir='ubuntu14'
-	else:
-		raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
+    if lsb['DISTRIB_RELEASE'].startswith('12'):
+        platdir='ubuntu12'
+    elif lsb['DISTRIB_RELEASE'].startswith('14'):
+        platdir='ubuntu14'
+    else:
+        raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
 
 
 libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
@@ -71,16 +71,16 @@ includedirs=[scriptdir+'/../renderer',libdir+'/include',libdir+'/include/boost',
 
 extensions=[]
 for i in glob.glob('./*.pyx'):
-	e=Extension(
-		os.path.basename(i)[:-4],
-		[i],
-		define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None)],
-		include_dirs=includedirs,
-		libraries=libraries,
-		extra_compile_args=extra_compile_args,
-		language='c++'
-	)
-	extensions.append(e)
+    e=Extension(
+        os.path.basename(i)[:-4],
+        [i],
+        define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None)],
+        include_dirs=includedirs,
+        libraries=libraries,
+        extra_compile_args=extra_compile_args,
+        language='c++'
+    )
+    extensions.append(e)
 
 setup(ext_modules=cythonize(extensions,include_path=['.','../renderer']))
 
@@ -88,7 +88,7 @@ shutil.rmtree('build')
 
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 if not isWindows:
-	for i in glob.glob('./*.pyx'):
-		i=os.path.splitext(i)[0]
-		dest='%s.so.%s'%(i,platdir) #if isLinux else i+'.dylib'
-		shutil.move(i+'.so',dest)
+    for i in glob.glob('./*.pyx'):
+        i=os.path.splitext(i)[0]
+        dest='%s.so.%s'%(i,platdir) #if isLinux else i+'.dylib'
+        shutil.move(i+'.so',dest)

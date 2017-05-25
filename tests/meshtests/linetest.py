@@ -23,20 +23,20 @@ from Testing import MeshSceneObject,ElemType,vec3,ReprType,generateTestMeshDS
 materials=['Red','Green','Blue','Magenta','Cyan']
 
 for i in range(5):
-	ds=generateTestMeshDS(ElemType._Tri1NL,i)
+    ds=generateTestMeshDS(ElemType._Tri1NL,i)
 
-	obj=MeshSceneObject('Sphere'+str(i),ds)
-	mgr.addSceneObject(obj)
+    obj=MeshSceneObject('Sphere'+str(i),ds)
+    mgr.addSceneObject(obj)
 
-	rep=obj.createRepr(ReprType._line,0)
-	mgr.addSceneObjectRepr(rep)
-	rep.setPosition(vec3(2.2*i,0,0))
-	rep.applyMaterial(materials[i])
+    rep=obj.createRepr(ReprType._line,0)
+    mgr.addSceneObjectRepr(rep)
+    rep.setPosition(vec3(2.2*i,0,0))
+    rep.applyMaterial(materials[i])
 
-	rep=obj.createRepr(ReprType._cylinder,0,radrefine=5,radius=0.005)
-	mgr.addSceneObjectRepr(rep)
-	rep.setPosition(vec3(2.2*i,0,2.2))
-	rep.applyMaterial(materials[i])
+    rep=obj.createRepr(ReprType._cylinder,0,radrefine=5,radius=0.005)
+    mgr.addSceneObjectRepr(rep)
+    rep.setPosition(vec3(2.2*i,0,2.2))
+    rep.applyMaterial(materials[i])
 
 mgr.setCameraSeeAll()
 

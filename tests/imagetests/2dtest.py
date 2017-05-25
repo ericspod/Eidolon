@@ -39,6 +39,6 @@ mgr.callThreadSafe(d2.setImageStackPosition,25)
 @mgr.addFuncTask
 @delayedcall(1.0)
 def _remove():
-	d2.parentWidget().close()
-	d3=mgr.create2DView()
-	d3.setImageStackPosition(25)
+    d2.parentWidget().close()
+    d3=mgr.create2DView()
+    d3.setImageStackPosition(25)

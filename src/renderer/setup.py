@@ -25,39 +25,39 @@ import platform
 import sys,os,shutil,numpy,glob
 
 def generateMatrix(prefix,ttype,ptype=None,tofunc='',fromfunc=''):
-	'''
-	Generate pyx files for each of the matrix types. The file MatrixT.pyxT is a pseudo-template definition containing patterns
-	for replacing type names for each of the matrix types as well as type specific methods. This allows templating essentially
-	so that the matrix Cython interface only has to be written once. The generated files do need to be included in the correct
-	place in Renderer.pyx.
-	'''
-	ptype=ptype or ttype
-	infile='MatrixT.pyxT'
-	outfile='{}Matrix.pyx'.format(prefix)
+    '''
+    Generate pyx files for each of the matrix types. The file MatrixT.pyxT is a pseudo-template definition containing patterns
+    for replacing type names for each of the matrix types as well as type specific methods. This allows templating essentially
+    so that the matrix Cython interface only has to be written once. The generated files do need to be included in the correct
+    place in Renderer.pyx.
+    '''
+    ptype=ptype or ttype
+    infile='MatrixT.pyxT'
+    outfile='{}Matrix.pyx'.format(prefix)
 
-	if os.path.exists(outfile) and os.path.getmtime(outfile)>os.path.getmtime(infile):
-		sys.stdout.write('Skipping generation of %s\n'%outfile)
-		sys.stdout.flush()
-		return
+    if os.path.exists(outfile) and os.path.getmtime(outfile)>os.path.getmtime(infile):
+        sys.stdout.write('Skipping generation of %s\n'%outfile)
+        sys.stdout.flush()
+        return
 
-	matrixT=open(infile).readlines()
-	extras=[i for i,l in enumerate(matrixT) if l.startswith('##Extras')]
+    matrixT=open(infile).readlines()
+    extras=[i for i,l in enumerate(matrixT) if l.startswith('##Extras')]
 
-	if len(extras)==0:
-		text=matrixT
-	else:
-		text=matrixT[:extras[0]]
+    if len(extras)==0:
+        text=matrixT
+    else:
+        text=matrixT[:extras[0]]
 
-		for i,e in enumerate(extras):
-			if matrixT[e].split()[1]==prefix:
-				if i+1<len(extras):
-					text+=matrixT[e:extras[i+1]]
-				else:
-					text+=matrixT[e:]
-				break
+        for i,e in enumerate(extras):
+            if matrixT[e].split()[1]==prefix:
+                if i+1<len(extras):
+                    text+=matrixT[e:extras[i+1]]
+                else:
+                    text+=matrixT[e:]
+                break
 
-	with open(outfile,'w') as o:
-		o.write(''.join(text).format(T=ttype,N=prefix,P=ptype,_To=tofunc,_From=fromfunc))
+    with open(outfile,'w') as o:
+        o.write(''.join(text).format(T=ttype,N=prefix,P=ptype,_To=tofunc,_From=fromfunc))
 
 
 # generate code for RealMatrix, IndexMatrix, Vec3Matrix, ColorMatrix
@@ -88,39 +88,39 @@ htime=max(map(os.path.getmtime,glob.glob('*.h')))
 
 # touch a cpp file it any header files were changed after the most recently changed cpp file
 if htime>cpptime:
-	os.utime(glob.glob('*.cpp')[0],None)
+    os.utime(glob.glob('*.cpp')[0],None)
 
 if isDarwin:
-	platdir='osx'
-	#destfile+='dylib'
-	destfile+='so.%s'%platdir
-	libraries=[] # linking with frameworks and not libraries
+    platdir='osx'
+    #destfile+='dylib'
+    destfile+='so.%s'%platdir
+    libraries=[] # linking with frameworks and not libraries
 
-	# add frameworks to link with
-	extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay']
-	extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
+    # add frameworks to link with
+    extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay']
+    extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
 
 elif isWindows:
-	platdir='win64_mingw'
-	sys.argv.append('--compiler=mingw32') # force the use of mingw
-	define_macros+=[('RENDER_EXPORT',None)]
-	destfile+='pyd'
-	
+    platdir='win64_mingw'
+    sys.argv.append('--compiler=mingw32') # force the use of mingw
+    define_macros+=[('RENDER_EXPORT',None)]
+    destfile+='pyd'
+    
 else:
-	assert isLinux
-	libraries+=['m','rt']
+    assert isLinux
+    libraries+=['m','rt']
 
-	with open('/etc/lsb-release') as o:
-		lsb=dict(l.strip().split('=') for l in o.readlines())
+    with open('/etc/lsb-release') as o:
+        lsb=dict(l.strip().split('=') for l in o.readlines())
 
-	if lsb['DISTRIB_RELEASE'].startswith('12'):
-		platdir='ubuntu12'
-	elif lsb['DISTRIB_RELEASE'].startswith('14'):
-		platdir='ubuntu14'
-	else:
-		raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
+    if lsb['DISTRIB_RELEASE'].startswith('12'):
+        platdir='ubuntu12'
+    elif lsb['DISTRIB_RELEASE'].startswith('14'):
+        platdir='ubuntu14'
+    else:
+        raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
 
-	destfile+='so.%s'%platdir
+    destfile+='so.%s'%platdir
 
 # root directory for the current platform's libraries
 libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
@@ -134,24 +134,24 @@ library_dir=libdir+'/lib/'+libsuffix
 includedirs=['.',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
 
 if isLinux:
-	includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
+    includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
 
 # add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())
 
 if isDarwin: # add the directory to search for frameworks in
-	extra_link_args+=['-F'+shared_dir] 
+    extra_link_args+=['-F'+shared_dir] 
 
 extension=Extension(
-	'Renderer',
-	srcfiles,
-	define_macros=define_macros,
-	include_dirs=includedirs,
-	library_dirs=[library_dir],
-	libraries=libraries,
-	extra_compile_args=extra_compile_args,
-	extra_link_args=extra_link_args,
-	language='c++'
+    'Renderer',
+    srcfiles,
+    define_macros=define_macros,
+    include_dirs=includedirs,
+    library_dirs=[library_dir],
+    libraries=libraries,
+    extra_compile_args=extra_compile_args,
+    extra_link_args=extra_link_args,
+    language='c++'
 )
 
 setup(ext_modules = cythonize(extension))
@@ -161,5 +161,5 @@ shutil.rmtree('build')
 
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 if not isWindows:
-	shutil.move('Renderer.so',destfile)
+    shutil.move('Renderer.so',destfile)
 

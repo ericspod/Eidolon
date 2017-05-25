@@ -42,7 +42,7 @@ d=mgr.create2DView()
 
 @mgr.callThreadSafe
 def _set():
-	d.setSecondary(rep1.getName(),True)
-	d.setImageStackPosition(24)
+    d.setSecondary(rep1.getName(),True)
+    d.setImageStackPosition(24)
 
 mgr.setCameraSeeAll()
