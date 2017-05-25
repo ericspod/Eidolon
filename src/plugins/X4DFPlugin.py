@@ -113,7 +113,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 
 
 @timing
-def convertImage(obj,arrayformat=ASCII,dataFormat='f8',filenamePrefix=None):
+def convertImage(obj,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
 	if len(obj.getOrientMap())>1:
 		raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
 
@@ -351,7 +351,7 @@ class X4DFPlugin(CombinedScenePlugin):
 		return objs
 
 	@taskmethod('Saving X4DF Object')
-	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64,dataFormat='f8',separateFiles=False,**kwargs):
+	def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64_GZ,dataFormat='f4',separateFiles=False,**kwargs):
 		path=ensureExt(path,'.x4df')
 		fileprefix=os.path.splitext(path) if separateFiles else None
 
