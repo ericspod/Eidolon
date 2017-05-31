@@ -1394,6 +1394,9 @@ class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
 #
 #           setattr(self,mem,_call)
 
+    def init(self,plugid,win,mgr):
+        ScenePlugin.init(self,plugid,win,mgr)
+
     def _getSupertype(self,obj_or_rep):
         if isinstance(obj_or_rep,(MeshSceneObject,MeshSceneObjectRepr)):
             return MeshScenePlugin

@@ -211,7 +211,7 @@ def applyMotionTrackTask(exefile,cwd,isInvert,filelists,extraArgs=[],task=None):
     results=applyMotionTrackRange(len(filelists),0,task,exefile,cwd,isInvert,filelists,extraArgs,environ,partitionArgs=(filelists,))
     for ret,out,args in sumResultMap(results):
         if ret!=0:
-            raise IOError('Command failed with return code %r: %r\n%s'%(ret,' '.join(args),out))
+            raise IOError('Command failed with return code %r: %r\n%s'%(ret,' '.join([exefile]+list(args)),out))
 
 
 class IRTKPluginMixin(object):

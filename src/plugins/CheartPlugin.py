@@ -777,6 +777,11 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 
             lx=len(xkeyframes)
             ld=len(dkeyframes)
+            
+            # if one x file is specified copy this multiple times to produce a time series to match the time field
+            if lx==1 and lx<ld:
+                xkeyframes=[xkeyframes[0]]*ld
+                lx=ld
 
             assert lx!=0 or ld!=0, 'Spatial or field keyframes must be provided.'
             assert lx==0 or ld==0 or lx==ld, 'Spatial and field keyframes must have the same number of both provided.'
@@ -787,17 +792,17 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 
             initialXFile=None if isAbsolute else xfile
 
-            if lx==0:
-                xkeyframes=xfile
+            #if lx==0:
+            #    xkeyframes=xfile
 
-            obj=self.loadSceneObject(xkeyframes, tfile,elemtype,loadTimesteps=timesteps,initialXFile=initialXFile)
+            obj=argtiming(self.loadSceneObject)(xkeyframes, tfile,elemtype,loadTimesteps=timesteps,initialXFile=initialXFile)
 
             if len(dkeyframes)>0:
                 self.loadDataField(obj,dkeyframes,datadim,ftfile if ftfile!='' else None,felemtype)
 
             @self.mgr.addFuncTask
             def _add():
-                o=obj()
+                o=Future.get(obj)
                 o.setTimestepScheme(starttime,interval)
                 self.mgr.addSceneObject(o)
 

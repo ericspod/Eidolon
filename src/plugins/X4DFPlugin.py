@@ -18,6 +18,10 @@
 
 from eidolon import *
 
+import ast
+import os
+import numpy as np
+
 addLibraryFile('x4df-0.1.0-py2-none-any')
 
 import x4df
@@ -63,7 +67,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
     # nodes first
     for i,ds in enumerate(obj.datasets):
         nodesmat=np.asarray(ds.getNodes())
-        shape=toNumString(np.asarray(nodesmat.shape),int)
+        shape=x4df.toNumString(np.asarray(nodesmat.shape),int)
         step=ts[i] if len(ts)>1 else None
         src='nodes_%i'%i
         filename='%s_%s.dat'%(filenamePrefix,src) if filenamePrefix else None
@@ -91,7 +95,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
         for df in ds.enumDataFields():
             isTimeCopy=df.meta(StdProps._timecopy).lower()=='true'
             dfmat=np.asarray(df)
-            shape=toNumString(np.asarray(dfmat.shape),int)
+            shape=x4df.toNumString(np.asarray(dfmat.shape),int)
             topo=df.meta(StdProps._topology) or None
             spatial=df.meta(StdProps._spatial) or None
             ftype=validFieldTypes[1 if df.meta(StdProps._elemdata).lower()=='true' else 0]
@@ -276,7 +280,7 @@ class X4DFPlugin(CombinedScenePlugin):
         self.objcount=0
 
     def init(self,plugid,win,mgr):
-        MeshScenePlugin.init(self,plugid,win,mgr)
+        CombinedScenePlugin.init(self,plugid,win,mgr)
 
         if win:
             win.addMenuItem('Import','X4DFLoad'+str(plugid),'&X4DF File',self._openFileDialog)
@@ -335,7 +339,7 @@ class X4DFPlugin(CombinedScenePlugin):
         printFlush(task)
         x4=timing(readFile)(filename)
         objs=timing(importMeshes)(x4)+timing(importImages)(x4)
-        basepath=os.path.dirname(filename)
+        #basepath=os.path.dirname(filename)
 
         # free array data but keep the rest
         for a in x4.arrays:
