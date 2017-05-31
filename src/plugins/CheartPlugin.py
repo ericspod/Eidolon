@@ -795,7 +795,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
             #if lx==0:
             #    xkeyframes=xfile
 
-            obj=argtiming(self.loadSceneObject)(xkeyframes, tfile,elemtype,loadTimesteps=timesteps,initialXFile=initialXFile)
+            obj=self.loadSceneObject(xkeyframes, tfile,elemtype,loadTimesteps=timesteps,initialXFile=initialXFile)
 
             if len(dkeyframes)>0:
                 self.loadDataField(obj,dkeyframes,datadim,ftfile if ftfile!='' else None,felemtype)
