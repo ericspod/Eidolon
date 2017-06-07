@@ -25,8 +25,11 @@ export PYTHONPATH=$APPDIR/src
 
 if [ "$(uname -o 2>/dev/null)" == "Cygwin" ]
 then
-	$APPDIR/run.bat $@
-	exit 0
+#	$APPDIR/run.bat $@
+#	exit 0
+	APPDIR=$(cygpath -w $APPDIR)
+	export PATH="$APPDIR\\EidolonLibs\\win64_mingw\\bin;$PATH"
+	export PYTHONPATH="$APPDIR\\src"
 elif [ "$(uname)" == "Darwin" ]
 then
 	# symlink each compiled library for OSX to the correct name
@@ -42,9 +45,9 @@ else
 fi
 
 
-coverage run --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py --help
+coverage run --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py --help
 
-covcmd="coverage run -a --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py"
+covcmd="coverage run -a --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py"
 #$covcmd ./meshtests/*.py
 #$covcmd ./imagetests/*.py
 $covcmd "$@"
