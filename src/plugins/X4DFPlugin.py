@@ -60,14 +60,14 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
     if arrayformat in (BINARY, BINARY_GZ):
         filenamePrefix=filenamePrefix or obj.getName()
 
-    x4=x4df.x4df([],[],[],[])
+    x4=x4df.dataset([],[],[],[])
     m=x4df.mesh(obj.getName(),None,[],[],[],[])
     x4.meshes.append(m)
 
     # nodes first
     for i,ds in enumerate(obj.datasets):
         nodesmat=np.asarray(ds.getNodes())
-        shape=x4df.toNumString(np.asarray(nodesmat.shape),int)
+        shape=x4df.x4df.toNumString(np.asarray(nodesmat.shape),int)
         step=ts[i] if len(ts)>1 else None
         src='nodes_%i'%i
         filename='%s_%s.dat'%(filenamePrefix,src) if filenamePrefix else None
@@ -95,7 +95,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
         for df in ds.enumDataFields():
             isTimeCopy=df.meta(StdProps._timecopy).lower()=='true'
             dfmat=np.asarray(df)
-            shape=x4df.toNumString(np.asarray(dfmat.shape),int)
+            shape=x4df.x4df.toNumString(np.asarray(dfmat.shape),int)
             topo=df.meta(StdProps._topology) or None
             spatial=df.meta(StdProps._spatial) or None
             ftype=validFieldTypes[1 if df.meta(StdProps._elemdata).lower()=='true' else 0]
@@ -139,7 +139,7 @@ def convertImage(obj,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
 
     trans=x4df.transform(np.asarray(list(pos)),np.asarray(rot.toMatrix())[:3,:3].flatten(),np.asarray(list(spacing)))
 
-    x4=x4df.x4df([],[],[],[])
+    x4=x4df.dataset([],[],[],[])
     im=x4df.image(obj.getName(),tscheme,trans,[],[])
     x4.images.append(im)
 
