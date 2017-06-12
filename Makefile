@@ -61,7 +61,7 @@ endif
 PYTHONVER=$(shell $(PYTHON) -V 2>&1)
 CYTHONVER=$(shell $(PYTHON) -c 'import cython;print cython.__version__')
 
-QTDIR=$(shell python -c 'import PyQt4;print PyQt4.__path__[0].replace("\\","/")')
+QTDIR=$(shell $(PYTHON) -c 'import PyQt4;print PyQt4.__path__[0].replace("\\","/")')
 PYUIC=$(PYTHON) $(QTDIR)/uic/pyuic.py
 
 #--------------------------------------------------------------------------------------
