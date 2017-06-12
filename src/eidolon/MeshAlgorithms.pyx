@@ -2202,8 +2202,8 @@ def generateIsoObjectDataSet(dataset,name,refine,externalOnly=False,task=None,**
     for i in xrange(extindices.n()):
         extindices.setAt(i,i)
 
-    if indices.n()==0:
-        raise ValueError,'Dataset contains no data suitable for triangle generation'
+    #if indices.n()==0:
+    #    raise ValueError,'Dataset contains no data suitable for triangle generation'
 
     ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
 
