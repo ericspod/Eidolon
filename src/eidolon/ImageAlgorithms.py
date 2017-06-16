@@ -533,7 +533,7 @@ def processImageNp(imgobj,dtype=np.float,writeBack=True):
     '''
     Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
     image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
-    object once the context exits if `writeBack' is True. 
+    object once the context exits if `writeBack' is True. The array is fresh thus can be retained outside the context.
     '''
     shape=imgobj.getArrayDims()
     im=np.ndarray(shape,dtype)

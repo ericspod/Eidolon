@@ -2280,7 +2280,9 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         self.viz.resize(s.width(),s.height())
 
     def keyPressEvent(self,e):
-        if e.key() == QtCore.Qt.Key_Escape:
+        if e.key() == Qt.Key_F11:
+            self.toggleFullscreen()
+        elif e.key() == QtCore.Qt.Key_Escape:
             self.close()
         else:
             QtGui.QMainWindow.keyPressEvent(self,e)
@@ -2358,6 +2360,11 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
     @signalmethod
     def showScratchPad(self,doShow):
         self.scratchWidget.setVisible(doShow)
+        
+    @signalmethod
+    def toggleFullscreen(self):
+        isWindowed=self.windowState()==Qt.WindowNoState
+        self.setWindowState(Qt.WindowFullScreen if isWindowed else Qt.WindowNoState)
 
     def _executeScratch(self):
         '''Execute the contents of the scratch pad line-by-line in the console, making it visible first.'''
