@@ -570,8 +570,8 @@ def generateTriDataSet(dataset,str name,int refine,bint externalOnly=False,task=
 
         collectResults(outnodes,nodeprops,indices,extindices,result)
 
-    if indices.n()==0:
-        raise ValueError,'Dataset contains no data suitable for triangle generation'
+#    if indices.n()==0:
+#        raise ValueError,'Dataset contains no data suitable for triangle generation'
 
     ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
     ds.validateDataSet()
