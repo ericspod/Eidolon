@@ -33,7 +33,7 @@ datas=[
 	('tutorial','tutorial'),
 	('EidolonLibs/IRTK','EidolonLibs/IRTK'),
 	('EidolonLibs/python','EidolonLibs/python'),
-	('EidolonLibs/MIRTK/ffd_motion.cfg','EidolonLibs/MIRTK/ffd_motion.cfg')
+	('EidolonLibs/MIRTK/ffd_motion.cfg','EidolonLibs/MIRTK')
 ]
 
 if compat.is_win:
