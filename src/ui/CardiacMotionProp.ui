@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>682</width>
+    <width>881</width>
     <height>868</height>
    </rect>
   </property>
@@ -35,7 +35,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>4</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -1634,7 +1634,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>667</width>
+        <width>866</width>
         <height>1532</height>
        </rect>
       </property>
@@ -1727,6 +1727,19 @@ background-color:rgba(255.0,255.0,255.0,200.0);
                <bool>true</bool>
               </property>
              </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </item>

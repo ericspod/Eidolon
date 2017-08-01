@@ -31,7 +31,6 @@ from pydicom.dataset import Dataset,FileDataset
 
 import os
 import sys
-import pickle
 import threading
 import mmap
 import datetime
@@ -592,7 +591,7 @@ def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
 
     a,b,c,d,e,f=roundHeaderVals(*dcm.get('ImageOrientationPatient',[1,0,0,0,-1,0]))
     orientation=rotator(vec3(a,b,c).norm(),vec3(d,e,f).norm(),vec3(1,0,0),vec3(0,-1,0))
-
+    
     si=SharedImage(filename,position,orientation,dimensions,spacing)
 
     try:

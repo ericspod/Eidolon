@@ -698,7 +698,7 @@ class VTKPlugin(MeshScenePlugin):
                     
             return nodes,header
 
-    def savePolydataNodes(self,filename,nodes,vecfunc=None):
+    def savePolydataNodes(self,filename,nodes,vecfunc=tuple):
         return self.saveLegacyFile(filename,PyDataSet('DS',nodes),datasettype=DatasetTypes._POLYDATA,writeFields=False,vecfunc=vecfunc)
             
     def saveXMLFile(self,filenameprefix,obj,filetype='vtu',setObjArgs=False):

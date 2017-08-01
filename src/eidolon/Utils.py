@@ -94,7 +94,6 @@ import contextlib
 import ast
 import string
 import inspect
-import collections
 
 try:
     import ConfigParser as configparser
@@ -1524,7 +1523,8 @@ def cumulativeTime(func):
         start=time.time()
         res=func(*args,**kwargs)
         end=time.time()
-        addCumulativeTime(func.__name,end-start)
+        addCumulativeTime(func.__name__,end-start)
+        return res
 
     return timingwrap
 

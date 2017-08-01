@@ -20,7 +20,7 @@
 from .SceneComponents import *
 from .ImageObject import *
 from .ImageAlgorithms import *
-from .VisualizerUI import *
+from .VisualizerUI import Qt,QtCore, QtGui,Base2DWidget,Draw2DView
 from .MeshAlgorithms import *
 
 class BaseCamera2DWidget(Base2DWidget):
@@ -651,15 +651,17 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
         Draw2DView.mouseWheelMove(self,e)
 
     def keyPress(self,e):
-        if e.key() in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right):
+        if e.key() in (Qt.Key_Left, Qt.Key_Right):
             rep=self.mgr.findObject(self.sourceName)
             if rep:
                 timesteps=rep.getTimestepList()
                 nearest,_=minmaxIndices(abs(self.mgr.timestep-v) for v in timesteps)# index of the nearest timestep to the current time
-                nearest=clamp(nearest+(1 if e.key()==QtCore.Qt.Key_Right else -1),0,len(timesteps)-1)
+                nearest=clamp(nearest+(1 if e.key()==Qt.Key_Right else -1),0,len(timesteps)-1)
                 self.mgr.setTimestep(timesteps[nearest])
-        elif e.key() in (QtCore.Qt.Key_Up, QtCore.Qt.Key_Down):
-            self.setImageStackPosition(self.getImageStackPosition()+(1 if e.key()==QtCore.Qt.Key_Up else -1))
+        elif e.key() in (Qt.Key_Up, Qt.Key_Down):
+            direction=1 if e.key()==Qt.Key_Up else -1
+            scale=10 if e.modifiers()&Qt.ShiftModifier else 1
+            self.setImageStackPosition(self.getImageStackPosition()+(direction*scale))
         else:
             QtGui.QWidget.keyPressEvent(self,e)
 
