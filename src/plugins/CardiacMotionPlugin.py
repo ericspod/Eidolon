@@ -654,7 +654,7 @@ class CardiacMotionProject(Project):
         self.alignprop.svrAddrBox.textChanged.connect(self.updateConfigFromProp)
         #self.alignprop.paramEdit.textChanged.connect(self.updateConfigFromProp)
 
-        self.alignprop.mCropButton.clicked.connect(self._cropSeries)
+        self.alignprop.mCropButton.clicked.connect(self._motionCropSeries)
         self.alignprop.alignButton.clicked.connect(self._alignButton)
 #       self.alignprop.createTimeRegButton.clicked.connect(self._createTimeRegButton)
         self.alignprop.createSegButton.clicked.connect(self._createSegButton)
@@ -1029,10 +1029,12 @@ class CardiacMotionProject(Project):
         if len(regnames)>0:
             self.CardiacMotion.rigidRegisterStackList(self.configMap[ConfigNames._regsubject],self.configMap[ConfigNames._regintermed],regnames)
 
-    def _cropSeries(self):
+    def _motionCropSeries(self):
         seriesname=str(self.alignprop.mCropSeriesBox.currentText())
+        filtersize=self.alignprop.filterSizeBox.value()
         threshold=self.alignprop.cropThresholdBox.value()
-        self.CardiacMotion.motionCropObject(seriesname,threshold)
+        f=self.CardiacMotion.cropMotionObject(seriesname,filtersize,threshold)
+        self.mgr.checkFutureResult(f)
 
     def _cropBoundBox(self):
         srcname=str(self.alignprop.bbCropSrcBox.currentText())

@@ -950,7 +950,8 @@ class IRTKPluginMixin(object):
         filename=self.saveToNifti([reobj])
         return self.loadNiftiFiles(filename)
 
-    def motionCropObject(self,imgobj,threshold):
+    @taskmethod('Cropping object')
+    def cropMotionObject(self,srcname,filtersize,threshold,task):
 #       f=Future()
 #       @taskroutine('Motion-cropping Image Object')
 #       def _crop(imgobj,threshold,task):
@@ -962,8 +963,14 @@ class IRTKPluginMixin(object):
 #
 #       self.mgr.runTasks([_crop(imgobj,threshold)])
 #       return self.loadNiftiFiles(f)
-        raise NotImplementedError('This cropping method needs work to get correct behaviour still')
 
+#        raise NotImplementedError('This cropping method needs work to get correct behaviour still')
+        imgobj=self.findObject(srcname)
+        name=self.getUniqueShortName(srcname,'Crop')
+        cobj=cropMotionImage(imgobj,name,filtersize,threshold)
+        filename=self.saveToNifti([cobj])
+        return self.loadNiftiFiles(filename)
+    
     def emptyCropObject(self,imgobj,loadObj=True):
         f=Future()
         @taskroutine('Empty Space-cropping Image Object')

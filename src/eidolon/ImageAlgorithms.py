@@ -16,12 +16,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from .Utils import timing, clamp, lerpXi, enum, printFlush, trange, listSum, indexList, first
+from .SceneUtils import *#matIterate
+from .Concurrency import concurrent, checkResultMap, sumResultMap
+from renderer.Renderer import vec3, rotator, RealMatrix, IndexMatrix, ColorMatrix, calculateImageHistogram
+from .ImageObject import SharedImage, ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr
 
-from .ImageObject import *
-
+import math, os, contextlib, threading,compiler
+from Queue import Queue
 import numpy as np
 import scipy.ndimage
 import scipy.signal
+from scipy.fftpack import fftn, ifftn
 
 # Hounsfield value range
 Hounsfield=enum(
@@ -36,6 +42,7 @@ Hounsfield=enum(
 )
 
 
+# coordinates, indices, and xi values for a 2-triangle square on the XY plane centered on the origin
 defaultImageQuad=(
     (vec3(-0.5,0.5), vec3(0.5,0.5), vec3(-0.5,-0.5), vec3(0.5,-0.5)), # vertices
     ((0, 2, 1), (1, 2, 3)), # triangle indices
@@ -50,13 +57,67 @@ def hounsfieldToUnit(h):
 
 @timing
 def checkNan(obj):
+    '''Assert that all values in the image object `obj' are not NaN.'''
     for i,img in enumerate(obj.images):
         for n,m in matIterate(img.img):
             v=img.img.getAt(n,m)
             assert not math.isnan(v), 'Found NaN in object %s, image %i at %i,%i'%(obj.getName(),i,n,m)
 
 
+def matrixToArray(mat,dtype=None):
+    '''Converts a RealMatrix or IndexMatrix `mat' to a Numpy array with type `dtype' or the matching type to `mat'.'''
+    assert isinstance(mat,(RealMatrix,IndexMatrix))
+    dtype=dtype or np.dtype(float if isinstance(mat,RealMatrix) else int)
+    return np.asarray(mat).astype(dtype)
+    
+
+@contextlib.contextmanager
+def processImageNp(imgobj,dtype=np.float,writeBack=True):
+    '''
+    Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
+    image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
+    object once the context exits if `writeBack' is True. The array is fresh thus can be retained outside the context.
+    '''
+    shape=imgobj.getArrayDims()
+    im=np.ndarray(shape,dtype)
+    timeseqs=imgobj.getVolumeStacks()
+
+    for t,ts in enumerate(timeseqs):
+        for d,dd in enumerate(ts):
+            arr=matrixToArray(imgobj.images[dd].img,dtype)
+            assert arr.shape==shape[:2]
+            im[:,:,d,t]=arr
+    
+    yield im
+    
+    if writeBack:
+        imgobj.imagerange=(im.min(),im.max()) # reset the stored image range
+        for t,ts in enumerate(timeseqs):
+            for d,dd in enumerate(ts):
+                arr=im[:,:,d,t]
+                img=imgobj.images[dd]
+                img.setMinMaxValues(arr.min(),arr.max())
+                np.asarray(img.img)[:,:]=arr
+
+
+def sampleImageRay(img,start,samplevec,numsamples):
+    '''Sample `numsamples' values from `img' starting from `start' in direction of `samplevec' (both in matrix coords).'''
+    samples=[]
+    for i in xrange(numsamples):
+        pos=start+samplevec*(float(i+1)/numsamples)
+        n=int(0.5+pos.y())
+        m=int(0.5+pos.x())
+
+        if not validIndices(img,n,m):
+            break
+
+        samples.append(img.getAt(n,m))
+
+    return samples
+
+
 def loadImageFile(filename,imgobj,pos=vec3(),rot=rotator(),spacing=(1.0,1.0)):
+    '''Returns a SharedImage object containing the image data from `imgobj' which must have a fillRealMatrix(mat) method.'''
     #imgobj=imgobj or Image.loadImageFile(filename)
 
     w=imgobj.getWidth()
@@ -314,66 +375,39 @@ def isCTImageSeries(imgs=None,minv=None,maxv=None,hist=None):
     return len(maximi)>3
 
 
-def addMotionDiff(img1,img2,imgout):
-    for n,m in matIterate(imgout):
-        diff=abs(img2.getAt(n,m)-img1.getAt(n,m))+imgout.getAt(n,m)
-        imgout.setAt(diff,n,m)
-
-
-@concurrent
-def calculateMotionMaskRange(process,diffimgs,vols,inimgs):
-    maxval=0.0
-    for ind in process.nrange():
-        imgout=diffimgs[ind].img
-        process.setProgress(ind-process.startval+1)
-        for v in range(1,len(vols)):
-            addMotionDiff(inimgs[vols[v-1][ind]].img,inimgs[vols[v][ind]].img,imgout)
-#           img1=inimgs[vols[v-1][ind]].img
-#           img2=inimgs[vols[v][ind]].img
-#           for n,m in matIterate(imgout):
-#               diff=abs(img2.getAt(n,m)-img1.getAt(n,m))+imgout.getAt(n,m)
-#               imgout.setAt(diff,n,m)
-
-        for n,m in matIterate(imgout):
-            maxval=max(maxval,imgout.getAt(n,m))
-
-    return maxval
-
-
 @timing
-def calculateMotionMask(imgobj,task=None):
-    if not imgobj.isTimeDependent:
-        raise ValueError("ImageSceneObject `imgobj'must be time-dependent")
-
-    for i in imgobj.images:
-        i.img.setShared(True)
-
-    diffimgs=[]
-    if imgobj.is2D:
-        img=imgobj.images[0].clone()
-        diffimgs.append(img)
-        inds=listSum(imgobj.getVolumeStacks())
-
-        for ind1,ind2 in zip(inds,inds[1:]):
-            addMotionDiff(imgobj.images[ind1].img,imgobj.images[ind2].img,img.img)
-    else:
-        vols=imgobj.getVolumeStacks()
-
-        for ind in vols[0]:
-            img=imgobj.images[ind].clone()
-            img.img.fill(0)
-            diffimgs.append(img)
-
-        maxs=calculateMotionMaskRange(len(diffimgs),0,task,diffimgs,vols,imgobj.images)
-
-        maxdiff=max(maxs.values())
-
-        for i in diffimgs:
-            i.img.div(maxdiff)
-            i.imgmin=0.0
-            i.imgmax=1.0
-
-    return diffimgs
+def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
+    '''
+    Calculate a region of interest to encompass the area of most of the motion present in the time-dependent image `obj'.
+    This is done using fourier transforms to determine where motion is present. Masking is used to identify a square
+    region of interest which includes the most significanat areas of motion. The parameter `maxFilterSize' determines the
+    size of maximum filter size of the mask, and `maskThreshold' the mimimum value to threshold the mask by. The return 
+    value is the fourier image, minimum x (column) index, minimum y (row) index, maximum x index, and maximum y index.
+    
+    For example, the following crops an image `obj' based on the motion ROI:
+        _,minx,miny,maxx,maxy=calculateMotionROI(obj)
+        cropped=obj.plugin.cropXY(obj,'cropped',minx,miny,maxx,maxy)
+    '''
+    if not obj.isTimeDependent:
+        raise ValueError('Image object %r must be time-dependent for calculating motion ROI.'%obj.getName())
+        
+    with processImageNp(obj,writeBack=False) as mat:
+        out=np.zeros(mat.shape[:3],np.float32)
+        
+        for i in range(mat.shape[2]):
+            ff=fftn(np.transpose(mat[:,:,i,:],(2,0,1)))
+            im=np.sum(np.absolute(ifftn(ff[1:])),axis=0)
+            
+            out[:,:,i]=im
+            
+        # reduce out to a mask of voxels at and above `maskThreshold' of the value range
+        mask=scipy.ndimage.maximum_filter(out, size=maxFilterSize)
+        mask=(mask-np.min(mask))/(np.max(mask)-np.min(mask))
+        mask=mask>maskThreshold
+        
+        inds=scipy.ndimage.find_objects(mask)[0]
+    
+    return out, inds[1].start, inds[0].start, inds[1].stop, inds[0].stop
 
 
 def applySlopeIntercept(imgobj,slope=None,inter=None):
@@ -392,21 +426,17 @@ def applySlopeIntercept(imgobj,slope=None,inter=None):
 
 
 @timing
-def applyVolumeMask(imgobj,mask,threshold,task=None):
+def cropVolumeMask(imgobj,mask,threshold,task=None):
+    '''
+    Crop the image `imgobj' to the boundbox of voxels in `mask' greater than or equal to `threshold'. This assumes the 
+    image objects are colinear (ie. same shape). Returns the cropped copy of `imgobj'.
+    '''
     vols=imgobj.getVolumeStacks()
     if not imgobj.isTimeDependent or len(vols)==1:
         raise ValueError("ImageSceneObject `imgobj' must be time-dependent")
 
     minx,miny,maxx,maxy=calculateStackClipSq(mask,threshold)
     outobj=imgobj.plugin.cropXY(imgobj,imgobj.getName()+'VCrop',minx,miny,maxx,maxy)
-
-#   for ind,ming in enumerate(mask):
-#       ming=ming.img
-#       for vol in vols:
-#           outimg=outobj.images[vol[ind]].img
-#           for n,m in trange((miny,maxy),(minx,maxx)):
-#               if ming.getAt(n,m)<threshold:
-#                   outimg.setAt(0,n-miny,m-minx)
 
     return outobj
 
@@ -440,9 +470,35 @@ def cropObjectEmptySpace(obj,name,xymargins=0,zFilter=False):
         newobj=newobj.plugin.cropXY(newobj,name,minx,miny,maxx,maxy)
 
     return newobj
+    
+    
+def cropRefImage(obj,ref,name,marginx=0,marginy=0):
+    '''
+    Crop the image `obj' to the spatial boundbox of `ref' with added (X,Y) margins `marginx' and `marginy'. 
+    Returns the cropped image with name `name'.
+    '''
+    trans=obj.getVolumeTransform()
+    tinv=trans.inverse()
+    maxcols=obj.maxcols
+    maxrows=obj.maxrows
+    
+    corners=listSum(i.getCorners() for i in ref.images)
+    aabb=BoundBox([tinv*c for c in corners])
+    
+    minx=clamp(aabb.minv.x()*maxcols-marginx,0,maxcols-1)
+    maxx=clamp(aabb.maxv.x()*maxcols+marginx,0,maxcols-1)
+    miny=clamp(aabb.minv.y()*maxrows-marginy,0,maxrows-1)
+    maxy=clamp(aabb.maxv.y()*maxrows+marginy,0,maxrows-1)
+    
+    return obj.plugin.cropXY(obj,name,int(minx),int(miny),int(maxx),int(maxy))
 
+
+def cropMotionImage(obj,name,maxFilterSize=20,maskThreshold=0.75):
+    _,minx,miny,maxx,maxy=calculateMotionROI(obj,maxFilterSize,maskThreshold)
+    return obj.plugin.cropXY(obj,name,minx,miny,maxx,maxy)
 
 def centerImagesLocalSpace(obj):
+    '''Moves `obj' so that its boundbox center is at the origin.'''
     for i in obj.images:
         i.position-=obj.aabb.center
         i.calculateDimensions()
@@ -450,24 +506,9 @@ def centerImagesLocalSpace(obj):
     obj.aabb=BoundBox(matIter(s.getCorners() for s in obj.images))
 
 
-def sampleImageRay(img,start,samplevec,numsamples):
-    '''Sample `numsamples' values from `img' starting from `start' in direction of `samplevec' (both in matrix coords).'''
-    samples=[]
-    for i in xrange(numsamples):
-        pos=start+samplevec*(float(i+1)/numsamples)
-        n=int(0.5+pos.y())
-        m=int(0.5+pos.x())
-
-        if not validIndices(img,n,m):
-            break
-
-        samples.append(img.getAt(n,m))
-
-    return samples
-
-
 @timing
 def normalizeImageData(obj):
+    '''Rescales the image data of `obj' to be in the unit range.'''
     imgmin,imgmax=minmax(((i.imgmin,i.imgmax) for i in obj.images),ranges=True)
 
     for i in obj.images:
@@ -516,47 +557,6 @@ def thresholdImage(obj,minv,maxv,task=None):
         i.setMinMaxValues(*minmaxMatrixReal(i.img))
 
 
-def matrixToArray(mat,dtype=None):
-    '''Converts a RealMatrix or IndexMatrix `mat' to a Numpy array with type `dtype' or the matching type to `mat'.'''
-    assert isinstance(mat,(RealMatrix,IndexMatrix))
-    dtype=dtype or np.dtype(float if isinstance(mat,RealMatrix) else int)
-    return np.asarray(mat).astype(dtype)
-    
-
-#def arrayToMatrix(arr,mat):
-#   '''Fills the RealMatrix or IndexMatrix `mat' with the contents of Numpy array `arr' converted to the correct format.'''
-#   np.asarray(mat)[:,:]=arr
-    
-
-@contextlib.contextmanager
-def processImageNp(imgobj,dtype=np.float,writeBack=True):
-    '''
-    Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
-    image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
-    object once the context exits if `writeBack' is True. The array is fresh thus can be retained outside the context.
-    '''
-    shape=imgobj.getArrayDims()
-    im=np.ndarray(shape,dtype)
-    timeseqs=imgobj.getVolumeStacks()
-
-    for t,ts in enumerate(timeseqs):
-        for d,dd in enumerate(ts):
-            arr=matrixToArray(imgobj.images[dd].img,dtype)
-            assert arr.shape==shape[:2]
-            im[:,:,d,t]=arr
-    
-    yield im
-    
-    if writeBack:
-        imgobj.imagerange=(im.min(),im.max()) # reset the stored image range
-        for t,ts in enumerate(timeseqs):
-            for d,dd in enumerate(ts):
-                arr=im[:,:,d,t]
-                img=imgobj.images[dd]
-                img.setMinMaxValues(arr.min(),arr.max())
-                np.asarray(img.img)[:,:]=arr
-
-
 def sampleImageVolume(obj,pt,timestep,transinv=None):
     '''
     Sample the image volume `obj' at the given point in world space and time, returning 0 if the point is outside the
@@ -572,7 +572,7 @@ def sampleImageVolume(obj,pt,timestep,transinv=None):
 def calculateReprIsoplaneMesh(rep,planetrans,stackpos,slicewidth):
     '''
     Calculates the mesh for image representation object `rep' at plane `planetrans' at the stack position `stackpos' 
-    (which is meaningfor only for ImageSeriesRepr types). This will determine where `rep' is intersected by `planetrans' 
+    (which is meaning only for ImageSeriesRepr types). This will determine where `rep' is intersected by `planetrans' 
     and returns the triple (nodes,indices,xis) representing a mesh for that intersecting geometry. 2D images viewed at
     oblique angles produces slices which are `slicewidth' wide.
     '''
@@ -722,16 +722,11 @@ def mergeImages(imgobjs,imgout,mergefunc=None,task=None):
     
     
 def dilateImageVolume(obj,size=(5,5,5)):
-    inds=obj.getVolumeStacks()  
-    
-    for ind in inds:
-        images=indexList(ind,obj.images)
-        volume=np.asarray([np.asarray(i.img) for i in images])
-        volume=np.transpose(volume,(1,2,0))
-        result=scipy.ndimage.morphology.grey_dilation(volume,size)
-        for i,img in enumerate(images):
-            np.asarray(img.img)[:,:]=result[:,:,i]
-    
+    '''Dilate the image `obj' by `size' using grey dilation. This overwrites the data in `obj'.'''
+    with processImageNp(obj) as mat:
+        for i in range(mat.shape[-1]):
+            mat[...,i]=scipy.ndimage.grey_dilation(mat[...,i],size)
+            
 
 @concurrent
 def extendImageRange(process,imglist,mx,my,fillVal):
@@ -745,6 +740,11 @@ def extendImageRange(process,imglist,mx,my,fillVal):
             
 @timing
 def extendImage(obj,name,mx,my,mz,fillVal=0,numProcs=0,task=None):
+    '''
+    Extends the image `obj' by the given margins (mx,my,mz) in each dimension. The extended regions are filled with the
+    value `fillVall'. The `numProcs' value is used in determining how many processes to use (0 for all). The returned
+    object has name `name' and represents the same spatial data as the original plus the added margins.
+    '''
     if mx==0 and my==0:
         images=[i.clone() for i in obj.images]
     else:
@@ -770,23 +770,6 @@ def extendImage(obj,name,mx,my,mz,fillVal=0,numProcs=0,task=None):
                 images.append(img)
             
     return obj.plugin.createSceneObject(name,images,obj.source,obj.isTimeDependent)
-    
-    
-def cropRefImage(obj,ref,name,marginx=0,marginy=0):
-    trans=obj.getVolumeTransform()
-    tinv=trans.inverse()
-    maxcols=obj.maxcols
-    maxrows=obj.maxrows
-    
-    corners=listSum(i.getCorners() for i in ref.images)
-    aabb=BoundBox([tinv*c for c in corners])
-    
-    minx=clamp(aabb.minv.x()*maxcols-marginx,0,maxcols-1)
-    maxx=clamp(aabb.maxv.x()*maxcols+marginx,0,maxcols-1)
-    miny=clamp(aabb.minv.y()*maxrows-marginy,0,maxrows-1)
-    maxy=clamp(aabb.maxv.y()*maxrows+marginy,0,maxrows-1)
-    
-    return obj.plugin.cropXY(obj,name,int(minx),int(miny),int(maxx),int(maxy))
     
     
 def createTemporalImage(obj,numImgsPerStep=None, stepMul=1):
