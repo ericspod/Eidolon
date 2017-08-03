@@ -53,7 +53,7 @@ def isImageVolume(images,err=1e-3):
 
 def sortImageStack(images):
     '''Returns an indices list indexing the images in list `images' in bottom-up order.'''
-    assert isImageVolume(images)
+    #assert isImageVolume(images)
     positions=[i.position for i in images]
     maxdist=max(i.distTo(j) for i in positions for j in positions)
     farpoint=positions[0]-images[0].norm*maxdist*2 # guaranteed to be a point below the stack
@@ -484,7 +484,8 @@ class ImageSceneObject(SceneObject):
 
                     inds=[olist[ts] for olist in orientlists] # indices of all images for this timestep
                     images=indexList(inds,self.images) # get the SharedImage objects
-                    sortorder=sortImageStack(images) # determine the ordering of the images which form a bottom-up stack
+                    
+                    sortorder=sortImageStack(images) # determine the ordering of the images by trying to sort into a bottom-up stack
                     avgstep=avg(i.timestep for i in images) # averaged timestep value for these images
                     timesteps.append((avgstep,indexList(sortorder,inds))) # add the sorted indices
 

@@ -71,6 +71,13 @@ def matrixToArray(mat,dtype=None):
     return np.asarray(mat).astype(dtype)
     
 
+def rescaleArray(arr,minv=0.0,maxv=1.0):
+    '''Rescale the values of numpy array `arr' to be from `minv' to `maxv'.'''
+    mina=np.min(arr)
+    norm=(arr-mina)/(np.max(arr)-mina)
+    return (norm*(maxv-minv))+minv
+
+
 @contextlib.contextmanager
 def processImageNp(imgobj,dtype=np.float,writeBack=True):
     '''

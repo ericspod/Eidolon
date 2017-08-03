@@ -582,7 +582,7 @@ def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
     from `filename', which must always be the valid path to the loaded DICOM. The `index' value is for the ordering the
     caller imposes on a series of DICOM images, usually this is the index of the image in its containing DICOM series.
     '''
-    dcm=dcm or read_file(filename)
+    dcm=read_file(filename) if dcm is None else dcm
     assert dcm!=None
 
     position=vec3(*roundHeaderVals(*dcm.get('ImagePositionPatient',[0,0,0]))) # top-left corner
@@ -622,9 +622,13 @@ def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
         if not rescale or rslope==0:
             rslope=1.0
             rinter=0.0
+            
+        pixelarray=dcm.pixel_array*rslope+rinter
+        if pixelarray.ndim==3:
+            pixelarray=np.sum(pixelarray,axis=2)
 
         si.allocateImg(si.seriesID+str(si.index),isShared)
-        np.asarray(si.img)[:,:]=dcm.pixel_array*rslope+rinter
+        np.asarray(si.img)[:,:]=pixelarray
         si.setMinMaxValues(*minmaxMatrixReal(si.img))
 
     return si
@@ -994,7 +998,7 @@ class DicomPlugin(ImageScenePlugin):
             # load the directory the file is in then load the series the file was from
             seriesID=str(dcm.get('SeriesInstanceUID',''))
             self.loadDirDataset(os.path.dirname(filename))
-            return self.loadSeries(seriesID)
+            return self.loadSeries(seriesID,name)
 
     def loadDicomVolume(self,filename,name=None,interval=1.0,toffset=0.0,position=vec3(),rot=rotator()):
         '''Load a single DICOM file containing a 3D or 4D image volume (ie. ultrasound) using nonstandard tags.'''
