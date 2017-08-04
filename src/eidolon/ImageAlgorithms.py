@@ -394,6 +394,8 @@ def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
     For example, the following crops an image `obj' based on the motion ROI:
         _,minx,miny,maxx,maxy=calculateMotionROI(obj)
         cropped=obj.plugin.cropXY(obj,'cropped',minx,miny,maxx,maxy)
+        
+    see: Lin et. al, "Automated Detection of Left Ventricle in 4D MR Images: Experience from a Large Study"
     '''
     if not obj.isTimeDependent:
         raise ValueError('Image object %r must be time-dependent for calculating motion ROI.'%obj.getName())

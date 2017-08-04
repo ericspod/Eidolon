@@ -206,6 +206,7 @@ class SharedImage(object):
         return self.img.memSize() if self.img else 0
 
     def isParallel(self,otherimg,err=epsilon):
+        '''Returns True if thsi image is parallel with the image `otherimg'.'''
         return self.norm.angleTo(otherimg.norm)<=err
 
     def isSameLocation(self,otherimg,err=epsilon):
