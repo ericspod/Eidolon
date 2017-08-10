@@ -604,7 +604,7 @@ cdef class Ray:
         else:
             return tuple()
 
-    def intersectsTriMesh(self, Vec3Matrix nodes, IndexMatrix inds, Vec3Matrix centers, RealMatrix radii2,sval numResults=-1,sval excludeInd=-1):
+    def intersectsTriMesh(self, Vec3Matrix nodes, IndexMatrix inds, Vec3Matrix centers, RealMatrix radii2,sval numResults=0,sval excludeInd=-1):
         cdef vector[indextriple] triples=self.val.intersectsTriMesh(nodes.mat,inds.mat,centers.mat,radii2.mat,numResults,excludeInd)
         cdef indextriple rp
         cdef list result=[]

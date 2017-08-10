@@ -419,7 +419,7 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 
         realtriple intersectsTri(const vec3& v0, const vec3& v1, const vec3& v2)
 
-        vector[indextriple] intersectsTriMesh(const Vec3Matrix* nodes, const IndexMatrix* inds,const Vec3Matrix* centers, const RealMatrix* radii2, sval numResults,sval excludeInd) const
+        vector[indextriple] intersectsTriMesh(const Vec3Matrix* nodes, const IndexMatrix* inds,const Vec3Matrix* centers, const RealMatrix* radii2, sval numResults,sval excludeInd) except +IndexError const
 
 
     cdef cppclass Config:

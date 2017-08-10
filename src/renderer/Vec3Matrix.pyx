@@ -67,10 +67,10 @@ cdef class Vec3Matrix:
             if len(args)>0:
                 isShared=bool(args[0])
 
-            if len(sharedname)>0:
-                self.mat=new iMatrix[ivec3](name,mtype,sharedname,serialmeta,n,m)
-            else:
-                self.mat=new iMatrix[ivec3](name,mtype,n,m,isShared)
+        if len(sharedname)>0:
+            self.mat=new iMatrix[ivec3](name,mtype,sharedname,serialmeta,n,m)
+        else:
+            self.mat=new iMatrix[ivec3](name,mtype,n,m,isShared)
 
     def __dealloc__(Vec3Matrix self):
         del self.mat

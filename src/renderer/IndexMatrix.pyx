@@ -67,10 +67,10 @@ cdef class IndexMatrix:
             if len(args)>0:
                 isShared=bool(args[0])
 
-            if len(sharedname)>0:
-                self.mat=new iMatrix[indexval](name,mtype,sharedname,serialmeta,n,m)
-            else:
-                self.mat=new iMatrix[indexval](name,mtype,n,m,isShared)
+        if len(sharedname)>0:
+            self.mat=new iMatrix[indexval](name,mtype,sharedname,serialmeta,n,m)
+        else:
+            self.mat=new iMatrix[indexval](name,mtype,n,m,isShared)
 
     def __dealloc__(IndexMatrix self):
         del self.mat

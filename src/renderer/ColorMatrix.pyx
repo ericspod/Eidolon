@@ -67,10 +67,10 @@ cdef class ColorMatrix:
             if len(args)>0:
                 isShared=bool(args[0])
 
-            if len(sharedname)>0:
-                self.mat=new iMatrix[icolor](name,mtype,sharedname,serialmeta,n,m)
-            else:
-                self.mat=new iMatrix[icolor](name,mtype,n,m,isShared)
+        if len(sharedname)>0:
+            self.mat=new iMatrix[icolor](name,mtype,sharedname,serialmeta,n,m)
+        else:
+            self.mat=new iMatrix[icolor](name,mtype,n,m,isShared)
 
     def __dealloc__(ColorMatrix self):
         del self.mat

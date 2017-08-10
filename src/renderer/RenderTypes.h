@@ -3378,13 +3378,13 @@ public:
 		vec3 t=pos-v0;
 		real u=p.dot(t)*invdet;
 
-		if(u < 0.f || u > 1.f) 
+		if(u < 0 || u > 1) 
 			return realtriple(-1,-1,-1);
 
 		vec3 q=t.cross(e1);
 		real v=dir.dot(q)*invdet;
 
-		if(v < 0.f || u + v  > 1.f) 
+		if(v < 0 || u + v  > 1) 
 			return realtriple(-1,-1,-1);
  
 		real len=e2.dot(q)*invdet;
@@ -3396,29 +3396,54 @@ public:
 	}
 	
 	/** 
-	 * For each triangle the ray passes through, the result will have an indexed triple containing the index in 
-	 * `inds' of the intersected triangle and the result from intersectsTri() for that triangle.
+	 * For each triangle the ray passes through, the result will contain an indexed triple whose first value is the index 
+	 * in `inds' of the intersected triangle and the second is the result from intersectsTri() for that triangle. The
+	 * intersected mesh is defined by the points `nodes' and triangle topology `inds'. The `centers' matrix is the center
+	 * of the bounding spehere of each triangle in `inds', and `radii2' is the squared radius of each triangle's bounding 
+	 * sphere. If `numResults' is greater than 0 only that many results will be returned. if `excludeInd' is greater than
+	 * -1 the triangle at that index is skipped, this is useful for rays which begin at a triangle and are used to check
+	 * for intersection with other parts of the same mesh.
 	 */
-	std::vector<indextriple> intersectsTriMesh(const Vec3Matrix* const nodes, const IndexMatrix* const inds,const Vec3Matrix* const centers, const RealMatrix* const radii2, sval numResults=-1,sval excludeInd=-1) const
+	std::vector<indextriple> intersectsTriMesh(const Vec3Matrix* const nodes, const IndexMatrix* const inds,
+		const Vec3Matrix* const centers, const RealMatrix* const radii2, sval numResults=0,sval excludeInd=-1) const  throw(IndexException)
 	{
 		std::vector<indextriple> results;
-		sval len=_min(inds->n(),_min(centers->n(),radii2->n()));
+		sval len=inds->n();
+		
+		if(centers && radii2)
+			len=_min(len,_min(centers->n(),radii2->n()));
 
-		for(sval n=0;n<len && results.size()<numResults;n++){
+		for(sval n=0;n<len && (numResults==0 || results.size()<numResults);n++){
 			if(n==excludeInd)
 				continue;
 
-			vec3 ncenter=centers->at(n);
-			real nrad=radii2->at(n);
-
-			vec3 npos=getPosition(ncenter.distTo(pos));
-
-			if(npos.distToSq(ncenter)>nrad)
-				continue;
-
-			vec3 v0=nodes->getAt(inds->at(n,0));
-			vec3 v1=nodes->getAt(inds->at(n,1));
-			vec3 v2=nodes->getAt(inds->at(n,2));
+			vec3 ncenter,npos,v0,v1,v2;
+			real nrad=0;
+			
+			if(centers && radii2){
+				ncenter=centers->at(n);
+				nrad=radii2->at(n);
+				npos=getPosition(ncenter.distTo(pos));
+	
+				if(npos.distToSq(ncenter)>nrad)
+					continue;
+				
+				v0=nodes->getAt(inds->at(n,0));
+				v1=nodes->getAt(inds->at(n,1));
+				v2=nodes->getAt(inds->at(n,2));
+			}
+			else{
+				v0=nodes->getAt(inds->at(n,0));
+				v1=nodes->getAt(inds->at(n,1));
+				v2=nodes->getAt(inds->at(n,2));
+				
+				ncenter=(v0+v1+v2)/3.0;
+				nrad=_max(ncenter.distToSq(v0),_max(ncenter.distToSq(v1),ncenter.distToSq(v2)));
+				npos=getPosition(ncenter.distTo(pos));
+	
+				if(npos.distToSq(ncenter)>nrad)
+					continue;
+			}
 			
 			realtriple inter=intersectsTri(v0,v1,v2);
 			

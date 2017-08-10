@@ -67,10 +67,10 @@ cdef class RealMatrix:
             if len(args)>0:
                 isShared=bool(args[0])
 
-            if len(sharedname)>0:
-                self.mat=new iMatrix[real](name,mtype,sharedname,serialmeta,n,m)
-            else:
-                self.mat=new iMatrix[real](name,mtype,n,m,isShared)
+        if len(sharedname)>0:
+            self.mat=new iMatrix[real](name,mtype,sharedname,serialmeta,n,m)
+        else:
+            self.mat=new iMatrix[real](name,mtype,n,m,isShared)
 
     def __dealloc__(RealMatrix self):
         del self.mat
