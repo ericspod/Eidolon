@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/MainWindow.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Mon Aug 14 14:43:03 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -25,7 +26,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(872, 750)
+        MainWindow.resize(872, 859)
         MainWindow.setStatusTip(_fromUtf8(""))
         MainWindow.setDocumentMode(False)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
@@ -34,6 +35,8 @@ class Ui_MainWindow(object):
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.mainLayout = QtGui.QVBoxLayout(self.centralwidget)
+        self.mainLayout.setSpacing(0)
+        self.mainLayout.setMargin(0)
         self.mainLayout.setObjectName(_fromUtf8("mainLayout"))
         self.viz = QtGui.QWidget(self.centralwidget)
         self.viz.setEnabled(True)
@@ -41,7 +44,7 @@ class Ui_MainWindow(object):
         self.mainLayout.addWidget(self.viz)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 872, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 872, 25))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
@@ -61,7 +64,7 @@ class Ui_MainWindow(object):
         self.menu_Help.setObjectName(_fromUtf8("menu_Help"))
         MainWindow.setMenuBar(self.menubar)
         self.interfaceDock = QtGui.QDockWidget(MainWindow)
-        self.interfaceDock.setMinimumSize(QtCore.QSize(412, 513))
+        self.interfaceDock.setMinimumSize(QtCore.QSize(412, 596))
         self.interfaceDock.setToolTip(_fromUtf8(""))
         self.interfaceDock.setAccessibleName(_fromUtf8(""))
         self.interfaceDock.setFloating(False)
@@ -87,8 +90,8 @@ class Ui_MainWindow(object):
         self.treeGroup.setMinimumSize(QtCore.QSize(0, 0))
         self.treeGroup.setObjectName(_fromUtf8("treeGroup"))
         self.verticalLayout_3 = QtGui.QVBoxLayout(self.treeGroup)
-        self.verticalLayout_3.setContentsMargins(0, 6, 4, 6)
         self.verticalLayout_3.setSpacing(0)
+        self.verticalLayout_3.setContentsMargins(0, 6, 4, 6)
         self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
         self.treeWidget = QtGui.QTreeWidget(self.treeGroup)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -165,7 +168,7 @@ class Ui_MainWindow(object):
         self.propScrollArea.setWidgetResizable(True)
         self.propScrollArea.setObjectName(_fromUtf8("propScrollArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 396, 166))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 459, 235))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.propScrollArea.setWidget(self.scrollAreaWidgetContents)
         self.gridLayout.addWidget(self.propScrollArea, 4, 0, 1, 1)
@@ -181,7 +184,7 @@ class Ui_MainWindow(object):
         self.assetScrollArea.setWidgetResizable(True)
         self.assetScrollArea.setObjectName(_fromUtf8("assetScrollArea"))
         self.scrollAreaWidgetContents_3 = QtGui.QWidget()
-        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 396, 314))
+        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 459, 251))
         self.scrollAreaWidgetContents_3.setObjectName(_fromUtf8("scrollAreaWidgetContents_3"))
         self.assetScrollArea.setWidget(self.scrollAreaWidgetContents_3)
         self.gridLayout_5.addWidget(self.assetScrollArea, 4, 0, 1, 1)
@@ -402,8 +405,8 @@ class Ui_MainWindow(object):
         self.dockWidgetContents_3.setSizePolicy(sizePolicy)
         self.dockWidgetContents_3.setObjectName(_fromUtf8("dockWidgetContents_3"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.dockWidgetContents_3)
-        self.verticalLayout_2.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout_2.setSpacing(3)
+        self.verticalLayout_2.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))

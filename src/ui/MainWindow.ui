@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>872</width>
-    <height>750</height>
+    <height>859</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,6 +30,12 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="mainLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="margin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QWidget" name="viz" native="true">
       <property name="enabled">
@@ -45,7 +51,7 @@
      <x>0</x>
      <y>0</y>
      <width>872</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -122,7 +128,7 @@
    <property name="minimumSize">
     <size>
      <width>412</width>
-     <height>513</height>
+     <height>596</height>
     </size>
    </property>
    <property name="toolTip">
@@ -411,8 +417,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>396</width>
-              <height>166</height>
+              <width>459</width>
+              <height>235</height>
              </rect>
             </property>
            </widget>
@@ -445,8 +451,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>396</width>
-              <height>314</height>
+              <width>459</width>
+              <height>251</height>
              </rect>
             </property>
            </widget>

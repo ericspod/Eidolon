@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .Utils import timing, clamp, lerpXi, enum, printFlush, trange, listSum, indexList, first
+from .Utils import timing, clamp, lerpXi, enum, printFlush, trange, listSum, indexList, first, minmax
 from .SceneUtils import *#matIterate
 from .Concurrency import concurrent, checkResultMap, sumResultMap
 from renderer.Renderer import vec3, rotator, RealMatrix, IndexMatrix, ColorMatrix, calculateImageHistogram

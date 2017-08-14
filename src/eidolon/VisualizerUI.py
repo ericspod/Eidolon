@@ -2363,7 +2363,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         
     @signalmethod
     def toggleFullscreen(self):
-        isWindowed=self.windowState()==Qt.WindowNoState
+        isWindowed=self.windowState()!=Qt.WindowFullScreen
         self.setWindowState(Qt.WindowFullScreen if isWindowed else Qt.WindowNoState)
 
     def _executeScratch(self):
