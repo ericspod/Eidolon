@@ -9,7 +9,6 @@ For all platforms it requires:
  * PyQt 4.10.4+ (earlier 4.\* versions may work, 5 will not for now)
  * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
  * SciPy 0.13.3+ (earlier versions may work)
- * Cg (Linux only as package libcg, Windows/OSX included with EidolonLibs)
  
 ----
 
@@ -61,7 +60,6 @@ The Eidolon requires the following packages:
  * python-numpy
  * python-scipy
  * python-qt4
- * libcg
 
 You may also need the following packages:
 
