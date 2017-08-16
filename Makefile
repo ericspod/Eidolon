@@ -21,10 +21,7 @@ KERNEL_NAME = $(shell uname)
 ARCH = $(shell uname -m)
 
 ifeq ($(KERNEL_NAME),Linux)
-	PLAT=ubuntu$(shell lsb_release -rs 2>/dev/null | head -c 2)
-ifeq ($(PLAT),)
 	PLAT=linux
-endif
 else ifeq ($(KERNEL_NAME),Darwin)
 	PLAT=osx
 else ifeq ($(findstring MINGW,$(KERNEL_NAME)),MINGW)
@@ -147,7 +144,7 @@ ifeq ($(PLAT),win64_mingw)
 else ifeq ($(PLAT),osx)
 	rm -rf $(SRC)/*/*.so.osx
 else
-	rm -rf $(SRC)/*/*.so.ubuntu* 
+	rm -rf $(SRC)/*/*.so.linux 
 endif
 
 clean_gen:

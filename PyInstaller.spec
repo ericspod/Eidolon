@@ -57,10 +57,7 @@ elif compat.is_darwin:
 		('EidolonLibs/MIRTK/OSX','EidolonLibs/MIRTK/OSX')
 	]
 elif compat.is_linux:
-	d,v,_=platform.linux_distribution()
-	assert d.lower()=='ubuntu'
-	libs='EidolonLibs/ubuntu%s/bin'%v[:2]
-	binaries+=[(f,'.') for f in glob(libs+'/*')]
+	binaries+=[(f,'.') for f in glob('EidolonLibs/linux/bin/*')]
 	datas.append(('EidolonLibs/MIRTK/Linux','EidolonLibs/MIRTK/Linux'))
 
 a = Analysis(['main.py'],

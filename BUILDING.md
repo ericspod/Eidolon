@@ -1,6 +1,6 @@
 # Building Instructions
 
-Eidolon needs Python to run as well as build so first follow the instructions for running it. 
+Eidolon needs Python to run as well as build so first follow the instructions for running it in INSTALLATION.md. 
 Various additional components are needed to build for each platform. 
 This assumes that the pre-built libraries are included.
 For all platforms the following are required either separately, as included with the source, or as part of Anaconda:
@@ -14,17 +14,17 @@ For all platforms the following are required either separately, as included with
 
 ## Setup
 
-### Linux (Ubuntu 12/14) 
+### Linux (Ubuntu 12/14, other distros) 
 
 **Ubuntu 12.*** doesn't require anything extra if Anaconda is installed, so this is the easiest way to get started with development.
 
-**Ubuntu 14.*** version of Eidolon uses the system Ogre3D package so the development components for that must be installed plus the Qt development tools and Cython:
+**Ubuntu 14.*** version of Eidolon uses the Qt development tools and Cython:
 
-    sudo apt-get install libogre-1.9-dev pyqt4-dev-tools qt4-dev-tools
+    sudo apt-get install pyqt4-dev-tools qt4-dev-tools
 
 Additionally for either platform, **g++** and **make** are needed to build the libraries, you should have these already. 
 
-The version of Cython you'll get with 14.\* is too old, download it and install using the **setup.py** script. 
+The version of Cython you'll get with 14.\* is too old, download it (https://github.com/cython/cython/releases/tag/0.24.1) and install using the **setup.py** script in its source repository. 
 
 ### OS X
 

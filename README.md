@@ -9,7 +9,7 @@ Features include:
  * Interactive access to running application code through built-in Python console
  * Plugin-oriented architecture, script interface, and console allow easy user-extension to code 
  * Integration with Python scientific libraries including numpy and scipy
- * Multi-platform support, including Windows, OSX, Ubuntu 12/14
+ * Multi-platform support, including Windows, OSX, Linux (Ubuntu 12/14 and others)
  * Project-oriented architecture helps organize data and extension features
  * Image processing, registration, and motion tracking provided through IRTK routines
 

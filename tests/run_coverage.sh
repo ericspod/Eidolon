@@ -37,11 +37,10 @@ then
 	
 	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
 else
-	PLAT=ubuntu$(lsb_release -sr | head -c 2)
 	# symlink every compiled library for this platform to the correct name
-	for i in $APPDIR/src/*/*.so.$PLAT; do ln -fs $i ${i%.so.$PLAT}.so;done
+	for i in $APPDIR/src/*/*.so.linux; do ln -fs $i ${i%.so.linux}.so;done
 	
-	export LD_LIBRARY_PATH=$LIBSDIR/$PLAT/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
+	export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
 

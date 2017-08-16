@@ -109,17 +109,7 @@ elif isWindows:
 else:
     assert isLinux
     libraries+=['m','rt']
-
-    with open('/etc/lsb-release') as o:
-        lsb=dict(l.strip().split('=') for l in o.readlines())
-
-    if lsb['DISTRIB_RELEASE'].startswith('12'):
-        platdir='ubuntu12'
-    elif lsb['DISTRIB_RELEASE'].startswith('14'):
-        platdir='ubuntu14'
-    else:
-        raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
-
+    platdir='linux'
     destfile+='so.%s'%platdir
 
 # root directory for the current platform's libraries
@@ -133,8 +123,8 @@ library_dir=libdir+'/lib/'+libsuffix
 # include file directories
 includedirs=['.',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
 
-if isLinux:
-    includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
+#if isLinux:
+#    includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
 
 # add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())

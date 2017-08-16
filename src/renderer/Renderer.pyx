@@ -377,8 +377,8 @@ cdef class vec3:
     def isInUnitCube(self,real margin=0.0):
         return self.val.isInUnitCube(margin)
         
-    def isColinear(self,vec3 other):
-        return self.val.isColinear(other.val)
+    def isParallel(self,vec3 other):
+        return self.val.isParallel(other.val)
 
     def planeNorm(self,vec3 v2, vec3 v3):
         return vec3._new(self.val.planeNorm(v2.val,v3.val))

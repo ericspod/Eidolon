@@ -51,17 +51,7 @@ elif isWindows:
 else:
     assert isLinux
     libraries+=['m']
-
-    with open('/etc/lsb-release') as o:
-        lsb=dict(l.strip().split('=') for l in o.readlines() if l.strip())
-
-    if lsb['DISTRIB_RELEASE'].startswith('12'):
-        platdir='ubuntu12'
-    elif lsb['DISTRIB_RELEASE'].startswith('14'):
-        platdir='ubuntu14'
-    else:
-        raise ValueError('Cannot compile with platform %r (%r)'%(lsb['DISTRIB_RELEASE'],lsb))
-
+    platdir='linux'
 
 libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
 assert os.path.isdir(libdir),'%r not found'%libdir

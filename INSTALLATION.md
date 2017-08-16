@@ -1,14 +1,15 @@
 # Installation Requirements
 
 These are the instructions for installing the necessary components to run Eidolon from a git checkout.
-Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubuntu 12.\*, 14.\*), and OS X 10.8+. For these platforms you should not need to compile since shared objects are included in the repository.
+Eidolon works currently in Windows (7 definitely, maybe 8 and 10) and Linux (Ubuntu 12.\*, and 14.\*, Mint 18+), and OS X 10.8+. 
+For these platforms you should not need to compile since shared objects are included in the repository.
 
 For all platforms it requires:
  * Python 2.7
  * PyQt 4.10.4+ (earlier 4.\* versions may work, 5 will not for now)
  * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
  * SciPy 0.13.3+ (earlier versions may work)
- * Cg (Linux only, Windows/OSX included with EidolonLibs)
+ * Cg (Linux only as package libcg, Windows/OSX included with EidolonLibs)
  
 ----
 
@@ -52,7 +53,8 @@ A few other things may need to be installed if packages are missing:
 ----
 ## Linux
 
-Eidolon has only been compiled to work on Ubuntu 12.04 and 14.04 so these instructions are for these distros only. The Eidolon requires the following packages:
+Eidolon has been compiled to work on Ubuntu 12.04+ but works on later version of Ubuntu and other distros using later kernels. 
+The Eidolon requires the following packages:
 
  * BASH (a "recent" version)
  * python2.7
@@ -60,7 +62,6 @@ Eidolon has only been compiled to work on Ubuntu 12.04 and 14.04 so these instru
  * python-scipy
  * python-qt4
  * libcg
- * System-installed IRTK (Optional)
 
 You may also need the following packages:
 
@@ -89,13 +90,14 @@ This will by default put Anaconda in your home directory, so you need to put **$
 
 (This assumes the Eidolon directory is in your home directory and Anaconda was installed to the default place)
 
-### Ubuntu 14.*
+### Ubuntu 14.* and Other Distros
 
 Install Python, Ogre3D, and the packages listed above with a package manager (ie. Synaptic) or **apt-get**:
 
     sudo apt-get install python2.7 python-numpy python-scipy python-qt4 libcq libogre-1.9.0
 
-Do not use Anaconda unless you want to recompile Eidolon, the included binaries were compiled against the default system Python. There's various issues between platforms in general in regards to how Numpy was compiled, any weird Numpy related exceptions at startup has probably got something to do with this sort of conflict.
+Do not use Anaconda unless you want to recompile Eidolon, the included binaries were compiled against the default system Python. 
+There's various issues between platforms in general in regards to how Numpy was compiled, any weird Numpy related exceptions at startup probably have something to do with this sort of conflict.
 
 Sometimes there's a missing package **dateutil.tz**, this can be installed with:
 

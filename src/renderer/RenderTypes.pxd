@@ -221,7 +221,8 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
         bint inSphere(const vec3& center,real radius) const
 
         bint isInUnitCube(real margin) const
-        bint isColinear(const vec3 &other) const
+        
+        bint isParallel(const vec3 &other) const
 
         vec3 planeNorm(const vec3& v2, const vec3& v3) const
 

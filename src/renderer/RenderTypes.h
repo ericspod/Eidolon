@@ -693,7 +693,7 @@ public:
 	vec3 fromCylindrical() const { return vec3(cos(_x)*_z,sin(_x)*_z,_y); }
 
 	/// Returns true if the length of the vector is within dEPSILON of 0
-	bool isZero() const { return equalsEpsilon(lenSq(),0.0); }
+	bool isZero() const { return equalsEpsilon(_x+_y+_z,0.0); }
 
 	/// Returns true if the vector is within the axis-aligned bounding box defined by the given min and max corners with a 'dEPSILON' margin of error 
 	bool inAABB(const vec3& minv, const vec3& maxv) const
@@ -721,10 +721,10 @@ public:
 	/// Returns true if each component is on the interval [0,1]; this exact within a value of `margin' in the positive and negative directions
 	bool isInUnitCube(real margin=0.0) const { return _x>=-margin && _x<=(1.0+margin) && _y>=-margin && _y<=(1.0+margin) && _z>=-margin && _z<=(1.0+margin); }
 
-	bool isColinear(const vec3 &other) const
+	/// Returns true if `other' is parallel with this vector, ie. they represent the same or opposite directions.
+	bool isParallel(const vec3 &other) const
 	{
-		real a=angleTo(other);
-		return equalsEpsilon(a,0) || equalsEpsilon(a,dPI);
+		return cross(other).isZero();
 	}
 
 	/// Returns true if the components of `this' and `v' are within `dEPSILON' of one another
@@ -1020,8 +1020,8 @@ public:
 	{
 		if(from==to)
 			set(0,0,0,1);
-		//else if(from.isColinear(to)){
-		//	vec3 axis=from.isColinear(vec3(1,0,0)) ? vec3(0,1,0) : vec3(1,0,0);
+		//else if(from.isParallel(to)){
+		//	vec3 axis=from.isParallel(vec3(1,0,0)) ? vec3(0,1,0) : vec3(1,0,0);
 		//	setAxis(axis.cross(from),dPI);
 		//}
 		else
@@ -3365,12 +3365,12 @@ public:
 	 */
 	realtriple intersectsTri(const vec3& v0, const vec3& v1, const vec3& v2) const 
 	{
-		vec3 e1=v1-v0;
-		vec3 e2=v2-v0;
-		vec3 p=dir.cross(e2);
-		real det=e1.dot(p);
+		vec3 e1=v1-v0; // triangle edge 1
+		vec3 e2=v2-v0; // triangle edge 2
+		vec3 p=dir.cross(e2); // direction perpendicular to ray line and edge 2
+		real det=e1.dot(p); // determinant, will be 0 if edge 1 and p are perpendicular
 
-		if(equalsEpsilon(det,0.0))
+		if(equalsEpsilon(det,0.0)) // ray is parallel with triangle's plane
 			return realtriple(-1,-1,-1);
 
 		real invdet=1.0/det;
@@ -3378,18 +3378,18 @@ public:
 		vec3 t=pos-v0;
 		real u=p.dot(t)*invdet;
 
-		if(u < 0 || u > 1) 
+		if(u < 0 || u > 1) // ray intersects triangle's plane outside the band parallel with e1
 			return realtriple(-1,-1,-1);
 
 		vec3 q=t.cross(e1);
 		real v=dir.dot(q)*invdet;
 
-		if(v < 0 || u + v  > 1) 
+		if(v < 0 || u + v  > 1) // ray intersects triangle's plane outside the band parallel with e2 or outside the triangle area
 			return realtriple(-1,-1,-1);
  
 		real len=e2.dot(q)*invdet;
 
-		if(len>dEPSILON)
+		if(len>dEPSILON) // ray points away from triangle
 			return realtriple(len,u,v);
 	
 		return realtriple(-1,-1,-1);
