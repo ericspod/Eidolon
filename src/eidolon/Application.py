@@ -38,7 +38,7 @@ from .SceneUtils import cleanupMatrices
 from .ImageAlgorithms import hounsfieldToUnit
 from .Utils import ConfVars
 
-from .__init__ import __version__, APPDIRVAR, LIBSDIR, CONFIGFILE
+from .__init__ import __version__, APPDIRVAR, CONFIGFILE
 
 
 def configEnviron():

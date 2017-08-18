@@ -31,16 +31,19 @@ This module is use by algorithms in various placed in Eidolon to implement concu
 get around the limitations of the GIL in Python.
 '''
 
-from .Utils import *
 
+import os
 import atexit
 import gc
 import time
 import errno
 import Queue
+import threading
+import traceback
+import functools
 
-from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock
-from multiprocessing import Event as MPEvent
+from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock,Event
+from .Utils import lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
 
 
 class MethodProxy(object):
@@ -95,7 +98,7 @@ class ObjectServer(object):
 
     def getProxy(self,obj):
         proxy=DynamicProxy(obj)
-        t=Thread(target=self.runProxy,args=(obj,proxy))
+        t=threading.Thread(target=self.runProxy,args=(obj,proxy))
         t.start()
         self.threads.append(t)
 
@@ -306,7 +309,7 @@ class AlgorithmProcess(Process):
                 gc.collect()
 
 
-class ProcessServer(Thread):
+class ProcessServer(threading.Thread):
     '''
     This type manages the creation of subprocesses and the despatch of computational tasks to them. Typically the global
     instance is created at startup through createGlobalServer() at which point the subprocesses are created. Tasks are
@@ -323,20 +326,20 @@ class ProcessServer(Thread):
         ProcessServer.globalServer.start()
 
     def __init__(self,realnumprocs=cpu_count()):
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.daemon=True
 
         self.realnumprocs=clamp(realnumprocs,1,cpu_count())
         self.procs=[]
         self.sharer=ObjectSharer()
-        self.syncEvent=MPEvent()
-        self.syncEvent2=MPEvent()
+        self.syncEvent=Event()
+        self.syncEvent2=Event()
         self.syncCounter=Value('i',0)
         self.syncLock=Lock()
         self.jobqueue=Queue.Queue()
         self.progress=Array('l',self.realnumprocs)
         self.objsrv=ObjectServer()
-        self.stopEvent=MPEvent()
+        self.stopEvent=Event()
 
     def callProcessFunc(self,valrange,numprocs,task,target,*args,**kwargs):
         '''
@@ -515,7 +518,7 @@ def concurrent(func):
     globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
     globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
 
-    @wraps(func)
+    @functools.wraps(func)
     def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
         future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,globals()[localname],*args,**kwargs)
         return future(None)

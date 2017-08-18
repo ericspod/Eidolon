@@ -22,9 +22,13 @@ This defines the SceneObject and SceneObjectRepr objects and derivatives. These 
 representations of that data respectively.
 '''
 
-from renderer.Renderer import *
-from .SceneUtils import *
+from renderer.Renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
+        IndexMatrix, ColorMatrix,MatrixIndexBuffer, MatrixVertexBuffer, PyIndexBuffer, PyVertexBuffer
+from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
+from .SceneUtils import StdProps, MatrixType, getDatasetSummaryTuples, BoundBox
+
 import MeshAlgorithms
+import MathDef 
 
 # Known representation types: description, generator function, FigureType, is Point type, is Polygon type
 ReprType=enum(
@@ -521,7 +525,7 @@ class MeshSceneObject(SceneObject):
         for ds in self.datasets:
             for ename in ds.getIndexNames():
                 etype=ds.getIndexSet(ename).getType()
-                if etype in ElemType:
+                if etype in MathDef.ElemType:
                     typelist.add(etype)
 
         return list(typelist)

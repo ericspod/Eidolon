@@ -58,7 +58,7 @@ import compiler
 import re
 import math
 
-from .Utils import enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,assertMatDim,mulsum,lerpXi,epsilon,isInEpsilonRange
+from .Utils import enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,assertMatDim,mulsum,lerpXi,epsilon
 
 
 GeomType=enum(
