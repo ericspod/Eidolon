@@ -24,15 +24,23 @@ Plugins objectsare also defined which implement basic behaviour for scene object
 by plugin libraries to include new functionality into Eidolon.
 '''
 
+from renderer.Renderer import vec3, color
 from .SceneComponents import *
 from .ScenePlugin import *
-from .Camera2DView import *
+from .Camera2DView import Camera2DView
 from .Utils import ConfVars
+from .VisualizerUI import QtCore, QtGui, Qt, screenshotWidget
 
+import os
+import sys
 import gc
 import tempfile
 import atexit
 import shutil
+import time
+import threading
+import traceback
+import math
 
 globalMgr=None
 globalPlugins=[]

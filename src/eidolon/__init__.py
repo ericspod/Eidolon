@@ -29,6 +29,7 @@ from eidolon.SceneUtils import *
 from eidolon.MeshAlgorithms import *
 from eidolon.ImageObject import *
 from eidolon.MathDef import *
+from eidolon.Camera2DView import *
 from eidolon.SceneManager import *
 from eidolon.SceneObject import *
 from eidolon.ScenePlugin import *

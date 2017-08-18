@@ -24,7 +24,6 @@ from ImageAlgorithms import *
 from VisualizerUI import *
 
 import StringIO
-import weakref
 import os 
 
 
