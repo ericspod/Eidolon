@@ -2,8 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/Dicom2DView.ui'
 #
-# Created: Fri May  5 14:57:50 2017
-#      by: PyQt4 UI code generator 4.10.4
+# Created by: PyQt4 UI code generator 4.11.4
 #
 # WARNING! All changes made in this file will be lost!
 

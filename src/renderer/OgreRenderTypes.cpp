@@ -174,9 +174,10 @@ void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
 				fillDefaultData();
 		}
 
+		// sort indices if the parent is present, depth sorting is enabled, and the scene is valid
 		bool doSort=parent!=NULL && depthSorting && scene!=NULL && scene->getRenderHighQuality();
 
-		if(doSort)
+		if(doSort) // if sorting is requested, only do so for triangles if there's more than 2 and we're not rendering in the main queue
 			doSort=getRenderQueueGroup()!=Ogre::RENDER_QUEUE_MAIN && _numIndices>2 && _opType==Ogre::RenderOperation::OT_TRIANGLE_LIST;
 
 		// if distance sorting is set and this object stores a triangle list, sort the triangle indices by inverse distance from the camera
@@ -1443,8 +1444,9 @@ void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
 	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
 	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	SAFE_DELETE(buffer);
-	buffer=new u8[texsize];
+	//SAFE_DELETE(buffer);
+	if(!buffer)
+		buffer=new u8[texsize];
 	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
 
 	for(sval y=0;y<h;y++)
@@ -1467,8 +1469,9 @@ void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,rea
 	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
 	
 	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	SAFE_DELETE(buffer);
-	buffer=new u8[texsize];
+	//SAFE_DELETE(buffer);
+	if(!buffer)
+		buffer=new u8[texsize];
 	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
 	
 	Ogre::ColourValue col;
