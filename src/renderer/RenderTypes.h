@@ -87,6 +87,8 @@
 
 #define DBGOUT(c) do { std::cout << c << std::endl; std::cout.flush(); } while(0)
 
+#define SAFE_DELETE(p) do { if((p)!=NULL){ delete (p); (p)=NULL; } } while(0)
+
 namespace RenderTypes {
 
 // various string names
@@ -3138,18 +3140,53 @@ class MatrixVertexBuffer : public VertexBuffer
 	ColorMatrix* cols;
 	IndexMatrix* extinds;
 	sval numverts;
-
-	//typedef std::map<std::string,RealMatrix*> fieldmap;
-	//fieldmap fields;
+	bool deleteMatrices;
 
 public:
 	MatrixVertexBuffer(Vec3Matrix* vecs,ColorMatrix* cols=NULL,IndexMatrix* extinds=NULL) throw(RenderException) 
-		: vecs(vecs), cols(cols),extinds(extinds)
+		: vecs(vecs), cols(cols),extinds(extinds), deleteMatrices(false)
 	{
 		if(vecs==NULL)
 			throw RenderException("Matrix 'vecs' must be provided");
 
 		numverts=sval(extinds!=NULL ? extinds->n() : vecs->n());
+	}
+	
+	MatrixVertexBuffer(const VertexBuffer* buf) throw(RenderException) : numverts(buf ? buf->numVertices() : 0), deleteMatrices(true)
+	{
+		if(!numverts)
+			throw RenderException("VertexBuffer 'buf' must be provided");
+		
+		int columns=1;
+		if(buf->hasUVWCoord())
+			columns=4;
+		else if(buf->hasNormal())
+			columns=2;
+		
+		vecs=new Vec3Matrix("copyvecs",buf->numVertices(),columns);
+		
+		if(buf->hasColor())
+			cols=new ColorMatrix("copycols",buf->numVertices());
+		
+		for(sval i=0;i<numverts;i++){
+			vecs->at(i,0)=buf->getVertex(i);
+			if(buf->hasNormal())
+				vecs->at(i,1)=buf->getNormal(i);
+			if(buf->hasUVWCoord())
+				vecs->at(i,3)=buf->getUVWCoord(i);
+			
+			if(buf->hasColor())
+				cols->at(i)=buf->getColor(i);
+		}
+	}
+	
+	virtual ~MatrixVertexBuffer()
+	{
+		if(deleteMatrices){
+			SAFE_DELETE(vecs);
+			SAFE_DELETE(cols);
+			SAFE_DELETE(extinds);
+		}
 	}
 
 	sval getIndex(sval i) const { return extinds!=NULL ? extinds->at(i) : i; }
@@ -3163,13 +3200,6 @@ public:
 	virtual bool hasNormal() const { return vecs->m()>1; }
 	virtual bool hasColor() const { return cols!=NULL; }
 	virtual bool hasUVWCoord() const { return vecs->m()>3; }
-
-	/*virtual void setField(RealMatrix* field) { fields[std::string(field->getName())]=field;}
-	virtual RealMatrix* getField(const std::string& name) const { return hasField(name) ? fields[name] : NULL; }
-
-	virtual bool hasField(const std::string& name) const { return fields.find(name)!=fields.end(); }
-	virtual int getFieldWidth(const std::string& name) const { return fields[name]->m(); }
-	virtual real getFieldValue(const std::string& name, int i, int j) const { return fields[name]->at(i,j); }*/
 };
 
 /// Implementation of a IndexBuffer which uses matrices for storage

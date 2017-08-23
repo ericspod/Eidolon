@@ -28,8 +28,6 @@
 
 #include "RenderTypes.h"
 
-#define SAFE_DELETE(p) do { if((p)!=NULL){ OGRE_DELETE (p); (p)=NULL; } } while(0)
-
 #define TOSTR(v) Ogre::StringConverter::toString(v)
 
 #define THROW_RENDEREX(e) throw RenderException(e.getFullDescription().c_str(),__FILE__,__LINE__)
@@ -1132,6 +1130,9 @@ protected:
 	std::string matname;
 	FigureType type;
 	bool isInitialized;
+	
+	const VertexBuffer* tempvb;
+	bool deleteTemp;
 
 	bbsetlist sets;
 	std::string name;
@@ -1186,6 +1187,8 @@ public:
 
 		return std::pair<vec3,vec3>(minv,maxv);
 	}
+	
+	virtual void commit();
 
 	virtual void fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill=false,bool doubleSided=false) throw(RenderException) ;
 
@@ -1865,14 +1868,24 @@ protected:
 	std::string filename;
 	Ogre::TexturePtr ptr;
 	u8* buffer;
+	size_t sizeBytes;
 	
 public:
-	OgreTexture(Ogre::TexturePtr ptr,const char *filename,OgreRenderScene *scene): ptr(ptr),filename(filename), scene(scene),buffer(0)
+	OgreTexture(Ogre::TexturePtr ptr,const char *filename,OgreRenderScene *scene): 
+		ptr(ptr),filename(filename), scene(scene),buffer(0),sizeBytes(ptr->getBuffer()->getSizeInBytes())
 	{}
 
 	virtual ~OgreTexture();
 	
 	virtual void commit();
+	
+	virtual Ogre::PixelBox getPixelBuffer()
+	{
+		if(!buffer)
+			buffer=new u8[sizeBytes];
+		
+		return Ogre::PixelBox(ptr->getWidth(),ptr->getHeight(),ptr->getDepth(),ptr->getFormat(),buffer);
+	}
 
 	virtual const char* getFilename() const {return filename.c_str();}
 	virtual const char* getName() const { return ptr->getName().c_str(); }

@@ -642,7 +642,7 @@ void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,rea
 }
 
 OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
-		node(NULL),scene(scene),matname(matname), name(name),type(type),isInitialized(false),width(1.0),height(1.0)
+		node(NULL),scene(scene),matname(matname), name(name),type(type),isInitialized(false),width(1.0),height(1.0), tempvb(NULL), deleteTemp(false)
 {
 	node=scene->createNode(name);
 }
@@ -703,30 +703,49 @@ void OgreBBSetFigure::createBBSet()
 	sets.push_back(bbset);
 }
 
-void OgreBBSetFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
+void OgreBBSetFigure::commit()
 {
-	// TODO: should be done as a ResourceOp
-	
 	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
 		(*i)->clear();
 	
-	for (sval i = 0; i <vb->numVertices(); i++) {
+	for (sval i = 0; i <tempvb->numVertices(); i++) {
 		if(i==SETSIZE*sets.size())
 			createBBSet();
 		
 		Ogre::BillboardSet* bbset=sets[i/SETSIZE];
 		
-		vec3 v=vb->getVertex(i);
+		vec3 v=tempvb->getVertex(i);
 		
-		color col=vb->hasColor() ? vb->getColor(i) : color();
+		color col=tempvb->hasColor() ? tempvb->getColor(i) : color();
 		Ogre::Billboard *b=bbset->createBillboard(convert(v),convert(col));
 		
-		if(vb->hasNormal()){
-			vec3 n=vb->getNormal(i);
+		if(tempvb->hasNormal()){
+			vec3 n=tempvb->getNormal(i);
 			if(n.isZero())
 				b->mDirection=Ogre::Vector3::UNIT_Y;
 			else
 				b->mDirection=convert(n.norm());
+		}
+	}
+	
+	// delete the vertex buffer if its a temporary one allocated to copy data for a deferred operation
+	if(deleteTemp){
+		deleteTemp=false;
+		SAFE_DELETE(tempvb);
+	}
+}
+
+void OgreBBSetFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
+{
+	critical(obj->getMutex()){
+		if(deferFill){
+			deleteTemp=true;
+			tempvb=new MatrixVertexBuffer(vb);
+			scene->addResourceOp(new CommitOp<OgreBBSetFigure>(this));
+		}
+		else{
+			tempvb=vb;
+			commit();
 		}
 	}
 }
@@ -1030,17 +1049,17 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 	
 	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
 
-	glyphmap::const_iterator i=glyphs.find(glyphname);
+	glyphmap::const_iterator iglyph=glyphs.find(glyphname);
 
 	// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
 	critical(obj->getMutex()){
-		if(vb->numVertices()==0 || i==glyphs.end()){
+		if(vb->numVertices()==0 || iglyph==glyphs.end()){
 			obj->fillDefaultData();
 			node->needUpdate();
 			return;
 		}
 
-		const glyphmesh gmesh=(*i).second;
+		const glyphmesh gmesh=(*iglyph).second;
 		const Vec3Matrix* gverts=gmesh.first;
 		const Vec3Matrix* gnorms=gmesh.second;
 		const IndexMatrix* ginds=gmesh.third;
@@ -1050,6 +1069,7 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 		obj->createBuffers(vb->numVertices()*numverts,vb->numVertices()*numinds*3,deferFill);
 
 		vec3 minv=vb->getVertex(0), maxv=vb->getVertex(0);
+		vec3 texcoord=vec3();
 
 		OgreBaseRenderable::Vertex *vbuf=obj->getLocalVertBuff();
 		indexval *ibuf=obj->getLocalIndBuff();
@@ -1082,7 +1102,7 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 
 				vert.setBuff(vbuf[v+vstart].pos);
 				norm.setBuff(vbuf[v+vstart].norm);
-				vec3().setBuff(vbuf[v+vstart].tex);
+				texcoord.setBuff(vbuf[v+vstart].tex);
 
 				if(rs){
 					Ogre::ColourValue c = convert(col);
@@ -1162,6 +1182,7 @@ void TextRenderable::updateColors()
 
 void TextRenderable::updateGeometry()
 {
+	// if the font hasn't been initialized or the name has been changed create the font object and clone its internal material
 	if(!fontobj || fontname!=fontobj->getName() || mat.isNull()){
 		Ogre::Font* newfontobj = (Ogre::Font *)Ogre::FontManager::getSingleton().getByName(fontname).getPointer();
 		
@@ -1183,6 +1204,9 @@ void TextRenderable::updateGeometry()
 		mat->setLightingEnabled(false);
 		setOverlay(isOverlay);
 	}
+	
+	// The following builds up the text figure by creating a quad for each non-whitespace character which has the texture
+	// coordinates to display the portion of the font texture containing that character.
 	
 	std::string::iterator iend = text.end();
 	size_t pos=0;
@@ -1215,6 +1239,7 @@ void TextRenderable::updateGeometry()
 	decl->addElement(POS_TEX_BINDING, Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3), Ogre::VET_FLOAT2, Ogre::VES_TEXTURE_COORDINATES, 0);
 	decl->addElement(COLOUR_BINDING, 0, Ogre::VET_COLOUR, Ogre::VES_DIFFUSE);
  
+	// create separate buffers for the vertex data and colour data, this allows the colours to be changed separately
 	vertBuf = hbm.createVertexBuffer(decl->getVertexSize(POS_TEX_BINDING), vertexData->vertexCount, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY);
 	colBuf = hbm.createVertexBuffer(decl->getVertexSize(COLOUR_BINDING), vertexData->vertexCount, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY);
 	
@@ -1228,6 +1253,7 @@ void TextRenderable::updateGeometry()
 	else if(valign==V_CENTER)
 		top += 0.5*textHeight*numlines;
 	
+	// iterate through each character, determining the placement and texture coordinates for the quad for each non-space character
 	for (std::string::iterator i = text.begin(); i != iend; i++){
 		unsigned int c=*i;
 		
@@ -1280,7 +1306,6 @@ void TextRenderable::updateGeometry()
 	setBoundingBox(min,max);
 	updateGeom = false;
 	updateCols = true;
-	//mParentNode->needUpdate();
 }
 
 OgreTextFigure::OgreTextFigure(const std::string& name,OgreRenderScene *scene) throw(RenderException)
@@ -1295,11 +1320,7 @@ OgreTexture::~OgreTexture()
 void OgreTexture::commit()
 {
 	if(buffer){
-		//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-		//buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-		//memcpy(buff->getCurrentLock().data,buffer,buff->getSizeInBytes());
-		//buff->unlock();
-		Ogre::PixelBox pb(getWidth(),getHeight(),getDepth(),ptr->getFormat(),buffer);
+		Ogre::PixelBox pb=getPixelBuffer();
 		ptr->getBuffer()->blitFromMemory(pb);
 		SAFE_DELETE(buffer);
 	}
@@ -1307,15 +1328,8 @@ void OgreTexture::commit()
 
 void OgreTexture::fillBlack()
 {
-	// TODO: should be done as a ResourceOp
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//memset(buff->getCurrentLock().data,0,buff->getSizeInBytes());
-	//buff->unlock();
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	SAFE_DELETE(buffer);
-	buffer=new u8[texsize];
-	memset(buffer,0,texsize);
+	getPixelBuffer();
+	memset(buffer,0,sizeBytes);
 	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
@@ -1325,23 +1339,7 @@ void OgreTexture::fillColor(color col)
 	sval h=getHeight();
 	sval d=getDepth();
 	Ogre::ColourValue cv=convert(col);
-	
-	// TODO: should be done as a ResourceOp
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-        //
-	//for(sval z=0;z<d;z++)
-	//	for(sval y=0;y<h;y++)
-	//		for(sval x=0;x<w;x++)
-	//			pb.setColourAt(cv,x,y,z);
-        //
-	//buff->unlock();
-	
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	SAFE_DELETE(buffer);
-	buffer=new u8[texsize];
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+	Ogre::PixelBox pb=getPixelBuffer();
 	
 	for(sval z=0;z<d;z++)
 		for(sval y=0;y<h;y++)
@@ -1353,45 +1351,22 @@ void OgreTexture::fillColor(color col)
 
 void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 {
-	// TODO: should be done as a ResourceOp
 	sval w=getWidth();
 	sval h=getHeight();
-	sval d=getDepth();
-
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	//SAFE_DELETE(buffer);
-	if(!buffer)
-		buffer=new u8[texsize];
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+	Ogre::PixelBox pb=getPixelBuffer();
 
 	for(sval y=0;y<h;y++)
 		for(sval x=0;x<w;x++)
 			pb.setColourAt(convert(mat->at(y,x)),x,y,depth);
 
-	//buff->unlock();
 	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,real maxval, const Material* colormat,const RealMatrix *alphamat,bool mulAlpha)
 {
-	// TODO: should be done as a ResourceOp
 	sval w=getWidth();
 	sval h=getHeight();
-	sval d=getDepth();
-
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-	
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	//SAFE_DELETE(buffer);
-	if(!buffer)
-		buffer=new u8[texsize];
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
-	
+	Ogre::PixelBox pb=getPixelBuffer();
 	Ogre::ColourValue col;
 
 	for(sval y=0;y<h;y++)
@@ -1416,7 +1391,6 @@ void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,rea
 			pb.setColourAt(col,x,y,depth);
 		}
 
-	//buff->unlock();
 	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
