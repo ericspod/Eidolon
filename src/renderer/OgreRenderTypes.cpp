@@ -343,6 +343,97 @@ Material* OgreMaterial::clone(const char* name) const
 	return m;
 }
 
+void OgreMaterial::setTexture(const char* name)
+{
+	// use a subtype of ResourceOp as the delegate for the code to set the texture
+	class SetTextureOp : public ResourceOp
+	{
+	public:
+		OgreMaterial* mat;
+		std::string tname;
+		
+		SetTextureOp(OgreMaterial* mat,const char* name) : mat(mat),tname(name ? name : "") {}
+		virtual void op() { 
+			if(tname.size()>0){
+				Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(tname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+	
+				if(!tp.isNull()){
+					if(mat->texunit==NULL)
+						mat->texunit=mat->t0p0->createTextureUnitState(tname);
+					else
+						mat->texunit->setTextureName(tname,tp->getTextureType());
+				}
+	
+				mat->useTexFiltering(mat->_useTexFiltering); 
+				mat->clampTexAddress(mat->_useTexFiltering);
+			}
+			else if(mat->texunit!=NULL){
+				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->texunit));
+				mat->texunit=NULL;
+			}
+		}
+	};
+	
+	scene->addResourceOp(new SetTextureOp(this,name));
+}
+
+void OgreMaterial::useSpectrumTexture(bool use) 
+{
+	class UseSpecOp : public ResourceOp
+	{
+	public:
+		OgreMaterial* mat;
+		bool use;
+		
+		UseSpecOp(OgreMaterial* mat,bool use) : mat(mat),use(use) {}
+		virtual void op() {
+			std::string specname=mat->mat->getName()+"_spectex";
+
+			if(use && mat->spectex.isNull())
+				mat->spectex=Ogre::TextureManager::getSingleton().createManual(specname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+						Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
+		
+			if(use && mat->specunit==NULL){
+				mat->specunit=mat->t0p0->createTextureUnitState(specname);
+				mat->specunit->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
+			}
+			else if(!use && mat->specunit!=NULL){
+				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->specunit));
+				mat->specunit=NULL;
+			}
+		}
+	};
+	
+	scene->addResourceOp(new UseSpecOp(this,use));
+	updateSpectrum();
+}
+
+void OgreMaterial::updateSpectrum()
+{
+	class UpdateSpecOp : public ResourceOp
+	{
+	public:
+		OgreMaterial* mat;
+		
+		UpdateSpecOp(OgreMaterial* mat) : mat(mat) {}
+		virtual void op() {
+			if(mat->specunit!=NULL){
+				rgba data[SPECWIDTH];
+				Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
+		
+				for(sval x=0;x<SPECWIDTH;x++){
+					color c=mat->interpolateColor(float(x)/(SPECWIDTH-1));
+					pb.setColourAt(convert(c),x,0,0);
+				}
+		
+				mat->spectex->getBuffer()->blitFromMemory(pb);
+			}
+		}
+	};
+	
+	scene->addResourceOp(new UpdateSpecOp(this));
+}
+
 OgreFigure::OgreFigure(const std::string &name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
 		OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(type),scene->mgr),scene->createNode(name),scene), type(type)
 {}

@@ -489,13 +489,6 @@ public:
 	
 	/// Cloning must be done in the main thread
 	virtual Material* clone(const char* name) const;
-//	{
-//		//Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, false);
-//		//OgreMaterial *m=new OgreMaterial(mMat,this->scene);
-//		OgreMaterial *m=scene->createMaterial(name);
-//		copyTo(m,true,true,true);
-//		return m;
-//	}
 	
 	virtual void copyTo(Material* m,bool copyTex=false,bool copySpec=false,bool copyProgs=false) const 
 	{
@@ -528,20 +521,8 @@ public:
 		if(copyTex)
 			m->setTexture(getTexture());
 		
-		if(copySpec){
+		if(copySpec)
 			m->copySpectrumFrom(this);
-//			while(m->numSpectrumValues()>0)
-//				m->removeSpectrumValue(0);
-//			
-//			for(indexval x=0;x<numSpectrumValues();x++)
-//				m->addSpectrumValue(getSpectrumPos(x),getSpectrumValue(x));
-//
-//			while(m->numAlphaCtrls()>0)
-//				m->removeAlphaCtrl(0);
-//
-//			for(indexval x=0;x<numAlphaCtrls();x++)
-//				m->addAlphaCtrl(getAlphaCtrl(x));
-		}
 		
 		if(copyProgs){
 			m->setGPUProgram(getGPUProgram(PT_VERTEX),PT_VERTEX);
@@ -594,14 +575,12 @@ public:
 
 	virtual void setPointSize(real min,real max)
 	{
-		//t0p0->setPointAttenuation(true);
 		t0p0->setPointMinSize(min);
 		t0p0->setPointMaxSize(max);
 	}
 
 	virtual void setPointSizeAbs(real size)
 	{
-		//t0p0->setPointAttenuation(false);
 		t0p0->setPointSize(size);
 	}
 
@@ -678,64 +657,11 @@ public:
 		mat->setCullingMode(cull ? Ogre::CULL_CLOCKWISE : Ogre::CULL_NONE);
 	}
 
-	virtual void setTexture(const char* name)
-	{
-		if(name && strlen(name)>0){
-			Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(name,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+	virtual void setTexture(const char* name);
 
-			if(!tp.isNull()){
-				if(texunit==NULL)
-					texunit=t0p0->createTextureUnitState(name);
-				else
-					texunit->setTextureName(name,tp->getTextureType());
-			}
+	virtual void useSpectrumTexture(bool use);
 
-			useTexFiltering(_useTexFiltering); 
-			clampTexAddress(_useTexFiltering);
-		}
-		else if(texunit!=NULL){
-			t0p0->removeTextureUnitState(t0p0->getTextureUnitStateIndex(texunit));
-			texunit=NULL;
-		}
-
-	}
-
-	virtual void useSpectrumTexture(bool use) 
-	{
-		// TODO: as ResourceOp
-		std::string specname=mat->getName()+"_spectex";
-
-		if(use && spectex.isNull())
-			spectex=Ogre::TextureManager::getSingleton().createManual(specname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-					Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
-
-		if(use && specunit==NULL){
-			specunit=t0p0->createTextureUnitState(specname);
-			specunit->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
-		}
-		else if(!use && specunit!=NULL){
-			t0p0->removeTextureUnitState(t0p0->getTextureUnitStateIndex(specunit));
-			specunit=NULL;
-		}
-
-		updateSpectrum();
-	}
-
-	virtual void updateSpectrum()
-	{
-		// TODO: as ResourceOp
-		if(specunit!=NULL){
-			rgba data[SPECWIDTH];
-			Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
-
-			for(sval x=0;x<SPECWIDTH;x++){
-				color c=interpolateColor(float(x)/(SPECWIDTH-1));
-				pb.setColourAt(convert(c),x,0,0);
-			}
-
-			spectex->getBuffer()->blitFromMemory(pb);
-		}
-	}
+	virtual void updateSpectrum();
 	
 	virtual void setGPUProgram(const std::string& name, ProgramType pt) 
 	{
