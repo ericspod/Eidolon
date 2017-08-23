@@ -686,5 +686,24 @@ void calculateImageHistogram(const RealMatrix* img, RealMatrix* hist,i32 minv)
 		}
 }
 
+vec3* calculateTriNorms(vec3* nodes, sval numnodes, indexval* inds, sval numinds)
+{
+	vec3* norms=new vec3[numnodes];
+	memset(norms,0,sizeof(vec3)*numnodes);
+
+	for(sval i=0;i<numinds;i++){
+		indexval a=inds[i*3],b=inds[i*3+1],c=inds[i*3+2];
+		vec3 norm=nodes[a].planeNorm(nodes[b],nodes[c]);
+		norms[a]=norms[a]+norm;
+		norms[b]=norms[b]+norm;
+		norms[c]=norms[c]+norm;
+	}
+
+	for(sval n=0;n<numnodes;n++)
+		norms[n]=norms[n].norm();
+
+	return norms;
+}
+
 } // namespace RenderTypes
 

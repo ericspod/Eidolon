@@ -35,7 +35,7 @@ RenderAdapter* getRenderAdapter(Config* config) throw(RenderException)
 	return new OgreRenderAdapter(config);
 }
 } // namespace RenderTypes
-#endif
+#endif // USEOGRE
 
 
 namespace OgreRenderTypes
@@ -86,6 +86,126 @@ void DestroySceneNodeOp::op()
 		scene->destroyNode(node);
 	}
 	SAFE_DELETE(obj);
+}
+
+OgreLight::~OgreLight()
+{
+	scene->mgr->destroyLight(light); //TODO: as ResourceOp?
+}
+
+OgreGPUProgram::~OgreGPUProgram()
+{
+	scene->addResourceOp(new RemoveResourceOp<Ogre::HighLevelGpuProgramManager>(namecounted));
+}
+
+OgreMaterial::~OgreMaterial()
+{
+	scene->addResourceOp(new RemoveResourceOp<Ogre::MaterialManager>(mat->getName()));
+	mat.setNull();
+}
+
+Material* OgreMaterial::clone(const char* name) const 
+{
+	OgreMaterial *m=dynamic_cast<OgreMaterial*>(scene->createMaterial(name));
+	copyTo(m,true,true,true);
+	return m;
+}
+
+void OgreMaterial::setTexture(const char* name)
+{
+	// use a subtype of ResourceOp as the delegate for the code to set the texture
+	class SetTextureOp : public ResourceOp
+	{
+	public:
+		OgreMaterial* mat;
+		std::string tname;
+		
+		SetTextureOp(OgreMaterial* mat,const char* name) : mat(mat),tname(name ? name : "") {}
+		
+		virtual void op() 
+		{ 
+			if(tname.size()>0){
+				Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(tname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+	
+				if(!tp.isNull()){
+					if(mat->texunit==NULL)
+						mat->texunit=mat->t0p0->createTextureUnitState(tname);
+					else
+						mat->texunit->setTextureName(tname,tp->getTextureType());
+				}
+	
+				mat->useTexFiltering(mat->_useTexFiltering); 
+				mat->clampTexAddress(mat->_useTexFiltering);
+			}
+			else if(mat->texunit!=NULL){
+				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->texunit));
+				mat->texunit=NULL;
+			}
+		}
+	};
+	
+	scene->addResourceOp(new SetTextureOp(this,name));
+}
+
+void OgreMaterial::useSpectrumTexture(bool use) 
+{
+	class UseSpecOp : public ResourceOp
+	{
+	public:
+		OgreMaterial* mat;
+		bool use;
+		
+		UseSpecOp(OgreMaterial* mat,bool use) : mat(mat),use(use) {}
+		
+		virtual void op() 
+		{
+			std::string specname=mat->mat->getName()+"_spectex";
+
+			if(use && mat->spectex.isNull())
+				mat->spectex=Ogre::TextureManager::getSingleton().createManual(specname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+						Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
+		
+			if(use && mat->specunit==NULL){
+				mat->specunit=mat->t0p0->createTextureUnitState(specname);
+				mat->specunit->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
+			}
+			else if(!use && mat->specunit!=NULL){
+				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->specunit));
+				mat->specunit=NULL;
+			}
+		}
+	};
+	
+	scene->addResourceOp(new UseSpecOp(this,use));
+	updateSpectrum();
+}
+
+void OgreMaterial::updateSpectrum()
+{
+	class UpdateSpecOp : public ResourceOp
+	{
+	public:
+		OgreMaterial* mat;
+		
+		UpdateSpecOp(OgreMaterial* mat) : mat(mat) {}
+		
+		virtual void op() 
+		{
+			if(mat->specunit!=NULL){
+				rgba data[SPECWIDTH];
+				Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
+		
+				for(sval x=0;x<SPECWIDTH;x++){
+					color c=mat->interpolateColor(float(x)/(SPECWIDTH-1));
+					pb.setColourAt(convert(c),x,0,0);
+				}
+		
+				mat->spectex->getBuffer()->blitFromMemory(pb);
+			}
+		}
+	};
+	
+	scene->addResourceOp(new UpdateSpecOp(this));
 }
 
 OgreBaseRenderable::OgreBaseRenderable(const std::string& name,const std::string& matname,Ogre::RenderOperation::OperationType _opType,Ogre::SceneManager *mgr) throw(RenderException) : 
@@ -165,7 +285,7 @@ void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
 		if(deferFillOp){
 			deferFillOp=false;
 			if(_numVertices>0 || _numIndices>0){
-				createBuffers(_numVertices,_numIndices); 
+				createBuffers(_numVertices,_numIndices); // create the hardware buffers for real
 				commitBuffers();
 				deleteLocalIndBuff();
 				deleteLocalVertBuff();
@@ -256,32 +376,35 @@ indexval* OgreBaseRenderable::getLocalIndBuff()
 void OgreBaseRenderable::commitBuffers(bool commitVert, bool commitInd)
 {
 	if(commitVert && localVertBuff){
-		void* buf=vertBuf->lock(Ogre::HardwareBuffer::HBL_NORMAL);
-		memcpy(buf,localVertBuff,_numVertices*sizeof(OgreBaseRenderable::Vertex));
-		vertBuf->unlock();
+		//void* buf=vertBuf->lock(Ogre::HardwareBuffer::HBL_NORMAL);
+		//memcpy(buf,localVertBuff,_numVertices*sizeof(OgreBaseRenderable::Vertex));
+		//vertBuf->unlock();
+		vertBuf->writeData(0,_numVertices*sizeof(OgreBaseRenderable::Vertex),localVertBuff);
 	}
 
 	if(commitInd && localIndBuff){
-		void* buf=indexData->indexBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL);
-		memcpy(buf,localIndBuff,_numIndices*sizeof(indexval));
-		indexData->indexBuffer->unlock();
+		//void* buf=indexData->indexBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL);
+		//memcpy(buf,localIndBuff,_numIndices*sizeof(indexval));
+		//indexData->indexBuffer->unlock();
+		indexData->indexBuffer->writeData(0,_numIndices*sizeof(indexval),localIndBuff);
 	}
 }
 
 void OgreBaseRenderable::commitMatrices(const Matrix<Vertex>* verts,const IndexMatrix *inds)
 {
 	if(verts){
-		void* buf=vertBuf->lock(Ogre::HardwareBuffer::HBL_NORMAL);
-		memcpy(buf,verts->dataPtr(),verts->memSize());
-		vertBuf->unlock();
+		//void* buf=vertBuf->lock(Ogre::HardwareBuffer::HBL_NORMAL);
+		//memcpy(buf,verts->dataPtr(),verts->memSize());
+		//vertBuf->unlock();
+		vertBuf->writeData(0,verts->memSize(),verts->dataPtr());
 	}
 
 	if(inds){
-		void* buf=indexData->indexBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL);
-		memcpy(buf,inds->dataPtr(),inds->memSize());
-		indexData->indexBuffer->unlock();
+		//void* buf=indexData->indexBuffer->lock(Ogre::HardwareBuffer::HBL_NORMAL);
+		//memcpy(buf,inds->dataPtr(),inds->memSize());
+		//indexData->indexBuffer->unlock();
+		indexData->indexBuffer->writeData(0,inds->memSize(),inds->dataPtr());
 	}
-
 }
 
 void OgreBaseRenderable::fillDefaultData(bool deferFill)
@@ -308,130 +431,6 @@ void OgreBaseRenderable::fillDefaultData(bool deferFill)
 		deleteLocalIndBuff();
 		setBoundingBox(vec3(),vec3(1)); // this of course isn't correct but a zero- or negative-sized box isn't acceptable
 	}
-}
-
-OgreBBSetFigure::~OgreBBSetFigure()
-{
-	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i){
-		node->detachObject(*i);
-		scene->mgr->destroyBillboardSet(*i);
-	}
-	
-	scene->destroyNode(node);
-}
-	
-OgreCamera::~OgreCamera()
-{
-	scene->mgr->destroyCamera(camera);
-}
-
-OgreLight::~OgreLight()
-{
-	scene->mgr->destroyLight(light);
-}
-
-OgreMaterial::~OgreMaterial()
-{
-	scene->addResourceOp(new RemoveResourceOp<Ogre::MaterialManager>(mat->getName()));
-	mat.setNull();
-}
-
-Material* OgreMaterial::clone(const char* name) const 
-{
-	OgreMaterial *m=dynamic_cast<OgreMaterial*>(scene->createMaterial(name));
-	copyTo(m,true,true,true);
-	return m;
-}
-
-void OgreMaterial::setTexture(const char* name)
-{
-	// use a subtype of ResourceOp as the delegate for the code to set the texture
-	class SetTextureOp : public ResourceOp
-	{
-	public:
-		OgreMaterial* mat;
-		std::string tname;
-		
-		SetTextureOp(OgreMaterial* mat,const char* name) : mat(mat),tname(name ? name : "") {}
-		virtual void op() { 
-			if(tname.size()>0){
-				Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(tname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-	
-				if(!tp.isNull()){
-					if(mat->texunit==NULL)
-						mat->texunit=mat->t0p0->createTextureUnitState(tname);
-					else
-						mat->texunit->setTextureName(tname,tp->getTextureType());
-				}
-	
-				mat->useTexFiltering(mat->_useTexFiltering); 
-				mat->clampTexAddress(mat->_useTexFiltering);
-			}
-			else if(mat->texunit!=NULL){
-				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->texunit));
-				mat->texunit=NULL;
-			}
-		}
-	};
-	
-	scene->addResourceOp(new SetTextureOp(this,name));
-}
-
-void OgreMaterial::useSpectrumTexture(bool use) 
-{
-	class UseSpecOp : public ResourceOp
-	{
-	public:
-		OgreMaterial* mat;
-		bool use;
-		
-		UseSpecOp(OgreMaterial* mat,bool use) : mat(mat),use(use) {}
-		virtual void op() {
-			std::string specname=mat->mat->getName()+"_spectex";
-
-			if(use && mat->spectex.isNull())
-				mat->spectex=Ogre::TextureManager::getSingleton().createManual(specname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-						Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
-		
-			if(use && mat->specunit==NULL){
-				mat->specunit=mat->t0p0->createTextureUnitState(specname);
-				mat->specunit->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
-			}
-			else if(!use && mat->specunit!=NULL){
-				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->specunit));
-				mat->specunit=NULL;
-			}
-		}
-	};
-	
-	scene->addResourceOp(new UseSpecOp(this,use));
-	updateSpectrum();
-}
-
-void OgreMaterial::updateSpectrum()
-{
-	class UpdateSpecOp : public ResourceOp
-	{
-	public:
-		OgreMaterial* mat;
-		
-		UpdateSpecOp(OgreMaterial* mat) : mat(mat) {}
-		virtual void op() {
-			if(mat->specunit!=NULL){
-				rgba data[SPECWIDTH];
-				Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
-		
-				for(sval x=0;x<SPECWIDTH;x++){
-					color c=mat->interpolateColor(float(x)/(SPECWIDTH-1));
-					pb.setColourAt(convert(c),x,0,0);
-				}
-		
-				mat->spectex->getBuffer()->blitFromMemory(pb);
-			}
-		}
-	};
-	
-	scene->addResourceOp(new UpdateSpecOp(this));
 }
 
 OgreFigure::OgreFigure(const std::string &name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
@@ -537,12 +536,888 @@ void OgreFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool def
 		THROW_RENDEREX(e);
 	}
 }
+	
+OgreCamera::~OgreCamera()
+{
+	scene->mgr->destroyCamera(camera); //TODO: as ResourceOp?
+}
+
+void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,real stereoOffset) throw(RenderException)
+{
+	try{
+		scene->applyResourceOps(); // apply pending operations to clean up anything being deleted
+		u32 mask=port->getVisibilityMask();
+		Ogre::ColourValue bg=port->getBackgroundColour();
+
+		Ogre::RenderTarget *rt = rtt_texture.isNull() ? NULL : rtt_texture->getBuffer()->getRenderTarget();
+
+		if(width==0 && height==0){
+			width=port->getActualWidth();
+			height=port->getActualHeight();
+		}
+
+		//if(stereoOffset!=0.0) // double width for stereo image rendering
+		//	width*=2;
+
+		// if there's no stored texture or we're requesting a different dimension/format, create a new texture
+		if(rtt_texture.isNull() || rtt_texture->getWidth()!=width || rtt_texture->getHeight()!=height || rtt_texture->getFormat()!=convert(format)){
+			Ogre::TextureManager& tmgr=Ogre::TextureManager::getSingleton();
+			
+			std::stringstream name;
+			name << "RttTex" << std::hex << u64(this) << std::dec;
+			
+			// remove old viewport if it's associated with the old texture or has a 0 dimensions ie. camera is secondary and not meant to render to the main view
+			if(port && (port->getWidth()==0 || port->getHeight()==0 || port->getTarget()==rt)){
+				port->getTarget()->removeViewport(port->getZOrder());
+				port=NULL;
+			}
+
+			// delete the old texture if it exists
+			if(!rtt_texture.isNull())
+				tmgr.remove(rtt_texture->getName());
+		
+			// create a new texture
+			rtt_texture = tmgr.createManual(name.str().c_str(), scene->resGroupName, Ogre::TEX_TYPE_2D,width,height, 0, convert(format), Ogre::TU_RENDERTARGET);
+
+			// create a viewport to associate the camera with the texture			
+			rt = rtt_texture->getBuffer()->getRenderTarget();
+			Ogre::Viewport *p=rt->addViewport(camera);
+			if(port==NULL){
+				port=p;
+				setViewport();
+			}
+
+			// set port values, most importantly the visibility mask
+			p->setVisibilityMask(mask);
+			p->setClearEveryFrame(true);
+			p->setBackgroundColour(bg);
+			p->setOverlaysEnabled(false);
+		}
+
+		real aspect=camera->getAspectRatio(); // recall current aspect ratio which can vary from that of the texture
+		bool origsetting=scene->getRenderHighQuality(); // recall current high quality render setting
+		scene->setRenderHighQuality(true); // force high quality rendering
+
+		if(stereoOffset<=0.0){ // monoscopic rendering
+			camera->setAspectRatio(real(width)/height);
+			rt->update(); // render to the texture in high quality mode
+		}
+		else{ // stereoscopic rendering
+			Ogre::Viewport *p=rt->getViewport(0); // get the texture viewport, this is the same p as above
+			Ogre::Quaternion orient=camera->getOrientation();
+			vec3 offset=convert(orient*Ogre::Vector3(stereoOffset,0,0));
+
+			vec3 pos=getPosition();
+			vec3 look=getLookAt();
+
+			camera->setAspectRatio(real(width*0.5)/height); // since width is doubled, set the aspect ratio using half the actual texture width
+
+			// move camera to the left and render into half the texture
+			//camera->setOrientation(orient);
+			//setLookAt(look);
+			setPosition(pos-offset);
+			p->setDimensions(0,0,0.5,1.0); // set viewport to cover left half of texture
+			rt->update();
+
+			// move camera to the right and render into half the texture
+			//camera->setOrientation(orient);
+			//setLookAt(look);
+			setPosition(pos+offset);
+			p->setDimensions(0.5,0,0.5,1.0);  // set viewport to cover right half of texture
+			rt->update();
+
+			// reset camera to original position
+			//camera->setOrientation(orient);
+			//setLookAt(look);
+			setPosition(pos);
+		}
+
+		// reset scene and camera config
+		scene->setRenderHighQuality(origsetting);
+		camera->setAspectRatio(aspect);
+	}
+	catch(Ogre::Exception &e){
+		THROW_RENDEREX(e);
+	}
+}
+
+OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
+		node(NULL),scene(scene),matname(matname), name(name),type(type),isInitialized(false),width(1.0),height(1.0)
+{
+	node=scene->createNode(name);
+}
+
+OgreBBSetFigure::~OgreBBSetFigure()
+{
+	class DeleteBBSetOp : public ResourceOp
+	{
+	public:
+		OgreBBSetFigure* fig;
+		
+		DeleteBBSetOp(OgreBBSetFigure* fig) : fig(fig) {}
+		
+		virtual void op() 
+		{
+			for(bbsetlist::iterator i=fig->sets.begin();i!=fig->sets.end();++i){
+				fig->node->detachObject(*i);
+				fig->scene->mgr->destroyBillboardSet(*i);
+			}
+			
+			fig->scene->destroyNode(fig->node);
+		}
+	};
+	
+	scene->addResourceOp(new DeleteBBSetOp(this));
+}
+
+void OgreBBSetFigure::setCameraVisibility(const Camera* cam, bool isVisible)
+{
+	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
+		OgreRenderTypes::setCameraVisibility(cam,*i,isVisible,scene);
+}
+
+void OgreBBSetFigure::createBBSet()
+{
+	std::ostringstream out;
+	out << name << sets.size();
+
+	Ogre::BillboardSet* bbset=scene->mgr->createBillboardSet(out.str(),SETSIZE);
+	bbset->setMaterialName(matname);
+	bbset->setDefaultDimensions(width,height);
+	bbset->setVisibilityFlags(sets.size()>0 ? sets[0]->getVisibilityFlags() : 1);
+	
+	switch(type){
+	case FT_BB_POINT:
+		bbset->setBillboardType(Ogre::BBT_POINT);
+		break;
+	case FT_BB_FIXED_PAR:
+		bbset->setBillboardType(Ogre::BBT_ORIENTED_SELF);
+		break;
+	case FT_BB_FIXED_PERP:
+		bbset->setBillboardType(Ogre::BBT_PERPENDICULAR_SELF);
+		break;
+	}
+	
+	node->attachObject(bbset);
+	
+	sets.push_back(bbset);
+}
+
+void OgreBBSetFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
+{
+	// TODO: should be done as a ResourceOp
+	
+	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
+		(*i)->clear();
+	
+	for (sval i = 0; i <vb->numVertices(); i++) {
+		if(i==SETSIZE*sets.size())
+			createBBSet();
+		
+		Ogre::BillboardSet* bbset=sets[i/SETSIZE];
+		
+		vec3 v=vb->getVertex(i);
+		
+		color col=vb->hasColor() ? vb->getColor(i) : color();
+		Ogre::Billboard *b=bbset->createBillboard(convert(v),convert(col));
+		
+		if(vb->hasNormal()){
+			vec3 n=vb->getNormal(i);
+			if(n.isZero())
+				b->mDirection=Ogre::Vector3::UNIT_Y;
+			else
+				b->mDirection=convert(n.norm());
+		}
+	}
+}
+
+void OgreBBSetFigure::setVisible(bool isVisible)
+{
+	if(sets.size()>0){
+		if(node->numAttachedObjects()==0)
+			for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
+				node->attachObject(*i);
+			
+		node->setVisible(isVisible);
+	}
+}
+
+OgreRibbonFigure::OgreRibbonFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene) throw(RenderException) :
+	node(NULL), bbchain(NULL), scene(scene), name(name), matname(matname), orient(0)
+{
+	node=scene->createNode(name);
+	bbchain=scene->mgr->createBillboardChain(name);
+	node->attachObject(bbchain);
+	scene->mgr->addRenderObjectListener(this);
+}
+
+OgreRibbonFigure::~OgreRibbonFigure() 
+{
+	class DeleteRibbonOp : public ResourceOp
+	{
+	public:
+		OgreRibbonFigure* fig;
+		
+		DeleteRibbonOp(OgreRibbonFigure* fig) : fig(fig) {}
+		virtual void op() {
+			fig->scene->mgr->removeRenderObjectListener(fig);
+			fig->scene->mgr->destroyBillboardChain(fig->bbchain);
+			fig->scene->destroyNode(fig->node);
+		}
+	};
+	
+	scene->addResourceOp(new DeleteRibbonOp(this));
+}
+
+void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
+{
+	// TODO: should be done as a ResourceOp
+	try{
+		size_t numverts=vb ? vb->numVertices() : 0;
+		size_t numinds=ib ? ib->numIndices() : 0;
+		size_t numnodesmax=ib ? ib->indexWidth(0) : 0;
+
+		//for(size_t i=0;ib && i<numinds;i++)
+		//	numnodesmax=_max<size_t>(numnodesmax,ib->indexWidth(i));
+
+		if(numverts==0 || numinds==0 || numnodesmax==0)
+			return;
+
+		clearRibbons();
+		setNumRibbons(numinds);
+		setMaxNodes(numnodesmax);
+
+		/*for(size_t i=0;i<numinds;i++){
+			size_t numnodes=ib->indexWidth(i);
+			for(size_t j=0;j<numnodes;j++){
+				indexval ind=ib->getIndex(i,j);
+
+				vec3 pos = vb->getVertex(ind),norm,uvw;
+				color col;
+				rotator rot;
+				real width=1.0, tex=1.0;
+					
+				if(vb->hasNormal()){
+					norm=vb->getNormal(i);
+					if(!norm.isZero())
+						rot=rotator(vec3(0,0,1),norm);
+				}
+		
+				if(vb->hasUVWCoord()){
+					uvw=vb->getUVWCoord(i);
+					width=uvw.y() ? uvw.y() : 1.0;
+					tex=uvw.x() ? uvw.x() : 1.0;
+				}
+			
+				if(vb->hasColor())
+					col=vb->getColor(i);
+
+				addNode(i,pos,col,width,rot,tex);
+			}
+		}*/
+		
+		for(size_t i=0;i<numinds;i++){
+			indexval start=ib->getIndex(i,0);
+			indexval end=ib->getIndex(i,1);
+			
+			for(indexval j=start;j<end;j++){
+				vec3 pos = vb->getVertex(j),norm,uvw;
+				color col;
+				rotator rot;
+				real width=1.0, tex=1.0;
+					
+				if(vb->hasNormal()){
+					norm=vb->getNormal(j);
+					if(!norm.isZero())
+						rot=rotator(vec3(0,0,1),norm);
+				}
+		
+				if(vb->hasUVWCoord()){
+					uvw=vb->getUVWCoord(j);
+					width=uvw.y() ? uvw.y() : 1.0;
+					tex=uvw.x() ? uvw.x() : 1.0;
+				}
+			
+				if(vb->hasColor())
+					col=vb->getColor(j);
+
+				addNode(i,pos,col,width,rot,tex);
+			}
+		}
+	} catch(Ogre::Exception &e){
+		THROW_RENDEREX(e);
+	}
+}
+
+void OgreRibbonFigure::setCameraVisibility(const Camera* cam, bool isVisible)
+{
+	OgreRenderTypes::setCameraVisibility(cam,bbchain,isVisible,scene);
+}
+
+std::pair<sval,planevert*> TextureVolumeRenderable::getPlaneIntersects(vec3 planept, vec3 planenorm)
+{
+	for(int i=0;i<8;i++)
+		heights[i]=fig->boundcube[i].planeDist(planept,planenorm);
+
+	sval numpts=calculateHexValueIntersects(0,heights,bbintersects); // determine where the plane intersects the bound box
+		
+	// fill interpts with the position and uvw coordinates
+	for(sval j=0;j<numpts;j++){
+		indexval ind1=bbintersects[j].first;
+		indexval ind2=bbintersects[j].second;
+		real lerpval=bbintersects[j].third;
+			
+		interpts[j].first=lerp(lerpval,fig->boundcube[ind1],fig->boundcube[ind2]); 
+		interpts[j].second=lerp(lerpval,fig->texcube[ind1],fig->texcube[ind2]); 
+			
+		if(j==0) // choose the first position as the point on the plane to order with
+			planept=interpts[j].first;
+		else // move the added vertex up to the correct position in the list to maintain clockwise circular ordering
+			for(sval jj=j;jj>0 && planept.planeOrder(planenorm,interpts[jj].first,interpts[jj-1].first)>0;jj--)
+				bswap(interpts[jj],interpts[jj-1]);
+	}
+
+	return std::pair<sval,planevert*>(numpts,interpts);
+}
+
+void TextureVolumeRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
+{
+	sval numplanes=fig->numplanes; // number of planes to render
+	vec3 center=fig->bbcenter; // bound box center
+	real radius=fig->bbradius; // bound box radius
+	rotator camrot=fig->getRotation(true).inverse()*lastCamRot; // get the rotation of the current camera relative to the figure's rotation
+	vec3 figscale=fig->getScale(true).inv(); // get the inverse of the figure's scaling values
+
+	vec3 camdir=((vec3(0,0,1)*camrot)*figscale).norm(); // get the direction of the camera in the figure's local space
+					
+	float norm[3]; // store the plane norm (camera direction opposite) as a float 3-vector
+	(camdir*-1).setBuff(norm);
+
+	if(scene!=NULL && !scene->getRenderHighQuality()) // if not rendering high quality, render with a quarter of the specified number of planes
+		numplanes=_max<sval>(100,numplanes/4);
+	
+	real radstep=(2.0*radius)/numplanes; // distance between planes
+				
+	vertices.setN(0);
+	indices.setN(0);
+	
+	// for each plane, determine where it intersects the bound box, sort those points, and store them with uvw coordinates and triangle indices
+	for(sval i=0;i<numplanes;i++){
+		vec3 planept=center+camdir*(i*radstep-radius); // center of plane
+
+		std::pair<sval,planevert*> result=getPlaneIntersects(planept,camdir); // get the intersection of the given plane with the volume
+		sval numpts=result.first;
+		sval startind=sval(vertices.n());
+
+		for(sval j=0;j<numpts;j++){ // store vertex information
+			OgreBaseRenderable::Vertex v;
+			interpts[j].first.setBuff(v.pos);
+			interpts[j].second.setBuff(v.tex);
+			v.norm[0]=norm[0];
+			v.norm[1]=norm[1];
+			v.norm[2]=norm[2];
+			v.col=fig->vertexcol;
+			vertices.append(v);
+		}
+				
+		// store triangle indices, because the vertices are in a circular order we can easily make a triangle fan
+		for(sval j=0;(j+2)<numpts;j++){ // there are 2 fewer indices than there are vertices hence (j+2), use this instead of (numpts-2) in case numpts is 0
+			indices.append(startind,0);
+			indices(indices.n()-1,1)=startind+j+1;
+			indices(indices.n()-1,2)=startind+j+2;
+		}
+	}
+	
+	// fill the vertex and index buffers
+	if(vertices.n()==0) // if no points fill the buffer with trivial data
+		fillDefaultData();
+	else{
+		createBuffers(vertices.n(),indices.n()*3);
+		commitMatrices(&vertices,&indices);
+	}
+	
+	OgreBaseRenderable::_updateRenderQueue(queue);
+}
+
+void TextureVolumeRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
+{
+	OgreBaseRenderable::_notifyCurrentCamera(cam);
+	lastCamRot=convert(cam->getDerivedOrientation());
+}
 
 OgreTextureVolumeFigure::OgreTextureVolumeFigure(const std::string &name,const std::string & matname,OgreRenderScene *scene) :
-			OgreBaseFigure(new TextureVolumeRenderable(name,matname,this,scene->mgr),scene->createNode(name),scene),numplanes(10), alpha(1.0)
+			OgreBaseFigure(new TextureVolumeRenderable(name,matname,this,scene->mgr),scene->createNode(name),scene),numplanes(10)
 {
 	setAABB(vec3(0),vec3(1)); // default non-zero sized bounding box
 	setTexAABB(vec3(0),vec3(1)); // default texture space, works without texture wrap around if texture addresses are clamped
+	setAlpha(1.0);
+}
+
+OgreGlyphFigure::OgreGlyphFigure(const std::string& name,const std::string & matname,OgreRenderScene *scene) throw(RenderException)
+	: OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(FT_TRILIST),scene->mgr),scene->createNode(name),scene),glyphscale(1),glyphname("sphere")
+{
+	OgreGlyphFigure::fillDefaultGlyphs(glyphs);
+}
+
+void OgreGlyphFigure::fillDefaultGlyphs(glyphmap &map)
+{
+	static vec3 cubenodes[]={
+		vec3(-0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(-0.5,-0.5,0.5), vec3(0.5,-0.5,0.5), vec3(-0.5,-0.5,-0.5), vec3(0.5,-0.5,-0.5), 
+		vec3(-0.5,0.5,-0.5), vec3(0.5,0.5,-0.5), vec3(-0.5,-0.5,0.5), vec3(0.5,-0.5,0.5), vec3(-0.5,-0.5,-0.5), vec3(0.5,-0.5,-0.5), 
+		vec3(-0.5,0.5,-0.5), vec3(0.5,0.5,-0.5), vec3(-0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(0.5,0.5,-0.5), 
+		vec3(0.5,-0.5,0.5), vec3(0.5,-0.5,-0.5), vec3(-0.5,0.5,-0.5), vec3(-0.5,0.5,0.5), vec3(-0.5,-0.5,-0.5), vec3(-0.5,-0.5,0.5)
+	};
+	static indexval cubeinds[][3]={
+		{0, 2, 1}, {1, 2, 3}, {4, 6, 5}, {5, 6, 7}, {8, 10, 9}, {9, 10, 11}, {12, 14, 13}, {13, 14, 15}, {16, 18, 17}, {17, 18, 19}, {20, 22, 21}, {21, 22, 23}
+	};
+
+	static vec3* cubenorms=calculateTriNorms(cubenodes,24,(indexval*)cubeinds,12);
+
+	static vec3 spherenodes[]={
+		vec3(0,0,1), vec3(0,-0.894427191,0.4472135955), vec3(0,0.894427191,-0.4472135955), vec3(0,0,-1), 
+		vec3(0.5257311121,0.7236067977,0.4472135955), vec3(-0.5257311121,0.7236067977,0.4472135955), vec3(0.5257311121,-0.7236067977,-0.4472135955), 
+		vec3(-0.5257311121,-0.7236067977,-0.4472135955), vec3(0.8506508084,-0.2763932023,0.4472135955), vec3(-0.8506508084,-0.2763932023,0.4472135955), 
+		vec3(0.8506508084,0.2763932023,-0.4472135955), vec3(-0.8506508084,0.2763932023,-0.4472135955), vec3(0,-0.5257311121,0.8506508084), vec3(0.5,-0.1624598481,0.8506508084), 
+		vec3(0.5,-0.6881909602,0.5257311121), vec3(-0.5,-0.1624598481,0.8506508084), vec3(-0.5,-0.6881909602,0.5257311121), vec3(0.3090169944,0.4253254042,0.8506508084), 
+		vec3(0.8090169944,0.2628655561,0.5257311121), vec3(-0.3090169944,0.4253254042,0.8506508084), vec3(0,0.8506508084,0.5257311121), 
+		vec3(-0.8090169944,0.2628655561,0.5257311121), vec3(0,0.5257311121,-0.8506508084), vec3(-0.5,0.6881909602,-0.5257311121), vec3(-0.5,0.1624598481,-0.8506508084), 
+		vec3(-0.3090169944,0.9510565163,0), vec3(-0.8090169944,0.5877852523,0), vec3(0.3090169944,0.9510565163,0), 
+		vec3(0.5,0.6881909602,-0.5257311121), vec3(0.8090169944,0.5877852523,0), vec3(0.5,0.1624598481,-0.8506508084), 
+		vec3(-0.3090169944,-0.9510565163,0), vec3(-0.8090169944,-0.5877852523,0), vec3(0.3090169944,-0.9510565163,0), 
+		vec3(0,-0.8506508084,-0.5257311121), vec3(0.8090169944,-0.5877852523,0), vec3(0.3090169944,-0.4253254042,-0.8506508084), 
+		vec3(0.8090169944,-0.2628655561,-0.5257311121), vec3(-0.3090169944,-0.4253254042,-0.8506508084), vec3(-0.8090169944,-0.2628655561,-0.5257311121), 
+		vec3(1,0,0), vec3(-1,0,0)
+	};
+
+	static indexval sphereinds[][3]={
+		{0, 12, 13}, {12, 1, 14}, {13, 14, 8}, {12, 14, 13}, {0, 15, 12}, {15, 9, 16}, {12, 16, 1}, {15, 16, 12}, {0, 13, 17}, {13, 8, 18}, {17, 18, 4}, {13, 18, 17}, {0, 17, 19}, 
+		{17, 4, 20}, {19, 20, 5}, {17, 20, 19}, {0, 19, 15}, {19, 5, 21}, {15, 21, 9}, {19, 21, 15}, {2, 22, 23}, {22, 3, 24}, {23, 24, 11}, {22, 24, 23}, {2, 23, 25}, {23, 11, 26}, 
+		{25, 26, 5}, {23, 26, 25}, {2, 25, 27}, {25, 5, 20}, {27, 20, 4}, {25, 20, 27}, {2, 27, 28}, {27, 4, 29}, {28, 29, 10}, {27, 29, 28}, {2, 28, 22}, {28, 10, 30}, {22, 30, 3}, 
+		{28, 30, 22}, {1, 16, 31}, {16, 9, 32}, {31, 32, 7}, {16, 32, 31}, {1, 31, 33}, {31, 7, 34}, {33, 34, 6}, {31, 34, 33}, {1, 33, 14}, {33, 6, 35}, {14, 35, 8}, {33, 35, 14}, 
+		{3, 30, 36}, {30, 10, 37}, {36, 37, 6}, {30, 37, 36}, {3, 36, 38}, {36, 6, 34}, {38, 34, 7}, {36, 34, 38}, {3, 38, 24}, {38, 7, 39}, {24, 39, 11}, {38, 39, 24}, {4, 18, 29}, 
+		{18, 8, 40}, {29, 40, 10}, {18, 40, 29}, {5, 26, 21}, {26, 11, 41}, {21, 41, 9}, {26, 41, 21}, {6, 37, 35}, {37, 10, 40}, {35, 40, 8}, {37, 40, 35}, {7, 32, 39}, {32, 9, 41}, 
+		{39, 41, 11}, {32, 41, 39}
+	};
+
+	static vec3* spherenorms=calculateTriNorms(spherenodes,42,(indexval*)sphereinds,80);
+
+	static vec3 arrownodes[]={
+		vec3(0,0,-1), 
+		vec3(0.375,0,-1), vec3(0.1875,-0.3247595264,-1), vec3(-0.1875,-0.3247595264,-1), vec3(-0.375,0,-1), vec3(-0.1875,0.3247595264,-1), vec3(0.1875,0.3247595264,-1), 
+		vec3(0.375,0,-1), vec3(0.1875,-0.3247595264,-1), vec3(-0.1875,-0.3247595264,-1), vec3(-0.375,0,-1), vec3(-0.1875,0.3247595264,-1), vec3(0.1875,0.3247595264,-1), 
+		vec3(0.375,0,0), vec3(0.1875,-0.3247595264,0), vec3(-0.1875,-0.3247595264,0), vec3(-0.375,0,0), vec3(-0.1875,0.3247595264,0), vec3(0.1875,0.3247595264,0), 
+		vec3(1,0,0), vec3(0.5,-0.8660254038,0), vec3(-0.5,-0.8660254038,0), vec3(-1,0,0), vec3(-0.5,0.8660254038,0), vec3(0.5,0.8660254038,0), 
+		vec3(1,0,0), vec3(0.5,-0.8660254038,0), vec3(-0.5,-0.8660254038,0), vec3(-1,0,0), vec3(-0.5,0.8660254038,0), vec3(0.5,0.8660254038,0), 
+		vec3(0,0,1)
+	};
+
+	static indexval arrowinds[][3]={
+		{0, 1, 2}, {0, 2, 3}, {0, 3, 4}, {0, 4, 5}, {0, 5, 6}, {0, 6, 1}, {7, 13, 8}, {8, 13, 14}, {8, 14, 9}, {9, 14, 15}, {9, 15, 10}, {10, 15, 16}, {10, 16, 11}, {11, 16, 17}, 
+		{11, 17, 12}, {12, 17, 18}, {12, 18, 7}, {7, 18, 13}, {13, 19, 14}, {14, 19, 20}, {14, 20, 15}, {15, 20, 21}, {15, 21, 16}, {16, 21, 22}, {16, 22, 17}, {17, 22, 23}, 
+		{17, 23, 18}, {18, 23, 24}, {18, 24, 13}, {13, 24, 19}, {31, 26, 25}, {31, 27, 26}, {31, 28, 27}, {31, 29, 28}, {31, 30, 29}, {31, 25, 30}
+	};
+
+	static vec3* arrownorms=calculateTriNorms(arrownodes,32,(indexval*)arrowinds,36);
+
+	map["cube"]=glyphmesh(new Vec3Matrix("cubenodes","",(vec3*)cubenodes,24,1),new Vec3Matrix("cubenorms","",(vec3*)cubenorms,24,1),new IndexMatrix("cubeinds","",(indexval*)cubeinds,12,3));
+	map["sphere"]=glyphmesh(new Vec3Matrix("spherenodes","",(vec3*)spherenodes,42,1),new Vec3Matrix("spherenorms","",(vec3*)spherenorms,42,1),new IndexMatrix("sphereinds","",(indexval*)sphereinds,80,3));
+	map["arrow"]=glyphmesh(new Vec3Matrix("arrownodes","",(vec3*)arrownodes,32,1),new Vec3Matrix("arrownorms","",(vec3*)arrownorms,32,1),new IndexMatrix("arrowinds","",(indexval*)arrowinds,36,3));
+}
+
+void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException)
+{
+	// TODO: use deferFill correctly
+	
+	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
+
+	glyphmap::const_iterator i=glyphs.find(glyphname);
+
+	// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
+	critical(obj->getMutex()){
+		if(vb->numVertices()==0 || i==glyphs.end()){
+			obj->fillDefaultData();
+			node->needUpdate();
+			return;
+		}
+
+		const glyphmesh gmesh=(*i).second;
+		const Vec3Matrix* gverts=gmesh.first;
+		const Vec3Matrix* gnorms=gmesh.second;
+		const IndexMatrix* ginds=gmesh.third;
+
+		sval numverts=gverts->n(), numinds=ginds->n();
+
+		obj->createBuffers(vb->numVertices()*numverts,vb->numVertices()*numinds*3,deferFill);
+
+		vec3 minv=vb->getVertex(0), maxv=vb->getVertex(0);
+
+		OgreBaseRenderable::Vertex *vbuf=obj->getLocalVertBuff();
+		indexval *ibuf=obj->getLocalIndBuff();
+
+		for (sval g = 0; g < vb->numVertices(); g++) {
+			vec3 pos = vb->getVertex(g),dir(0,0,1),scale=glyphscale;
+			color col;
+
+			if(vb->hasNormal())
+				dir=vb->getNormal(g);
+			
+			if(vb->hasUVWCoord())
+				scale=scale*vb->getUVWCoord(g);
+
+			if(vb->hasColor())
+				col=vb->getColor(g);
+				
+			rotator rot(vec3(0,0,1),dir);
+			transform trans(pos,scale,rot);
+
+			sval vstart=numverts*g;
+			sval istart=numinds*3*g;
+
+			for(sval v=0;v<numverts;v++){
+				vec3 vert=gverts->at(v)*trans;
+				vec3 norm=gnorms->at(v)*rot;
+
+				minv.setMinVals(vert);
+				maxv.setMaxVals(vert);
+
+				vert.setBuff(vbuf[v+vstart].pos);
+				norm.setBuff(vbuf[v+vstart].norm);
+				vec3().setBuff(vbuf[v+vstart].tex);
+
+				if(rs){
+					Ogre::ColourValue c = convert(col);
+					rs->convertColourValue(c,&vbuf[v+vstart].col);
+				}
+				else
+					vbuf[v+vstart].col=col.toRGBA();
+			}
+
+			for(sval i=0;i<numinds;i++){
+				ibuf[i*3+istart]=ginds->at(i,0)+vstart;
+				ibuf[i*3+istart+1]=ginds->at(i,1)+vstart;
+				ibuf[i*3+istart+2]=ginds->at(i,2)+vstart;
+			}
+		}
+
+	
+		if(!deferFill){ // if not deferring to render time, commit the buffers now and delete the local buffers
+			obj->commitBuffers();
+			obj->deleteLocalIndBuff();
+			obj->deleteLocalVertBuff();
+		}
+		
+		obj->setBoundingBox(minv,maxv);
+		node->needUpdate();
+	}
+}
+
+void TextRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
+{
+	OgreBaseRenderable::_notifyCurrentCamera(cam);
+	mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
+}
+
+void TextRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
+{
+	if(isVisible()){
+		if (updateGeom)
+			updateGeometry();
+		if (updateCols)
+			updateColors();
+	
+		if (mRenderQueuePrioritySet)
+			queue->addRenderable(this, mRenderQueueID, mRenderQueuePriority);
+		else if(mRenderQueueIDSet)
+			queue->addRenderable(this, mRenderQueueID);
+		else
+			queue->addRenderable(this);
+	}
+}
+
+void TextRenderable::setFont(const std::string& fontname) throw(RenderException)
+{
+	Ogre::FontPtr newfontobj = Ogre::FontManager::getSingletonPtr()->getByName(fontname);
+	if(newfontobj.isNull())
+		throw RenderException("Cannot find font "+fontname,__FILE__,__LINE__);
+	
+	this->fontname=fontname;
+	updateCols=true;
+	updateGeom=true;
+}
+
+void TextRenderable::updateColors()
+{
+	Ogre::RGBA col;
+	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
+	rs->convertColourValue(convert(this->col), &col);
+	
+	Ogre::RGBA *buf = static_cast<Ogre::RGBA*>(colBuf->lock(Ogre::HardwareBuffer::HBL_DISCARD));
+	
+	for (size_t i = 0; i < vertexData->vertexCount; i++)
+		buf[i] = col;
+	
+	colBuf->unlock();
+	updateCols = false;
+}
+
+void TextRenderable::updateGeometry()
+{
+	if(!fontobj || fontname!=fontobj->getName() || mat.isNull()){
+		Ogre::Font* newfontobj = (Ogre::Font *)Ogre::FontManager::getSingleton().getByName(fontname).getPointer();
+		
+		if (!newfontobj)
+			throw Ogre::Exception(Ogre::Exception::ERR_ITEM_NOT_FOUND, "Could not find font " + fontname, "TextRenderable::updateGeometry");
+		
+		fontobj=newfontobj;
+		fontobj->load();
+		
+		if(!mat.isNull() && mat->getName()==internalMatName){
+			Ogre::MaterialManager::getSingletonPtr()->remove(internalMatName);
+			mat.setNull();
+		}
+		
+		mat = fontobj->getMaterial()->clone(internalMatName);
+		if(!mat->isLoaded())
+			mat->load();
+		
+		mat->setLightingEnabled(false);
+		setOverlay(isOverlay);
+	}
+	
+	std::string::iterator iend = text.end();
+	size_t pos=0;
+	int numlines=1;
+	vec3 min=vec3::posInfinity(), max=vec3::negInfinity();
+	float left=0,top=0;
+	float swidth=spaceWidth ? spaceWidth : fontobj->getGlyphAspectRatio('A') * textHeight*0.5; // get the defined space width or derive from 'A'
+	bool startline=true;
+ 
+	destroyBuffers();
+	vertexData = OGRE_NEW Ogre::VertexData();
+	vertexData->vertexStart = 0;
+	vertexData->vertexCount = 0; 
+	
+	// determine the vertex count and line where a quad of 6 vertices is made for every non-whitespace character
+	for (std::string::iterator i = text.begin(); i != iend; i++){
+		if(!std::isspace(*i))
+			vertexData->vertexCount+=6; // 6 vertices for 1 quad per non-whitespace character
+		
+		if((*i)=='\n')
+			numlines+=1;
+	}
+ 
+	Ogre::HardwareBufferManager& hbm=Ogre::HardwareBufferManager::getSingleton();
+	Ogre::VertexDeclaration *decl = vertexData->vertexDeclaration;
+	Ogre::VertexBufferBinding *bind = vertexData->vertexBufferBinding;
+	
+	// define a vertex type of a float3 position element followed by a float2 texture coord element (ie. (x,y,z,u,v))
+	decl->addElement(POS_TEX_BINDING, 0, Ogre::VET_FLOAT3, Ogre::VES_POSITION);
+	decl->addElement(POS_TEX_BINDING, Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3), Ogre::VET_FLOAT2, Ogre::VES_TEXTURE_COORDINATES, 0);
+	decl->addElement(COLOUR_BINDING, 0, Ogre::VET_COLOUR, Ogre::VES_DIFFUSE);
+ 
+	vertBuf = hbm.createVertexBuffer(decl->getVertexSize(POS_TEX_BINDING), vertexData->vertexCount, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY);
+	colBuf = hbm.createVertexBuffer(decl->getVertexSize(COLOUR_BINDING), vertexData->vertexCount, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY);
+	
+	bind->setBinding(POS_TEX_BINDING, vertBuf);
+	bind->setBinding(COLOUR_BINDING, colBuf);
+
+	TextVertex *buf = static_cast<TextVertex*>(vertBuf->lock(Ogre::HardwareBuffer::HBL_DISCARD));
+	
+	if(valign==V_BOTTOM)
+		top += textHeight*numlines;
+	else if(valign==V_CENTER)
+		top += 0.5*textHeight*numlines;
+	
+	for (std::string::iterator i = text.begin(); i != iend; i++){
+		unsigned int c=*i;
+		
+		if(startline){ // new line so move the line start position (\r, \v, \f treated as spaces)
+			startline=false;
+			float wline=0;
+			
+			for (std::string::iterator j = i; j != iend && *j!='\n'; j++) {
+				if(std::isspace(*j))
+					wline+=swidth;
+				else
+					wline+=fontobj->getGlyphAspectRatio(*j)*textHeight;
+			}
+			
+			// move left to adjust for horizontal alignment based on the computed line width 
+			if(halign==H_CENTER)
+				left=-wline*0.5;
+			else if(halign==H_RIGHT)
+				left=-wline;
+			else
+				left=0;
+		}
+		
+		if(c=='\n'){
+			startline=true;
+			top-=textHeight; // move down to next line
+		}
+		else if (std::isspace(c)) // space (or some other control character other than \n), just move the left by the space width
+			left+=swidth;
+		else{
+			Ogre::Font::UVRect uv = fontobj->getGlyphTexCoords(c);
+			float cw = fontobj->getGlyphAspectRatio(c) * textHeight;
+			float ch=-textHeight;
+			
+			// define the 6 vertices for the 2 triangles representing the quad for this character 
+			buf[pos  ].set(left,   top,   uv.left, uv.top,   min,max); // top left
+			buf[pos+1].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
+			buf[pos+2].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
+			buf[pos+3].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
+			buf[pos+4].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
+			buf[pos+5].set(left+cw,top+ch,uv.right,uv.bottom,min,max); // bottom right
+			
+			left += cw; // move left by the character width
+			pos+=6; // advance to next quad
+		}
+	}
+	
+	vertBuf->unlock();
+ 
+	setBoundingBox(min,max);
+	updateGeom = false;
+	updateCols = true;
+	//mParentNode->needUpdate();
+}
+
+OgreTextFigure::OgreTextFigure(const std::string& name,OgreRenderScene *scene) throw(RenderException)
+	: OgreBaseFigure(new TextRenderable(name,scene->mgr),scene->createNode(name),scene)
+{}
+
+OgreTexture::~OgreTexture() 
+{
+	scene->addResourceOp(new RemoveResourceOp<Ogre::TextureManager>(ptr->getName()));
+}
+
+void OgreTexture::commit()
+{
+	if(buffer){
+		//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+		//buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+		//memcpy(buff->getCurrentLock().data,buffer,buff->getSizeInBytes());
+		//buff->unlock();
+		Ogre::PixelBox pb(getWidth(),getHeight(),getDepth(),ptr->getFormat(),buffer);
+		ptr->getBuffer()->blitFromMemory(pb);
+		SAFE_DELETE(buffer);
+	}
+}
+
+void OgreTexture::fillBlack()
+{
+	// TODO: should be done as a ResourceOp
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//memset(buff->getCurrentLock().data,0,buff->getSizeInBytes());
+	//buff->unlock();
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	SAFE_DELETE(buffer);
+	buffer=new u8[texsize];
+	memset(buffer,0,texsize);
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
+}
+
+void OgreTexture::fillColor(color col)
+{
+	sval w=getWidth();
+	sval h=getHeight();
+	sval d=getDepth();
+	Ogre::ColourValue cv=convert(col);
+	
+	// TODO: should be done as a ResourceOp
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+        //
+	//for(sval z=0;z<d;z++)
+	//	for(sval y=0;y<h;y++)
+	//		for(sval x=0;x<w;x++)
+	//			pb.setColourAt(cv,x,y,z);
+        //
+	//buff->unlock();
+	
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	SAFE_DELETE(buffer);
+	buffer=new u8[texsize];
+	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+	
+	for(sval z=0;z<d;z++)
+		for(sval y=0;y<h;y++)
+			for(sval x=0;x<w;x++)
+				pb.setColourAt(cv,x,y,z);
+	
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
+}
+
+void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
+{
+	// TODO: should be done as a ResourceOp
+	sval w=getWidth();
+	sval h=getHeight();
+	sval d=getDepth();
+
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	//SAFE_DELETE(buffer);
+	if(!buffer)
+		buffer=new u8[texsize];
+	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+
+	for(sval y=0;y<h;y++)
+		for(sval x=0;x<w;x++)
+			pb.setColourAt(convert(mat->at(y,x)),x,y,depth);
+
+	//buff->unlock();
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
+}
+
+void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,real maxval, const Material* colormat,const RealMatrix *alphamat,bool mulAlpha)
+{
+	// TODO: should be done as a ResourceOp
+	sval w=getWidth();
+	sval h=getHeight();
+	sval d=getDepth();
+
+	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
+	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
+	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
+	
+	size_t texsize=ptr->getBuffer()->getSizeInBytes();
+	//SAFE_DELETE(buffer);
+	if(!buffer)
+		buffer=new u8[texsize];
+	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
+	
+	Ogre::ColourValue col;
+
+	for(sval y=0;y<h;y++)
+		for(sval x=0;x<w;x++){
+			real val=lerpXi(mat->at(y,x),minval,maxval);
+			
+			if(colormat!=NULL){
+				color c=colormat->interpolateColor(val);
+				c.setBuff(&col.r);
+			}
+			else{
+				col.r=col.g=col.b=val;
+				col.a=1.0;
+			}
+
+			if(alphamat!=NULL)
+				col.a=alphamat->at(y,x);
+
+			if(mulAlpha)
+				col.a*=val; // set alpha to the commonly desired value
+
+			pb.setColourAt(col,x,y,depth);
+		}
+
+	//buff->unlock();
+	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 Camera* OgreRenderScene::createCamera(const char* name, real left, real top, real width, real height) throw(RenderException)
@@ -722,7 +1597,7 @@ Texture* OgreRenderScene::loadTextureFile(const char* name,const char* absFilena
 GPUProgram* OgreRenderScene::createGPUProgram(const char* name,ProgramType ptype,const char* language) throw(RenderException)
 {
 	try{
-		OgreGPUProgram* prog=new OgreGPUProgram(name,ptype,language!=NULL ? language : "cg");
+		OgreGPUProgram* prog=new OgreGPUProgram(name,ptype,this,language!=NULL ? language : "cg");
 
 		if(prog->hasError()){
 			delete prog;
@@ -734,863 +1609,6 @@ GPUProgram* OgreRenderScene::createGPUProgram(const char* name,ProgramType ptype
 	catch(Ogre::Exception &e){
 		THROW_RENDEREX(e);
 	}
-}
-
-void OgreCamera::renderToTexture(sval width,sval height,TextureFormat format,real stereoOffset) throw(RenderException)
-{
-	try{
-		scene->applyResourceOps(); // apply pending operations to clean up anything being deleted
-		u32 mask=port->getVisibilityMask();
-		Ogre::ColourValue bg=port->getBackgroundColour();
-
-		Ogre::RenderTarget *rt = rtt_texture.isNull() ? NULL : rtt_texture->getBuffer()->getRenderTarget();
-
-		if(width==0 && height==0){
-			width=port->getActualWidth();
-			height=port->getActualHeight();
-		}
-
-		//if(stereoOffset!=0.0) // double width for stereo image rendering
-		//	width*=2;
-
-		// if there's no stored texture or we're requesting a different dimension/format, create a new texture
-		if(rtt_texture.isNull() || rtt_texture->getWidth()!=width || rtt_texture->getHeight()!=height || rtt_texture->getFormat()!=convert(format)){
-			Ogre::TextureManager& tmgr=Ogre::TextureManager::getSingleton();
-			
-			std::stringstream name;
-			name << "RttTex" << std::hex << u64(this) << std::dec;
-			
-			// remove old viewport if it's associated with the old texture or has a 0 dimensions ie. camera is secondary and not meant to render to the main view
-			if(port && (port->getWidth()==0 || port->getHeight()==0 || port->getTarget()==rt)){
-				port->getTarget()->removeViewport(port->getZOrder());
-				port=NULL;
-			}
-
-			// delete the old texture if it exists
-			if(!rtt_texture.isNull())
-				tmgr.remove(rtt_texture->getName());
-		
-			// create a new texture
-			rtt_texture = tmgr.createManual(name.str().c_str(), scene->resGroupName, Ogre::TEX_TYPE_2D,width,height, 0, convert(format), Ogre::TU_RENDERTARGET);
-
-			// create a viewport to associate the camera with the texture			
-			rt = rtt_texture->getBuffer()->getRenderTarget();
-			Ogre::Viewport *p=rt->addViewport(camera);
-			if(port==NULL){
-				port=p;
-				setViewport();
-			}
-
-			// set port values, most importantly the visibility mask
-			p->setVisibilityMask(mask);
-			p->setClearEveryFrame(true);
-			p->setBackgroundColour(bg);
-			p->setOverlaysEnabled(false);
-		}
-
-		real aspect=camera->getAspectRatio(); // recall current aspect ratio which can vary from that of the texture
-		bool origsetting=scene->getRenderHighQuality(); // recall current high quality render setting
-		scene->setRenderHighQuality(true); // force high quality rendering
-
-		if(stereoOffset==0.0){ // monoscopic rendering
-			camera->setAspectRatio(real(width)/height);
-			rt->update(); // render to the texture in high quality mode
-		}
-		else{ // stereoscopic rendering
-			Ogre::Viewport *p=rt->getViewport(0); // get the texture viewport, this is the same p as above
-			Ogre::Quaternion orient=camera->getOrientation();
-			vec3 offset=convert(orient*Ogre::Vector3(stereoOffset,0,0));
-
-			vec3 pos=getPosition();
-			vec3 look=getLookAt();
-
-			camera->setAspectRatio(real(width*0.5)/height); // since width is doubled, set the aspect ratio using half the actual texture width
-
-			// move camera to the left and render into half the texture
-			//camera->setOrientation(orient);
-			//setLookAt(look);
-			setPosition(pos-offset);
-			p->setDimensions(0,0,0.5,1.0); // set viewport to cover left half of texture
-			rt->update();
-
-			// move camera to the right and render into half the texture
-			//camera->setOrientation(orient);
-			//setLookAt(look);
-			setPosition(pos+offset);
-			p->setDimensions(0.5,0,0.5,1.0);  // set viewport to cover right half of texture
-			rt->update();
-
-			// reset camera to original position
-			//camera->setOrientation(orient);
-			//setLookAt(look);
-			setPosition(pos);
-		}
-
-		// reset scene and camera config
-		scene->setRenderHighQuality(origsetting);
-		camera->setAspectRatio(aspect);
-	}
-	catch(Ogre::Exception &e){
-		THROW_RENDEREX(e);
-	}
-}
-
-OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException) :
-		node(NULL),scene(scene),matname(matname), name(name),type(type),isInitialized(false),width(1.0),height(1.0)
-{
-	node=scene->createNode(name);
-}
-
-void OgreBBSetFigure::setCameraVisibility(const Camera* cam, bool isVisible)
-{
-	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
-		OgreRenderTypes::setCameraVisibility(cam,*i,isVisible,scene);
-}
-
-void OgreBBSetFigure::createBBSet()
-{
-	std::ostringstream out;
-	out << name << sets.size();
-
-	Ogre::BillboardSet* bbset=scene->mgr->createBillboardSet(out.str(),SETSIZE);
-	bbset->setMaterialName(matname);
-	bbset->setDefaultDimensions(width,height);
-	bbset->setVisibilityFlags(sets.size()>0 ? sets[0]->getVisibilityFlags() : 1);
-	
-	switch(type){
-	case FT_BB_POINT:
-		bbset->setBillboardType(Ogre::BBT_POINT);
-		break;
-	case FT_BB_FIXED_PAR:
-		bbset->setBillboardType(Ogre::BBT_ORIENTED_SELF);
-		break;
-	case FT_BB_FIXED_PERP:
-		bbset->setBillboardType(Ogre::BBT_PERPENDICULAR_SELF);
-		break;
-	}
-	
-	node->attachObject(bbset);
-	
-	sets.push_back(bbset);
-}
-
-void OgreBBSetFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
-{
-	// TODO: should be done as a ResourceOp
-	
-	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
-		(*i)->clear();
-	
-	for (sval i = 0; i <vb->numVertices(); i++) {
-		if(i==SETSIZE*sets.size())
-			createBBSet();
-		
-		Ogre::BillboardSet* bbset=sets[i/SETSIZE];
-		
-		vec3 v=vb->getVertex(i);
-		
-		color col=vb->hasColor() ? vb->getColor(i) : color();
-		Ogre::Billboard *b=bbset->createBillboard(convert(v),convert(col));
-		
-		if(vb->hasNormal()){
-			vec3 n=vb->getNormal(i);
-			if(n.isZero())
-				b->mDirection=Ogre::Vector3::UNIT_Y;
-			else
-				b->mDirection=convert(n.norm());
-		}
-	}
-}
-
-void OgreBBSetFigure::setVisible(bool isVisible)
-{
-	if(sets.size()>0){
-		if(node->numAttachedObjects()==0)
-			for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
-				node->attachObject(*i);
-			
-		node->setVisible(isVisible);
-	}
-}
-
-OgreRibbonFigure::OgreRibbonFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene) throw(RenderException) :
-	node(NULL), bbchain(NULL), scene(scene), name(name), matname(matname), orient(0)
-{
-	node=scene->createNode(name);
-	bbchain=scene->mgr->createBillboardChain(name);
-	node->attachObject(bbchain);
-	scene->mgr->addRenderObjectListener(this);
-}
-
-OgreRibbonFigure::~OgreRibbonFigure() 
-{
-	scene->mgr->removeRenderObjectListener(this);
-	scene->mgr->destroyBillboardChain(bbchain);
-	scene->destroyNode(node);
-}
-
-void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
-{
-	// TODO: should be done as a ResourceOp
-	try{
-		size_t numverts=vb ? vb->numVertices() : 0;
-		size_t numinds=ib ? ib->numIndices() : 0;
-		size_t numnodesmax=ib ? ib->indexWidth(0) : 0;
-
-		//for(size_t i=0;ib && i<numinds;i++)
-		//	numnodesmax=_max<size_t>(numnodesmax,ib->indexWidth(i));
-
-		if(numverts==0 || numinds==0 || numnodesmax==0)
-			return;
-
-		clearRibbons();
-		setNumRibbons(numinds);
-		setMaxNodes(numnodesmax);
-
-		/*for(size_t i=0;i<numinds;i++){
-			size_t numnodes=ib->indexWidth(i);
-			for(size_t j=0;j<numnodes;j++){
-				indexval ind=ib->getIndex(i,j);
-
-				vec3 pos = vb->getVertex(ind),norm,uvw;
-				color col;
-				rotator rot;
-				real width=1.0, tex=1.0;
-					
-				if(vb->hasNormal()){
-					norm=vb->getNormal(i);
-					if(!norm.isZero())
-						rot=rotator(vec3(0,0,1),norm);
-				}
-		
-				if(vb->hasUVWCoord()){
-					uvw=vb->getUVWCoord(i);
-					width=uvw.y() ? uvw.y() : 1.0;
-					tex=uvw.x() ? uvw.x() : 1.0;
-				}
-			
-				if(vb->hasColor())
-					col=vb->getColor(i);
-
-				addNode(i,pos,col,width,rot,tex);
-			}
-		}*/
-		
-		for(size_t i=0;i<numinds;i++){
-			indexval start=ib->getIndex(i,0);
-			indexval end=ib->getIndex(i,1);
-			
-			for(indexval j=start;j<end;j++){
-				vec3 pos = vb->getVertex(j),norm,uvw;
-				color col;
-				rotator rot;
-				real width=1.0, tex=1.0;
-					
-				if(vb->hasNormal()){
-					norm=vb->getNormal(j);
-					if(!norm.isZero())
-						rot=rotator(vec3(0,0,1),norm);
-				}
-		
-				if(vb->hasUVWCoord()){
-					uvw=vb->getUVWCoord(j);
-					width=uvw.y() ? uvw.y() : 1.0;
-					tex=uvw.x() ? uvw.x() : 1.0;
-				}
-			
-				if(vb->hasColor())
-					col=vb->getColor(j);
-
-				addNode(i,pos,col,width,rot,tex);
-			}
-		}
-	} catch(Ogre::Exception &e){
-		THROW_RENDEREX(e);
-	}
-}
-
-void OgreRibbonFigure::setCameraVisibility(const Camera* cam, bool isVisible)
-{
-	OgreRenderTypes::setCameraVisibility(cam,bbchain,isVisible,scene);
-}
-
-std::pair<sval,planevert*> TextureVolumeRenderable::getPlaneIntersects(vec3 planept, vec3 planenorm)
-{
-	for(int i=0;i<8;i++)
-		heights[i]=fig->boundcube[i].planeDist(planept,planenorm);
-
-	sval numpts=calculateHexValueIntersects(0,heights,bbintersects); // determine where the plane intersects the bound box
-		
-	// fill interpts with the position and uvw coordinates
-	for(sval j=0;j<numpts;j++){
-		indexval ind1=bbintersects[j].first;
-		indexval ind2=bbintersects[j].second;
-		real lerpval=bbintersects[j].third;
-			
-		interpts[j].first=lerp(lerpval,fig->boundcube[ind1],fig->boundcube[ind2]); 
-		interpts[j].second=lerp(lerpval,fig->texcube[ind1],fig->texcube[ind2]); 
-			
-		if(j==0) // choose the first position as the point on the plane to order with
-			planept=interpts[j].first;
-		else // move the added vertex up to the correct position in the list to maintain clockwise circular ordering
-			for(sval jj=j;jj>0 && planept.planeOrder(planenorm,interpts[jj].first,interpts[jj-1].first)>0;jj--)
-				bswap(interpts[jj],interpts[jj-1]);
-	}
-
-	return std::pair<sval,planevert*>(numpts,interpts);
-}
-
-void TextureVolumeRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
-{
-	rotator camrot=fig->getRotation(true).inverse()*lastCamRot;
-	vec3 figscale=fig->getScale(true).inv();
-
-	vec3 camdir=((vec3(0,0,1)*camrot)*figscale).norm();
-					
-	float norm[3]; // store the camera direction as a float 3-vector
-	(camdir*-1).setBuff(norm);
-
-	Ogre::RGBA ocol; // store the vertex color (white with given alpha) as an Ogre color
-	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
-	rs->convertColourValue(Ogre::ColourValue(1.0f,1.0f,1.0f,fig->alpha),&ocol);
-
-	sval numplanes=fig->numplanes;
-	if(scene!=NULL && !scene->getRenderHighQuality())
-		numplanes=_max<sval>(100,numplanes/4);
-	
-	vec3 center=fig->bbcenter; // bound box center
-	real radius=fig->bbradius; // bound box radius
-	real radstep=(2.0*radius)/numplanes; // distance between planes
-				
-	vertices.setN(0);
-	indices.setN(0);
-	
-	// for each plane, determine where it intersects the bound box, sort those points, and store them with uvw coordinates and triangle indices
-	for(sval i=0;i<numplanes;i++){
-		vec3 planept=center+camdir*(i*radstep-radius); // center of plane
-
-		std::pair<sval,planevert*> result=getPlaneIntersects(planept,camdir); // get the intersection of the given plane with the volume
-		sval numpts=result.first;
-		sval startind=sval(vertices.n());
-
-		for(sval j=0;j<numpts;j++){ // store vertex information
-			OgreBaseRenderable::Vertex v;
-			interpts[j].first.setBuff(v.pos);
-			interpts[j].second.setBuff(v.tex);
-			v.norm[0]=norm[0];
-			v.norm[1]=norm[1];
-			v.norm[2]=norm[2];
-			v.col=ocol;
-			vertices.append(v);
-		}
-				
-		// store triangle indices, because the vertices are in a circular order we can easily make a triangle fan
-		for(sval j=0;(j+2)<numpts;j++){ // there are 2 fewer indices than there are vertices hence (j+2), use this instead of (numpts-2) in case numpts is 0
-			indices.append(startind,0);
-			indices(indices.n()-1,1)=startind+j+1;
-			indices(indices.n()-1,2)=startind+j+2;
-		}
-	}
-	
-	// fill the vertex and index buffers
-	if(vertices.n()==0) // if no points fill the buffer with trivial data
-		fillDefaultData();
-	else{
-		createBuffers(vertices.n(),indices.n()*3);
-		commitMatrices(&vertices,&indices);
-	}
-	
-	OgreBaseRenderable::_updateRenderQueue(queue);
-}
-
-void TextureVolumeRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
-{
-	OgreBaseRenderable::_notifyCurrentCamera(cam);
-	lastCamRot=convert(cam->getDerivedOrientation());
-}
-
-vec3* calculateTriNorms(vec3* nodes, sval numnodes, indexval* inds, sval numinds)
-{
-	vec3* norms=new vec3[numnodes];
-	memset(norms,0,sizeof(vec3)*numnodes);
-
-	for(sval i=0;i<numinds;i++){
-		indexval a=inds[i*3],b=inds[i*3+1],c=inds[i*3+2];
-		vec3 norm=nodes[a].planeNorm(nodes[b],nodes[c]);
-		norms[a]=norms[a]+norm;
-		norms[b]=norms[b]+norm;
-		norms[c]=norms[c]+norm;
-	}
-
-	for(sval n=0;n<numnodes;n++)
-		norms[n]=norms[n].norm();
-
-	return norms;
-}
-
-void OgreGlyphFigure::fillDefaultGlyphs(glyphmap &map)
-{
-	static vec3 cubenodes[]={
-		vec3(-0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(-0.5,-0.5,0.5), vec3(0.5,-0.5,0.5), vec3(-0.5,-0.5,-0.5), vec3(0.5,-0.5,-0.5), 
-		vec3(-0.5,0.5,-0.5), vec3(0.5,0.5,-0.5), vec3(-0.5,-0.5,0.5), vec3(0.5,-0.5,0.5), vec3(-0.5,-0.5,-0.5), vec3(0.5,-0.5,-0.5), 
-		vec3(-0.5,0.5,-0.5), vec3(0.5,0.5,-0.5), vec3(-0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5), vec3(0.5,0.5,-0.5), 
-		vec3(0.5,-0.5,0.5), vec3(0.5,-0.5,-0.5), vec3(-0.5,0.5,-0.5), vec3(-0.5,0.5,0.5), vec3(-0.5,-0.5,-0.5), vec3(-0.5,-0.5,0.5)
-	};
-	static indexval cubeinds[][3]={
-		{0, 2, 1}, {1, 2, 3}, {4, 6, 5}, {5, 6, 7}, {8, 10, 9}, {9, 10, 11}, {12, 14, 13}, {13, 14, 15}, {16, 18, 17}, {17, 18, 19}, {20, 22, 21}, {21, 22, 23}
-	};
-
-	static vec3* cubenorms=calculateTriNorms(cubenodes,24,(indexval*)cubeinds,12);
-
-	static vec3 spherenodes[]={
-		vec3(0,0,1), vec3(0,-0.894427191,0.4472135955), vec3(0,0.894427191,-0.4472135955), vec3(0,0,-1), 
-		vec3(0.5257311121,0.7236067977,0.4472135955), vec3(-0.5257311121,0.7236067977,0.4472135955), vec3(0.5257311121,-0.7236067977,-0.4472135955), 
-		vec3(-0.5257311121,-0.7236067977,-0.4472135955), vec3(0.8506508084,-0.2763932023,0.4472135955), vec3(-0.8506508084,-0.2763932023,0.4472135955), 
-		vec3(0.8506508084,0.2763932023,-0.4472135955), vec3(-0.8506508084,0.2763932023,-0.4472135955), vec3(0,-0.5257311121,0.8506508084), vec3(0.5,-0.1624598481,0.8506508084), 
-		vec3(0.5,-0.6881909602,0.5257311121), vec3(-0.5,-0.1624598481,0.8506508084), vec3(-0.5,-0.6881909602,0.5257311121), vec3(0.3090169944,0.4253254042,0.8506508084), 
-		vec3(0.8090169944,0.2628655561,0.5257311121), vec3(-0.3090169944,0.4253254042,0.8506508084), vec3(0,0.8506508084,0.5257311121), 
-		vec3(-0.8090169944,0.2628655561,0.5257311121), vec3(0,0.5257311121,-0.8506508084), vec3(-0.5,0.6881909602,-0.5257311121), vec3(-0.5,0.1624598481,-0.8506508084), 
-		vec3(-0.3090169944,0.9510565163,0), vec3(-0.8090169944,0.5877852523,0), vec3(0.3090169944,0.9510565163,0), 
-		vec3(0.5,0.6881909602,-0.5257311121), vec3(0.8090169944,0.5877852523,0), vec3(0.5,0.1624598481,-0.8506508084), 
-		vec3(-0.3090169944,-0.9510565163,0), vec3(-0.8090169944,-0.5877852523,0), vec3(0.3090169944,-0.9510565163,0), 
-		vec3(0,-0.8506508084,-0.5257311121), vec3(0.8090169944,-0.5877852523,0), vec3(0.3090169944,-0.4253254042,-0.8506508084), 
-		vec3(0.8090169944,-0.2628655561,-0.5257311121), vec3(-0.3090169944,-0.4253254042,-0.8506508084), vec3(-0.8090169944,-0.2628655561,-0.5257311121), 
-		vec3(1,0,0), vec3(-1,0,0)
-	};
-
-	static indexval sphereinds[][3]={
-		{0, 12, 13}, {12, 1, 14}, {13, 14, 8}, {12, 14, 13}, {0, 15, 12}, {15, 9, 16}, {12, 16, 1}, {15, 16, 12}, {0, 13, 17}, {13, 8, 18}, {17, 18, 4}, {13, 18, 17}, {0, 17, 19}, 
-		{17, 4, 20}, {19, 20, 5}, {17, 20, 19}, {0, 19, 15}, {19, 5, 21}, {15, 21, 9}, {19, 21, 15}, {2, 22, 23}, {22, 3, 24}, {23, 24, 11}, {22, 24, 23}, {2, 23, 25}, {23, 11, 26}, 
-		{25, 26, 5}, {23, 26, 25}, {2, 25, 27}, {25, 5, 20}, {27, 20, 4}, {25, 20, 27}, {2, 27, 28}, {27, 4, 29}, {28, 29, 10}, {27, 29, 28}, {2, 28, 22}, {28, 10, 30}, {22, 30, 3}, 
-		{28, 30, 22}, {1, 16, 31}, {16, 9, 32}, {31, 32, 7}, {16, 32, 31}, {1, 31, 33}, {31, 7, 34}, {33, 34, 6}, {31, 34, 33}, {1, 33, 14}, {33, 6, 35}, {14, 35, 8}, {33, 35, 14}, 
-		{3, 30, 36}, {30, 10, 37}, {36, 37, 6}, {30, 37, 36}, {3, 36, 38}, {36, 6, 34}, {38, 34, 7}, {36, 34, 38}, {3, 38, 24}, {38, 7, 39}, {24, 39, 11}, {38, 39, 24}, {4, 18, 29}, 
-		{18, 8, 40}, {29, 40, 10}, {18, 40, 29}, {5, 26, 21}, {26, 11, 41}, {21, 41, 9}, {26, 41, 21}, {6, 37, 35}, {37, 10, 40}, {35, 40, 8}, {37, 40, 35}, {7, 32, 39}, {32, 9, 41}, 
-		{39, 41, 11}, {32, 41, 39}
-	};
-
-	static vec3* spherenorms=calculateTriNorms(spherenodes,42,(indexval*)sphereinds,80);
-
-	static vec3 arrownodes[]={
-		vec3(0,0,-1), 
-		vec3(0.375,0,-1), vec3(0.1875,-0.3247595264,-1), vec3(-0.1875,-0.3247595264,-1), vec3(-0.375,0,-1), vec3(-0.1875,0.3247595264,-1), vec3(0.1875,0.3247595264,-1), 
-		vec3(0.375,0,-1), vec3(0.1875,-0.3247595264,-1), vec3(-0.1875,-0.3247595264,-1), vec3(-0.375,0,-1), vec3(-0.1875,0.3247595264,-1), vec3(0.1875,0.3247595264,-1), 
-		vec3(0.375,0,0), vec3(0.1875,-0.3247595264,0), vec3(-0.1875,-0.3247595264,0), vec3(-0.375,0,0), vec3(-0.1875,0.3247595264,0), vec3(0.1875,0.3247595264,0), 
-		vec3(1,0,0), vec3(0.5,-0.8660254038,0), vec3(-0.5,-0.8660254038,0), vec3(-1,0,0), vec3(-0.5,0.8660254038,0), vec3(0.5,0.8660254038,0), 
-		vec3(1,0,0), vec3(0.5,-0.8660254038,0), vec3(-0.5,-0.8660254038,0), vec3(-1,0,0), vec3(-0.5,0.8660254038,0), vec3(0.5,0.8660254038,0), 
-		vec3(0,0,1)
-	};
-
-	static indexval arrowinds[][3]={
-		{0, 1, 2}, {0, 2, 3}, {0, 3, 4}, {0, 4, 5}, {0, 5, 6}, {0, 6, 1}, {7, 13, 8}, {8, 13, 14}, {8, 14, 9}, {9, 14, 15}, {9, 15, 10}, {10, 15, 16}, {10, 16, 11}, {11, 16, 17}, 
-		{11, 17, 12}, {12, 17, 18}, {12, 18, 7}, {7, 18, 13}, {13, 19, 14}, {14, 19, 20}, {14, 20, 15}, {15, 20, 21}, {15, 21, 16}, {16, 21, 22}, {16, 22, 17}, {17, 22, 23}, 
-		{17, 23, 18}, {18, 23, 24}, {18, 24, 13}, {13, 24, 19}, {31, 26, 25}, {31, 27, 26}, {31, 28, 27}, {31, 29, 28}, {31, 30, 29}, {31, 25, 30}
-	};
-
-	static vec3* arrownorms=calculateTriNorms(arrownodes,32,(indexval*)arrowinds,36);
-
-	map["cube"]=glyphmesh(new Vec3Matrix("cubenodes","",(vec3*)cubenodes,24,1),new Vec3Matrix("cubenorms","",(vec3*)cubenorms,24,1),new IndexMatrix("cubeinds","",(indexval*)cubeinds,12,3));
-	map["sphere"]=glyphmesh(new Vec3Matrix("spherenodes","",(vec3*)spherenodes,42,1),new Vec3Matrix("spherenorms","",(vec3*)spherenorms,42,1),new IndexMatrix("sphereinds","",(indexval*)sphereinds,80,3));
-	map["arrow"]=glyphmesh(new Vec3Matrix("arrownodes","",(vec3*)arrownodes,32,1),new Vec3Matrix("arrownorms","",(vec3*)arrownorms,32,1),new IndexMatrix("arrowinds","",(indexval*)arrowinds,36,3));
-}
-
-OgreGlyphFigure::OgreGlyphFigure(const std::string& name,const std::string & matname,OgreRenderScene *scene) throw(RenderException)
-	: OgreBaseFigure(new OgreBaseRenderable(name,matname,convert(FT_TRILIST),scene->mgr),scene->createNode(name),scene),glyphscale(1),glyphname("sphere")
-{
-	OgreGlyphFigure::fillDefaultGlyphs(glyphs);
-}
-
-void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException)
-{
-	// TODO: use deferFill correctly
-	
-	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
-
-	glyphmap::const_iterator i=glyphs.find(glyphname);
-
-	// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
-	critical(obj->getMutex()){
-		if(vb->numVertices()==0 || i==glyphs.end()){
-			obj->fillDefaultData();
-			node->needUpdate();
-			return;
-		}
-
-		const glyphmesh gmesh=(*i).second;
-		const Vec3Matrix* gverts=gmesh.first;
-		const Vec3Matrix* gnorms=gmesh.second;
-		const IndexMatrix* ginds=gmesh.third;
-
-		sval numverts=gverts->n(), numinds=ginds->n();
-
-		obj->createBuffers(vb->numVertices()*numverts,vb->numVertices()*numinds*3,deferFill);
-
-		vec3 minv=vb->getVertex(0), maxv=vb->getVertex(0);
-
-		OgreBaseRenderable::Vertex *vbuf=obj->getLocalVertBuff();
-		indexval *ibuf=obj->getLocalIndBuff();
-
-		for (sval g = 0; g < vb->numVertices(); g++) {
-			vec3 pos = vb->getVertex(g),dir(0,0,1),scale=glyphscale;
-			color col;
-
-			if(vb->hasNormal())
-				dir=vb->getNormal(g);
-			
-			if(vb->hasUVWCoord())
-				scale=scale*vb->getUVWCoord(g);
-
-			if(vb->hasColor())
-				col=vb->getColor(g);
-				
-			rotator rot(vec3(0,0,1),dir);
-			transform trans(pos,scale,rot);
-
-			sval vstart=numverts*g;
-			sval istart=numinds*3*g;
-
-			for(sval v=0;v<numverts;v++){
-				vec3 vert=gverts->at(v)*trans;
-				vec3 norm=gnorms->at(v)*rot;
-
-				minv.setMinVals(vert);
-				maxv.setMaxVals(vert);
-
-				vert.setBuff(vbuf[v+vstart].pos);
-				norm.setBuff(vbuf[v+vstart].norm);
-				vec3().setBuff(vbuf[v+vstart].tex);
-
-				if(rs){
-					Ogre::ColourValue c = convert(col);
-					rs->convertColourValue(c,&vbuf[v+vstart].col);
-				}
-				else
-					vbuf[v+vstart].col=col.toRGBA();
-			}
-
-			for(sval i=0;i<numinds;i++){
-				ibuf[i*3+istart]=ginds->at(i,0)+vstart;
-				ibuf[i*3+istart+1]=ginds->at(i,1)+vstart;
-				ibuf[i*3+istart+2]=ginds->at(i,2)+vstart;
-			}
-		}
-
-	
-		if(!deferFill){ // if not deferring to render time, commit the buffers now and delete the local buffers
-			obj->commitBuffers();
-			obj->deleteLocalIndBuff();
-			obj->deleteLocalVertBuff();
-		}
-		
-		obj->setBoundingBox(minv,maxv);
-		node->needUpdate();
-	}
-}
-
-OgreTextFigure::OgreTextFigure(const std::string& name,OgreRenderScene *scene) throw(RenderException)
-	: OgreBaseFigure(new TextRenderable(name,scene->mgr),scene->createNode(name),scene)
-{}
-
-void TextRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
-{
-	OgreBaseRenderable::_notifyCurrentCamera(cam);
-	mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
-}
-
-void TextRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
-{
-	if(isVisible()){
-		if (updateGeom)
-			updateGeometry();
-		if (updateCols)
-			updateColors();
-	
-		if (mRenderQueuePrioritySet)
-			queue->addRenderable(this, mRenderQueueID, mRenderQueuePriority);
-		else if(mRenderQueueIDSet)
-			queue->addRenderable(this, mRenderQueueID);
-		else
-			queue->addRenderable(this);
-	}
-}
-
-void TextRenderable::setFont(const std::string& fontname) throw(RenderException)
-{
-	Ogre::FontPtr newfontobj = Ogre::FontManager::getSingletonPtr()->getByName(fontname);
-	if(newfontobj.isNull())
-		throw RenderException("Cannot find font "+fontname,__FILE__,__LINE__);
-	
-	this->fontname=fontname;
-	updateCols=true;
-	updateGeom=true;
-}
-
-void TextRenderable::updateColors()
-{
-	Ogre::RGBA col;
-	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
-	rs->convertColourValue(convert(this->col), &col);
-	
-	Ogre::RGBA *buf = static_cast<Ogre::RGBA*>(colBuf->lock(Ogre::HardwareBuffer::HBL_DISCARD));
-	
-	for (size_t i = 0; i < vertexData->vertexCount; i++)
-		buf[i] = col;
-	
-	colBuf->unlock();
-	updateCols = false;
-}
-
-void TextRenderable::updateGeometry()
-{
-	if(!fontobj || fontname!=fontobj->getName() || mat.isNull()){
-		Ogre::Font* newfontobj = (Ogre::Font *)Ogre::FontManager::getSingleton().getByName(fontname).getPointer();
-		
-		if (!newfontobj)
-			throw Ogre::Exception(Ogre::Exception::ERR_ITEM_NOT_FOUND, "Could not find font " + fontname, "TextRenderable::updateGeometry");
-		
-		fontobj=newfontobj;
-		fontobj->load();
-		
-		if(!mat.isNull() && mat->getName()==internalMatName){
-			Ogre::MaterialManager::getSingletonPtr()->remove(internalMatName);
-			mat.setNull();
-		}
-		
-		mat = fontobj->getMaterial()->clone(internalMatName);
-		if(!mat->isLoaded())
-			mat->load();
-		
-		mat->setLightingEnabled(false);
-		setOverlay(isOverlay);
-	}
-	
-	std::string::iterator iend = text.end();
-	size_t pos=0;
-	int numlines=1;
-	vec3 min=vec3::posInfinity(), max=vec3::negInfinity();
-	float left=0,top=0;
-	float swidth=spaceWidth ? spaceWidth : fontobj->getGlyphAspectRatio('A') * textHeight*0.5; // get the defined space width or derive from 'A'
-	bool startline=true;
- 
-	destroyBuffers();
-	vertexData = OGRE_NEW Ogre::VertexData();
-	vertexData->vertexStart = 0;
-	vertexData->vertexCount = 0; 
-	
-	// determine the vertex count and line where a quad of 6 vertices is made for every non-whitespace character
-	for (std::string::iterator i = text.begin(); i != iend; i++){
-		if(!std::isspace(*i))
-			vertexData->vertexCount+=6; // 6 vertices for 1 quad per non-whitespace character
-		
-		if((*i)=='\n')
-			numlines+=1;
-	}
- 
-	Ogre::HardwareBufferManager& hbm=Ogre::HardwareBufferManager::getSingleton();
-	Ogre::VertexDeclaration *decl = vertexData->vertexDeclaration;
-	Ogre::VertexBufferBinding *bind = vertexData->vertexBufferBinding;
-	
-	// define a vertex type of a float3 position element followed by a float2 texture coord element (ie. (x,y,z,u,v))
-	decl->addElement(POS_TEX_BINDING, 0, Ogre::VET_FLOAT3, Ogre::VES_POSITION);
-	decl->addElement(POS_TEX_BINDING, Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3), Ogre::VET_FLOAT2, Ogre::VES_TEXTURE_COORDINATES, 0);
-	decl->addElement(COLOUR_BINDING, 0, Ogre::VET_COLOUR, Ogre::VES_DIFFUSE);
- 
-	vertBuf = hbm.createVertexBuffer(decl->getVertexSize(POS_TEX_BINDING), vertexData->vertexCount, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY);
-	colBuf = hbm.createVertexBuffer(decl->getVertexSize(COLOUR_BINDING), vertexData->vertexCount, Ogre::HardwareBuffer::HBU_DYNAMIC_WRITE_ONLY);
-	
-	bind->setBinding(POS_TEX_BINDING, vertBuf);
-	bind->setBinding(COLOUR_BINDING, colBuf);
-
-	TextVertex *buf = static_cast<TextVertex*>(vertBuf->lock(Ogre::HardwareBuffer::HBL_DISCARD));
-	
-	if(valign==V_BOTTOM)
-		top += textHeight*numlines;
-	else if(valign==V_CENTER)
-		top += 0.5*textHeight*numlines;
-	
-	for (std::string::iterator i = text.begin(); i != iend; i++){
-		unsigned int c=*i;
-		
-		if(startline){ // new line so move the line start position (\r, \v, \f treated as spaces)
-			startline=false;
-			float wline=0;
-			
-			for (std::string::iterator j = i; j != iend && *j!='\n'; j++) {
-				if(std::isspace(*j))
-					wline+=swidth;
-				else
-					wline+=fontobj->getGlyphAspectRatio(*j)*textHeight;
-			}
-			
-			// move left to adjust for horizontal alignment based on the computed line width 
-			if(halign==H_CENTER)
-				left=-wline*0.5;
-			else if(halign==H_RIGHT)
-				left=-wline;
-			else
-				left=0;
-		}
-		
-		if(c=='\n'){
-			startline=true;
-			top-=textHeight; // move down to next line
-		}
-		else if (std::isspace(c)) // space (or some other control character other than \n), just move the left by the space width
-			left+=swidth;
-		else{
-			Ogre::Font::UVRect uv = fontobj->getGlyphTexCoords(c);
-			float cw = fontobj->getGlyphAspectRatio(c) * textHeight;
-			float ch=-textHeight;
-			
-			// define the 6 vertices for the 2 triangles representing the quad for this character 
-			buf[pos  ].set(left,   top,   uv.left, uv.top,   min,max); // top left
-			buf[pos+1].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
-			buf[pos+2].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
-			buf[pos+3].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
-			buf[pos+4].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
-			buf[pos+5].set(left+cw,top+ch,uv.right,uv.bottom,min,max); // bottom right
-			
-			left += cw; // move left by the character width
-			pos+=6; // advance to next quad
-		}
-	}
-	
-	vertBuf->unlock();
- 
-	setBoundingBox(min,max);
-	updateGeom = false;
-	updateCols = true;
-	//mParentNode->needUpdate();
-}
-
-OgreTexture::~OgreTexture() 
-{
-	scene->addResourceOp(new RemoveResourceOp<Ogre::TextureManager>(ptr->getName()));
-}
-
-void OgreTexture::commit()
-{
-	if(buffer){
-		Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-		buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-		memcpy(buff->getCurrentLock().data,buffer,buff->getSizeInBytes());
-		buff->unlock();
-		SAFE_DELETE(buffer);
-	}
-}
-
-void OgreTexture::fillBlack()
-{
-	// TODO: should be done as a ResourceOp
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//memset(buff->getCurrentLock().data,0,buff->getSizeInBytes());
-	//buff->unlock();
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	SAFE_DELETE(buffer);
-	buffer=new u8[texsize];
-	memset(buffer,0,texsize);
-	scene->addResourceOp(new CommitOp<OgreTexture>(this));
-}
-
-void OgreTexture::fillColor(color col)
-{
-	sval w=getWidth();
-	sval h=getHeight();
-	sval d=getDepth();
-	Ogre::ColourValue cv=convert(col);
-	
-	// TODO: should be done as a ResourceOp
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-        //
-	//for(sval z=0;z<d;z++)
-	//	for(sval y=0;y<h;y++)
-	//		for(sval x=0;x<w;x++)
-	//			pb.setColourAt(cv,x,y,z);
-        //
-	//buff->unlock();
-	
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	SAFE_DELETE(buffer);
-	buffer=new u8[texsize];
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
-	
-	for(sval z=0;z<d;z++)
-		for(sval y=0;y<h;y++)
-			for(sval x=0;x<w;x++)
-				pb.setColourAt(cv,x,y,z);
-	
-	scene->addResourceOp(new CommitOp<OgreTexture>(this));
-}
-
-void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
-{
-	// TODO: should be done as a ResourceOp
-	sval w=getWidth();
-	sval h=getHeight();
-	sval d=getDepth();
-
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	//SAFE_DELETE(buffer);
-	if(!buffer)
-		buffer=new u8[texsize];
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
-
-	for(sval y=0;y<h;y++)
-		for(sval x=0;x<w;x++)
-			pb.setColourAt(convert(mat->at(y,x)),x,y,depth);
-
-	//buff->unlock();
-	scene->addResourceOp(new CommitOp<OgreTexture>(this));
-}
-
-void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,real maxval, const Material* colormat,const RealMatrix *alphamat,bool mulAlpha)
-{
-	// TODO: should be done as a ResourceOp
-	sval w=getWidth();
-	sval h=getHeight();
-	sval d=getDepth();
-
-	//Ogre::HardwarePixelBufferSharedPtr buff= ptr->getBuffer();
-	//void* data=buff->lock(Ogre::HardwareBuffer::HBL_WRITE_ONLY);
-	//Ogre::PixelBox pb(w,h,d,ptr->getFormat(),data);
-	
-	size_t texsize=ptr->getBuffer()->getSizeInBytes();
-	//SAFE_DELETE(buffer);
-	if(!buffer)
-		buffer=new u8[texsize];
-	Ogre::PixelBox pb(w,h,d,ptr->getFormat(),buffer);
-	
-	Ogre::ColourValue col;
-
-	for(sval y=0;y<h;y++)
-		for(sval x=0;x<w;x++){
-			real val=lerpXi(mat->at(y,x),minval,maxval);
-			
-			if(colormat!=NULL){
-				color c=colormat->interpolateColor(val);
-				c.setBuff(&col.r);
-			}
-			else{
-				col.r=col.g=col.b=val;
-				col.a=1.0;
-			}
-
-			if(alphamat!=NULL)
-				col.a=alphamat->at(y,x);
-
-			if(mulAlpha)
-				col.a*=val; // set alpha to the commonly desired value
-
-			pb.setColourAt(col,x,y,depth);
-		}
-
-	//buff->unlock();
-	scene->addResourceOp(new CommitOp<OgreTexture>(this));
 }
 
 OgreRenderAdapter::OgreRenderAdapter(Config *config) throw(RenderException) : mgr(NULL), win(NULL), config(config), scene(NULL) 
@@ -1793,5 +1811,6 @@ RenderScene* OgreRenderAdapter::getRenderScene()
 }
 
 } // namespace OgreRenderTypes
+
 
 

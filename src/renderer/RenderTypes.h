@@ -3733,7 +3733,7 @@ public:
 	virtual void renderToFile(const std::string& filename,sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException) {}
 	/// Create an offscreen texture, render to it, then blit the contents to `stream', which must be large enough for data of the given texture format.
 	virtual void renderToStream(void* stream,sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException) {}
-	
+	/// Create an offscreen texture, render to it, then blit the contents to the returned Image object, which can then be used to save the image to file.
 	virtual Image* renderToImage(sval width,sval height, TextureFormat format=TF_RGB24,real stereoOffset=0.0) throw(RenderException) { return 0; }
 };
 
@@ -3783,7 +3783,13 @@ public:
 
 	virtual std::pair<vec3,vec3> getAABB() const { return std::pair<vec3,vec3>(vec3(),vec3()); }
 
-	/// Fill the vertex information using the given buffers, `ib' may be NULL for point figure types
+	/** 
+	 * Fill the vertex information using the given buffers, `ib' may be NULL for point figure types. If `deferFill' is
+	 * true then the actual hardware buffers are filled during the next render cycle rather than immediately. In either
+	 * case data is filled into local memory buffers first then copied to hardware buffers. This implies that calling this
+	 * method is thread-safe if `deferFill' is true or if its implementation does nothing regardless of arguments. 
+	 * If `doubleSided' is true and the index buffer defined triangles, create backfaces for triangles with correct normals. 
+	 */
 	virtual void fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill=false,bool doubleSided=false) throw(RenderException) {}
 	
 	/// Sets the figure's visibility
@@ -3980,7 +3986,7 @@ private:
 /**
  * This class represents the rendering scene and the factory for all render-related objects including cameras, lights, figures, and materials. It also
  * is responsible for loading textures and other properties (more to be added later). Only one instance should ever exist which is created by the
- * RenderAdapter instance.
+ * RenderAdapter instance. None of the methods of this type should be considered thread-safe.
  */
 class RenderScene
 {
@@ -4055,21 +4061,27 @@ public:
 };
 
 /**
- * This class represents the bridge between the rendering engine and the windowing toolkit. It is instantiated for the windowing object that will
- * be the target for rendering. It's main purpose is to collect into one place the code for creating and resizing the render window and processing
- * paint events. This also allows the windowing class to be defined without using headers for the rendering engine.
+ * This class represents the bridge between the rendering engine and the windowing toolkit. It is instantiated for the 
+ * windowing object that will be the target for rendering. It's main purpose is to collect into one place the code for 
+ * creating and resizing the render window and processing paint events. This also allows the windowing class to be defined 
+ * without using headers for the rendering engine.
  * 
- * A RenderAdapter type is instantiated through getRenderAdapter() which is implemented by the specific renderer being used, thus it returns a 
- * specialized subtype specific to that renderer. The Config object passed as the argument is retained and used as the source of parameter info
- * needed to instantiate the renderer. Once the object is created, createWindow() must be called after the host UI widget has been created so that
- * the parameters identifying the window have been set in the Config object. These parameters are necessary since the renderer has to bind to a 
- * place to render into. Once this has been done and the widget is visible, only then can getRenderScene() be called to create the RenderScene
- * object needed to interact with the renderer. Whenever the widget resizes resize() must be called with the new size as arguments. When the widget
- * receives a paint event, paint() is called to cause a redraw of the scene by the renderer.
+ * A RenderAdapter type is instantiated through getRenderAdapter() which is implemented by the specific renderer being 
+ * used, thus it returns a specialized subtype specific to that renderer. The Config object passed as the argument is 
+ * retained and used as the source of parameter info needed to instantiate the renderer. Once the object is created, 
+ * createWindow() must be called after the host UI widget has been created so that the parameters identifying the window 
+ * have been set in the Config object. These parameters are necessary since the renderer has to bind to a  place to render 
+ * into. Once this has been done and the widget is visible, only then can getRenderScene() be called to create the 
+ * RenderScene object needed to interact with the renderer. Whenever the widget resizes resize() must be called with the 
+ * new size as arguments. When the widget receives a paint event, paint() is called to cause a redraw of the scene by the 
+ * renderer.
  *
- * The parameters to pass to the Config object are specific to the platform and renderer being used, but must be stored in the RenderParamGroup
- * config group. For Ogre these are the following named values:
- *
+ * The function getRenderAdapter() and all the methods of this type are not thread-safe and should only be called by the
+ * windowing system's message pump (ie. main) thread.
+ * 
+ * The parameters to pass to the Config object are specific to the platform and renderer being used, but must be stored in 
+ * the RenderParamGroup config group. For Ogre these are the following named values:
+ * 
  *   Windows: parent window ID number in "parentWindowHandle"
  *   Linux:   D:S:W in "parentWindowHandle" where D is the display number, S the screen number, and W the window ID number
  *   OSX:     window ID number in "externalWindowHandle"
@@ -4085,6 +4097,10 @@ public:
 	virtual RenderScene* getRenderScene() { return NULL; }
 };
 
+/**
+ * Returns an instance of the RenderAdapter specific to the rendering engine being used. This is not implemented in 
+ * Rendertypes.[h,cpp] but in the engine itself. The `config' object is for passing in parameters to the adapter.
+ */
 RenderAdapter* getRenderAdapter(Config* config) throw(RenderException);
 
 /*****************************************************************************************************************************/
@@ -4492,6 +4508,13 @@ void interpolateImageStack(const std::vector<RealMatrix*>& stack,const transform
 real getImageStackValue(const std::vector<RealMatrix*>& stack,const vec3& pos);
 
 void calculateImageHistogram(const RealMatrix* img, RealMatrix* hist, i32 minv); 
+
+/** 
+ * Calculate the normals for triangles defined by the `nodes' array and indices `inds'. This requires that `nodes' be 
+ * `numnodes' in length and `inds' be of `numinds'*3 in length where each triangle is indexed by triples of indices in 
+ * `nodes'. Returns a fresh array of length `numnodes' with a normal for each node.
+ */
+vec3* calculateTriNorms(vec3* nodes, sval numnodes, indexval* inds, sval numinds);
 
 } // namespace RenderTypes
 #endif // RENDERTYPES_H

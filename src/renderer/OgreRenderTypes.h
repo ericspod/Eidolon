@@ -45,8 +45,13 @@ typedef std::pair<vec3,vec3> planevert;
 
 class OgreRenderScene;
 
+/// Set `node' to have the same parent node as that of `fig'.
 void setNodeFigParent(Ogre::SceneNode* node,Figure *fig,OgreRenderScene* scene);
+
+/// Set the visibility of `obj' to be `isVisible' for the camera `cam'. If `cam' is NULL then `obj' becomes visible/invisible to all cameras.
 void setCameraVisibility(const Camera* cam,Ogre::MovableObject* obj, bool isVisible,OgreRenderScene* scene);
+
+/// Deletes the `node' and `obj' objects in a thread-safe manner at some future time (probably next render cycle).
 void destroySceneNode(Ogre::SceneNode *node,Ogre::MovableObject* obj,OgreRenderScene *scene);
 
 inline Ogre::ColourValue convert(const color & c)
@@ -94,39 +99,39 @@ inline Ogre::GpuProgramType convert(ProgramType pt)
 inline Ogre::PixelFormat convert(TextureFormat format)
 {
 	switch(format){
-	case TF_RGBA32: return Ogre::PF_R8G8B8A8;
-	case TF_ARGB32: return Ogre::PF_A8R8G8B8;
-	case TF_RGB24: return Ogre::PF_R8G8B8;
-	case TF_ALPHA8: return Ogre::PF_A8;
-	case TF_LUM8: return Ogre::PF_L8;
-	case TF_LUM16: return Ogre::PF_L16;
-	case TF_ALPHALUM8: return Ogre::PF_A4L4;
-	default: return Ogre::PF_UNKNOWN;
+	case TF_RGBA32    : return Ogre::PF_R8G8B8A8;
+	case TF_ARGB32    : return Ogre::PF_A8R8G8B8;
+	case TF_RGB24     : return Ogre::PF_R8G8B8;
+	case TF_ALPHA8    : return Ogre::PF_A8;
+	case TF_LUM8      : return Ogre::PF_L8;
+	case TF_LUM16     : return Ogre::PF_L16;
+	case TF_ALPHALUM8 : return Ogre::PF_A4L4;
+	default           : return Ogre::PF_UNKNOWN;
 	}
 }
 
 inline TextureFormat convert(Ogre::PixelFormat format)
 {
 	switch(format){
-	case Ogre::PF_R8G8B8A8: return TF_RGBA32;
-	case Ogre::PF_A8R8G8B8: return TF_ARGB32;
-	case Ogre::PF_R8G8B8: return TF_RGB24;
-	case Ogre::PF_A8: return TF_ALPHA8;
-	case Ogre::PF_L8: return TF_LUM8;
-	case Ogre::PF_L16: return TF_LUM16;
-	case Ogre::PF_A4L4: return TF_ALPHALUM8;
-	default: return TF_UNKNOWN;
+	case Ogre::PF_R8G8B8A8 : return TF_RGBA32;
+	case Ogre::PF_A8R8G8B8 : return TF_ARGB32;
+	case Ogre::PF_R8G8B8   : return TF_RGB24;
+	case Ogre::PF_A8       : return TF_ALPHA8;
+	case Ogre::PF_L8       : return TF_LUM8;
+	case Ogre::PF_L16      : return TF_LUM16;
+	case Ogre::PF_A4L4     : return TF_ALPHALUM8;
+	default                : return TF_UNKNOWN;
 	}
 }
 
 inline Ogre::RenderOperation::OperationType convert(FigureType type)
 {	
 	switch(type){
-	case FT_POINTLIST: return Ogre::RenderOperation::OT_POINT_LIST;
-	case FT_LINELIST:  return Ogre::RenderOperation::OT_LINE_LIST; 
-	case FT_TRISTRIP:  return Ogre::RenderOperation::OT_TRIANGLE_STRIP;
-	case FT_TRILIST:   
-	default:	   return Ogre::RenderOperation::OT_TRIANGLE_LIST;
+	case FT_POINTLIST : return Ogre::RenderOperation::OT_POINT_LIST;
+	case FT_LINELIST  : return Ogre::RenderOperation::OT_LINE_LIST; 
+	case FT_TRISTRIP  : return Ogre::RenderOperation::OT_TRIANGLE_STRIP;
+	case FT_TRILIST   :   
+	default           : return Ogre::RenderOperation::OT_TRIANGLE_LIST;
 	}
 }
 
@@ -138,6 +143,7 @@ public:
 	virtual void op() {}
 };
 
+/// The op() method calls the method commit() with the given object `obj' as the receiver.
 template<typename T>
 class CommitOp : public ResourceOp
 {
@@ -147,6 +153,7 @@ public:
 	virtual void op() { obj->commit(); }
 };
 
+/// Destroys the given object/node pair by detaching the node and detroying it, then deleting the object.
 class DestroySceneNodeOp : public ResourceOp
 {
 	Ogre::MovableObject* obj;
@@ -157,6 +164,7 @@ public:
 	virtual void op();
 };
 
+/// Given a resource manager type M, calls remove() with the given name on the singleton instance of M.
 template<typename M>
 class RemoveResourceOp : public ResourceOp
 {
@@ -205,6 +213,7 @@ public:
 		case TF_LUM8: convertUByteStreamToRealMatrix(data,mat);break;
 		case TF_LUM16: convertUShortStreamToRealMatrix(data,mat);break;
 
+		// not used?
 		//case TF_RGBA32: convertRGBA32StreamToRealMatrix(data,mat); break;
 		//case TF_RGB24: 
 		//case TF_ALPHALUM8: break;
@@ -442,7 +451,7 @@ public:
 	}
 
 protected:
-	/// Render to the off-screen texture rtt_texture with the given parameters in stereo if `stereoOffset'!=0.0
+	/// Render to the off-screen texture `rtt_texture' with the given parameters in stereo if `stereoOffset'>0.0
 	void renderToTexture(sval width,sval height,TextureFormat format,real stereoOffset) throw(RenderException);
 };
 
@@ -1590,6 +1599,8 @@ class DLLEXPORT OgreTextureVolumeFigure : public OgreBaseFigure<TextureVolumeRen
 
 	vec3 boundcube[8]; // bound box cube, not axis aligned
 	vec3 texcube[8]; // tex coordinates for each corner of the volume, axis-aligned in uvw space
+	
+	Ogre::RGBA vertexcol;
 
 	void setCube(vec3 *cube,const vec3& minv, const vec3& maxv)
 	{
@@ -1613,8 +1624,13 @@ public:
 	virtual void setNumPlanes(sval num){ numplanes=_max<sval>(1,num);}
 	virtual sval getNumPlanes() const { return numplanes; }
 	
-	virtual void setAlpha(real a) { alpha=a;}
 	virtual real getAlpha() const { return alpha;}
+	virtual void setAlpha(real a) 
+	{ 
+		alpha=a;
+		Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
+		rs->convertColourValue(Ogre::ColourValue(1.0f,1.0f,1.0f,alpha),&vertexcol);
+	}
 
 	virtual void setTexAABB(const vec3& minv, const vec3& maxv) 
 	{
@@ -1739,24 +1755,6 @@ class TextRenderable : public OgreBaseRenderable
 	};
 	
 public:
-	
-	TextRenderable(const std::string &name,Ogre::SceneManager *mgr):
-		OgreBaseRenderable(name,"BaseWhite",Ogre::RenderOperation::OT_TRIANGLE_LIST ,mgr),isOverlay(false),
-		updateCols(true), updateGeom(true),valign(V_TOP), halign(H_LEFT),textHeight(1.0),spaceWidth(0),
-		fontname("DefaultFont"),fontobj(NULL),text("<NULL>")
-	{
-		movableType="MovableText";
-		internalMatName=name+"TextMat";
-		colBuf.setNull();
-		setBoundingBox(vec3(),vec3(1)); // need to have a non-zero bound box to be visible
-	}
-	
-	virtual ~TextRenderable()
-	{
-		if(!mat.isNull() && mat->getName()==internalMatName)
-			Ogre::MaterialManager::getSingletonPtr()->remove(mat->getName());
-	}
-	
 	std::string text;
 	std::string fontname;
 	std::string internalMatName;
@@ -1775,6 +1773,23 @@ public:
 	Ogre::Font *fontobj;
 	
 	Ogre::SceneNode *subnode;
+	
+	TextRenderable(const std::string &name,Ogre::SceneManager *mgr):
+		OgreBaseRenderable(name,"BaseWhite",Ogre::RenderOperation::OT_TRIANGLE_LIST ,mgr),isOverlay(false),
+		updateCols(true), updateGeom(true),valign(V_TOP), halign(H_LEFT),textHeight(1.0),spaceWidth(0),
+		fontname("DefaultFont"),fontobj(NULL),text("<NULL>")
+	{
+		movableType="MovableText";
+		internalMatName=name+"TextMat";
+		colBuf.setNull();
+		setBoundingBox(vec3(),vec3(1)); // need to have a non-zero bound box to be visible
+	}
+	
+	virtual ~TextRenderable()
+	{
+		if(!mat.isNull() && mat->getName()==internalMatName)
+			Ogre::MaterialManager::getSingletonPtr()->remove(mat->getName());
+	}
 	
 	virtual void setOverlay(bool isOverlay)
 	{
@@ -1894,6 +1909,8 @@ public:
 
 class DLLEXPORT OgreGPUProgram : public GPUProgram
 {
+	OgreRenderScene *scene;
+	
 	Ogre::HighLevelGpuProgramPtr ptrProgram;
 
 	std::string name;
@@ -1960,8 +1977,8 @@ class DLLEXPORT OgreGPUProgram : public GPUProgram
 	}
 
 public:
-	OgreGPUProgram(const std::string& name,ProgramType ptype,const std::string& language="cg") : 
-			name(name),ptype(ptype), language(language),source(""),namecounted(""),createCount(0),hasCompileError(false)
+	OgreGPUProgram(const std::string& name,ProgramType ptype,OgreRenderScene *scene,const std::string& language="cg") : 
+			name(name),ptype(ptype), scene(scene),language(language),source(""),namecounted(""),createCount(0),hasCompileError(false)
 	{
 		createProgram();
 
@@ -1969,10 +1986,7 @@ public:
 		setEntryPoint("main");
 	}
 	
-	virtual ~OgreGPUProgram()
-	{
-		Ogre::HighLevelGpuProgramManager::getSingleton().remove(namecounted);
-	}
+	virtual ~OgreGPUProgram();
 
 	virtual std::string getName() const {return name; }
 	
