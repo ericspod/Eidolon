@@ -280,7 +280,7 @@ void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
 			
 	trylock(&mutex,0.0001){
 
-		// `deferFillOp' is true if a data fill operation was deferred until now, so now if there vertex or index data,
+		// `deferFillOp' is true if a data fill operation was deferred until now, so now if there vertex or index data
 		// create the buffers, fill the data, and delete the temporary buffers, otherwise fill with the default data
 		if(deferFillOp){
 			deferFillOp=false;
@@ -705,39 +705,41 @@ void OgreBBSetFigure::createBBSet()
 
 void OgreBBSetFigure::commit()
 {
-	for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
-		(*i)->clear();
-	
-	for (sval i = 0; i <tempvb->numVertices(); i++) {
-		if(i==SETSIZE*sets.size())
-			createBBSet();
+	critical(&mutex){
+		for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i)
+			(*i)->clear();
 		
-		Ogre::BillboardSet* bbset=sets[i/SETSIZE];
-		
-		vec3 v=tempvb->getVertex(i);
-		
-		color col=tempvb->hasColor() ? tempvb->getColor(i) : color();
-		Ogre::Billboard *b=bbset->createBillboard(convert(v),convert(col));
-		
-		if(tempvb->hasNormal()){
-			vec3 n=tempvb->getNormal(i);
-			if(n.isZero())
-				b->mDirection=Ogre::Vector3::UNIT_Y;
-			else
-				b->mDirection=convert(n.norm());
+		for (sval i = 0; i <tempvb->numVertices(); i++) {
+			if(i==SETSIZE*sets.size())
+				createBBSet();
+			
+			Ogre::BillboardSet* bbset=sets[i/SETSIZE];
+			
+			vec3 v=tempvb->getVertex(i);
+			
+			color col=tempvb->hasColor() ? tempvb->getColor(i) : color();
+			Ogre::Billboard *b=bbset->createBillboard(convert(v),convert(col));
+			
+			if(tempvb->hasNormal()){
+				vec3 n=tempvb->getNormal(i);
+				if(n.isZero())
+					b->mDirection=Ogre::Vector3::UNIT_Y;
+				else
+					b->mDirection=convert(n.norm());
+			}
 		}
-	}
-	
-	// delete the vertex buffer if its a temporary one allocated to copy data for a deferred operation
-	if(deleteTemp){
-		deleteTemp=false;
-		SAFE_DELETE(tempvb);
+		
+		// delete the vertex buffer if its a temporary one allocated to copy data for a deferred operation
+		if(deleteTemp){
+			deleteTemp=false;
+			SAFE_DELETE(tempvb);
+		}
 	}
 }
 
 void OgreBBSetFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
 {
-	critical(obj->getMutex()){
+	critical(&mutex){
 		if(deferFill){
 			deleteTemp=true;
 			tempvb=new MatrixVertexBuffer(vb);
@@ -762,7 +764,7 @@ void OgreBBSetFigure::setVisible(bool isVisible)
 }
 
 OgreRibbonFigure::OgreRibbonFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene) throw(RenderException) :
-	node(NULL), bbchain(NULL), scene(scene), name(name), matname(matname), orient(0)
+	node(NULL), bbchain(NULL), scene(scene), name(name), matname(matname), orient(0), deleteTemp(false)
 {
 	node=scene->createNode(name);
 	bbchain=scene->mgr->createBillboardChain(name);
@@ -788,83 +790,75 @@ OgreRibbonFigure::~OgreRibbonFigure()
 	scene->addResourceOp(new DeleteRibbonOp(this));
 }
 
+void OgreRibbonFigure::commit()
+{
+	critical(&mutex){
+		try{
+			size_t numverts=tempvb->numVertices();
+			size_t numinds=tempib->numIndices();
+			size_t numnodesmax=tempib->getIndex(0,1)-tempib->getIndex(0,0);
+		
+			clearRibbons();
+			setNumRibbons(numinds);
+			setMaxNodes(numnodesmax);
+			
+			for(size_t i=0;i<numinds;i++){
+				indexval start=tempib->getIndex(i,0);
+				indexval end=tempib->getIndex(i,1);
+				
+				for(indexval j=start;j<end;j++){
+					vec3 pos = tempvb->getVertex(j),norm,uvw;
+					color col;
+					rotator rot;
+					real width=1.0, tex=1.0;
+						
+					if(tempvb->hasNormal()){
+						norm=tempvb->getNormal(j);
+						if(!norm.isZero())
+							rot=rotator(vec3(0,0,1),norm);
+					}
+			
+					if(tempvb->hasUVWCoord()){
+						uvw=tempvb->getUVWCoord(j);
+						width=uvw.y() ? uvw.y() : 1.0;
+						tex=uvw.x() ? uvw.x() : 1.0;
+					}
+				
+					if(tempvb->hasColor())
+						col=tempvb->getColor(j);
+	
+					addNode(i,pos,col,width,rot,tex);
+				}
+			}
+		} catch(Ogre::Exception &e){
+			THROW_RENDEREX(e);
+		}
+	}
+}
+
 void OgreRibbonFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException) 
 {
-	// TODO: should be done as a ResourceOp
-	try{
-		size_t numverts=vb ? vb->numVertices() : 0;
-		size_t numinds=ib ? ib->numIndices() : 0;
-		size_t numnodesmax=ib ? ib->indexWidth(0) : 0;
-
-		//for(size_t i=0;ib && i<numinds;i++)
-		//	numnodesmax=_max<size_t>(numnodesmax,ib->indexWidth(i));
-
-		if(numverts==0 || numinds==0 || numnodesmax==0)
-			return;
-
-		clearRibbons();
-		setNumRibbons(numinds);
-		setMaxNodes(numnodesmax);
-
-		/*for(size_t i=0;i<numinds;i++){
-			size_t numnodes=ib->indexWidth(i);
-			for(size_t j=0;j<numnodes;j++){
-				indexval ind=ib->getIndex(i,j);
-
-				vec3 pos = vb->getVertex(ind),norm,uvw;
-				color col;
-				rotator rot;
-				real width=1.0, tex=1.0;
-					
-				if(vb->hasNormal()){
-					norm=vb->getNormal(i);
-					if(!norm.isZero())
-						rot=rotator(vec3(0,0,1),norm);
-				}
-		
-				if(vb->hasUVWCoord()){
-					uvw=vb->getUVWCoord(i);
-					width=uvw.y() ? uvw.y() : 1.0;
-					tex=uvw.x() ? uvw.x() : 1.0;
-				}
-			
-				if(vb->hasColor())
-					col=vb->getColor(i);
-
-				addNode(i,pos,col,width,rot,tex);
-			}
-		}*/
-		
-		for(size_t i=0;i<numinds;i++){
-			indexval start=ib->getIndex(i,0);
-			indexval end=ib->getIndex(i,1);
-			
-			for(indexval j=start;j<end;j++){
-				vec3 pos = vb->getVertex(j),norm,uvw;
-				color col;
-				rotator rot;
-				real width=1.0, tex=1.0;
-					
-				if(vb->hasNormal()){
-					norm=vb->getNormal(j);
-					if(!norm.isZero())
-						rot=rotator(vec3(0,0,1),norm);
-				}
-		
-				if(vb->hasUVWCoord()){
-					uvw=vb->getUVWCoord(j);
-					width=uvw.y() ? uvw.y() : 1.0;
-					tex=uvw.x() ? uvw.x() : 1.0;
-				}
-			
-				if(vb->hasColor())
-					col=vb->getColor(j);
-
-				addNode(i,pos,col,width,rot,tex);
-			}
+	if(!vb || vb->numVertices()==0)
+		throw RenderException("VertexBuffer 'vb' must be provided with vertex data");
+	
+	if(!ib || (ib->numIndices()>0 && ib->indexWidth(0)!=2))
+		throw RenderException("IndexBuffer 'ib' must be provided and be of width 2");
+	
+	if(ib->numIndices()==0 || (ib->getIndex(0,1)-ib->getIndex(0,0))<2)
+		throw RenderException("IndexBuffer 'ib' must have index data stating ranges greater than 1 in length");
+	
+	critical(&mutex){
+		if(deferFill){
+			deleteTemp=true;
+			tempvb=new MatrixVertexBuffer(vb);
+			tempib=new MatrixIndexBuffer(ib);
+			scene->addResourceOp(new CommitOp<OgreRibbonFigure>(this));
 		}
-	} catch(Ogre::Exception &e){
-		THROW_RENDEREX(e);
+		else{
+			tempvb=vb;
+			tempib=ib;
+			commit();
+		}
 	}
 }
 
@@ -1045,8 +1039,6 @@ void OgreGlyphFigure::fillDefaultGlyphs(glyphmap &map)
 
 void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill,bool doubleSided) throw(RenderException)
 {
-	// TODO: use deferFill correctly
-	
 	Ogre::RenderSystem* rs=Ogre::Root::getSingleton().getRenderSystem();
 
 	glyphmap::const_iterator iglyph=glyphs.find(glyphname);
@@ -1054,7 +1046,7 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 	// ensure that only one operation can be performed on the buffers at a time, this will force the renderer to wait if needed
 	critical(obj->getMutex()){
 		if(vb->numVertices()==0 || iglyph==glyphs.end()){
-			obj->fillDefaultData();
+			obj->fillDefaultData(deferFill);
 			node->needUpdate();
 			return;
 		}

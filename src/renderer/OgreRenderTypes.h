@@ -1139,6 +1139,8 @@ protected:
 
 	real width;
 	real height;
+	
+	Mutex mutex;
 
 public:
 	OgreBBSetFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene,FigureType type) throw(RenderException);
@@ -1336,6 +1338,12 @@ protected:
 	std::string matname;
 	std::string name;
 	vec3 orient;
+	
+	const VertexBuffer* tempvb;
+	const IndexBuffer* tempib;
+	bool deleteTemp;
+	
+	Mutex mutex;
 
 public:
 	OgreRibbonFigure(const std::string & name,const std::string & matname,OgreRenderScene *scene) throw(RenderException);
@@ -1377,6 +1385,8 @@ public:
 		return std::pair<vec3,vec3>(convert(aabb.getMinimum()),convert(aabb.getMaximum()));
 	}
 
+	virtual void commit();
+	
 	virtual void fillData(const VertexBuffer* vb, const IndexBuffer* ib,bool deferFill=false,bool doubleSided=false) throw(RenderException);
 
 	virtual void setVisible(bool isVisible)

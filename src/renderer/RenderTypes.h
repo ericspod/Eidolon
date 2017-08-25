@@ -3044,19 +3044,23 @@ class VertexBuffer
 public:
 	virtual ~VertexBuffer() {}
 
+	/// Returns the i'th vertex, i<numVertices()
 	virtual vec3 getVertex(int i) const { return vec3(0,0,0); }
+	/// Returns the i'th normal, i<numVertices()
 	virtual vec3 getNormal(int i) const { return vec3(0,0,0); }
+	/// Returns the i'th color, i<numVertices()
 	virtual color getColor(int i) const { return color(0,0,0,0); }
+	/// Returns the i'th UVW texture coord, i<numVertices()
 	virtual vec3 getUVWCoord(int i) const { return vec3(0,0,0); }
 
+	/// Returns number of total vertices
 	virtual sval numVertices() const { return 0; }
+	/// Returns true if the buffer contains normal data
 	virtual bool hasNormal() const { return false; }
+	/// Returns true if the buffer contains color data
 	virtual bool hasColor() const { return false; }
+	/// Returns true if the buffer contains texture coord data
 	virtual bool hasUVWCoord() const { return false; }
-
-	virtual bool hasField(const std::string& name) const { return false; }
-	virtual int getFieldWidth(const std::string& name) const { return 0; }
-	virtual real getFieldValue(const std::string& name, int i, int j) const { return 0; }
 };
 
 /// An IndexBuffer is used by Figure objects to read in the topologies for the figures to render, and can also be subtyped in Python.
@@ -3064,11 +3068,14 @@ class IndexBuffer
 {
 public:
 	virtual ~IndexBuffer() {}
+	
+	///Returns the number of index sets
 	virtual sval numIndices() const { return 0; }
+	/// Returns the width of index set i, i<numIndices(). All index sets for now are assumed to be the same width 
 	virtual sval indexWidth(int i) const { return 0; }
+	/// Returns the w'th value of index set i
 	virtual sval getIndex(int i,int w) const { return 0; }
 };
-
 
 /**
  * This buffer uses callback functions passed to its constructor as the sources of data rather than storing matrices. The
@@ -3132,7 +3139,9 @@ public:
  * Implementation of a VertexBuffer which uses matrices for storage. This assumes the input Vec3Matrix has 1, 2, or 4
  * columns, which are the position, normal, xi coordinate, and UVW coordinate components per node. The method hasNormal()
  * returns true if there's more than one column, and hasUVWCoord() is true if there's more than 3, therefore the xi column
- * must be present but is ignored.
+ * must be present but is ignored. A copy constructor allows the copying of buffer data into a MatrixVertexBuffer object
+ * which retains ownership of the internal matrices and delete them when cleaned up. Matrices passed in through the normal
+ * constructor remain the responsibility of the caller.
  */
 class MatrixVertexBuffer : public VertexBuffer
 {
@@ -3143,6 +3152,7 @@ class MatrixVertexBuffer : public VertexBuffer
 	bool deleteMatrices;
 
 public:
+	/// Create the buffer from these matrices, vecs.m() in (1,2,4). The caller is responsible for deleting these when appropriate
 	MatrixVertexBuffer(Vec3Matrix* vecs,ColorMatrix* cols=NULL,IndexMatrix* extinds=NULL) throw(RenderException) 
 		: vecs(vecs), cols(cols),extinds(extinds), deleteMatrices(false)
 	{
@@ -3152,7 +3162,8 @@ public:
 		numverts=sval(extinds!=NULL ? extinds->n() : vecs->n());
 	}
 	
-	MatrixVertexBuffer(const VertexBuffer* buf) throw(RenderException) : numverts(buf ? buf->numVertices() : 0), deleteMatrices(true)
+	/// Copy the data from `buf' into internal matrices which this object is responsible for and will delete in its destructor
+	MatrixVertexBuffer(const VertexBuffer* buf) throw(RenderException) : numverts(buf ? buf->numVertices() : 0), cols(NULL), extinds(NULL), deleteMatrices(true)
 	{
 		if(!numverts)
 			throw RenderException("VertexBuffer 'buf' must be provided");
@@ -3202,14 +3213,38 @@ public:
 	virtual bool hasUVWCoord() const { return vecs->m()>3; }
 };
 
-/// Implementation of a IndexBuffer which uses matrices for storage
+/// Implementation of a IndexBuffer which uses matrices for storage, like MatrixVertexBuffer.
 class MatrixIndexBuffer : public IndexBuffer
 {
 	IndexMatrix* indices;
 	IndexMatrix* extinds;
+	bool deleteMatrices;
+	
 public:
-	MatrixIndexBuffer(IndexMatrix* indices,IndexMatrix* extinds=NULL) : indices(indices), extinds(extinds)
+	/// Create the buffer from these matrices. The caller is responsible for deleting these when appropriate
+	MatrixIndexBuffer(IndexMatrix* indices,IndexMatrix* extinds=NULL) : indices(indices), extinds(extinds), deleteMatrices(false)
 	{}
+	
+	/// Copy the data from `buf' into internal matrices which this object is responsible for and will delete in its destructor
+	MatrixIndexBuffer(const IndexBuffer* buf) throw(RenderException) : extinds(NULL), deleteMatrices(true)
+	{
+		if(!buf)
+			throw RenderException("IndexBuffer 'buf' must be provided");
+		
+		indices=new IndexMatrix("copyinds",buf->numIndices(),buf->indexWidth(0));
+		
+		for(sval i=0;i<buf->numIndices();i++)
+			for(sval j=0;j<_min(indices->m(),buf->indexWidth(i));j++)
+				indices->at(i,j)=buf->getIndex(i,j);
+	}
+	
+	virtual ~MatrixIndexBuffer()
+	{
+		if(deleteMatrices){
+			SAFE_DELETE(indices);
+			SAFE_DELETE(extinds);
+		}
+	}
 
 	virtual sval numIndices() const
 	{
