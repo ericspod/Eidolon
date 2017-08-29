@@ -464,6 +464,11 @@ def calculateLinTetVolume(datasetlist,regionfield,choosevals,task=None):
 
 @timing
 def calculateTorsion(datasetlist,aha,choosevals):
+    '''
+    Calculate the torsion of the motion mesh defined by the PyDataSet list `datasetlist' with region field `aha' and
+    selected regions `choosevals'. Result is list of per-node matrices of twist angles in degrees, list of average twist
+    angles for the apex nodes, list of average twist angles for the base nodes, and the centerline axis length.
+    '''
     nodes=[ds.getNodes().clone() for ds in datasetlist]
     nodes0=nodes[0]
     length=nodes0.n()
@@ -1937,7 +1942,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 sectimesteps=[t/1000.0 for t in timesteps]
                 field=obj.datasets[0].getDataField(fieldname)
 
-                twists,apextwists,basetwists,axislen=calculateTorsion(obj.datasets,field,range(1,18))
+                nodetwists,apextwists,basetwists,axislen=calculateTorsion(obj.datasets,field,range(1,18))
 
                 twists=[a-b for a,b in zip(apextwists,basetwists)]
                 torsions=[t/axislen for t in twists]
