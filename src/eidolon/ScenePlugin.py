@@ -17,6 +17,8 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
+from renderer.Renderer import TF_ALPHALUM8
+
 from .SceneObject import *
 from .ImageObject import *
 from .MeshAlgorithms import *

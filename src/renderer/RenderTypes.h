@@ -1584,20 +1584,6 @@ template<typename R,typename LH, typename RH> struct SubOp { static inline R op(
 template<typename R,typename LH, typename RH> struct DivOp { static inline R op(const LH& lh, const RH& rh) { return lh/rh; } };
 template<typename R,typename LH, typename RH> struct MulOp { static inline R op(const LH& lh, const RH& rh) { return lh*rh; } };
 
-/// Template type for defining a operation of the elements of a matrix, this is inherited in Python with the behaviour defined in an override of op()
-template<typename T> class MatrixOp
-{
-public:
-	MatrixOp() {}
-	virtual ~MatrixOp() {} 
-	virtual T op(const T& t, sval n, sval m) { return T(); }
-};
-
-// 4 types of operation for each of the 4 matrix types instantiated in Python
-typedef MatrixOp<vec3> Vec3Op;
-typedef MatrixOp<real> RealOp;
-typedef MatrixOp<indexval> IndexOp;
-typedef MatrixOp<color> ColorOp;
 
 // Metaprogramming types for encapsulating the endian swap functions
 template<typename T> struct SwapEndian { static T swap(T t) { return swapEndianN(t); } };
@@ -1796,16 +1782,7 @@ public:
 	
 	// These methods define mathematical operators for single value or matrix right hand sides
 	
-	void applyOp(MatrixOp<T> *op,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
-	{
-		maxcol=_min(_m,maxcol);
-		maxrow=_min(_n,maxrow);
-		
-		for(sval n=minrow;n<maxrow;n++)
-			for(sval m=mincol;m<maxcol;m++)
-				at(n,m)=op->op(at(n,m),n,m);
-	}
-
+	/// Apply the function `op' to each cell from (minrow,mincol) to (maxrow-1,maxcol-1), passing in `ctx' as the first argument for each call
 	template<typename Ctx>
 	void applyFunc(T (*op)(Ctx,const T&,sval,sval),Ctx ctx,sval minrow=0,sval mincol=0,sval maxrow=-1,sval maxcol=-1)
 	{
@@ -2200,7 +2177,7 @@ protected:
 		int mures=munmap(ptr,memSize());    
 		if(mures==-1)
 			throw MemException("Failed to unmap memory section");
-#endif
+#endif // WIN32
 		_sharedname="";
 	}
 
@@ -2218,7 +2195,7 @@ protected:
 
 		mapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, DWORD(memSize()), namebuff);
 	}
-#endif
+#endif // WIN32
 };
 
 typedef Matrix<real> RealMatrix;

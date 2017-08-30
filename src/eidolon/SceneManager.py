@@ -24,7 +24,7 @@ Plugins objectsare also defined which implement basic behaviour for scene object
 by plugin libraries to include new functionality into Eidolon.
 '''
 
-from renderer.Renderer import vec3, color
+from renderer.Renderer import vec3, color, TF_RGB24,Spectrum 
 from .SceneComponents import *
 from .ScenePlugin import *
 from .Camera2DView import Camera2DView

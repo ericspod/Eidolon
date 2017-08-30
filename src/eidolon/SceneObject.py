@@ -24,7 +24,7 @@ representations of that data respectively.
 
 from renderer.Renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
         IndexMatrix, ColorMatrix,MatrixIndexBuffer, MatrixVertexBuffer, PyIndexBuffer, PyVertexBuffer
-from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
+from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread, timing
 from .SceneUtils import StdProps, MatrixType, getDatasetSummaryTuples, BoundBox
 
 import MeshAlgorithms
@@ -956,6 +956,7 @@ class MeshSceneObjectRepr(SceneObjectRepr):
         if len(self.figs)>0:
             extinds=None if self.drawInternal else self.extinds
             self.vbuff,self.ibuff=self.bufferGen.applyDatasetMod(self,self.dataset,self.nodecolors,self.lines or self.tris,extinds,self.reprtype)
+            timing(self.figs[0].fillData)(self.vbuff,self.ibuff,True,self.kwargs.get('doubleSided',True))
         else:
             self.vbuff=None
             self.ibuff=None
@@ -964,7 +965,7 @@ class MeshSceneObjectRepr(SceneObjectRepr):
         assert isMainThread()
 
         if len(self.figs)>0:
-            self.figs[0].fillData(self.vbuff,self.ibuff,False,self.kwargs.get('doubleSided',True))
+            #self.figs[0].fillData(self.vbuff,self.ibuff,False,self.kwargs.get('doubleSided',True))
             self.vbuff=None
             self.ibuff=None
 

@@ -434,31 +434,6 @@ real mat4Det(real a, real b, real c, real d, real e, real f, real g, real h, rea
 /// Returns true if `pt' is in the tet (n1,n2,n3,n4).
 bool pointInTet(vec3 pt, vec3 n1, vec3 n2, vec3 n3, vec3 n4)
 {
-	/*real d0 = mat4Det(n1.x(), n1.y(), n1.z(), 1, n2.x(), n2.y(), n2.z(), 1, n3.x(), n3.y(), n3.z(), 1, n4.x(), n4.y(), n4.z(), 1);
-
-	if(equalsEpsilon(d0,0.0))
-		return false;
-
-	bool isPos=d0>-dEPSILON;
-
-	real d1 = mat4Det(pt.x(), pt.y(), pt.z(), 1, n2.x(), n2.y(), n2.z(), 1, n3.x(), n3.y(), n3.z(), 1, n4.x(), n4.y(), n4.z(), 1);
-
-	if((isPos && d1<dEPSILON) || (!isPos && d1>-dEPSILON))
-		return false;
-
-	real d2 = mat4Det(n1.x(), n1.y(), n1.z(), 1, pt.x(), pt.y(), pt.z(), 1, n3.x(), n3.y(), n3.z(), 1, n4.x(), n4.y(), n4.z(), 1);
-
-	if((isPos && d2<dEPSILON) || (!isPos && d2>-dEPSILON))
-		return false;
-
-	real d3 = mat4Det(n1.x(), n1.y(), n1.z(), 1, n2.x(), n2.y(), n2.z(), 1, pt.x(), pt.y(), pt.z(), 1, n4.x(), n4.y(), n4.z(), 1);
-
-	if((isPos && d3<dEPSILON) || (!isPos && d3>-dEPSILON))
-		return false;
-
-	real d4 = mat4Det(n1.x(), n1.y(), n1.z(), 1, n2.x(), n2.y(), n2.z(), 1, n3.x(), n3.y(), n3.z(), 1, pt.x(), pt.y(), pt.z(), 1);
-
-	return (isPos && d4>-dEPSILON) || (!isPos && d4<dEPSILON);*/
 	vec3 xi=pointSearchLinTet(pt,n1,n2,n3,n4);
 	return xi.isInUnitCube() && (xi.x()+xi.y()+xi.z())<=1.0; // TODO: confirm this is correct?
 }
