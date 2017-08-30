@@ -17,11 +17,20 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from .SceneComponents import *
-from .ImageObject import *
-from .ImageAlgorithms import *
-from .VisualizerUI import Qt,QtCore, QtGui,Base2DWidget,Draw2DView
-from .MeshAlgorithms import *
+import renderer
+import Utils
+import SceneUtils
+import SceneComponents
+import VisualizerUI
+import ImageAlgorithms
+
+from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, FT_TRILIST, FT_LINELIST
+from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
+from .SceneUtils import BoundBox
+from .VisualizerUI import Qt, QtGui, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
+from .SceneObject import MeshSceneObjectRepr, TDMeshSceneObjectRepr
+from .ImageObject import ImageSceneObject, ImageSceneObjectRepr, ImageSeriesRepr, ImageVolumeRepr
+
 
 class BaseCamera2DWidget(Base2DWidget):
     '''
@@ -88,7 +97,7 @@ class BaseCamera2DWidget(Base2DWidget):
         # construct a quad with a cylinder rim for the indicator plane
         q=BaseCamera2DWidget.defaultQuad[0]
         mq=(q[0]+q[1])*0.5
-        cnodes,cinds=generateCylinder([mq,q[1],q[3],q[2],q[0],mq],[0.0025]*6,1,4,False)
+        cnodes,cinds=SceneUtils.generateCylinder([mq,q[1],q[3],q[2],q[0],mq],[0.0025]*6,1,4,False)
         nodes=list(BaseCamera2DWidget.defaultQuad[0])+cnodes
         inds=list(BaseCamera2DWidget.defaultQuad[1])+cinds
         self.indicatorPlane.fillData(PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),[indicatorCol]*len(nodes)),PyIndexBuffer(inds),False,True)
@@ -176,7 +185,7 @@ class BaseCamera2DWidget(Base2DWidget):
         w,h=self.getDrawDims()
         if w>0 and h>0:
             self.camera.setAspectRatio(float(w)/h)
-            self.camera.renderToStream(img.bits(),w,h,TF_ARGB32)
+            self.camera.renderToStream(img.bits(),w,h,renderer.TF_ARGB32)
 
     def isStdPlaneName(self,name):
         '''Returns True if `name' is the name of a standard plane (ie. XY, YZ, XZ).'''
@@ -388,7 +397,7 @@ class BaseCamera2DWidget(Base2DWidget):
         '''
         assert rep!=None, 'Cannot find representation for 2D view'
 
-        nodes,indices,xis=calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
+        nodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
 
         invtrans=planetrans.inverse()
         invtrans.setScale(vec3(1,1))
@@ -403,8 +412,8 @@ class BaseCamera2DWidget(Base2DWidget):
     @delayedcall(0.15)
     def _updateMeshPlanecutFigs(self,repfigspairs,planetrans):
         '''Updates the figures containing mesh slice data for each secondary mesh object.'''
-        @taskroutine('Generating Mesh Planecut')
-        @timing
+        @Utils.taskroutine('Generating Mesh Planecut')
+        @Utils.timing
         def _generatecut(task):
             for rep,figs in repfigspairs:
                 tslen=len(rep.getTimestepList())
@@ -418,7 +427,7 @@ class BaseCamera2DWidget(Base2DWidget):
                 for i,tsrep in enumerate(rep.enumSubreprs()):
                     task.setProgress(i+1)
 
-                    snodes,sinds,scols=generateMeshPlanecut(tsrep.dataset,'slicemesh%i'%i,planept,planenorm,self.linewidth,nodecolors=tsrep.nodecolors)
+                    snodes,sinds,scols=SceneUtils.generateMeshPlanecut(tsrep.dataset,'slicemesh%i'%i,planept,planenorm,self.linewidth,nodecolors=tsrep.nodecolors)
                     vb=None
                     ib=None
 
@@ -428,8 +437,8 @@ class BaseCamera2DWidget(Base2DWidget):
                         snodes.mul(planerot.inverse())
                         snodes.mul(vec3(1,1),0,0,snodes.n(),1)
 
-                        vb=MatrixVertexBuffer(snodes,scols)
-                        ib=MatrixIndexBuffer(sinds)
+                        vb=renderer.MatrixVertexBuffer(snodes,scols)
+                        ib=renderer.MatrixIndexBuffer(sinds)
 
                     self.mgr.callThreadSafe(figs[i].fillData,vb,ib)
 
@@ -637,12 +646,12 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
         results='World Position: %r\n'%pt
 
         if rep:
-            results+='%r = %r\n'%(self.sourceName,sampleImageVolume(rep.parent,pt,timestep))
+            results+='%r = %r\n'%(self.sourceName,ImageAlgorithms.sampleImageVolume(rep.parent,pt,timestep))
 
         for sec in self.secondsSelected:
             rep=self.mgr.findObject(sec)
             if rep and isinstance(rep,ImageSceneObject):
-                results+='%r = %r\n'%(sec,sampleImageVolume(rep.parent,pt,timestep))
+                results+='%r = %r\n'%(sec,ImageAlgorithms.sampleImageVolume(rep.parent,pt,timestep))
 
         self.mgr.showMsg('Output:','Samples',results,False)
 
@@ -689,7 +698,7 @@ class PointChooseMixin(object):
         (handle,label,button,edit) containing the PointHandle2D, QLable, QPushButton, and QLineEdit used to represent
         this point, storing it in self.pointMap keyed to name as well as returning it.
         '''
-        handle=PointHandle2D(self,vec3(),col)
+        handle=SceneComponents.PointHandle2D(self,vec3(),col)
         label=QtGui.QLabel(text)
         button=QtGui.QPushButton('Set Plane')
         edit=QtGui.QLineEdit()
@@ -698,7 +707,7 @@ class PointChooseMixin(object):
         self.gridLayout.addWidget(button,len(self.pointMap),1)
         self.gridLayout.addWidget(edit,len(self.pointMap),2)
 
-        label.setStyleSheet('background-color: %s;'%str(toQtColor(col).name()))
+        label.setStyleSheet('background-color: %s;'%str(VisualizerUI.toQtColor(col).name()))
         edit.setReadOnly(True)
 
         def _setfunc():
@@ -796,7 +805,7 @@ class DrawContourMixin(object):
         dlen=int(vec3(dx,dy).len())
 
         if dlen: # if the mouse was moved relatively fast, add uniformly-spaced points along the drag path
-            self.contour+=[lerp(i/dlen,self.contour[-1],p) for i in frange(dlen)]
+            self.contour+=[Utils.lerp(i/dlen,self.contour[-1],p) for i in Utils.frange(dlen)]
         else:
             self.contour.append(p)
 
@@ -815,8 +824,8 @@ class DrawContourMixin(object):
 
         if len(self.contour)>self.numNodes:
             # select evenly spaced values from self.contour and store these back into self.contour
-            inds=[partitionSequence(len(self.contour),i,self.numNodes)[0] for i in range(self.numNodes)]
-            self.contour=indexList(inds,self.contour)
+            inds=[Utils.partitionSequence(len(self.contour),i,self.numNodes)[0] for i in range(self.numNodes)]
+            self.contour=Utils.indexList(inds,self.contour)
             return True
         else:
             return False

@@ -51,12 +51,14 @@ Quadratic Tet elements have 10 nodes, the first 4 defining the corners in the sa
 0-4-1  6-8  3
 '''
 
+
 import itertools
 import functools
-import numpy as np
 import compiler
 import re
 import math
+
+import numpy as np
 
 from .Utils import enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,assertMatDim,mulsum,lerpXi,epsilon
 

@@ -95,15 +95,14 @@ import ast
 import string
 import inspect
 
-try:
+from codeop import compile_command
+from functools import wraps
+from threading import Thread, RLock, Event,currentThread,_MainThread
+
+try: # Python 2/3 fix
     import ConfigParser as configparser
 except:
     import configparser
-
-from codeop import compile_command
-
-from functools import wraps
-from threading import Thread, RLock, Event,currentThread,_MainThread
 
 
 halfpi=math.pi/2.0

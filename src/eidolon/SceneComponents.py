@@ -17,14 +17,22 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-
-from SceneObject import *
-from ImageObject import *
-from ImageAlgorithms import *
-from VisualizerUI import *
-
 import StringIO
 import os 
+import math
+import operator
+
+import renderer
+import SceneUtils
+import Utils
+import VisualizerUI
+
+from renderer import vec3, rotator, color, FT_TRILIST, FT_LINELIST, PT_GEOMETRY, PT_FRAGMENT, PT_VERTEX, PyVertexBuffer, PyIndexBuffer
+from .Utils import halfpi, epsilon, enum, first, clamp, frange, isMainThread, uniqueStr, EventType
+from .VisualizerUI import Qt, BaseSpectrumWidget, mapWidgetValues, setChecked, setColorButton
+from .SceneObject import SceneObject, SceneObjectRepr
+from .MathDef import ElemType
+from .SceneUtils import generateTriNormals, generateArrow, fillCircleFigure, fillPolyFigure, fillSphereFigure, vec3SimpleStr
 
 
 AxesType=enum(
@@ -496,7 +504,7 @@ class PolyHandle2D(Handle2D):
             isLinear=(self.etype==ElemType.Line1NL)
             pts2d=map(self.widg2D.getScreenPosition,self.pts)
             linepts=pts2d if isLinear else [self.etype.applyCoeffs(pts2d,c) for c in self.coeffs]
-            lines=successive(linepts,cyclic=True)
+            lines=Utils.successive(linepts,cyclic=True)
             ind= first(i for i,pp in enumerate(lines) if 0<=screenpos.lineDist(*pp)<=self.selectRadius)
             if ind is not None:
                 # choose the closest point index to the line segment that was clicked
@@ -725,7 +733,7 @@ class TransformHandle(Handle3D):
             self.lastIntersect=None
 
     def checkSelected(self,ray):
-        assert isinstance(ray,Ray)
+        assert isinstance(ray,renderer.Ray)
         self.lastIntersect=None
         if self.isVisible():# and self.isActive():
             pos=self.rep.getPosition(True)
@@ -833,7 +841,7 @@ class SpectrumWidget(BaseSpectrumWidget):
         if mat==None:
             return
 
-        assert isinstance(mat,Spectrum),str(mat)
+        assert isinstance(mat,renderer.Spectrum),str(mat)
         self.isLinearAlpha=mat.isLinearAlpha()
 
         self.colors=[]
@@ -969,7 +977,7 @@ class MaterialController(object):
         setChecked(mat.usesDepthWrite(),propbox.depthWriteCheck)
         setChecked(mat.usesTexFiltering(),propbox.texFilterCheck)
 
-        fillList(propbox.spectrumList,self.mgr.listSpectrumNames())
+        VisualizerUI.fillList(propbox.spectrumList,self.mgr.listSpectrumNames())
 
         propbox.fillTextureList(self.mgr.listTextureNames(),mat.getTexture())
         propbox.fillFragmentList(self.mgr.listGPUProgramNames(PT_FRAGMENT),mat.getGPUProgram(PT_FRAGMENT))
@@ -1001,8 +1009,6 @@ class MaterialController(object):
 
         args={
             'varname':varname,
-            'getAmbient':mat.getAmbient(),
-            'getDiffuse':mat.getDiffuse(),
             'getAmbient':mat.getAmbient(),
             'getDiffuse':mat.getDiffuse(),
             'getSpecular':mat.getSpecular(),
@@ -1050,7 +1056,7 @@ class MaterialController(object):
             %(varname)s.useInternalAlpha(%(usesInternalAlpha)r)
         '''
 
-        code=setStrIndent(code % args).strip()+'\n'
+        code=Utils.setStrIndent(code % args).strip()+'\n'
 
         tex=mat.getTexture()
         if len(tex)>0:
@@ -1214,7 +1220,7 @@ class LightController(object):
 
         #setColorSelector(light.color,propbox.camlightBox,propbox.camlightText)
         setColorButton(light.color,propbox.chooseCamlight)
-        setWidgetValues(propbox,props)
+        VisualizerUI.setWidgetValues(propbox,props)
 
 
 class GPUProgramController(object):
@@ -1408,7 +1414,7 @@ class SingleCameraController(object):
         self.dist=(radius*0.5)/math.tan(self.camera.getVertFOV()*0.5)+radius*1.5
         self.zScale=radius*0.005
         self.tScale=radius*0.00125
-        self.radiusPower=getClosestPower(radius)-1
+        self.radiusPower=Utils.getClosestPower(radius)-1
 
         self.camera.setNearClip(clamp(radius*0.05,epsilon*100,1.0))
         self.camera.setFarClip(clamp(self.dist*10,2000.0,10000000.0))
@@ -1503,8 +1509,8 @@ class SingleCameraController(object):
         is False then `theta_r' is a rotator which is assigned to self.freerotator.
         '''
         if self._isZLocked:
-            self.theta=radCircularConvert(theta_r)
-            self.phi=radClamp(phi)
+            self.theta=Utils.radCircularConvert(theta_r)
+            self.phi=Utils.radClamp(phi)
             self.phi+=self.phisub*(-1 if self.phi>0 else 1)
         else:
             if isinstance(theta_r,rotator):
@@ -1674,7 +1680,7 @@ class AxesCameraController(SingleCameraController):
         return axesFigs
 
     def _generateSphereFig(self,scene):
-        nodes,indices=generateSphere(1)
+        nodes,indices=SceneUtils.generateSphere(1)
         norms=generateTriNormals(nodes,indices)
         fig=scene.createFigure('CenterSphere','CenterMat',FT_TRILIST)
         fig.setOverlay(True)

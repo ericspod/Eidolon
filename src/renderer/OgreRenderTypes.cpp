@@ -174,44 +174,19 @@ void OgreMaterial::useSpectrumTexture(bool use)
 				mat->specunit=NULL;
 			}
 			
-			mat->updateSpectrumInternal();
+			mat->commit();
 		}
 	};
 	
 	scene->addResourceOp(new UseSpecOp(this,use));
-	//updateSpectrum();
 }
 
 void OgreMaterial::updateSpectrum()
 {
-	class UpdateSpecOp : public ResourceOp
-	{
-	public:
-		OgreMaterial* mat;
-		
-		UpdateSpecOp(OgreMaterial* mat) : mat(mat) {}
-		
-		virtual void op() 
-		{
-			//if(mat->specunit!=NULL){
-			//	rgba data[SPECWIDTH];
-			//	Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
-		        //
-			//	for(sval x=0;x<SPECWIDTH;x++){
-			//		color c=mat->interpolateColor(float(x)/(SPECWIDTH-1));
-			//		pb.setColourAt(convert(c),x,0,0);
-			//	}
-		        //
-			//	mat->spectex->getBuffer()->blitFromMemory(pb);
-			//}
-			mat->updateSpectrumInternal();
-		}
-	};
-	
-	scene->addResourceOp(new UpdateSpecOp(this));
+	scene->addResourceOp(new CommitOp<OgreMaterial>(this));
 }
 
-void OgreMaterial::updateSpectrumInternal()
+void OgreMaterial::commit()
 {
 	if(specunit!=NULL){
 		rgba data[SPECWIDTH];

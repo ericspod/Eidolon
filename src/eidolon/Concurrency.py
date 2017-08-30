@@ -41,8 +41,8 @@ import Queue
 import threading
 import traceback
 import functools
+from multiprocessing import Pipe, Process, cpu_count, Array, Value, Lock, Event
 
-from multiprocessing import Pipe,Process,cpu_count,Array,Value,Lock,Event
 from .Utils import lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
 
 

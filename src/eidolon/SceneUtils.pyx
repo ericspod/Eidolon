@@ -1940,14 +1940,14 @@ def fillCircleFigure(fig,radius,col,spokes=12):
     n=len(nodes)
     vbuf=ren.PyVertexBuffer(nodes,[vec3(0,0,1)]*n,[col]*n)
     ibuf=ren.PyIndexBuffer(inds+[(i,k,j) for i,j,k in inds])
-    fig.fillData(vbuf,ibuf)
+    fig.fillData(vbuf,ibuf,True)
 
 
 def fillPolyFigure(fig,nodes,col,isClosed=True):
     n=len(nodes)
     vbuf=ren.PyVertexBuffer(nodes,[vec3(0,0,1)]*n,[col]*n)
     ibuf=ren.PyIndexBuffer(list(successive(xrange(n),2,isClosed)))
-    fig.fillData(vbuf,ibuf)
+    fig.fillData(vbuf,ibuf,True)
 
 
 def fillSphereFigure(fig,radius,refine,col):
@@ -1956,7 +1956,7 @@ def fillSphereFigure(fig,radius,refine,col):
     n=len(nodes)
     vbuf=ren.PyVertexBuffer([nn*radius for nn in nodes],norms,[col]*n)
     ibuf=ren.PyIndexBuffer(inds+[(i,k,j) for i,j,k in inds])
-    fig.fillData(vbuf,ibuf)
+    fig.fillData(vbuf,ibuf,True)
 
 
 @memoized(tuple)

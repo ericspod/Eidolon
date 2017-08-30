@@ -151,17 +151,6 @@ public:
 	virtual void op() { obj->commit(); }
 };
 
-/// Destroys the given object/node pair by detaching the node and detroying it, then deleting the object.
-class DestroySceneNodeOp : public ResourceOp
-{
-	Ogre::MovableObject* obj;
-	Ogre::SceneNode *node;
-	OgreRenderScene *scene;
-public:
-	DestroySceneNodeOp(Ogre::MovableObject* obj,Ogre::SceneNode *node,OgreRenderScene *scene) : obj(obj), node(node),scene(scene) {}
-	virtual void op();
-};
-
 /// Given a resource manager type M, calls remove() with the given name on the singleton instance of M.
 template<typename M>
 class RemoveResourceOp : public ResourceOp
@@ -169,11 +158,18 @@ class RemoveResourceOp : public ResourceOp
 public:
 	std::string name;
 	RemoveResourceOp(const std::string &name) : name(name) {}
-	
-	virtual void op()
-	{
-		M::getSingleton().remove(name); 
-	}
+	virtual void op(){ M::getSingleton().remove(name); }
+};
+
+/// Destroys the given object/node pair by detaching the node and detroying it, then deleting the object.
+class DestroySceneNodeOp : public ResourceOp
+{
+public:
+	Ogre::MovableObject* obj;
+	Ogre::SceneNode *node;
+	OgreRenderScene *scene;
+	DestroySceneNodeOp(Ogre::MovableObject* obj,Ogre::SceneNode *node,OgreRenderScene *scene) : obj(obj), node(node),scene(scene) {}
+	virtual void op();
 };
 
 class DLLEXPORT OgreImage : public Image
@@ -670,6 +666,9 @@ public:
 
 	virtual void updateSpectrum();
 	
+	/// commits the spectrum colors to the spectrum texture if used, called indirectly by updateSpectrum()
+	void commit();
+	
 	virtual void setGPUProgram(const std::string& name, ProgramType pt) 
 	{
 		Ogre::HighLevelGpuProgramPtr chosenprog=getGPUProgByNumberedName(name);
@@ -743,8 +742,6 @@ public:
 	}
 
 private:
-	void updateSpectrumInternal();
-	
 	Ogre::HighLevelGpuProgramPtr getGPUProgByNumberedName(const std::string& name)
 	{
 		Ogre::HighLevelGpuProgramPtr result;

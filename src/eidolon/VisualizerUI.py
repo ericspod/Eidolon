@@ -39,17 +39,9 @@ from eidolon.Utils import EventType, ParamType, ConfVars
 
 from renderer.Renderer import getRenderAdapter,RenderParamGroup,platformID
 
-from ui.MainWindow import Ui_MainWindow
-from ui.ProjProp import Ui_ProjProp
-from ui.ObjReprProp import Ui_ObjReprProp
-from ui.ObjProp import Ui_ObjProp
-from ui.MatProp import Ui_matProp
-from ui.LightProp import Ui_LightProp
-from ui.GPUProp import Ui_gpuProp
-#from ui.loadGPUScript import Ui_gpuDialog # TODO implement dialog
-from ui.Draw2DView import Ui_Draw2DView
-from ui.ScreenshotForm import Ui_ScreenshotForm
-from ui.ShowMsg import Ui_ShowMsg
+from ui import Ui_MainWindow, Ui_ProjProp, Ui_ObjReprProp, Ui_ObjProp, Ui_matProp, Ui_LightProp, Ui_gpuProp,\
+        Ui_Draw2DView, Ui_ScreenshotForm, Ui_ShowMsg #,loadGPUScript
+
 
 globalApp=None # Global QApplication object, there must only be one of these
 globalWin=None # Global VisualizerWindow instance, there should really only be one of these but that could be changed

@@ -16,21 +16,33 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .Utils import timing, clamp, lerpXi, enum, printFlush, trange, listSum, indexList, first, minmax
-from .SceneUtils import *#matIterate
-from .Concurrency import concurrent, checkResultMap, sumResultMap
-from renderer.Renderer import vec3, rotator, RealMatrix, IndexMatrix, ColorMatrix, calculateImageHistogram
-from .ImageObject import SharedImage, ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr
 
-import math, os, contextlib, threading,compiler
+import math
+import os
+import contextlib
+import threading
+import compiler
 from Queue import Queue
+
 import numpy as np
 import scipy.ndimage
 import scipy.signal
-from scipy.fftpack import fftn, ifftn
+import scipy.fftpack
+
+import renderer
+import Utils
+import MathDef
+import SceneUtils
+
+from renderer import vec3, rotator, RealMatrix, IndexMatrix
+from .Utils import timing, clamp, lerpXi, printFlush, trange, listSum, indexList, first, minmax
+from .SceneUtils import matIterate, validIndices, BoundBox
+from .Concurrency import concurrent, checkResultMap, sumResultMap
+from .ImageObject import SharedImage, ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr, calculateStackClipSq
+
 
 # Hounsfield value range
-Hounsfield=enum(
+Hounsfield=Utils.enum(
     ('air',-1000),
     ('water',0),
     ('muscle',10,40),
@@ -165,7 +177,7 @@ def loadImageStack(files,imgLoadFunc,positions,rot=rotator(),spacing=(1.0,1.0),t
         task.setMaxProgress(len(files))
 
     for n in range(numthreads):
-        start,end=partitionSequence(len(files),n,numthreads)
+        start,end=Utils.partitionSequence(len(files),n,numthreads)
         threads.append(createLoadImageThread(files[start:end],positions[start:end],imgq))
 
     while any(t.isAlive() for t in threads) or not imgq.empty():
@@ -271,7 +283,7 @@ def calculateImageStackHistogramRange(process,imgs,minv,maxv):
     hist.fill(0)
 
     for i in process.prange():
-        calculateImageHistogram(imgs[i-process.startval].img,hist,minv)
+        renderer.calculateImageHistogram(imgs[i-process.startval].img,hist,minv)
 
     return hist
 
@@ -404,8 +416,8 @@ def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
         out=np.zeros(mat.shape[:3],np.float32)
         
         for i in range(mat.shape[2]):
-            ff=fftn(np.transpose(mat[:,:,i,:],(2,0,1)))
-            im=np.sum(np.absolute(ifftn(ff[1:])),axis=0)
+            ff=scipy.fftpack.fftn(np.transpose(mat[:,:,i,:],(2,0,1)))
+            im=np.sum(np.absolute(scipy.fftpack.ifftn(ff[1:])),axis=0)
             
             out[:,:,i]=im
             
@@ -512,7 +524,7 @@ def centerImagesLocalSpace(obj):
         i.position-=obj.aabb.center
         i.calculateDimensions()
 
-    obj.aabb=BoundBox(matIter(s.getCorners() for s in obj.images))
+    obj.aabb=BoundBox(Utils.matIter(s.getCorners() for s in obj.images))
 
 
 @timing
@@ -563,7 +575,7 @@ def thresholdImage(obj,minv,maxv,task=None):
     thresholdImageRange(len(imglist),0,task,imglist,minv,maxv,partitionArgs=(imglist,))
 
     for i in obj.images:
-        i.setMinMaxValues(*minmaxMatrixReal(i.img))
+        i.setMinMaxValues(*renderer.minmaxMatrixReal(i.img))
 
 
 def sampleImageVolume(obj,pt,timestep,transinv=None):
@@ -575,7 +587,7 @@ def sampleImageVolume(obj,pt,timestep,transinv=None):
     transinv=transinv or obj.getVolumeTransform().inverse()
     inds=obj.getNearestTimestepIndices(timestep)
     images=[obj.images[i].img for i in inds]
-    return getImageStackValue(images,transinv*pt)
+    return renderer.getImageStackValue(images,transinv*pt)
     
     
 def calculateReprIsoplaneMesh(rep,planetrans,stackpos,slicewidth):
@@ -600,16 +612,16 @@ def calculateReprIsoplaneMesh(rep,planetrans,stackpos,slicewidth):
         repnorm=trans.getRotation()*vec3(0,0,1)
 
         # if this is being viewed at an oblique angle, determine where the image plane intersects the view plane and represent that as a 2D textured line
-        if not equalPlanes(reppt,repnorm,planept,planenorm):
-            et=ElemType.Quad1NL
+        if not SceneUtils.equalPlanes(reppt,repnorm,planept,planenorm):
+            et=MathDef.ElemType.Quad1NL
             heights=[n.planeDist(planept,planenorm) for n in nodes] # determine distance from each node to the view plane
-            xipair=first(calculateQuadIsoline(heights,et,0)) # calculate the isoline of intersection between the image plane and view plane
+            xipair=first(SceneUtils.calculateQuadIsoline(heights,et,0)) # calculate the isoline of intersection between the image plane and view plane
 
             if xipair: # if an isoline is found, calculate an isoline quad with a width of slicewidth
                 xi1,xi2=xipair
                 pt1=et.applyBasis(nodes,*xi1)
                 pt2=et.applyBasis(nodes,*xi2)
-                nodes=generateQuadFromLine(pt1,pt2,planenorm,slicewidth)
+                nodes=SceneUtils.generateQuadFromLine(pt1,pt2,planenorm,slicewidth)
                 xis=[xi1,xi1,xi2,xi2]
             else:
                 nodes=[] # otherwise given no nodes, meaning nothing to see here
@@ -644,7 +656,7 @@ def resampleImage(srcobj,destobj):
 
         for ind in inds:
             img=destobj.images[ind]
-            interpolateImageStack(stackimgs,srctrans, img.img, img.getTransform())
+            renderer.interpolateImageStack(stackimgs,srctrans, img.img, img.getTransform())
             img.readMinMaxValues()
 
 
@@ -685,7 +697,7 @@ def mergeColinearImages(imgobjs,objout,mergefunc=None,task=None):
     field of the objects must also be the same.
     '''
     mergefunc=mergefunc or max
-    imgobjs=toIterable(imgobjs)
+    imgobjs=Utils.toIterable(imgobjs)
 
     for o in imgobjs:
         o.setShared(True)

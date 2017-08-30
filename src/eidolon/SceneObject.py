@@ -24,7 +24,7 @@ representations of that data respectively.
 
 from renderer.Renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
         IndexMatrix, ColorMatrix,MatrixIndexBuffer, MatrixVertexBuffer, PyIndexBuffer, PyVertexBuffer
-from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread, timing
+from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
 from .SceneUtils import StdProps, MatrixType, getDatasetSummaryTuples, BoundBox
 
 import MeshAlgorithms
@@ -726,8 +726,6 @@ class MeshSceneObjectRepr(SceneObjectRepr):
         self.datafuncs['valfunc']=MeshAlgorithms.ValueFunc._Average # data-to-unitvalue function
         self.datafuncs['alphafunc']=MeshAlgorithms.UnitFunc._One # unitvalue-to-unitvalue alpha function
 
-        self.vbuff=None
-        self.ibuff=None
         self.dataset,self.origindices=reprdata
         self.parentdataset=parentdataset
         self.nodes=self.dataset.getNodes()
@@ -955,20 +953,11 @@ class MeshSceneObjectRepr(SceneObjectRepr):
 
         if len(self.figs)>0:
             extinds=None if self.drawInternal else self.extinds
-            self.vbuff,self.ibuff=self.bufferGen.applyDatasetMod(self,self.dataset,self.nodecolors,self.lines or self.tris,extinds,self.reprtype)
-            self.figs[0].fillData(self.vbuff,self.ibuff,True,self.kwargs.get('doubleSided',True))
-        else:
-            self.vbuff=None
-            self.ibuff=None
+            vbuff,ibuff=self.bufferGen.applyDatasetMod(self,self.dataset,self.nodecolors,self.lines or self.tris,extinds,self.reprtype)
+            self.figs[0].fillData(vbuff,ibuff,True,self.kwargs.get('doubleSided',True))
 
     def update(self,scene):
         assert isMainThread()
-
-        if len(self.figs)>0:
-            #self.figs[0].fillData(self.vbuff,self.ibuff,False,self.kwargs.get('doubleSided',True))
-            self.vbuff=None
-            self.ibuff=None
-
         self.setPosition(self.position)
         self.setRotation(*self.rotation)
         self.setScale(self.scale)

@@ -17,8 +17,13 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from renderer.Renderer import *#vec3, transform, rotator, color, RealMatrix, ColorMatrix, FT_TRILIST, FT_TEXVOLUME, TF_RGBA32,calculateBoundSquare
-from .SceneUtils import *
+import Utils
+import renderer
+
+from renderer import vec3, transform, rotator, color, RealMatrix, ColorMatrix, TF_RGBA32, minmaxMatrixReal, getPlaneXi
+from .Utils import trange, minmax, epsilon, avg, avgspan, clamp,first, indexList, isMainThread, radCircularConvert, listSum
+from .Concurrency import concurrent
+from .SceneUtils import BoundBox, RenderQueues, generatePlane
 from .SceneObject import SceneObject, SceneObjectRepr,ReprType
 
 
@@ -69,7 +74,7 @@ def calculateStackClipSqRange(process,imgs,threshold):
     maxy=0
 
     for i in process.prange():
-        result=calculateBoundSquare(imgs[i].img,threshold)
+        result=renderer.calculateBoundSquare(imgs[i].img,threshold)
         if result:
             minx=min(minx,result[0])
             miny=min(miny,result[1])
@@ -309,7 +314,7 @@ class ImageSceneObject(SceneObject):
 
     def calculateAABB(self,overwrite=False):
         if overwrite or not self.aabb:
-            self.aabb=BoundBox(matIter(s.getCorners() for s in self.images))
+            self.aabb=BoundBox(Utils.matIter(s.getCorners() for s in self.images))
 
     def clear(self):
         for i in self.images:
@@ -392,7 +397,7 @@ class ImageSceneObject(SceneObject):
                 for i,ind in enumerate(inds):
                     self.images[ind].setTransform(transform(pos+dpos*i,scale,rot))
 
-        self.aabb=BoundBox(matIter(s.getCorners() for s in self.images))
+        self.calculateAABB(True)
 
     def getVolumeCorners(self):
         '''Get the 8 corner vectors of the image volume.'''
@@ -521,7 +526,7 @@ class ImageSceneObject(SceneObject):
                 ('Columns',str(self.maxcols)),
                 ('Boundbox',str(self.aabb)),
                 ('Timesteps',ts),
-                ('Mem Total',getUnitValue(memtotal))
+                ('Mem Total',Utils.getUnitValue(memtotal))
             ]
 
             if isinstance(self.source,dict):
@@ -663,7 +668,6 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
         self.figs=[] # plane figures for each image
         self.figmats=[] # material for each figure
         self.figtextures=[] # texture for each figure
-        self.buffs=[] # stored buffers for each figure
 
         self.chosenSlice=None # chosen slice to render exclusively, or None to render all images for a timestep
 
@@ -748,7 +752,6 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
         self.figs=[]
         self.figmats=[]
         self.figtextures=[]
-        self.buffs=[]
 
         self.chosenSlice=None
 
@@ -772,7 +775,7 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
                 self.figmats.append(mat)
                 self.figtextures.append(tex)
 
-                fig=scene.createFigure(fname+' '+str(i),mat.getName(),FT_TRILIST)
+                fig=scene.createFigure(fname+' '+str(i),mat.getName(),renderer.FT_TRILIST)
                 fig.setRenderQueue(RenderQueues.VolumeImg)
                 self.figs.append(fig)
 
@@ -792,27 +795,14 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
         pnodes,pindices,xis=generatePlane(0)
 
         pindices+=[(i,k,j) for i,j,k in pindices] # backside triangles
-        ib=PyIndexBuffer(pindices)
+        ib=renderer.PyIndexBuffer(pindices)
         
         # use a spectrum material if that option is set and the image material is not present or uses a fragment program
-        useSpecTex=self.useSpecTex and len(self.imgmat.getGPUProgram(PT_FRAGMENT))>0
+        useSpecTex=self.useSpecTex and len(self.imgmat.getGPUProgram(renderer.PT_FRAGMENT))>0
         # multiply each pixel's alpha by the data value if that option is set and a spectrum material is not used
         mulAlpha=self.mulAlpha and not useSpecTex
 
         imgmin,imgmax=self.parent.getImageRange()
-
-#        for i,fig in enumerate(self.figs):
-#            img=self.images[i]
-#
-#            orient=img.orientation
-#            dv=vec3(img.dimvec.x(),-img.dimvec.y(),1)
-#
-#            snodes=[orient*(n*dv) for n in pnodes]
-#            norms=[orient*vec3(0,0,1)]*len(snodes)
-#
-#            vb=PyVertexBuffer(snodes,norms,None,xis)
-#
-#            self.buffs.append((fig,vb,ib))
 
         for i in range(len(self.figs)):
             fig=self.figs[i]
@@ -829,7 +819,7 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
             snodes=[orient*(n*dv) for n in pnodes]
             norms=[orient*vec3(0,0,1)]*len(snodes)
 
-            vb=PyVertexBuffer(snodes,norms,None,xis)
+            vb=renderer.PyVertexBuffer(snodes,norms,None,xis)
 
             fig.fillData(vb,ib,True)
             
@@ -859,51 +849,6 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
 
     def update(self,scene):
         assert isMainThread()
-
-#        # use a spectrum material if that option is set and the image material is not present or uses a fragment program
-#        useSpecTex=self.useSpecTex and len(self.imgmat.getGPUProgram(PT_FRAGMENT))>0
-#        # multiply each pixel's alpha by the data value if that option is set and a spectrum material is not used
-#        mulAlpha=self.mulAlpha and not useSpecTex
-#
-#        imgmin,imgmax=self.parent.getImageRange()
-#
-#        for i in range(len(self.figs)):
-#            matrix=self.imgmatrices[i]
-#            tex=self.figtextures[i]
-#            mat=self.figmats[i]
-#
-#            mask=self.parent.alphamasks[i] if self.parent.alphamasks else None
-#
-#            usesDepthCheck=self.usesDepthCheck()
-#            usesDepthWrite=self.usesDepthWrite()
-#
-#            self.imgmat.copyTo(mat,False,True,True) # copy details from self.imgmat to the internal material
-#
-#            mat.setTexture(tex.getName())
-#            mat.useDepthCheck(usesDepthCheck)
-#            mat.useDepthWrite(usesDepthWrite)
-#            mat.useLighting(False)
-#            mat.clampTexAddress(True)
-#            mat.useSpectrumTexture(useSpecTex)
-#
-#            colormat=None if useSpecTex else self.imgmat
-#
-#            if isinstance(matrix,ColorMatrix):
-#                tex.fillColor(matrix,0)
-#            else:
-#                # The default values for self.useSpecTex and self.mulAlpha ensure data is filled into the
-#                # texture in a specific way: if useSpecTex is True then the color will be derived from a
-#                # spectrum texture using a fragment shader transfer function, so don't use the material to
-#                # assign color; if alpha mask matrices are provided then these are used for alpha values and
-#                # mulAlpha will be False, if no alpha masks and no spectrum texture then mulAlpha will be True
-#                # and the alpha value for each pixel is multipled by the pixel's data value. This ensures there
-#                # is some sort of alpha being stored regardless of settings and input
-#                tex.fillColor(matrix,0,imgmin,imgmax,colormat,mask,mulAlpha)
-#
-#        for fig,vb,ib in self.buffs:
-#            fig.fillData(vb,ib)
-#
-#        self.buffs=[]
         self._setFigureTransforms()
 
 
@@ -924,7 +869,6 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
         self.figdims=[] # figure dimensions
         self.figinds=[] # list of indices of which images/matrices define the figure
         self.fighexes=[] # list of volume hexahedra represented by 6-tuples of vec3
-        self.submatrices=[]
         self.subalphas=[]
 
         self.timesteplist=self.parent.getTimestepIndices()
@@ -933,7 +877,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
         return len(self.figs)>0
 
     def getParamDefs(self):
-        return [ParamDef('numPlanes','Num Planes',ParamType._int,self.numPlanes,100,5000,100)]
+        return [Utils.ParamDef('numPlanes','Num Planes',Utils.ParamType._int,self.numPlanes,100,5000,100)]
 
     def getParam(self,name):
         if name=='numPlanes':
@@ -1023,7 +967,6 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
         self.figdims=[]
         self.figinds=[]
         self.fighexes=[]
-        self.submatrices=[]
         self.subalphas=[]
 
     def setVisible(self,isVisible):
@@ -1069,7 +1012,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 
                 mat=scene.createMaterial(fname+'Mat'+num)
 
-                fig=scene.createFigure(fname+' '+num,mat.getName(),FT_TEXVOLUME)
+                fig=scene.createFigure(fname+' '+num,mat.getName(),renderer.FT_TEXVOLUME)
                 fig.setRenderQueue(RenderQueues.VolumeImg)
                 fig.setNumPlanes(self.numPlanes)
 
@@ -1091,24 +1034,8 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
         self.setVisible(True)
 
     def prepareBuffers(self):
-#        for i in xrange(len(self.figs)):
-#            matrices=indexList(self.figinds[i],self.imgmatrices)
-#            alphas=indexList(self.figinds[i],self.parent.alphamasks) if self.parent.alphamasks else None
-#
-#            minx,miny,maxx,maxy=self.figtexbb[i]
-#
-#            substack=[]
-#            subalphas=[] if alphas else None
-#            for j,matrix in enumerate(matrices):
-#                substack.append(matrix.subMatrix(matrix.getName()+'sub',maxy-miny,maxx-minx,miny,minx))
-#                if alphas:
-#                    subalphas.append(alphas[j].subMatrix(alphas[j].getName()+'sub',maxy-miny,maxx-minx,miny,minx))
-#
-#            self.submatrices.append(substack)
-#            self.subalphas.append(subalphas)
-
         # use a spectrum material if that option is set and the image material is not present or uses a fragment program
-        useSpecTex=self.useSpecTex and (self.imgmat==None or len(self.imgmat.getGPUProgram(PT_FRAGMENT))>0)
+        useSpecTex=self.useSpecTex and (self.imgmat==None or len(self.imgmat.getGPUProgram(renderer.PT_FRAGMENT))>0)
         # multiply each pixel's alpha by the data value if that option is set and a spectrum material is not used
         mulAlpha=self.mulAlpha and not useSpecTex
 
@@ -1157,53 +1084,6 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 
     def update(self,scene):
         assert isMainThread()
-
-#        # use a spectrum material if that option is set and the image material is not present or uses a fragment program
-#        useSpecTex=self.useSpecTex and (self.imgmat==None or len(self.imgmat.getGPUProgram(PT_FRAGMENT))>0)
-#        # multiply each pixel's alpha by the data value if that option is set and a spectrum material is not used
-#        mulAlpha=self.mulAlpha and not useSpecTex
-#
-#        imgmin,imgmax=self.parent.getImageRange()
-#
-#        for i in xrange(len(self.figs)):
-#            tex=self.figtextures[i]
-#
-#            mat=self.figmats[i]
-#            usesDepthCheck=self.usesDepthCheck()
-#            usesDepthWrite=self.usesDepthWrite()
-#
-#            if self.imgmat!=None:
-#                self.imgmat.copyTo(mat,False,self.copySpec,True)
-#
-#            mat.setTexture(tex.getName())
-#            mat.useDepthCheck(usesDepthCheck)
-#            mat.useDepthWrite(usesDepthWrite)
-#            mat.useLighting(False)
-#            mat.clampTexAddress(True)
-#            mat.useSpectrumTexture(useSpecTex)
-#
-#            colormat=None if useSpecTex else mat
-#
-#            for j,matrix in enumerate(self.submatrices[i]):
-#                alpha=None
-#                if self.subalphas and self.subalphas[i]:
-#                    alpha=self.subalphas[i][j]
-#
-#                if isinstance(matrix,ColorMatrix):
-#                    tex.fillColor(matrix,j)
-#                else:
-#                    # The default values for self.useSpecTex and self.mulAlpha ensure data is filled into the
-#                    # texture in a specific way: if useSpecTex is True then the color will be derived from a
-#                    # spectrum texture using a fragment shader transfer function, so don't use the material to
-#                    # assign color; if alpha mask matrices are provided then these are used for alpha values and
-#                    # mulAlpha will be False, if no alpha masks and no spectrum texture then mulAlpha will be True
-#                    # and the alpha value for each pixel is multipled by the pixel's data value. This ensures there
-#                    # is some sort of alpha being stored regardless of settings and input
-#                    tex.fillColor(matrix,j,imgmin,imgmax,colormat,alpha,mulAlpha)
-#
-#        self.submatrices=[]
-#        self.subalphas=[]
-#        self.copySpec=False
         self._setFigureTransforms()
 
     def getNumPlanes(self):
