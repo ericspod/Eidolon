@@ -743,6 +743,8 @@ public:
 	}
 
 private:
+	void updateSpectrumInternal();
+	
 	Ogre::HighLevelGpuProgramPtr getGPUProgByNumberedName(const std::string& name)
 	{
 		Ogre::HighLevelGpuProgramPtr result;

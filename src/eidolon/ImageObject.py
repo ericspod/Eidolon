@@ -786,7 +786,6 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
             fig.setScale(self.scale)
             fig.setRotation(rot)
 
-    @timing
     def prepareBuffers(self):
         assert not isMainThread()
 
@@ -1091,7 +1090,6 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 
         self.setVisible(True)
 
-    @timing
     def prepareBuffers(self):
 #        for i in xrange(len(self.figs)):
 #            matrices=indexList(self.figinds[i],self.imgmatrices)

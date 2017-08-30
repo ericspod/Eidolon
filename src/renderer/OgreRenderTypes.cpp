@@ -173,11 +173,13 @@ void OgreMaterial::useSpectrumTexture(bool use)
 				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->specunit));
 				mat->specunit=NULL;
 			}
+			
+			mat->updateSpectrumInternal();
 		}
 	};
 	
 	scene->addResourceOp(new UseSpecOp(this,use));
-	updateSpectrum();
+	//updateSpectrum();
 }
 
 void OgreMaterial::updateSpectrum()
@@ -191,21 +193,37 @@ void OgreMaterial::updateSpectrum()
 		
 		virtual void op() 
 		{
-			if(mat->specunit!=NULL){
-				rgba data[SPECWIDTH];
-				Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
-		
-				for(sval x=0;x<SPECWIDTH;x++){
-					color c=mat->interpolateColor(float(x)/(SPECWIDTH-1));
-					pb.setColourAt(convert(c),x,0,0);
-				}
-		
-				mat->spectex->getBuffer()->blitFromMemory(pb);
-			}
+			//if(mat->specunit!=NULL){
+			//	rgba data[SPECWIDTH];
+			//	Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
+		        //
+			//	for(sval x=0;x<SPECWIDTH;x++){
+			//		color c=mat->interpolateColor(float(x)/(SPECWIDTH-1));
+			//		pb.setColourAt(convert(c),x,0,0);
+			//	}
+		        //
+			//	mat->spectex->getBuffer()->blitFromMemory(pb);
+			//}
+			mat->updateSpectrumInternal();
 		}
 	};
 	
 	scene->addResourceOp(new UpdateSpecOp(this));
+}
+
+void OgreMaterial::updateSpectrumInternal()
+{
+	if(specunit!=NULL){
+		rgba data[SPECWIDTH];
+		Ogre::PixelBox pb(SPECWIDTH,1,1,Ogre::PF_R8G8B8A8,data);
+	
+		for(sval x=0;x<SPECWIDTH;x++){
+			color c=interpolateColor(float(x)/(SPECWIDTH-1));
+			pb.setColourAt(convert(c),x,0,0);
+		}
+	
+		spectex->getBuffer()->blitFromMemory(pb);
+	}
 }
 
 OgreBaseRenderable::OgreBaseRenderable(const std::string& name,const std::string& matname,Ogre::RenderOperation::OperationType _opType,Ogre::SceneManager *mgr) throw(RenderException) : 

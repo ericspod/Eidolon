@@ -956,7 +956,7 @@ class MeshSceneObjectRepr(SceneObjectRepr):
         if len(self.figs)>0:
             extinds=None if self.drawInternal else self.extinds
             self.vbuff,self.ibuff=self.bufferGen.applyDatasetMod(self,self.dataset,self.nodecolors,self.lines or self.tris,extinds,self.reprtype)
-            timing(self.figs[0].fillData)(self.vbuff,self.ibuff,True,self.kwargs.get('doubleSided',True))
+            self.figs[0].fillData(self.vbuff,self.ibuff,True,self.kwargs.get('doubleSided',True))
         else:
             self.vbuff=None
             self.ibuff=None
