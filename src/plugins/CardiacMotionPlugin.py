@@ -29,7 +29,7 @@ from .VTKPlugin import DatasetTypes
 from .CheartPlugin import LoadDialog
 from .ReportCardPlugin import ReportCardSceneObject
 from .DicomPlugin import readDicomHeartRate
-from ui.CardiacMotionProp import Ui_CardiacMotionProp
+from ui import Ui_CardiacMotionProp
 
 
 def avgDevRange(vals,stddevDist=1.0):

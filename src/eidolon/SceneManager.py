@@ -36,10 +36,20 @@ import threading
 import traceback
 import math
 
-from renderer.Renderer import vec3, color, TF_RGB24,Spectrum 
+import renderer
+import Utils
+import VisualizerUI
+import SceneUtils
+import SceneComponents
+import ScenePlugin
+import ImageObject
+
+from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture
 from .Camera2DView import Camera2DView
-from .Utils import avg, first, uniqueStr, EventType, ConfVars, taskroutine, Future
-from .VisualizerUI import QtCore, QtGui, Qt, screenshotWidget
+from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, Future, FutureError, timeBackupFile, setTrace, TaskQueue
+from .VisualizerUI import QtCore, QtGui, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
+from .SceneObject import SceneObject, SceneObjectRepr
+from .SceneComponents import LightType, CenterType, AxesType, SceneLight, ScriptWriter
 
 globalMgr=None
 globalPlugins=[]
@@ -232,7 +242,7 @@ class Project(object):
     def loadConfig(self,filename=None):
         '''Load the config file (or `filename' if given) and update `self.configMap' with its contents.'''
         try:
-            conf=readBasicConfig(filename or self.getConfigPath())
+            conf=Utils.readBasicConfig(filename or self.getConfigPath())
             self.configMap.update(conf)
         except Exception as e:
             self.mgr.showExcept(e)
@@ -243,17 +253,17 @@ class Project(object):
         timeBackupFile(filename,self.backDir)
 
         if len(self.configMap)>0:
-            storeBasicConfig(filename,self.configMap)
+            Utils.storeBasicConfig(filename,self.configMap)
 
     def getPropBox(self):
-        assert isMainThread()
+        assert Utils.isMainThread()
         if self.prop==None:
-            self.prop=ProjectPropertyWidget()
+            self.prop=VisualizerUI.ProjectPropertyWidget()
             self.prop.saveButton.clicked.connect(self._saveButton)
             self.prop.dirButton.clicked.connect(self._dirButton)
             self.prop.selTable.itemClicked.connect(self._setApplyToObjCheck)
 
-            setCollapsibleGroupbox(self.prop.selObjBox,True)
+            VisualizerUI.setCollapsibleGroupbox(self.prop.selObjBox,True)
         return self.prop
 
     def _saveButton(self):
@@ -297,7 +307,7 @@ class Project(object):
         table.clearContents()
         table.setRowCount(len(objs))
 
-        setTableHeaders(table)
+        VisualizerUI.setTableHeaders(table)
 
         for i,o in enumerate(objs):
             chkBoxItem = QtGui.QTableWidgetItem()
@@ -333,7 +343,7 @@ class SceneManager(TaskQueue):
         self.viz=None
         self.scene=None
 
-        self.evtHandler=EventHandler()
+        self.evtHandler=Utils.EventHandler()
 
         self.project=None # project object, only non-None when there's an existing project
 
@@ -364,9 +374,9 @@ class SceneManager(TaskQueue):
         self.updatethread=None
 
         # scene component controllers
-        self.matcontrol=MaterialController(self,self.win) # the material controller responsible for all materials
-        self.lightcontrol=LightController(self,self.win) # the light controller responsible for light UI
-        self.progcontrol=GPUProgramController(self,self.win) # the shader GPU program controller responsible for the UI
+        self.matcontrol=SceneComponents.MaterialController(self,self.win) # the material controller responsible for all materials
+        self.lightcontrol=SceneComponents.LightController(self,self.win) # the light controller responsible for light UI
+        self.progcontrol=SceneComponents.GPUProgramController(self,self.win) # the shader GPU program controller responsible for the UI
 
         # time stepping components
         self.timestep=0
@@ -386,8 +396,8 @@ class SceneManager(TaskQueue):
             self.showExcept(msg,str(value),'Unhandled Exception')
         sys.excepthook = exception_hook
 
-        self.meshplugin=MeshScenePlugin('MeshPlugin')
-        self.imageplugin=ImageScenePlugin('ImgPlugin')
+        self.meshplugin=ScenePlugin.MeshScenePlugin('MeshPlugin')
+        self.imageplugin=ScenePlugin.ImageScenePlugin('ImgPlugin')
 
         global globalPlugins
         globalPlugins=[self.meshplugin,self.imageplugin]+globalPlugins
@@ -515,7 +525,7 @@ class SceneManager(TaskQueue):
 
     def _updateUI(self):
         if self.controller:
-            fillTable(self.controller.getPropTuples(),self.win.cameraProps) # TODO: causes jittering when rotating fast, replace with something faster
+            VisualizerUI.fillTable(self.controller.getPropTuples(),self.win.cameraProps) # TODO: causes jittering when rotating fast, replace with something faster
             self.setCameraConfig()
 
     def _updateManagedObjects(self):
@@ -606,7 +616,7 @@ class SceneManager(TaskQueue):
             while True:
                 try:
                     time.sleep(0.1)
-                    with lockobj(self):
+                    with Utils.lockobj(self):
                         task=self.currentTask
 
                     self.setTaskStatus(task or 'Ready')
@@ -636,7 +646,7 @@ class SceneManager(TaskQueue):
         '''
         parentTask=self.getCurrentTask()
 
-        tasks=toIterable(tasks)
+        tasks=Utils.toIterable(tasks)
 
         if isSequential or parentTask!=None: # run the tasks right here in this thread rather than putting them in the queue
             for t in tasks:
@@ -701,7 +711,7 @@ class SceneManager(TaskQueue):
                 else:
                     p=first(p for p in globalPlugins if p.acceptFile(filename))
                     if p:
-                        for o in toIterable(p.loadObject(filename)):
+                        for o in Utils.toIterable(p.loadObject(filename)):
                             self.addSceneObject(o)
                     else:
                         self.logError("Error: No plugin accepted file/directory %r"%filename)
@@ -727,7 +737,7 @@ class SceneManager(TaskQueue):
         @taskroutine('Executing program '+filename)
         def _exeTask(exefile,exeargs,logfile,kwargs,task):
             with f:
-                rt,output=execBatchProgram(exefile,*exeargs,**kwargs)
+                rt,output=Utils.execBatchProgram(exefile,*exeargs,**kwargs)
 
                 if logfile:
                     timeBackupFile(logfile)
@@ -788,7 +798,7 @@ class SceneManager(TaskQueue):
         if not os.path.isfile(filename):
             raise IOError("Cannot execute %r; not a file" % filename)
 
-        if not isTextFile(filename):
+        if not Utils.isTextFile(filename):
             raise IOError('Cannot execute %r, not a text file'%filename)
 
         self.scriptlocals['scriptdir']=os.path.split(os.path.abspath(filename))[0]+os.path.sep
@@ -799,7 +809,7 @@ class SceneManager(TaskQueue):
             scriptlocals=dict(scriptlocals)
 
         if tryHard:
-            excs=execfileExc(filename,scriptlocals)
+            excs=Utils.execfileExc(filename,scriptlocals)
             for e,format_exc in excs:
                 self.showExcept(e,'Exception in script file %r'%filename,format_exc=format_exc)
         else:
@@ -810,7 +820,7 @@ class SceneManager(TaskQueue):
             
     def getUserAppDir(self):
         '''Returns the per-user application directory as defined by ConfVars.userappdir in the config object.'''
-        appdir= self.conf.get(platformID,ConfVars.userappdir)
+        appdir= self.conf.get(platformID,Utils.ConfVars.userappdir)
         assert os.path.isdir(appdir),'Cannot find application directory %r'%appdir
         return appdir
         
@@ -836,7 +846,7 @@ class SceneManager(TaskQueue):
         main thread has completed the call. If there is no window then the function is called directly in this thread.
         This blocks until the call completes, and is both thread-safe and thread-reentrant if there is a UI window.
         '''
-        if self.win and not isMainThread():
+        if self.win and not Utils.isMainThread():
             return self.win.callFuncUIThread(func,*args,**kwargs)
         else:
             return func(*args,**kwargs)
@@ -863,7 +873,7 @@ class SceneManager(TaskQueue):
         Writes a log entry composed of the string representations of the members of 'msgs' as well as to stdout.
         If 'nl' is present in 'kwargs' and is False, no newline appears at the end of the stdout write.
         '''
-        printFlush(*msgs,**kwargs)
+        Utils.printFlush(*msgs,**kwargs)
 
     def logError(self,*msgs,**kwargs):
         '''
@@ -871,7 +881,7 @@ class SceneManager(TaskQueue):
         If 'nl' is present in 'kwargs' and is False, no newline appears at the end of the stderr write.
         '''
         kwargs['stream']=sys.stderr
-        printFlush(*msgs,**kwargs)
+        Utils.printFlush(*msgs,**kwargs)
 
     def showExcept(self,ex,msg='',title='Exception Caught',format_exc=None):
         '''Shows the given exception and writes information to the log file.'''
@@ -918,9 +928,9 @@ class SceneManager(TaskQueue):
         if timestepMin!=None or timestepMax!=None or timestepSpan!=None:
             self.timestepMin,self.timestepMax,self.timestepSpan=timestepMin,timestepMax,timestepSpan
         elif len(allreprs)>0:
-            self.timestepMin,self.timestepMax=minmax((r.getTimestepRange() for r in allreprs),ranges=True)
-            self.timestepSpan=avg(avgspan(r.getTimestepList()) for r in allreprs)
-            if any(isinstance(r,ImageSceneObjectRepr) for r in allreprs):
+            self.timestepMin,self.timestepMax=Utils.minmax((r.getTimestepRange() for r in allreprs),ranges=True)
+            self.timestepSpan=avg(Utils.avgspan(r.getTimestepList()) for r in allreprs)
+            if any(isinstance(r,ImageObject.ImageSceneObjectRepr) for r in allreprs):
                 self.setTimeStepsPerSec(500) # image data present, play at half real-time speed
             else:
                 self.setTimeStepsPerSec(avg(r.getTimestepInterval() for r in allreprs))
@@ -946,7 +956,7 @@ class SceneManager(TaskQueue):
         '''Set the timestep `ts' for every representation clamped within the range [self.timestepMin,self.timestepMax].'''
         #assert ts>=0
 
-        ts=clamp(ts,self.timestepMin,self.timestepMax)
+        ts=Utils.clamp(ts,self.timestepMin,self.timestepMax)
         self.timestep=ts
 
         if self.win:
@@ -1057,7 +1067,7 @@ class SceneManager(TaskQueue):
             self.cameras.append(self.scene.createCamera("main")) # camera 0 is the main camera that is never deleted
 
         if not self.singleController:
-            self.singleController=AxesCameraController(self.cameras[0],100)
+            self.singleController=SceneComponents.AxesCameraController(self.cameras[0],100)
 
         self.setCameraController(self.singleController)
 
@@ -1186,7 +1196,7 @@ class SceneManager(TaskQueue):
 
         def takeshot():
             self.repaint(True)
-            if isinstance(camera_or_widget,Camera):
+            if isinstance(camera_or_widget,renderer.Camera):
                 self.scene.saveScreenshot(filename,camera_or_widget,width,height,stereoOffset,tformat)
             else:
                 screenshotWidget(camera_or_widget,filename)
@@ -1197,7 +1207,7 @@ class SceneManager(TaskQueue):
         if end==None:
             end=self.timestepMax+stepvalue
 
-        for i,ts in enumerate(frange(start,end,stepvalue)):
+        for i,ts in enumerate(Utils.frange(start,end,stepvalue)):
             self.setTimestep(ts)
             self.saveScreenshot('%s%04d%s'%(fileprefix,i,extension),camera_or_widget,width,height,stereoOffset,tformat)
 
@@ -1211,7 +1221,7 @@ class SceneManager(TaskQueue):
         finally:
             return writer.target.getvalue()
 
-    @locking
+    @Utils.locking
     def repaint(self,renderHighQual=True):
         '''Forces the scene to redraw. if `renderHighQual' is true a high quality render is done.'''
 
@@ -1223,7 +1233,7 @@ class SceneManager(TaskQueue):
         else:
             self._updateManagedObjects()
 
-    @delayedcall(0.25)
+    @Utils.delayedcall(0.25)
     def _repaintHighQual(self):
         self.repaint(True)
 
@@ -1253,9 +1263,9 @@ class SceneManager(TaskQueue):
 
         # if this object has no plugin, give it the default one appropriate for its type
         if not obj.plugin:
-            if isinstance(obj,MeshSceneObject):
+            if isinstance(obj,SceneObject.MeshSceneObject):
                 obj.plugin=self.meshplugin
-            elif isinstance(obj,ImageSceneObject):
+            elif isinstance(obj,SceneObject.ImageSceneObject):
                 obj.plugin=self.imageplugin
             else:
                 obj.plugin=ScenePlugin('Default Plugin')
@@ -1337,7 +1347,7 @@ class SceneManager(TaskQueue):
 
     def getSceneAABB(self):
         '''Returns the AABB containing all visible repr objects.'''
-        return BoundBox.union(r.getAABB(True) for r in self.enumSceneObjectReprs() if r.isVisible())
+        return SceneUtils.BoundBox.union(r.getAABB(True) for r in self.enumSceneObjectReprs() if r.isVisible())
 
     @timing
     def updateSceneObjectRepr(self,rep):
@@ -1395,11 +1405,11 @@ class SceneManager(TaskQueue):
         if doShow and rep not in self.bbmap:
             @self.callThreadSafe
             def _createfigure():
-                aabbnodes,indices=generateLineBox([vec3(-0.5),vec3(0.5)])
-                vb=PyVertexBuffer(aabbnodes,[vec3(0,0,1)]*len(aabbnodes),[color()]*len(aabbnodes),None)
-                ib=PyIndexBuffer(indices)
+                aabbnodes,indices=SceneUtils.generateLineBox([vec3(-0.5),vec3(0.5)])
+                vb=SceneUtils.PyVertexBuffer(aabbnodes,[vec3(0,0,1)]*len(aabbnodes),[color()]*len(aabbnodes),None)
+                ib=SceneUtils.PyIndexBuffer(indices)
 
-                fig=self.scene.createFigure(rep.getName()+' BoundBox',matname,FT_LINELIST)
+                fig=self.scene.createFigure(rep.getName()+' BoundBox',matname,renderer.FT_LINELIST)
                 fig.fillData(vb,ib)
                 self.bbmap[rep]=(fig,matname)
 
@@ -1592,7 +1602,7 @@ class SceneManager(TaskQueue):
                 raise
 
     def createGPUProgram(self,name,progtype,src=None,profiles=None,lang=None,entry=None):
-        assert progtype in (PT_VERTEX,PT_FRAGMENT), 'Only vertex or fragment shaders are supported.'
+        assert progtype in (renderer.PT_VERTEX,renderer.PT_FRAGMENT), 'Only vertex or fragment shaders are supported.'
         name=uniqueStr(name,self.listGPUProgramNames())
 
         def createProgram():
@@ -1685,7 +1695,7 @@ class SceneManager(TaskQueue):
             @self.callThreadSafe
             def _modProp():
                 prop=self.win.findPropBox(spec)
-                prop.spectrum=SpectrumWidget(lambda:[spec],None,prop)
+                prop.spectrum=SceneComponents.SpectrumWidget(lambda:[spec],None,prop)
                 prop.gridLayout.addWidget(prop.spectrum, 1, 0, 1, 1)
         
         return spec
@@ -1832,7 +1842,7 @@ class SceneManager(TaskQueue):
         script=self.win.chooseFileDialog('Choose Script Files')
         try:
             if script:
-                self.loadGPUScriptFile(script,PT_FRAGMENT)
+                self.loadGPUScriptFile(script,renderer.PT_FRAGMENT)
         except Exception as e:
             self.showExcept(e)
 
@@ -1876,5 +1886,5 @@ class SceneManager(TaskQueue):
         '''Called when the user chooses a filename for a log file.'''
         savename=self.win.chooseFileDialog('Choose log filename',filterstr='Log files (*.log)',isOpen=False,confirmOverwrite=False)
         if savename!='':
-            setLogging(savename)
+            Utils.setLogging(savename)
 

@@ -17,14 +17,28 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from renderer.Renderer import TF_ALPHALUM8
+import os
+import glob
+import numpy as np
 
-from .SceneObject import *
-from .ImageObject import *
-from .MeshAlgorithms import *
-from .ImageAlgorithms import *
-from .VisualizerUI import *
-from .SceneComponents import *
+import Utils
+import MeshAlgorithms
+import ImageAlgorithms
+import VisualizerUI
+import SceneComponents
+import SceneUtils
+
+from renderer.Renderer import TF_ALPHALUM8, TF_RGBA32, vec3, rotator,color, minmaxMatrixReal
+from .Utils import first, ParamType, ParamDef, Future, taskroutine, timing, toIterable
+from .MathDef import ElemType
+from .VisualizerUI import CustomUIType, setChecked, fillList, ParamPanel, IconName
+from .MeshAlgorithms import ValueFunc, UnitFunc, VecFunc, calculateFieldMinMax
+from .ImageAlgorithms import matrixToArray
+from .SceneObject import ReprType,SceneObjectRepr, MeshSceneObject, MeshSceneObjectRepr, TDMeshSceneObjectRepr
+from .ImageObject import ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr
+
+
+ctImageRange=(ImageAlgorithms.Hounsfield.min,ImageAlgorithms.Hounsfield.max)
 
 
 class PluginError(Exception):
@@ -86,7 +100,7 @@ class ScenePlugin(object):
             return name
 
         if os.path.isfile(name):
-            name=splitPathExt(name)[1]
+            name=Utils.splitPathExt(name)[1]
 
         obj=self.mgr.findObject(name)
         assert not assertFound or obj!=None,"Can't find %r"%name
@@ -144,7 +158,7 @@ class ScenePlugin(object):
                 script+='%(varname)s.applyMaterial(%(matname)s)\n'
                 args['matname']=namemap[matname]
 
-            return setStrIndent(script % args).strip()+'\n'
+            return Utils.setStrIndent(script % args).strip()+'\n'
 
         return ''
 
@@ -258,7 +272,7 @@ class ScenePlugin(object):
         Create a list of Handle objects for representation `rep'. By default this creates a single TransFormHandle
         object on every call. This method must safely return the handle list regardless of how many times its called.
         '''
-        return [TransformHandle(rep)]
+        return [SceneComponents.TransformHandle(rep)]
 
     def updateObjPropBox(self,obj,prop):
         '''Updates the properties dialog 'prop' for SceneObject 'obj'. Usually only called by the UI when refreshing.'''
@@ -266,7 +280,7 @@ class ScenePlugin(object):
             return
 
         if prop.propTable.rowCount()==0:
-            fillTable(obj.getPropTuples(),prop.propTable)
+            VisualizerUI.fillTable(obj.getPropTuples(),prop.propTable)
 
         reprs=[ReprType[r][0] for r in obj.getReprTypes()]
         fillList(prop.reprsBox,reprs,prop.reprsBox.currentIndex())
@@ -280,7 +294,7 @@ class ScenePlugin(object):
             return
 
         if prop.propTable.rowCount()==0:
-            fillTable(rep.getPropTuples(),prop.propTable)
+            VisualizerUI.fillTable(rep.getPropTuples(),prop.propTable)
 
         fillList(prop.matnameBox,self.mgr.listMaterialNames(),rep.matname)
         setChecked(rep.isVisible(),prop.visibleCheckbox)
@@ -303,13 +317,13 @@ class ScenePlugin(object):
 
     def createObjPropBox(self,obj):
         '''Creates a properties dialog box for SceneObject 'obj'. This should be a new instance of a QWidget subclass.'''
-        prop=ObjectPropertyWidget()
+        prop=VisualizerUI.ObjectPropertyWidget()
         prop.createButton.clicked.connect(lambda:self._createReprButton(obj,prop))
         return prop
 
     def createReprPropBox(self,rep):
         '''Creates a properties dialog box for SceneObjectRepr 'rep'. This should be a new instance of a QWidget subclass.'''
-        prop=ObjectReprPropertyWidget()
+        prop=VisualizerUI.ObjectReprPropertyWidget()
 
         prop.spectrumBox.setVisible(False) # don't use spectrum box by default
 
@@ -485,7 +499,7 @@ class MeshScenePlugin(ScenePlugin):
 
                 script='%(varname)s=%(pname)s.createRepr(ReprType._%(reprtype)s,%(refine)r,drawInternal=%(drawInternal)r,externalOnly=%(externalOnly)r,matname="%(matname)s"%(kwargs)s)'
 
-            return setStrIndent(script % args).strip()+'\n'
+            return Utils.setStrIndent(script % args).strip()+'\n'
         else:
             return ScenePlugin.getScriptCode(self,obj,**kwargs)
 
@@ -520,7 +534,7 @@ class MeshScenePlugin(ScenePlugin):
         self._updateMinMaxPropFields(rep,prop,False)
 
     def _updateMinMaxPropFields(self,rep,prop,recalcMinMax=True):
-        with signalBlocker(prop.minvalBox,prop.maxvalBox):
+        with VisualizerUI.signalBlocker(prop.minvalBox,prop.maxvalBox):
             field=rep.getDataField()
 
             if field!=None:
@@ -609,11 +623,11 @@ class MeshScenePlugin(ScenePlugin):
                 minv,maxv=calculateFieldMinMax(toIterable(fields),valfunc)
 
                 if panel.hasParam('minv'):
-                    setSpinBox(panel.getParamUI('minv'),minv,maxv,(maxv-minv)*0.01)
+                    VisualizerUI.setSpinBox(panel.getParamUI('minv'),minv,maxv,(maxv-minv)*0.01)
                     panel.setParam('minv',minv)
 
                 if panel.hasParam('maxv'):
-                    setSpinBox(panel.getParamUI('maxv'),minv,maxv,(maxv-minv)*0.01)
+                    VisualizerUI.setSpinBox(panel.getParamUI('maxv'),minv,maxv,(maxv-minv)*0.01)
                     panel.setParam('maxv',maxv)
             except:
                 pass
@@ -649,14 +663,14 @@ class MeshScenePlugin(ScenePlugin):
 
     @taskroutine('Calculating Element Properties')
     def calculateExtAdj(self,obj,task):
-        calculateElemExtAdj(obj.datasets[0],task=task)
+        MeshAlgorithms.calculateElemExtAdj(obj.datasets[0],task=task)
 
         # copy over adjacency and external information from first dataset if present
         for ds in obj.datasets:
             ds0=obj.datasets[0]
             for n in ds.getIndexNames():
-                adjname=n+MatrixType.adj[1]
-                extname=n+MatrixType.external[1]
+                adjname=n+SceneUtils.MatrixType.adj[1]
+                extname=n+SceneUtils.MatrixType.external[1]
 
                 if ds0.hasIndexSet(adjname):
                     ds.setIndexSet(ds0.getIndexSet(adjname))
@@ -701,7 +715,7 @@ class MeshScenePlugin(ScenePlugin):
                     for i,dds in enumerate(obj.datasets):
                         name='%s %s %i [%i/%i]' %(obj.name,ReprType[reprtype][0],obj.reprcount,i+1,len(obj.datasets))
 
-                        ddsorig=dds.meta(StdProps._isdsclone)
+                        ddsorig=dds.meta(SceneUtils.StdProps._isdsclone)
                         if ddsorig!='' and ddsorig in srcdsmap:
                             dsorig,origindices=srcdsmap[ddsorig]
                             dataset=dsorig.clone(name,True,True,False)
@@ -757,7 +771,7 @@ class MeshScenePlugin(ScenePlugin):
                 ParamDef('field','Radius Field',ParamType._field)
             ]
         elif reprtype == ReprType._glyph:
-            rad=BoundBox(obj.datasets[0].getNodes()).radius
+            rad=SceneUtils.BoundBox(obj.datasets[0].getNodes()).radius
             params+=[
                 ParamDef('glyphname','Glyph',ParamType._strlist,['sphere','arrow','cube'],notNone=True),
                 ParamDef('dfield','Dir Field',ParamType._field),
@@ -908,7 +922,7 @@ class MeshScenePlugin(ScenePlugin):
                 #   r.setSelectedFieldRange(minv,maxv)
 
                 if field!=None and (mat.numAlphaCtrls()>0 or mat.numSpectrumValues()>0) and useSpectrum:
-                    isTransR=calculateDataColoration(mat,parentdataset,nodecolors,nodes,nodeprops,origindices,[field],minv,maxv,valfunc,alphafunc,task)
+                    isTransR=MeshAlgorithms.calculateDataColoration(mat,parentdataset,nodecolors,nodes,nodeprops,origindices,[field],minv,maxv,valfunc,alphafunc,task)
                     #if len(origindices)>0 and useFieldTopo:
                     #   calculateDataColoration(mat,parentdataset,nodecolors,nodes,nodeprops,origindices,[field],minv,maxv,valfunc,alphafunc,task)
                     #elif field.n()==nodes.n(): # per-node data field
@@ -1020,10 +1034,10 @@ class ImageScenePlugin(ScenePlugin):
         prop.reprsBox.currentIndexChanged.connect(lambda i : self._setParamPanel(obj,prop))
         prop.setParamPanel(prop.parammap.get(reprs[0],None)) # ensure the parameters panel appears for the first item
 
-        _,prop.ctcheck=addCustomUIRow(prop.layout(),1,CustomUIType._checkbox,'ctCheck','Is CT Image')
+        _,prop.ctcheck=VisualizerUI.addCustomUIRow(prop.layout(),1,CustomUIType._checkbox,'ctCheck','Is CT Image')
         prop.ctcheck.clicked.connect(lambda i:self.setCTImageRange(obj,i))
 
-        obj.histogram=calculateImageStackHistogram(obj,Hounsfield.min,Hounsfield.max) # pre-calculate and store the histogram for later possible use
+        obj.histogram=ImageAlgorithms.calculateImageStackHistogram(obj,*ctImageRange) # pre-calculate and store the histogram for later possible use
         #self.setCTImageRange(obj,isCTImageSeries(hist=obj.histogram))
 
         return prop
@@ -1041,7 +1055,7 @@ class ImageScenePlugin(ScenePlugin):
 
     def setCTImageRange(self,obj,isCT):
         if isCT:
-            obj.imagerange=(Hounsfield.min,Hounsfield.max)
+            obj.imagerange=tuple(ctImageRange)
         else:
             obj.imagerange=None
 
@@ -1075,8 +1089,8 @@ class ImageScenePlugin(ScenePlugin):
 
     def updateObjPropBox(self,obj,prop):
         ScenePlugin.updateObjPropBox(self,obj,prop)
-        with signalBlocker(prop.ctcheck):
-            prop.ctcheck.setChecked(obj.imagerange==(Hounsfield.min,Hounsfield.max))
+        with VisualizerUI.signalBlocker(prop.ctcheck):
+            prop.ctcheck.setChecked(obj.imagerange==ctImageRange)
 
     def updateReprPropBox(self,rep,prop):
         ScenePlugin.updateReprPropBox(self,rep,prop)
@@ -1113,7 +1127,7 @@ class ImageScenePlugin(ScenePlugin):
         write.toggled.connect(lambda i:rep.useDepthWrite(i) or self.mgr.repaint())
         texfilter.toggled.connect(lambda i:rep.useTexFiltering(i) or self.mgr.repaint())
 
-        prop.spectrum=SpectrumWidget(rep.enumInternalMaterials,self.mgr,prop)
+        prop.spectrum=SceneComponents.SpectrumWidget(rep.enumInternalMaterials,self.mgr,prop)
         layout=prop.spectrumBox.layout()
         layout.addWidget(prop.spectrum)
 
@@ -1205,14 +1219,14 @@ class ImageScenePlugin(ScenePlugin):
     def createImageStackObject(self,name,width,height,slices,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1)):
         '''Create a blank image object with each timestep ordered bottom-up with integer timesteps.'''
         src=(width,height,slices, timesteps,pos,rot,spacing)
-        images=generateImageStack(width,height,slices,timesteps,pos,rot,spacing,name)
+        images=ImageAlgorithms.generateImageStack(width,height,slices,timesteps,pos,rot,spacing,name)
         return self.createSceneObject(name,images,src,timesteps>1)
 
     def createRespacedObject(self,obj,name,spacing=vec3(1)):
         '''Create an image object occupying the same space as `obj' with voxel dimensions given by `spacing'.'''
         trans=obj.getVolumeTransform()
         t=obj.getTimestepList()
-        w,h,d=map(fcomp(int,abs,round),trans.getScale()/spacing)
+        w,h,d=map(Utils.fcomp(int,abs,round),trans.getScale()/spacing)
 
         imgobj=obj.plugin.createImageStackObject(name,w,h,d,len(t),trans.getTranslation(),trans.getRotation(),spacing)
         imgobj.setTimestepList(t)
@@ -1228,7 +1242,7 @@ class ImageScenePlugin(ScenePlugin):
         #corners=[]
 
         for o in objs[1:]:
-            bb=BoundBox(inv*c for c in o.getVolumeCorners())
+            bb=SceneUtils.BoundBox(inv*c for c in o.getVolumeCorners())
             mincorner.setMaxVals(bb.minv)
             maxcorner.setMinVals(bb.maxv)
 
@@ -1239,7 +1253,7 @@ class ImageScenePlugin(ScenePlugin):
 
     def createTestImage(self,w,h,d,timesteps=1,pos=vec3(),rot=rotator(),spacing=vec3(1)):
         '''Generate a test image object with the given dimensions (w,h,d) with image values range (minv,maxv).'''
-        images=generateTestImageStack(w,h,d,timesteps,pos,rot,spacing)
+        images=ImageAlgorithms.generateTestImageStack(w,h,d,timesteps,pos,rot,spacing)
         return self.createSceneObject('TestImage',images,(w,h,d,timesteps,pos,rot,spacing),timesteps>1)
 
     def createSequence(self,name,objs,timesteps=None):
@@ -1280,7 +1294,7 @@ class ImageScenePlugin(ScenePlugin):
         if task:
             task.setMaxProgress(slices*timesteps)
 
-        for s,t in trange(slices,timesteps):
+        for s,t in Utils.trange(slices,timesteps):
             if task:
                 task.setProgress(t+s*timesteps+1)
 
@@ -1317,7 +1331,7 @@ class ImageScenePlugin(ScenePlugin):
         numsteps=len(timesteps)
         cols=obj.maxcols
         rows=obj.maxrows
-        interval=int(avg(timesteps[i]-timesteps[i-1] for i in range(1,len(timesteps))))
+        interval=int(Utils.avg(timesteps[i]-timesteps[i-1] for i in range(1,len(timesteps))))
         toffset=timesteps[0]
         depth=1
         img1=None
@@ -1425,9 +1439,6 @@ class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
 
     def _getUIReprParams(self,obj,prop):
         return self._getSupertype(obj)._getUIReprParams(self,obj,prop)
-
-    def objectMenuItem(self,obj,item):
-        return self._getSupertype(obj).objectMenuItem(self,obj,item)
 
     def updateObjPropBox(self,obj,prop):
         return self._getSupertype(obj).updateObjPropBox(self,obj,prop)

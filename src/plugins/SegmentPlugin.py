@@ -18,8 +18,7 @@
 
 
 from eidolon import *
-from ui.Seg2DView import Ui_Seg2DView
-from ui.SegObjProp import Ui_SegObjProp
+from ui import Ui_Seg2DView, Ui_SegObjProp
 
 import itertools
 

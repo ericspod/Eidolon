@@ -19,15 +19,6 @@
 
 #PACS: https://github.com/patmun/pynetdicom http://www.dicomserver.co.uk/
 
-from eidolon import *
-
-addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
-
-
-from pydicom.dicomio import read_file
-from pydicom.datadict import DicomDictionary
-from pydicom.tag import Tag
-from pydicom.dataset import Dataset,FileDataset
 
 import os
 import sys
@@ -36,15 +27,21 @@ import mmap
 import datetime
 import time
 import re
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from Queue import Queue
 from random import randint
-
 import numpy as np
 
-from ui.SeriesProp import Ui_ObjProp
-from ui.ChooseSeries import Ui_ChooseSeriesDialog
-from ui.Dicom2DView import Ui_Dicom2DView
+from eidolon import *
+
+addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
+
+from pydicom.dicomio import read_file
+from pydicom.datadict import DicomDictionary
+from pydicom.tag import Tag
+from pydicom.dataset import Dataset,FileDataset
+
+from ui import Ui_SeriesProp, Ui_ChooseSeriesDialog, Ui_Dicom2DView
 
 
 AssetType.append('dcm','Dicom Sources','Dicom Datasets (Directory References)') # adds the DICOM directory asset type to the asset panel
@@ -296,7 +293,7 @@ def isPhaseImage(image):
     return phasevalue1 in imagetype or phasevalue2 in imagetype
 
 
-class SeriesPropertyWidget(QtGui.QWidget,Ui_ObjProp):
+class SeriesPropertyWidget(QtGui.QWidget,Ui_SeriesProp):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self,parent)
         self.setupUi(self)
@@ -379,7 +376,7 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
 
 
 class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
-    PreviewState=collections.namedtuple('PreviewState','stackStart stackEnd minx miny maxx maxy')
+    PreviewState=namedtuple('PreviewState','stackStart stackEnd minx miny maxx maxy')
 
     def __init__(self,serieslist,resultf,mgr,plugin,parent=None):
         assert isMainThread()

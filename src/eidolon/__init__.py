@@ -15,13 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
-
-
 '''
 Eidolon is the experimental medical imaging visualization framework.
 '''
 
-from renderer.Renderer import *
+from renderer import *
 from eidolon.VisualizerUI import *
 from eidolon.Utils import *
 from eidolon.Concurrency import *
@@ -33,6 +31,7 @@ from eidolon.Camera2DView import *
 from eidolon.SceneManager import *
 from eidolon.SceneObject import *
 from eidolon.ScenePlugin import *
+from eidolon.SceneComponents import *
 from eidolon.Application import *
 
 __appname__='Eidolon Biomedical Framework'

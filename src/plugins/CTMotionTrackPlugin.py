@@ -3,7 +3,7 @@ from visualizer import *
 from plugins.IRTKPlugin import IRTKPluginMixin
 from plugins.VTKPlugin import DatasetTypes,VTKProps
 from plugins.SegmentPlugin import SegmentTypes,SegSceneObject,DatafileParams
-from ui.CTMotionProp import Ui_CTMotionProp
+from ui import Ui_CTMotionProp
 
 
 class CTmotionProjPropWidget(QtGui.QWidget,Ui_CTMotionProp):

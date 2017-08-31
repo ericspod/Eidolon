@@ -35,7 +35,7 @@ from numpy.fft import fftn,ifftn,fftshift,ifftshift
 
 from eidolon import *
 from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
-from ui.mtServerForm import Ui_mtServerForm
+from ui import Ui_mtServerForm
 
 
 InterpTypes=enum(

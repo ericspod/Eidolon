@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ObjProp</class>
- <widget class="QWidget" name="ObjProp">
+ <class>SeriesProp</class>
+ <widget class="QWidget" name="SeriesProp">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
+    <width>270</width>
     <height>563</height>
    </rect>
   </property>

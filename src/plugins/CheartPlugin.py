@@ -23,9 +23,7 @@ from struct import unpack
 
 from eidolon import *
 
-from ui.cheartload import Ui_ObjDialog
-from ui.cheartdataload import Ui_DataDialog
-from ui.chearttdload import Ui_TDDialog
+from ui import Ui_ObjDialog, Ui_DataDialog, Ui_TDDialog
 
 
 CheartKeywords=enum(

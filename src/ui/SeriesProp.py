@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/SeriesProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Thu Aug 31 14:38:43 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -22,13 +23,13 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-class Ui_ObjProp(object):
-    def setupUi(self, ObjProp):
-        ObjProp.setObjectName(_fromUtf8("ObjProp"))
-        ObjProp.resize(250, 563)
-        self.verticalLayout = QtGui.QVBoxLayout(ObjProp)
+class Ui_SeriesProp(object):
+    def setupUi(self, SeriesProp):
+        SeriesProp.setObjectName(_fromUtf8("SeriesProp"))
+        SeriesProp.resize(270, 563)
+        self.verticalLayout = QtGui.QVBoxLayout(SeriesProp)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
-        self.groupBox_2 = QtGui.QGroupBox(ObjProp)
+        self.groupBox_2 = QtGui.QGroupBox(SeriesProp)
         self.groupBox_2.setObjectName(_fromUtf8("groupBox_2"))
         self.gridLayout_2 = QtGui.QGridLayout(self.groupBox_2)
         self.gridLayout_2.setContentsMargins(0, -1, 0, -1)
@@ -65,7 +66,7 @@ class Ui_ObjProp(object):
         self.propTable.verticalHeader().setCascadingSectionResizes(True)
         self.gridLayout_2.addWidget(self.propTable, 1, 0, 1, 1)
         self.verticalLayout.addWidget(self.groupBox_2)
-        self.createReprBox = QtGui.QGroupBox(ObjProp)
+        self.createReprBox = QtGui.QGroupBox(SeriesProp)
         self.createReprBox.setAutoFillBackground(False)
         self.createReprBox.setFlat(False)
         self.createReprBox.setCheckable(False)
@@ -120,21 +121,21 @@ class Ui_ObjProp(object):
         self.formLayout.setLayout(3, QtGui.QFormLayout.FieldRole, self.horizontalLayout_2)
         self.verticalLayout.addWidget(self.createReprBox)
 
-        self.retranslateUi(ObjProp)
-        QtCore.QMetaObject.connectSlotsByName(ObjProp)
+        self.retranslateUi(SeriesProp)
+        QtCore.QMetaObject.connectSlotsByName(SeriesProp)
 
-    def retranslateUi(self, ObjProp):
-        ObjProp.setWindowTitle(_translate("ObjProp", "Form", None))
-        self.groupBox_2.setTitle(_translate("ObjProp", "Properties", None))
+    def retranslateUi(self, SeriesProp):
+        SeriesProp.setWindowTitle(_translate("SeriesProp", "Form", None))
+        self.groupBox_2.setTitle(_translate("SeriesProp", "Properties", None))
         item = self.propTable.horizontalHeaderItem(0)
-        item.setText(_translate("ObjProp", "Name", None))
+        item.setText(_translate("SeriesProp", "Name", None))
         item = self.propTable.horizontalHeaderItem(1)
-        item.setText(_translate("ObjProp", "Value", None))
-        self.createReprBox.setTitle(_translate("ObjProp", "Create SceneObject", None))
-        self.allButton.setText(_translate("ObjProp", "All Images", None))
-        self.selectedButton.setText(_translate("ObjProp", "Selected Images By Index", None))
-        self.label_4.setText(_translate("ObjProp", "From", None))
-        self.label_5.setText(_translate("ObjProp", "to", None))
-        self.createButton.setText(_translate("ObjProp", "Create", None))
-        self.label_6.setText(_translate("ObjProp", "Step ", None))
+        item.setText(_translate("SeriesProp", "Value", None))
+        self.createReprBox.setTitle(_translate("SeriesProp", "Create SceneObject", None))
+        self.allButton.setText(_translate("SeriesProp", "All Images", None))
+        self.selectedButton.setText(_translate("SeriesProp", "Selected Images By Index", None))
+        self.label_4.setText(_translate("SeriesProp", "From", None))
+        self.label_5.setText(_translate("SeriesProp", "to", None))
+        self.createButton.setText(_translate("SeriesProp", "Create", None))
+        self.label_6.setText(_translate("SeriesProp", "Step ", None))
 

@@ -1079,7 +1079,7 @@ def setTrace():
             filename=frame.f_code.co_filename
             threadname=currentThread().getName()
 
-            if 'threading' in filename:
+            if 'threading' in filename: # ignore thread code tracing
                 return None
 
             if logging.getLogger().getEffectiveLevel()==logging.DEBUG:
@@ -1087,7 +1087,7 @@ def setTrace():
             else:
                 printFlush("%s:%s:%d: %s"%(threadname,filename, frame.f_lineno,event))
         except:
-            pass # Utils gets nullified at shutdown so suppress that exception
+            pass # modules get nullified at shutdown so suppress that exception
 
         return trace
 
@@ -1249,6 +1249,7 @@ def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
                     c=compile_command('\n'.join(lineadd+linebuffer)+'\n',filename,'exec') # raises syntax exceptions
                     if c:
                         linebuffer=[]
+                        # TODO: definitely not Py3 compatible
                         exec c in localvars # raises execution exceptions (Note: exec tuple syntax encounters parser bug on python versions below 2.7.9)
 
             except Exception as e:

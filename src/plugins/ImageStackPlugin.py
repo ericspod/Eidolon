@@ -18,7 +18,7 @@
 
 
 from eidolon import *
-from ui.ChooseImgStack import Ui_OpenImgStackDialog
+from ui import Ui_OpenImgStackDialog
 
 
 class ChooseImgStackDialog(QtGui.QDialog,Ui_OpenImgStackDialog):

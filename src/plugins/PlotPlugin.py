@@ -42,7 +42,7 @@ A simple time graph plotting two values over time can be added to the scene as s
 '''
 
 from eidolon import *
-from ui.RegionGraphWidget import Ui_RegionGraphWidget
+from ui import Ui_RegionGraphWidget
 
 addLibraryFile('pyqtgraph-0.9.10-py2.7')
 
