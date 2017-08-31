@@ -40,6 +40,7 @@ from .SceneUtils import matIterate, validIndices, BoundBox
 from .Concurrency import concurrent, checkResultMap, sumResultMap
 from .ImageObject import SharedImage, ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr, calculateStackClipSq
 
+from eidolon import * # because eval() is used its necessary to ensure everything is in the namespace for this module
 
 # Hounsfield value range
 Hounsfield=Utils.enum(
@@ -709,9 +710,9 @@ def mergeColinearImages(imgobjs,objout,mergefunc=None,task=None):
         imglist.append([o.images[ind] for o in imgobjs]+[objout.images[ind]])
 
     minmaxes=mergeColinearImagesRange(len(imglist),0,task,imglist,mergefunc,partitionArgs=(imglist,))
-
-    minmaxes=listSum(indexList(xrange(len(minmaxes)),minmaxes.values()))
-
+    checkResultMap(minmaxes)
+    minmaxes=sumResultMap(minmaxes)
+    
     for n in xrange(len(minmaxes)):
         imglist[n][-1].setMinMaxValues(*minmaxes[n])
 

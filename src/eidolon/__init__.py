@@ -25,6 +25,7 @@ from eidolon.Utils import *
 from eidolon.Concurrency import *
 from eidolon.SceneUtils import *
 from eidolon.MeshAlgorithms import *
+from eidolon.ImageAlgorithms import *
 from eidolon.ImageObject import *
 from eidolon.MathDef import *
 from eidolon.Camera2DView import *

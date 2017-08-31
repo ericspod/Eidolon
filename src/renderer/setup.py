@@ -144,7 +144,19 @@ extension=Extension(
     language='c++'
 )
 
-setup(ext_modules = cythonize(extension))
+ext=cythonize(extension)
+
+# HORRIBLE KLUDGE: need to get around problem of Cython generating code which relies on CPython having been compiled with --with-fpectl
+# The macros PyFTE_*_PROTECT invoke symbols which don't exist with Anaconda builds so they need to be removed which appears to be safe.
+# See https://github.com/numpy/numpy/issues/8415 http://www.psf.upfronthosting.co.za/issue29137
+cpplines=open('Renderer.cpp').readlines()
+with open('Renderer.cpp','w') as o:
+    for line in cpplines:
+        if 'PyFPE_START_PROTECT' not in line and 'PyFPE_END_PROTECT' not in line: # remove the symbol lines from the source
+            o.write(line)
+
+setup(ext_modules=ext)
+#setup(ext_modules = cythonize(extension))
 
 os.remove('./Renderer.cpp')
 shutil.rmtree('build')

@@ -72,7 +72,21 @@ for i in glob.glob('./*.pyx'):
     )
     extensions.append(e)
 
-setup(ext_modules=cythonize(extensions,include_path=['.','../renderer']))
+ext=cythonize(extensions,include_path=['.','../renderer'])
+
+# HORRIBLE KLUDGE: need to get around problem of Cython generating code which relies on CPython having been compiled with --with-fpectl
+# The macros PyFTE_*_PROTECT invoke symbols which don't exist with Anaconda builds so they need to be removed which appears to be safe.
+# See https://github.com/numpy/numpy/issues/8415 http://www.psf.upfronthosting.co.za/issue29137
+for cppfile in glob.glob('*.cpp'):
+	sys.stdout.write('Processing %s\n'%cppfile)
+	sys.stdout.flush()
+	cpplines=open(cppfile).readlines()
+	with open(cppfile,'w') as o:
+		for line in cpplines:
+			if 'PyFPE_START_PROTECT' not in line and 'PyFPE_END_PROTECT' not in line: # remove the symbol lines from the source
+				o.write(line)
+
+setup(ext_modules=ext)
 
 shutil.rmtree('build')
 
@@ -80,5 +94,5 @@ shutil.rmtree('build')
 if not isWindows:
     for i in glob.glob('./*.pyx'):
         i=os.path.splitext(i)[0]
-        dest='%s.so.%s'%(i,platdir) #if isLinux else i+'.dylib'
+        dest='%s.so.%s'%(i,platdir)
         shutil.move(i+'.so',dest)

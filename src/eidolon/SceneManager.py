@@ -48,7 +48,7 @@ from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Mate
 from .Camera2DView import Camera2DView
 from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, Future, FutureError, timeBackupFile, setTrace, TaskQueue
 from .VisualizerUI import QtCore, QtGui, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
-from .SceneObject import SceneObject, SceneObjectRepr
+from .SceneObject import SceneObject, SceneObjectRepr, MeshSceneObject
 from .SceneComponents import LightType, CenterType, AxesType, SceneLight, ScriptWriter
 
 globalMgr=None
@@ -1263,9 +1263,9 @@ class SceneManager(TaskQueue):
 
         # if this object has no plugin, give it the default one appropriate for its type
         if not obj.plugin:
-            if isinstance(obj,SceneObject.MeshSceneObject):
+            if isinstance(obj,MeshSceneObject):
                 obj.plugin=self.meshplugin
-            elif isinstance(obj,SceneObject.ImageSceneObject):
+            elif isinstance(obj,ImageObject.ImageSceneObject):
                 obj.plugin=self.imageplugin
             else:
                 obj.plugin=ScenePlugin('Default Plugin')
