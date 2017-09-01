@@ -28,7 +28,7 @@ import VisualizerUI
 import SceneComponents
 import SceneUtils
 
-from renderer.Renderer import TF_ALPHALUM8, TF_RGBA32, vec3, rotator,color, minmaxMatrixReal
+from renderer import TF_ALPHALUM8, TF_RGBA32, vec3, rotator,color, minmaxMatrixReal
 from .Utils import first, ParamType, ParamDef, Future, taskroutine, timing, toIterable
 from .MathDef import ElemType
 from .VisualizerUI import CustomUIType, setChecked, fillList, ParamPanel, IconName

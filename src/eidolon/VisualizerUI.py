@@ -37,7 +37,7 @@ import eidolon
 import eidolon.Utils as Utils
 from eidolon.Utils import EventType, ParamType, ConfVars
 
-from renderer.Renderer import getRenderAdapter,RenderParamGroup,platformID
+from renderer import getRenderAdapter,RenderParamGroup,platformID
 
 from ui import Ui_MainWindow, Ui_ProjProp, Ui_ObjReprProp, Ui_ObjProp, Ui_matProp, Ui_LightProp, Ui_gpuProp,\
         Ui_Draw2DView, Ui_ScreenshotForm, Ui_ShowMsg #,loadGPUScript
@@ -1523,7 +1523,7 @@ class ConsoleWidget(QtGui.QTextEdit):
                         with open(self.logfile,'a') as o:
                             o.write('%s\n'%line)
                     except Exception as e:
-                        self.write('Cannot write to console log file %r:\n%r\n'(self.logfile,e))
+                        self.write('Cannot write to console log file %r:\n%r\n'%(self.logfile,e))
 
         self.inputevent.set()
 

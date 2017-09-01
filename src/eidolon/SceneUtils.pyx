@@ -1451,8 +1451,8 @@ def calculateLinePlaneIntersect(vec3 start,vec3 end,vec3 planept, vec3 planenorm
 
 def reindexMesh(list inds,list components):
     '''
-    Reindex the mesh defined by the indices `inds' and list of nodes, norms, xis etc. in `components'. The indices in
-    `inds' will be reordered to start from 0 and any members of `components' not indexed will not be present in the
+    Reindex the mesh defined by the indices `inds' and lists of nodes, norms, xis etc. in list `components'. The indices
+    in `inds' will be reordered to start from 0 and any members of `components' not indexed will not be present in the
     resulting mesh. The return value is the pair (newinds,newcomps) where `newinds' is the new list of indices and
     `newcomps' the new list of component lists which is indexed by `newinds'.
     '''

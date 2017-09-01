@@ -47,7 +47,7 @@ import ImageObject
 from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture
 from .Camera2DView import Camera2DView
 from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, Future, FutureError, timeBackupFile, setTrace, TaskQueue
-from .VisualizerUI import QtCore, QtGui, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
+from .VisualizerUI import QtGui, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
 from .SceneObject import SceneObject, SceneObjectRepr, MeshSceneObject
 from .SceneComponents import LightType, CenterType, AxesType, SceneLight, ScriptWriter
 
@@ -281,7 +281,7 @@ class Project(object):
         if item in self.checkboxMap:
             obj=self.mgr.findObject(self.checkboxMap[item])
             if obj:
-                if item.checkState()==QtCore.Qt.Checked:
+                if item.checkState()==Qt.Checked:
                     self.addObject(obj)
                 else:
                     self.removeObject(obj)
@@ -311,8 +311,8 @@ class Project(object):
 
         for i,o in enumerate(objs):
             chkBoxItem = QtGui.QTableWidgetItem()
-            chkBoxItem.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-            chkBoxItem.setCheckState(QtCore.Qt.Checked if o in self.memberObjs else QtCore.Qt.Unchecked)
+            chkBoxItem.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            chkBoxItem.setCheckState(Qt.Checked if o in self.memberObjs else Qt.Unchecked)
 
             self.checkboxMap[chkBoxItem]=o.getName()
 

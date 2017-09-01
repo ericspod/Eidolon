@@ -22,7 +22,7 @@ This defines the SceneObject and SceneObjectRepr objects and derivatives. These 
 representations of that data respectively.
 '''
 
-from renderer.Renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
+from renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
         IndexMatrix, ColorMatrix,MatrixIndexBuffer, MatrixVertexBuffer, PyIndexBuffer, PyVertexBuffer
 from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
 from .SceneUtils import StdProps, MatrixType, getDatasetSummaryTuples, BoundBox
@@ -385,8 +385,8 @@ class SceneObjectRepr(object):
             f.setGPUParam(name,val,progtype,**kwargs)
 
     def getRayIntersect(self,ray):
-        '''Return the distance value where `ray' intersects this object.'''
-        raise NotImplementedError
+        '''Return the distance value where `ray' intersects this object, or None if not known or not intersected.'''
+        return None
 
     def getPropTuples(self):
         '''Returns a list of name/value pairs listing the properties to display for this scene object in the UI.'''
@@ -1008,6 +1008,7 @@ class TDMeshSceneObjectRepr(SceneObjectRepr):
         self.timestep=0
         self.timestepIndex=0
         self.datafieldname=None
+        self.drawInternal=self.isDrawInternal()
 
         self.timestepList=parent.timestepList if len(parent.timestepList)==len(subreprs) else range(len(subreprs))
         self.proptuples=[]

@@ -930,64 +930,6 @@ def delayedMethodWeak(obj,methname,delay=0):
     setattr(obj,methname,newmeth)
 
 
-#def taskroutine(taskLabel=None,selfName='task'):
-#   '''
-#   Routine decorator which produces a wrapper function returning a task that will execute the original function when
-#   processedby the task queue. The first argument indicates the name of the variable used to pass the Task instance
-#   to the function call or is None if no passing is wanted. If the task argument is present it must be the last and
-#   when the function is called no value for it must be provided, thus it must have a default value (usually None).
-#   The optional second argument defines whether the task is a threaded one or not (default is False).
-#   '''
-#   def funcwrap(func):
-#       @wraps(func)
-#       def taskroutinefunc(*args,**kwargs):
-#           return Task(taskLabel if taskLabel else func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
-#
-#       return taskroutinefunc
-#
-#   return funcwrap
-#
-#
-#def taskmethod(taskLabel=None,selfName='task',mgrName='mgr'):
-#   '''
-#   Wraps a given method such that it will execute the method's body in a task and store the result in a returned
-#   Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
-#   object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
-#   The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
-#
-#   For example, the method:
-#
-#       def meth(self,*args,**kwargs):
-#           f=Future()
-#           @taskroutine('msg')
-#           def _func(task):
-#               with f:
-#                   f.setObject(doSomething())
-#
-#           return self.mgr.runTasks(_func(),f)
-#
-#   is equivalent to:
-#
-#       @taskmethod('msg')
-#       def meth(self,*args,**kwargs):
-#           return doSomething()
-#   '''
-#   def methwrap(meth): # function which returns wrapper method
-#       @wraps(meth)
-#       def taskmethod(self,*args,**kwargs): # wrapper method which adds the task executing `meth'
-#           f=Future()
-#           def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
-#               with f:
-#                   kwargs[selfName]=task
-#                   f.setObject(meth(self,*args,**kwargs))
-#
-#           return getattr(self,mgrName).runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
-#
-#       return taskmethod
-#
-#   return methwrap
-
-
 @wrapper
 def taskroutine(func,args,kwargs,taskLabel=None,selfName='task'):
     '''
@@ -1580,7 +1522,7 @@ def tracing(func):
     return _wrap
 
 
-def traverseObj(obj,func,visited=set()):
+def traverseObj(obj,func,visited=()):
     '''
     Attempt to visit every member of `obj' and every member of members etc. recursively. The callable `func' is applied
     to `obj' to determine when to stop traversing, returning False if a stop is requested. The set `visited' is the
@@ -1752,74 +1694,7 @@ def getStrCommonality(str1,str2):
 def getStrListCommonality(strs):
     '''Returns the index of the first character which is not common in all the strings of the list `strs'.'''
     sets=itertools.imap(set,itertools.izip(*strs))
-    return first(i for i,s in enumerate(sets) if len(s)>1)# or min(map(len,strs))
-
-#   minlen=min(map(len,strs))
-#   def identChars(i):
-#       return all(strs[0][i]==s[i] for s in strs[1:])
-#
-#   index=first(i for i in xrange(minlen) if not identChars(i))
-#   return index if index!=None else minlen
-
-
-def globulateStrList(striter,threshold=3):
-    '''
-    Converts a list of strings into a dict mapping regex-like patterns to strings in `striter' having at least `threshold'
-    commonality with one another. The key value is the longest prefix all the strings have in common followed by *.
-    If a string has no commonality of at least `threshold' with any other string, it is mapped to itself. If multiple
-    identical strings are found, they are mapped to themselves with * appended in the key.
-
-    Eg: globulateStrList(['fooggle','foogg','fottt','bazzol','bazzle','thunk','fool'])
-    results in
-       {'thunk': ['thunk'], 'bazz*': ['bazzol', 'bazzle'], 'fo*': ['fooggle', 'foogg', 'fottt', 'fool']}.
-    '''
-    results={}
-    initlist=list(striter)
-    strlist=sorted(striter,key=lambda i:-len(i))
-
-    for unique in set(strlist):
-        found=[i for i in strlist if i==unique]
-        if len(found)>1:
-            results[unique]=found
-            strlist=[i for i in strlist if i!=unique]
-
-    matchlist=[(i,max(getStrCommonality(i,j)[0] for j in strlist if i!=j)) for i in strlist]
-
-    while len(matchlist)>0:
-        str1,maxmatch=matchlist.pop(0)
-        nextmatch=first(i for _,i in matchlist if i!=maxmatch)
-
-        matchvals=[]#[i for i,_ in matchlist if getStrCommonality(i,str1)[0]>nextmatch]
-        maxcommon=0
-        for i,_ in matchlist:
-            common= getStrCommonality(i,str1)[0]
-            if common>nextmatch:
-                matchvals.append(i)
-                maxcommon=max(maxcommon,common)
-
-        if matchvals:
-            results[str1[:maxcommon]]=[str1]+matchvals
-            matchlist=[(i,j) for i,j in matchlist if i not in matchvals]
-        else:
-            results[str1]=[str1]
-
-    resultlist=sorted(results.items()) # sort results by name, so shorter names first
-    results={}
-
-    # keep names that are a prefix for other names and add these other names's values to the prefix value list
-    while resultlist:
-        name,vals=resultlist.pop(0)
-        suffixes=filter(lambda i:i[0].startswith(name),resultlist)
-        if suffixes: # found names that start with the current name
-            resultlist=filter(lambda i:i not in suffixes,resultlist)
-            vals+=listSum(zip(*suffixes)[1])
-
-        if len(set(vals))>1:
-            name+='*'
-
-        results[name]=sorted(vals,key=initlist.index)
-
-    return results
+    return first(i for i,s in enumerate(sets) if len(s)>1)
 
 
 def findGlobMatch(globname,names):

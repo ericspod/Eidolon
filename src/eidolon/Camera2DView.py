@@ -23,6 +23,7 @@ import SceneUtils
 import SceneComponents
 import VisualizerUI
 import ImageAlgorithms
+import MeshAlgorithms
 
 from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, FT_TRILIST, FT_LINELIST
 from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
@@ -427,7 +428,7 @@ class BaseCamera2DWidget(Base2DWidget):
                 for i,tsrep in enumerate(rep.enumSubreprs()):
                     task.setProgress(i+1)
 
-                    snodes,sinds,scols=SceneUtils.generateMeshPlanecut(tsrep.dataset,'slicemesh%i'%i,planept,planenorm,self.linewidth,nodecolors=tsrep.nodecolors)
+                    snodes,sinds,scols=MeshAlgorithms.generateMeshPlanecut(tsrep.dataset,'slicemesh%i'%i,planept,planenorm,self.linewidth,nodecolors=tsrep.nodecolors)
                     vb=None
                     ib=None
 
