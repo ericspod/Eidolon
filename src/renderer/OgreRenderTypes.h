@@ -2255,7 +2255,7 @@ public:
 	
 	virtual Ogre::SceneNode* createNode(const std::string& name)
 	{
-		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted symultaneously
+		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted simultaneously
 			Ogre::SceneNode* node=mgr->getRootSceneNode()->createChildSceneNode();
 			nmap[name]=node;
 			return node;
@@ -2264,7 +2264,7 @@ public:
 
 	virtual Ogre::SceneNode* getNode(Figure *fig)
 	{
-		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted symultaneously
+		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted simultaneously
 			std::string name=fig->getName();
 			if(nmap.find(name)!=nmap.end())
 				return nmap[name];
@@ -2275,7 +2275,7 @@ public:
 
 	virtual void destroyNode(Ogre::SceneNode *node) throw(Ogre::InternalErrorException)
 	{
-		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted symultaneously
+		critical(&sceneMutex){ // used to ensure a nodes cannot be created, queried, or deleted simultaneously
 			std::string  name="";
 			for(nodemap::iterator it=nmap.begin();!name.size() && it!=nmap.end();++it)
 				if(it->second==node)
@@ -2290,72 +2290,11 @@ public:
 		}
 	}
 
-private:
-
-	std::string getUniqueEntityName(const std::string& name)
-	{
-		std::ostringstream os;
-		std::string uname=name;
-
-		for(int i=0;i<MAXNAMECOUNT && mgr->hasEntity(uname);i++){
-			os.str("");
-			os << name << "_" << i;
-			uname=os.str();
-		}
-
-		return uname;
-	}
+	std::string getUniqueEntityName(const std::string& name);
 	
-	std::string getUniqueFigureName(const std::string& name)
-	{
-		std::ostringstream os;
-		std::string uname=name;
-		
-		critical(&sceneMutex){ // ensures there's no contention when determining if a name is unique or not
-			for(int i=0;i<MAXNAMECOUNT;i++){
-				//bool namefound=false;
-				//for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it){
-				//	namefound=it->first==uname;
-				//}
-				bool namefound=nmap.find(uname)!=nmap.end();
-				
-				if(!namefound)
-					break;
-				
-				os.str("");
-				os << name << "_" << i;
-				uname=os.str();
-			}
-		}
-		return uname;
-	}
+	std::string getUniqueFigureName(const std::string& name);
 
-	std::string getUniqueResourceName(const std::string& name, Ogre::ResourceManager& rmgr) throw(Ogre::InternalErrorException)
-	{
-		std::ostringstream os;
-		std::string uname=name;
-
-		bool namefound=false;
-		
-		for(int i=0;i<MAXNAMECOUNT;i++){
-			namefound=rmgr.getResourceByName(uname,resGroupName).isNull();
-	
-			if(namefound)
-				break;
-			
-			os.str("");
-			os << name << "_" << i;
-			uname=os.str();
-		}
-		
-		if(!namefound){
-			os.str("");
-			os << "Cannot find unique name for '"<<name<<"'";
-			OGRE_EXCEPT(Ogre::Exception::ERR_INTERNAL_ERROR,os.str(),"OgreRenderScene::getUniqueResourceName");
-		}
-		
-		return uname;
-	}
+	std::string getUniqueResourceName(const std::string& name, Ogre::ResourceManager& rmgr) throw(Ogre::InternalErrorException);
 };
 
 

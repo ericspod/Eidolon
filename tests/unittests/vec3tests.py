@@ -22,6 +22,7 @@ try:
 except:
     pass
 
+import nose
 from TestUtils import *
 from eidolon import vec3    
 

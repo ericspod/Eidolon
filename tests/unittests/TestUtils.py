@@ -18,7 +18,7 @@
 
 # Run unit tests from this directory with the command "../../run.sh *tests.py"
 
-import nose,math
+import math
 from nose.tools import eq_
 from random import triangular
 

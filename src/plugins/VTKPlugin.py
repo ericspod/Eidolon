@@ -466,7 +466,7 @@ class VTKPlugin(MeshScenePlugin):
                             o.write('%s %s float\n'%(atype,name)) # scalars doesn't preserve any lookup table components
                         elif atype in (AttrTypes._TEXTURE_COORDINATES,AttrTypes._COLOR_SCALARS):
                             dtype=' float' if atype==AttrTypes._TEXTURE_COORDINATES else ''
-                            o.write('%s %s %i%s\n'%(atype,dat.m(),dtype))
+                            o.write('%s %s %s\n'%(atype,dat.m(),dtype))
                         elif atype == AttrTypes._LOOKUP_TABLE:
                             o.write('%s %i\n'%(atype,dat.n()))
                         else:

@@ -19,7 +19,6 @@
 from eidolon import *
 
 import math
-import gzip
 import textwrap
 from glob import glob
 

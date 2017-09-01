@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import sys
-sys.path.append(scriptdir+'..')
-from Testing import ReprType
+from eidolon import ReprType
 
 obj=ImgPlugin.createTestImage(51,52,53)
 mgr.addSceneObject(obj)

@@ -781,7 +781,7 @@ class DicomDataset(object):
 
     def __str__(self):
         return 'Dataset %s #Images %i' %(self.rootdir,sum(len(s.filenames) for s in self.series))
-
+    
 
 class DicomPlugin(ImageScenePlugin):
     def __init__(self):

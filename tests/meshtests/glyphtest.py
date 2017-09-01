@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import *
+from eidolon import vec3, PyDataSet, MeshSceneObject, ReprType
 
 nodes=[vec3(0,0,0),vec3(2,0,0),vec3(5,0,0),vec3(10,0,0)]
 field=[0.0,1.0,2.0,3.0]

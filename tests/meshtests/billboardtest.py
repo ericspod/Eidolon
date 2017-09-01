@@ -16,14 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import *
+from eidolon import vec3, FT_BB_POINT, BoundBox, PyVertexBuffer
 
-@mgr.callThreadSafe # immediately calls create() when it's definition is completed
-def create():
-	nodes=[vec3(0,0,0),vec3(10.0/3,0,0),vec3(20.0/3,0,0),vec3(10,0,0)]
-	fig=mgr.scene.createFigure("testBB","Default",FT_BB_POINT)
-	vb=PyVertexBuffer(nodes)
-	fig.fillData(vb,None,True)
-	mgr.controller.setSeeAllBoundBox(BoundBox(nodes))
-	mgr.repaint()
-	return fig # returned value gets assigned to the name `create', this prevents it being cleaned up when create() exits
+nodes=[vec3(0,0,0),vec3(10.0/3,0,0),vec3(20.0/3,0,0),vec3(10,0,0)]
+fig=mgr.callThreadSafe(mgr.scene.createFigure,"testBB","Default",FT_BB_POINT)
+vb=PyVertexBuffer(nodes)
+fig.fillData(vb,None,True)
+mgr.controller.setSeeAllBoundBox(BoundBox(nodes))
+mgr.repaint()

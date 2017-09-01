@@ -22,6 +22,7 @@ try:
 except:
     pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
 
+import nose
 from TestUtils import *
 from eidolon import vec3,rotator, SharedImage
 import numpy as np

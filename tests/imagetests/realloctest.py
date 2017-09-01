@@ -23,6 +23,8 @@ from Testing import ReprType,generateTimeSphereImages,ImageSceneObject,extendIma
 step=0.1
 dim=50
 
+# create an object and repr with a particular name
+
 images=generateTimeSphereImages(step,dim)
 obj=ImageSceneObject('Sphere',[],images)
 mgr.addSceneObject(obj)
@@ -30,10 +32,12 @@ mgr.addSceneObject(obj)
 rep=obj.createRepr(ReprType._imgtimevolume)
 mgr.addSceneObjectRepr(rep)
 
-obj=None
-rep=None
+del obj
+del rep
 
-mgr.clearScene()
+mgr.clearScene() # this should free up existing objects
+
+# attempt to create an object and repr with the same name as the above, this will crash if the repr doesn't choose unique names for materials, textures, etc.
 
 images=generateTimeSphereImages(step,dim)
 obj=ImageSceneObject('Sphere',[],images)

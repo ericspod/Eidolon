@@ -34,7 +34,7 @@ class MeditPlugin(MeshScenePlugin):
         meditload=mgr.conf.get('args','--medit').split(',')
         
         if len(meditload) in (1,2) and meditload[0].strip():
-            obj=self.loadFile(meditload[0])
+            obj=self.loadObject(meditload[0])
             self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(obj()))
             
             if len(meditload)==2:

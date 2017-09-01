@@ -125,7 +125,7 @@ void OgreMaterial::setTexture(const char* name)
 		virtual void op() 
 		{ 
 			if(tname.size()>0){
-				Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(tname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+				Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(tname,mat->scene->resGroupName);
 	
 				if(!tp.isNull()){
 					if(mat->texunit==NULL)
@@ -159,22 +159,24 @@ void OgreMaterial::useSpectrumTexture(bool use)
 		
 		virtual void op() 
 		{
-			std::string specname=mat->mat->getName()+"_spectex";
+			std::string specname=mat->scene->getUniqueResourceName(mat->mat->getName()+"_spectex",tmgr); // choose a unique name
 
-			if(use && mat->spectex.isNull())
-				mat->spectex=Ogre::TextureManager::getSingleton().createManual(specname,Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-						Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
-		
-			if(use && mat->specunit==NULL){
+			if(use && mat->spectex.isNull()){ // if a spectrum is requested but the texture doesn't exist, create it
+				Ogre::TextureManager &tmgr=Ogre::TextureManager::getSingleton();
+				mat->spectex=tmgr.createManual(specname,mat->scene->resGroupName, Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
+			}
+			
+			if(use && mat->specunit==NULL){ // if a spectrum unit state is requested but does not exist, create it
 				mat->specunit=mat->t0p0->createTextureUnitState(specname);
 				mat->specunit->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
 			}
-			else if(!use && mat->specunit!=NULL){
+			else if(!use && mat->specunit!=NULL){ // if a spectrum unit state is not requested but does exist, delete it
 				mat->t0p0->removeTextureUnitState(mat->t0p0->getTextureUnitStateIndex(mat->specunit));
 				mat->specunit=NULL;
 			}
+			// if the requested spectrum status `use' matches the existence of the unit state, do nothing 
 			
-			mat->commit();
+			mat->commit(); // call commit directly to update the spectrum in one resource operation 
 		}
 	};
 	
@@ -1517,11 +1519,12 @@ Image* OgreRenderScene::loadImageFile(const std::string &filename) throw(RenderE
 Texture* OgreRenderScene::createTexture(const char* name,sval width, sval height, sval depth, TextureFormat format) throw(RenderException)
 {
 	try{
+		Ogre::TextureManager& tmgr=Ogre::TextureManager::getSingleton();
 		depth=_max<sval>(1,depth);
-		std::string uname=getUniqueResourceName(name,Ogre::TextureManager::getSingleton());
+		std::string uname=getUniqueResourceName(name,tmgr);
 		
 		// create a texture that's always 3D even if depth==1, this is so the shaders can always work with a sampler3D object
-		Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().createManual(uname,resGroupName, Ogre::TEX_TYPE_3D, width,height,depth,0,convert(format));
+		Ogre::TexturePtr tp=tmgr.createManual(uname,resGroupName, Ogre::TEX_TYPE_3D, width,height,depth,0,convert(format));
 
 		return new OgreTexture(tp,"",this);
 	}
@@ -1533,7 +1536,8 @@ Texture* OgreRenderScene::createTexture(const char* name,sval width, sval height
 Texture* OgreRenderScene::loadTextureFile(const char* name,const char* absFilename) throw(RenderException)
 {
 	try{
-		Ogre::TexturePtr tp=Ogre::TextureManager::getSingleton().getByName(name,resGroupName);
+		Ogre::TextureManager& tmgr=Ogre::TextureManager::getSingleton();
+		Ogre::TexturePtr tp=tmgr.getByName(name,resGroupName);
 		if(tp.isNull()){
 			Ogre::String sname=absFilename;
 			Ogre::String ext=sname.substr(sname.find_last_of('.')+1);
@@ -1544,7 +1548,7 @@ Texture* OgreRenderScene::loadTextureFile(const char* name,const char* absFilena
 
 			img.load(istream,ext);
 			
-			tp=Ogre::TextureManager::getSingleton().loadImage(name,resGroupName,img);
+			tp=tmgr.loadImage(name,resGroupName,img);
 		}
 		return new OgreTexture(tp,absFilename,this);
 	}
@@ -1568,6 +1572,71 @@ GPUProgram* OgreRenderScene::createGPUProgram(const char* name,ProgramType ptype
 	catch(Ogre::Exception &e){
 		THROW_RENDEREX(e);
 	}
+}
+
+std::string OgreRenderScene::getUniqueEntityName(const std::string& name)
+{
+	std::ostringstream os;
+	std::string uname=name;
+
+	for(int i=0;i<MAXNAMECOUNT && mgr->hasEntity(uname);i++){
+		os.str("");
+		os << name << "_" << i;
+		uname=os.str();
+	}
+
+	return uname;
+}
+
+std::string OgreRenderScene::getUniqueFigureName(const std::string& name)
+{
+	std::ostringstream os;
+	std::string uname=name;
+	
+	critical(&sceneMutex){ // ensures there's no contention when determining if a name is unique or not
+		for(int i=0;i<MAXNAMECOUNT;i++){
+			//bool namefound=false;
+			//for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it){
+			//	namefound=it->first==uname;
+			//}
+			bool namefound=nmap.find(uname)!=nmap.end();
+			
+			if(!namefound)
+				break;
+			
+			os.str("");
+			os << name << "_" << i;
+			uname=os.str();
+		}
+	}
+	return uname;
+}
+
+std::string OgreRenderScene::getUniqueResourceName(const std::string& name, Ogre::ResourceManager& rmgr) throw(Ogre::InternalErrorException)
+{
+	std::ostringstream os;
+	std::string uname=name;
+
+	bool namefound=false;
+	
+	for(int i=0;i<MAXNAMECOUNT;i++){
+		namefound=rmgr.getResourceByName(uname,resGroupName).isNull();
+
+		if(namefound)
+			break;
+		
+		os.str("");
+		os << name << "_" << i;
+		uname=os.str();
+	}
+	
+	if(!namefound){
+		os.str("");
+		os << "Cannot find unique name for '"<<name<<"'";
+		OGRE_EXCEPT(Ogre::Exception::ERR_INTERNAL_ERROR,os.str(),"OgreRenderScene::getUniqueResourceName");
+	}
+	
+	return uname;
 }
 
 OgreRenderAdapter::OgreRenderAdapter(Config *config) throw(RenderException) : mgr(NULL), win(NULL), config(config), scene(NULL) 
