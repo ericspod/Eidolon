@@ -177,6 +177,10 @@ class ScenePlugin(object):
     def getHelp(self):
         '''Return a help text block.'''
         return ''
+    
+    def getTests(self):
+        '''Return a list of test tuples of the form (callable, arg1, arg2,...) to be called with Nose.'''
+        return []
 
     def getReprParamHelp(self,obj,reprtype):
         '''Get the help text for the parameters for `obj' and representation type `reprtype'.'''

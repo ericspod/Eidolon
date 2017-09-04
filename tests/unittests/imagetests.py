@@ -24,11 +24,12 @@ except:
 
 import nose
 from TestUtils import *
-from eidolon import vec3,rotator, SharedImage
+from eidolon import vec3,rotator, SharedImage, getPlaneXi
 import numpy as np
 
 
 def testXis1():
+    '''Test the xi values of points on the plane of a SharedImage, calls SharedImage.getPlaneXi().'''
     si=SharedImage('',vec3(),rotator(),(10,10))
     eq_(vec3(),si.getPlaneXi(vec3()))
     eq_(vec3(1,1),si.getPlaneXi(vec3(10,-10)))
@@ -37,6 +38,7 @@ def testXis1():
     
 
 def testXis2():
+    '''Test the xi values of corners of a SharedImage, calls getPlaneXi().'''
     si=SharedImage('',vec3(1,-2,3),rotator(0.1,-0.2,0.3),(10,10),(0.678,0.789))
     corners=si.getCorners()
     eq_(vec3(),si.getPlaneXi(corners[0]))
@@ -45,6 +47,7 @@ def testXis2():
     
     
 def testXis3():
+    '''Test the xi values of points on the plane of a SharedImage, calls SharedImage.getPlaneXi().'''
     pos=vec3(5,-6,7)
     si=SharedImage('',pos,rotator(),(10,10))
     eq_(vec3(),si.getPlaneXi(pos))
@@ -53,6 +56,7 @@ def testXis3():
     
 
 def testXis4():
+    '''Test the xi values of points on the plane of a SharedImage, calls SharedImage.getPlaneXi().'''
     pos=vec3(5,-6,7)
     dim=(0.678,0.789)
     si=SharedImage('',pos,rotator(),(10,10),dim)
@@ -62,8 +66,16 @@ def testXis4():
     
 
 def testRot1():
+    '''Tests the creation of a SharedImage with the default vec3 and rotator value, calls SharedImage.getPlaneXi().'''
     si=SharedImage('',vec3(),rotator(),(1,1))
     
     eq_(vec3(1),si.getPlaneXi(vec3(1,-1,1)))
+    
+
+def testPlaneXiFunc():
+    '''Tests the getPlaneXi function directly.'''
+    v=vec3(*randnums(3,-5,5))
+    r=rotator(*randnums(4,-1,1))
+    eq_(vec3(0),getPlaneXi(v,v,r,vec3(1)))
     
 nose.runmodule()    

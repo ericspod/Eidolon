@@ -29,6 +29,7 @@ import time
 import re
 from collections import OrderedDict, namedtuple
 from Queue import Queue
+from StringIO import StringIO
 from random import randint
 import numpy as np
 
@@ -133,7 +134,7 @@ def createDicomReadThread(rootpath,files,readPixels=True):
     Reads the Dicom files in `rootpath' listed by relative file names in the list  `files', and returns the reading
     thread object and the synchronized queue containing (relative-filenames,Dicom-object) pairs produced by the thread.
     '''
-    dcmqueue=Queue()
+    dcmqueue=Queue.Queue()
 
     def readDicoms():
         for f in files:
@@ -291,6 +292,79 @@ def isPhaseImage(image):
     phasevalue2='P' # Siemens?
 
     return phasevalue1 in imagetype or phasevalue2 in imagetype
+
+
+def testLoad():
+    '''Test loading a dicom file from the tutorial directory.'''
+    dcmfile=os.path.join(getAppDir(),'tutorial','DicomData','SA_00000.dcm')
+    dcm=DicomSharedImage(dcmfile)
+    assert dcm
+
+
+def testLoadDir(plugin):
+    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+    f=plugin.loadDirDataset(dcmdir)
+    result=f(10)
+    assert result is not None,'%r is None'%result
+    assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
+
+
+def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
+    '''
+    This pseudo-constructor creates a SharedImage object from a DICOM file. If `dcm' is None then the file is read
+    from `filename', which must always be the valid path to the loaded DICOM. The `index' value is for the ordering the
+    caller imposes on a series of DICOM images, usually this is the index of the image in its containing DICOM series.
+    '''
+    dcm=read_file(filename) if dcm is None else dcm
+    assert dcm!=None
+
+    position=vec3(*roundHeaderVals(*dcm.get('ImagePositionPatient',[0,0,0]))) # top-left corner
+    dimensions=(dcm.get('Columns',0),dcm.get('Rows',0))
+    spacing=map(float,dcm.get('PixelSpacing',[1,1]))
+
+    a,b,c,d,e,f=roundHeaderVals(*dcm.get('ImageOrientationPatient',[1,0,0,0,-1,0]))
+    orientation=rotator(vec3(a,b,c).norm(),vec3(d,e,f).norm(),vec3(1,0,0),vec3(0,-1,0))
+    
+    si=SharedImage(filename,position,orientation,dimensions,spacing)
+
+    try:
+        validPixelArray=dcm.pixel_array is not None
+    except:
+        validPixelArray=False
+
+    si.index=index
+    # extract Dicom properties of interest
+    si.seriesID=str(dcm.get('SeriesInstanceUID',''))
+    si.imageType=list(dcm.get('ImageType',[]))
+    si.isSpatial=validPixelArray and dcm.get('ImagePositionPatient',None)!=None
+    si.timestep=readDicomTimeValue(dcm) #float(dcm.get('TriggerTime',-1))
+    si.isCompressed=not validPixelArray and not getattr(dcm,'_is_uncompressed_transfer_syntax',lambda:False)()
+    #si.tags=convertToDict(dcm)
+
+    if 0<=si.timestep<2: # convert from seconds to milliseconds
+        si.timestep*=1000
+
+    if validPixelArray:
+        #wincenter=dcm.get('WindowCenter',None)
+        #winwidth=dcm.get('WindowWidth',None)
+        rslope=float(dcm.get('RescaleSlope',1))
+        rinter=float(dcm.get('RescaleIntercept',0))
+        #rtype=dcm.get('RescaleType',None)
+
+        # TODO: proper rescaling?
+        if not rescale or rslope==0:
+            rslope=1.0
+            rinter=0.0
+            
+        pixelarray=dcm.pixel_array*rslope+rinter
+        if pixelarray.ndim==3:
+            pixelarray=np.sum(pixelarray,axis=2)
+
+        si.allocateImg(si.seriesID+str(si.index),isShared)
+        np.asarray(si.img)[:,:]=pixelarray
+        si.setMinMaxValues(*minmaxMatrixReal(si.img))
+
+    return si
 
 
 class SeriesPropertyWidget(QtGui.QWidget,Ui_SeriesProp):
@@ -573,64 +647,6 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
         QtGui.QDialog.reject(self)
 
 
-def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
-    '''
-    This pseudo-constructor creates a SharedImage object from a DICOM file. If `dcm' is None then the file is read
-    from `filename', which must always be the valid path to the loaded DICOM. The `index' value is for the ordering the
-    caller imposes on a series of DICOM images, usually this is the index of the image in its containing DICOM series.
-    '''
-    dcm=read_file(filename) if dcm is None else dcm
-    assert dcm!=None
-
-    position=vec3(*roundHeaderVals(*dcm.get('ImagePositionPatient',[0,0,0]))) # top-left corner
-    dimensions=(dcm.get('Columns',0),dcm.get('Rows',0))
-    spacing=map(float,dcm.get('PixelSpacing',[1,1]))
-
-    a,b,c,d,e,f=roundHeaderVals(*dcm.get('ImageOrientationPatient',[1,0,0,0,-1,0]))
-    orientation=rotator(vec3(a,b,c).norm(),vec3(d,e,f).norm(),vec3(1,0,0),vec3(0,-1,0))
-    
-    si=SharedImage(filename,position,orientation,dimensions,spacing)
-
-    try:
-        validPixelArray=dcm.pixel_array is not None
-    except:
-        validPixelArray=False
-
-    si.index=index
-    # extract Dicom properties of interest
-    si.seriesID=str(dcm.get('SeriesInstanceUID',''))
-    si.imageType=list(dcm.get('ImageType',[]))
-    si.isSpatial=validPixelArray and dcm.get('ImagePositionPatient',None)!=None
-    si.timestep=readDicomTimeValue(dcm) #float(dcm.get('TriggerTime',-1))
-    si.isCompressed=not validPixelArray and not getattr(dcm,'_is_uncompressed_transfer_syntax',lambda:False)()
-    #si.tags=convertToDict(dcm)
-
-    if 0<=si.timestep<2: # convert from seconds to milliseconds
-        si.timestep*=1000
-
-    if validPixelArray:
-        #wincenter=dcm.get('WindowCenter',None)
-        #winwidth=dcm.get('WindowWidth',None)
-        rslope=float(dcm.get('RescaleSlope',1))
-        rinter=float(dcm.get('RescaleIntercept',0))
-        #rtype=dcm.get('RescaleType',None)
-
-        # TODO: proper rescaling?
-        if not rescale or rslope==0:
-            rslope=1.0
-            rinter=0.0
-            
-        pixelarray=dcm.pixel_array*rslope+rinter
-        if pixelarray.ndim==3:
-            pixelarray=np.sum(pixelarray,axis=2)
-
-        si.allocateImg(si.seriesID+str(si.index),isShared)
-        np.asarray(si.img)[:,:]=pixelarray
-        si.setMinMaxValues(*minmaxMatrixReal(si.img))
-
-    return si
-
-
 class DicomSeries(object):
     '''Represent a list of Dicom images which are members of a series. Changing will break existing .pickle files.'''
     def __init__(self,parent,seriesID,filenames=[],seriesNum=0,desc=''):
@@ -808,6 +824,9 @@ class DicomPlugin(ImageScenePlugin):
 
     def getHelp(self):
         return '\nUsage: --dicomdir[=scan-dir-path]'
+    
+    def getTests(self):
+        return [(testLoad,),(testLoadDir,self)]
 
     def getDatasets(self):
         return list(self.dirobjs.values())
@@ -1251,4 +1270,3 @@ class DicomPlugin(ImageScenePlugin):
 
 
 addPlugin(DicomPlugin())
-

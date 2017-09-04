@@ -4532,7 +4532,11 @@ T trilerpMatrices(const Matrix<T>* mat1, const Matrix<T>* mat2, vec3 v1, vec3 v2
 	return lerp(lerpval,val1,val2);
 }
 
-/// Computes the xi coordinate of `pos' on the plane defined by `planepos' as the center, `orientinv' as the inverse of is orientation, and `dimvec' as its (X,Y,0) scale factor
+/**
+ * Computes the xi coordinate of `pos' on the plane defined by `planepos' as the minimum corner, `orientinv' as the 
+ * inverse of is orientation, and `dimvec' as its (X,Y) scale factor (ie. quad dimensions). The result contains the
+ * 2D xi coordinate 
+ */
 inline vec3 getPlaneXi(const vec3& pos, const vec3& planepos, const rotator& orientinv, const vec3& dimvec)
 {
 	return (orientinv*(pos-planepos))/vec3(dimvec.x(),dimvec.y(),1);
