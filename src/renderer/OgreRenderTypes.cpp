@@ -159,10 +159,10 @@ void OgreMaterial::useSpectrumTexture(bool use)
 		
 		virtual void op() 
 		{
+			Ogre::TextureManager &tmgr=Ogre::TextureManager::getSingleton();
 			std::string specname=mat->scene->getUniqueResourceName(mat->mat->getName()+"_spectex",tmgr); // choose a unique name
 
 			if(use && mat->spectex.isNull()){ // if a spectrum is requested but the texture doesn't exist, create it
-				Ogre::TextureManager &tmgr=Ogre::TextureManager::getSingleton();
 				mat->spectex=tmgr.createManual(specname,mat->scene->resGroupName, Ogre::TEX_TYPE_2D, SPECWIDTH,1,0,0,Ogre::PF_R8G8B8A8);
 			}
 			
@@ -644,25 +644,30 @@ OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & ma
 
 OgreBBSetFigure::~OgreBBSetFigure()
 {
+	TIMING;
+	
 	class DeleteBBSetOp : public ResourceOp
 	{
 	public:
-		OgreBBSetFigure* fig;
+		Ogre::SceneNode *node;
+		OgreRenderScene *scene;
+		bbsetlist sets;
 		
-		DeleteBBSetOp(OgreBBSetFigure* fig) : fig(fig) {}
+		DeleteBBSetOp(bbsetlist sets,Ogre::SceneNode *node,OgreRenderScene *scene) : sets(sets),node(node),scene(scene) {}
 		
 		virtual void op() 
 		{
-			for(bbsetlist::iterator i=fig->sets.begin();i!=fig->sets.end();++i){
-				fig->node->detachObject(*i);
-				fig->scene->mgr->destroyBillboardSet(*i);
+			TIMING;
+			for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i){
+				node->detachObject(*i);
+				scene->mgr->destroyBillboardSet(*i);
 			}
 			
-			fig->scene->destroyNode(fig->node);
+			scene->destroyNode(node);
 		}
 	};
 	
-	scene->addResourceOp(new DeleteBBSetOp(this));
+	scene->addResourceOp(new DeleteBBSetOp(sets,node,scene));
 }
 
 void OgreBBSetFigure::setCameraVisibility(const Camera* cam, bool isVisible)
@@ -765,6 +770,11 @@ OgreRibbonFigure::OgreRibbonFigure(const std::string & name,const std::string & 
 	bbchain=scene->mgr->createBillboardChain(name);
 	node->attachObject(bbchain);
 	scene->mgr->addRenderObjectListener(this);
+	
+	//setNumRibbons(2);
+	//setMaxNodes(2);
+	//addNode(0,vec3(),color(),1.0,rotator(),1.0);
+	//addNode(0,vec3(1,0,0),color(),1.0,rotator(),1.0);
 }
 
 OgreRibbonFigure::~OgreRibbonFigure() 

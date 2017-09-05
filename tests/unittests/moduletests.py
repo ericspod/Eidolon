@@ -31,4 +31,5 @@ def _runtests():
     nose.runmodule()
 
 
-_runtests()
+#_runtests()
+nose.runmodule()

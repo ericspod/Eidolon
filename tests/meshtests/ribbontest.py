@@ -19,10 +19,12 @@
 from eidolon import vec3, PyVertexBuffer, PyIndexBuffer, BoundBox, FT_RIBBON
 
 nodes=[vec3(0,0,0),vec3(10.0/3,0,0),vec3(20.0/3,0,0),vec3(10,0,0)]
-inds=[(0,2),(2,4)]
-fig=mgr.callThreadSafe(mgr.scene.createFigure,"testribbon","Default",FT_RIBBON)
-vb=PyVertexBuffer(nodes)
-ib=PyIndexBuffer(inds)
-fig.fillData(vb,ib,True)
-mgr.controller.setSeeAllBoundBox(BoundBox(nodes))
-mgr.repaint()
+inds=[(0,2)]
+
+fig=None#mgr.callThreadSafe(mgr.scene.createFigure,"testribbon","Default",FT_RIBBON)
+#vb=PyVertexBuffer(nodes)
+#ib=PyIndexBuffer(inds)
+#fig.fillData(vb,ib,True)
+
+#mgr.controller.setSeeAllBoundBox(BoundBox(nodes))
+#mgr.repaint()

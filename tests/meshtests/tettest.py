@@ -18,7 +18,9 @@
 
 import sys
 sys.path.append(scriptdir+'..')
-from Testing import MeshSceneObject,ElemType,ReprType,generateTestMeshDS
+
+from eidolon import MeshSceneObject,ElemType,ReprType
+from TestUtils import generateTestMeshDS
 
 ds=generateTestMeshDS(ElemType._Tet1NL,8)
 

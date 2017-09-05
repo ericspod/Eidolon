@@ -304,7 +304,7 @@ def testLoad():
 def testLoadDir(plugin):
     dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
     f=plugin.loadDirDataset(dcmdir)
-    result=f(10)
+    result=Future.get(f,10)
     assert result is not None,'%r is None'%result
     assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
 

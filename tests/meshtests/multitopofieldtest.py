@@ -18,7 +18,7 @@
 
 import sys
 sys.path.append(scriptdir+'..')
-from Testing import MeshSceneObject,ElemType,vec3,color,ReprType,frange,PyDataSet
+from eidolon import MeshSceneObject,ElemType,vec3,color,ReprType,frange,PyDataSet
 
 mat=mgr.getMaterial('Rainbow')
 mat.setSpectrumValue(1,0.005,color(0.0,1.0,1.0,1.0))

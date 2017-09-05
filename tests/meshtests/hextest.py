@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import sys
+import sys,time
 sys.path.append(scriptdir+'..')
-from Testing import MeshSceneObject,ElemType,ReprType,generateTestMeshDS
+
+from eidolon import MeshSceneObject,ElemType,ReprType
+from TestUtils import generateTestMeshDS
 
 ds=generateTestMeshDS(ElemType._Hex1NL,10)
 

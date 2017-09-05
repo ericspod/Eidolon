@@ -18,7 +18,9 @@
 
 import sys
 sys.path.append(scriptdir+'..')
-from Testing import MeshSceneObject,ElemType,vec3,ReprType,generateTestMeshDS
+
+from eidolon import MeshSceneObject,ElemType,ReprType, vec3
+from TestUtils import generateTestMeshDS
 
 materials=['Red','Green','Blue','Magenta','Cyan']
 

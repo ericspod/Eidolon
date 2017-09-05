@@ -792,7 +792,7 @@ class SceneManager(TaskQueue):
 
         self.project=None
 
-    @timing
+    @Utils.argtiming
     def execScript(self,filename,updateLocals=True,tryHard=False):
         '''Executes the given script file using internal environment, updates local/console variables if `updateLocals'.'''
         if not os.path.isfile(filename):

@@ -16,20 +16,22 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import sys
-sys.path.append(scriptdir+'..')
+try:
+    import sys
+    sys.path.append(scriptdir)
+except:
+    pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
 
-from eidolon import MeshSceneObject,ElemType,ReprType
-from TestUtils import generateTestMeshDS
+import nose
+from TestUtils import *
+from eidolon import ElemType, GeomType
 
-ds=generateTestMeshDS(ElemType._Tri1NL,5)
 
-obj=MeshSceneObject('Sphere',ds)
-mgr.addSceneObject(obj)
+def testLine1NL():
+    '''Test linear line element type.'''
+    et=ElemType.Line1NL
+    assert eq_([(0.0,), (1.0,)],et.xis)
+    assert et.geom==GeomType._Line
+    
 
-rep=obj.createRepr(ReprType._volume,0)
-mgr.addSceneObjectRepr(rep)
-rep.applyMaterial('Rainbow',field='dist')
-
-mgr.setCameraSeeAll()
-
+nose.runmodule()    

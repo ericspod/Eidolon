@@ -43,12 +43,11 @@ else
 	export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
+if [ ! -f .coverage];
+then
+    coverage run --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py --help
+fi
 
-coverage run --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py --help
-
-covcmd="coverage run -a --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py"
-#$covcmd ./meshtests/*.py
-#$covcmd ./imagetests/*.py
-$covcmd "$@"
+coverage run -a --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py "$@"
 coverage report
 

@@ -18,7 +18,9 @@
 
 import sys,math
 sys.path.append(scriptdir+'..')
-from Testing import MeshSceneObject,ElemType,ReprType,vec3,frange,generateTestMeshDS
+
+from eidolon import MeshSceneObject,ElemType,ReprType,vec3,frange
+from TestUtils import generateTestMeshDS
 
 dds=[]
 for i in frange(0,1,0.05):
