@@ -569,7 +569,7 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
             self.imgfig.fillData(vb,ib)
             self.sceneBB=BoundBox(nodes)
 
-        if w>0 and h>0:
+        if w>0 and h>0 and self.simg.img:
             assert (w,h)==(self.imgwidth,self.imgheight),'(%r,%r)!=(%r,%r)'%(w,h,self.imgwidth,self.imgheight)
             self.tex.fillColor(self.simg.img,0,self.simg.imgmin*2-self.simg.imgmax,self.simg.imgmax)
             self._repaintDelay()

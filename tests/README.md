@@ -6,7 +6,7 @@ For example:
 
     ../run.sh meshtests/tritest.py
     
-To run the unit tests with Nose (assuming this is installed), start Eidolon with all of the *tests.py script files specified on the command line:
+To run the unit tests with Nose (assuming this is installed), start Eidolon with all of the \*tests.py script files specified on the command line:
 
     ../run.sh unittests/*tests.py
     
@@ -14,4 +14,7 @@ The script **run_coverage.sh** starts Eidolon with code coverage enabled through
 This can be run with the included tests to measure line coverage:
 
     ./run_coverage.sh /meshtests/*.py
+    
+The script will create the **.coverage** file and update it thereafter everytime it's run. This file will have to be
+deleted to start a new coverage testing series. 
     

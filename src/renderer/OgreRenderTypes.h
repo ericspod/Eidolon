@@ -133,10 +133,19 @@ inline Ogre::RenderOperation::OperationType convert(FigureType type)
 	}
 }
 
-/// Base class used by specializations with the renderer to destroy and update resources within the render cycle
+/**
+ * Base class used by specializations with the renderer to destroy and update resources within the render cycle. The name
+ * of the creating object should be passed in the constructor for operations which might be performed after an object has
+ * been deleted. Objects who may have operations pending when their destructors are called can remove them from the queue
+ * using the OgreRenderScene::removeResourceOp() method in their destructors with their own names as the argument; this
+ * will ensure any operation with that name as its `parentname' field will be removed before being called.
+ */
 class ResourceOp
 {
 public:
+	/// Name of parent object which created this op and whose internal state is associated with it  
+	std::string parentname; 
+	ResourceOp(std::string parentname="") : parentname(parentname) {}
 	/// Before each render operation, this method is called for every ResourceOp object the renderer stores, the object is deleted
 	virtual void op() {}
 };
@@ -147,7 +156,7 @@ class CommitOp : public ResourceOp
 {
 public:
 	T* obj;
-	CommitOp(T* obj) : obj(obj){}
+	CommitOp(T* obj) : ResourceOp(obj->getName()), obj(obj){}
 	virtual void op() { obj->commit(); }
 };
 
@@ -2216,23 +2225,38 @@ public:
 	
 	virtual Config* getConfig() const { return config; }
 
+	/// Iterate over all queued ResourceOp objects, calling their op() method, deleting them, and clearing the queue
 	virtual void applyResourceOps()
 	{
 		critical(&sceneMutex){
 			for(std::vector<ResourceOp*>::iterator i=pendingOps.begin();i!=pendingOps.end();++i){
-				ResourceOp* rop=*i;
-				rop->op();
-				delete rop;
+				(*i)->op();
+				delete *i;
 			}
 			
 			pendingOps.clear();
 		}
 	}
 	
+	/// Add the resource operation to the queue, this assigns responsibility to delete `op' to the OgreRenderScene object
 	virtual void addResourceOp(ResourceOp *op)
 	{
 		critical(&sceneMutex){
 			pendingOps.push_back(op);
+		}
+	}
+	
+	/// Remove operations with the given parent name from the queue
+	virtual void removeResourceOp(std::string parentname)
+	{
+		critical(&sceneMutex){
+			for(std::vector<ResourceOp*>::iterator i=pendingOps.begin();i!=pendingOps.end();)
+				if((*i)->parentname==parentname){
+					delete *i;
+					pendingOps.erase(i);
+				}
+				else
+					++i;
 		}
 	}
 

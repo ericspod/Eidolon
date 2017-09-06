@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/SegObjProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Wed Sep  6 15:42:09 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -25,7 +26,7 @@ except AttributeError:
 class Ui_SegObjProp(object):
     def setupUi(self, SegObjProp):
         SegObjProp.setObjectName(_fromUtf8("SegObjProp"))
-        SegObjProp.resize(335, 587)
+        SegObjProp.resize(335, 828)
         self.verticalLayout = QtGui.QVBoxLayout(SegObjProp)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.groupBox_2 = QtGui.QGroupBox(SegObjProp)
@@ -167,6 +168,27 @@ class Ui_SegObjProp(object):
         self.genMaskButton.setObjectName(_fromUtf8("genMaskButton"))
         self.verticalLayout_2.addWidget(self.genMaskButton)
         self.verticalLayout.addWidget(self.groupBox_3)
+        self.groupBox_4 = QtGui.QGroupBox(SegObjProp)
+        self.groupBox_4.setObjectName(_fromUtf8("groupBox_4"))
+        self.formLayout_2 = QtGui.QFormLayout(self.groupBox_4)
+        self.formLayout_2.setObjectName(_fromUtf8("formLayout_2"))
+        self.label_4 = QtGui.QLabel(self.groupBox_4)
+        self.label_4.setObjectName(_fromUtf8("label_4"))
+        self.formLayout_2.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_4)
+        self.cropBox = QtGui.QComboBox(self.groupBox_4)
+        self.cropBox.setObjectName(_fromUtf8("cropBox"))
+        self.formLayout_2.setWidget(0, QtGui.QFormLayout.FieldRole, self.cropBox)
+        self.label_5 = QtGui.QLabel(self.groupBox_4)
+        self.label_5.setObjectName(_fromUtf8("label_5"))
+        self.formLayout_2.setWidget(1, QtGui.QFormLayout.LabelRole, self.label_5)
+        self.marginBox = QtGui.QSpinBox(self.groupBox_4)
+        self.marginBox.setProperty("value", 5)
+        self.marginBox.setObjectName(_fromUtf8("marginBox"))
+        self.formLayout_2.setWidget(1, QtGui.QFormLayout.FieldRole, self.marginBox)
+        self.cropButton = QtGui.QPushButton(self.groupBox_4)
+        self.cropButton.setObjectName(_fromUtf8("cropButton"))
+        self.formLayout_2.setWidget(2, QtGui.QFormLayout.FieldRole, self.cropButton)
+        self.verticalLayout.addWidget(self.groupBox_4)
 
         self.retranslateUi(SegObjProp)
         QtCore.QMetaObject.connectSlotsByName(SegObjProp)
@@ -195,4 +217,11 @@ class Ui_SegObjProp(object):
         self.label2Button.setText(_translate("SegObjProp", "2 Label Mask", None))
         self.hemcavButton.setText(_translate("SegObjProp", "Hemi+Cavity Mask", None))
         self.genMaskButton.setText(_translate("SegObjProp", "Generate", None))
+        self.groupBox_4.setTitle(_translate("SegObjProp", "Crop Image By Segmentation", None))
+        self.label_4.setText(_translate("SegObjProp", "Image", None))
+        self.cropBox.setToolTip(_translate("SegObjProp", "Image to crop, can be source image", None))
+        self.label_5.setText(_translate("SegObjProp", "Margins", None))
+        self.marginBox.setToolTip(_translate("SegObjProp", "margin in XY around segmentation bound box", None))
+        self.cropButton.setToolTip(_translate("SegObjProp", "Crop the selected image using the segmentation\'s boundbox as the crop box", None))
+        self.cropButton.setText(_translate("SegObjProp", "Crop Image", None))
 

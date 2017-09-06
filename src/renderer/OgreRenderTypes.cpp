@@ -100,8 +100,14 @@ OgreGPUProgram::~OgreGPUProgram()
 
 OgreMaterial::~OgreMaterial()
 {
+	scene->removeResourceOp(getName());
+	
+	if(!spectex.isNull())
+		scene->addResourceOp(new RemoveResourceOp<Ogre::TextureManager>(spectex->getName()));
+	
 	scene->addResourceOp(new RemoveResourceOp<Ogre::MaterialManager>(mat->getName()));
 	mat.setNull();
+	spectex.setNull();
 }
 
 Material* OgreMaterial::clone(const char* name) const 
@@ -120,7 +126,7 @@ void OgreMaterial::setTexture(const char* name)
 		OgreMaterial* mat;
 		std::string tname;
 		
-		SetTextureOp(OgreMaterial* mat,const char* name) : mat(mat),tname(name ? name : "") {}
+		SetTextureOp(OgreMaterial* mat,const char* name) : ResourceOp(mat->getName()),mat(mat),tname(name ? name : "") {}
 		
 		virtual void op() 
 		{ 
@@ -644,8 +650,6 @@ OgreBBSetFigure::OgreBBSetFigure(const std::string & name,const std::string & ma
 
 OgreBBSetFigure::~OgreBBSetFigure()
 {
-	TIMING;
-	
 	class DeleteBBSetOp : public ResourceOp
 	{
 	public:
@@ -657,7 +661,6 @@ OgreBBSetFigure::~OgreBBSetFigure()
 		
 		virtual void op() 
 		{
-			TIMING;
 			for(bbsetlist::iterator i=sets.begin();i!=sets.end();++i){
 				node->detachObject(*i);
 				scene->mgr->destroyBillboardSet(*i);
@@ -667,6 +670,7 @@ OgreBBSetFigure::~OgreBBSetFigure()
 		}
 	};
 	
+	scene->removeResourceOp(getName()); // remove any pending commit operations so that this isn't attempted on a deleted object
 	scene->addResourceOp(new DeleteBBSetOp(sets,node,scene));
 }
 
@@ -770,11 +774,6 @@ OgreRibbonFigure::OgreRibbonFigure(const std::string & name,const std::string & 
 	bbchain=scene->mgr->createBillboardChain(name);
 	node->attachObject(bbchain);
 	scene->mgr->addRenderObjectListener(this);
-	
-	//setNumRibbons(2);
-	//setMaxNodes(2);
-	//addNode(0,vec3(),color(),1.0,rotator(),1.0);
-	//addNode(0,vec3(1,0,0),color(),1.0,rotator(),1.0);
 }
 
 OgreRibbonFigure::~OgreRibbonFigure() 
@@ -792,6 +791,7 @@ OgreRibbonFigure::~OgreRibbonFigure()
 		}
 	};
 	
+	scene->removeResourceOp(getName());
 	scene->addResourceOp(new DeleteRibbonOp(this));
 }
 
@@ -1311,6 +1311,7 @@ OgreTextFigure::OgreTextFigure(const std::string& name,OgreRenderScene *scene) t
 
 OgreTexture::~OgreTexture() 
 {
+	scene->removeResourceOp(getName());
 	scene->addResourceOp(new RemoveResourceOp<Ogre::TextureManager>(ptr->getName()));
 }
 
@@ -1605,13 +1606,7 @@ std::string OgreRenderScene::getUniqueFigureName(const std::string& name)
 	
 	critical(&sceneMutex){ // ensures there's no contention when determining if a name is unique or not
 		for(int i=0;i<MAXNAMECOUNT;i++){
-			//bool namefound=false;
-			//for(nodemap::iterator it=nmap.begin();!namefound && it!=nmap.end();++it){
-			//	namefound=it->first==uname;
-			//}
-			bool namefound=nmap.find(uname)!=nmap.end();
-			
-			if(!namefound)
+			if(nmap.find(uname)==nmap.end())
 				break;
 			
 			os.str("");

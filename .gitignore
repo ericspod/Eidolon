@@ -11,3 +11,5 @@ src/renderer/Renderer.so
 src/eidolon/*.cpp
 src/eidolon/*.so
 dist
+tutorial/DicomData/dicomdataset.ini
+tests/meshtests/isotest.png

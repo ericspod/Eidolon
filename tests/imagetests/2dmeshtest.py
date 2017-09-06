@@ -18,7 +18,9 @@
 
 import sys
 sys.path.append(scriptdir+'..')
-from Testing import MeshSceneObject,ReprType,generateTimeSphereImages,generateTimeSphereMeshes,ImageSceneObject
+
+from eidolon import MeshSceneObject,ImageSceneObject,ElemType,ReprType
+from TestUtils import generateTimeSphereImages,generateTimeSphereMeshes
 
 step=0.1
 

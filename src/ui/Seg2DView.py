@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/Seg2DView.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Wed Sep  6 15:42:09 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -121,8 +122,8 @@ class Ui_Seg2DView(object):
         self.horizontalLayout.addLayout(self.verticalLayout)
         self.horizontalLayout_2.addWidget(self.groupBox)
         self.verticalLayout_4 = QtGui.QVBoxLayout()
-        self.verticalLayout_4.setContentsMargins(-1, -1, 0, -1)
         self.verticalLayout_4.setSpacing(0)
+        self.verticalLayout_4.setContentsMargins(-1, -1, 0, -1)
         self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
         self.groupBox_2 = QtGui.QGroupBox(self.segBox)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Maximum)

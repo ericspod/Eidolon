@@ -18,7 +18,8 @@
 
 import sys
 sys.path.append(scriptdir+'..')
-from Testing import ReprType,generateTimeSphereImages,ImageSceneObject,vec3
+from eidolon import ReprType,ImageSceneObject,vec3
+from TestUtils import generateTimeSphereImages
 
 step=0.1
 

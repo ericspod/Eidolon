@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import sys
-sys.path.append(scriptdir+'..')
-from Testing import ReprType,generateSphereImageStack,ImageSceneObject,vec3
+from eidolon import ReprType,generateSphereImageStack,ImageSceneObject,vec3
 
 images=generateSphereImageStack(50,50,50,vec3(0.5,0.5,1),vec3(0.45,0.45,0.9))
 obj=ImageSceneObject('Sphere',[],images)

@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/MainWindow.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Wed Sep  6 15:42:09 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -34,8 +35,8 @@ class Ui_MainWindow(object):
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.mainLayout = QtGui.QVBoxLayout(self.centralwidget)
-        self.mainLayout.setMargin(0)
         self.mainLayout.setSpacing(0)
+        self.mainLayout.setMargin(0)
         self.mainLayout.setObjectName(_fromUtf8("mainLayout"))
         self.viz = QtGui.QWidget(self.centralwidget)
         self.viz.setEnabled(True)
@@ -89,8 +90,8 @@ class Ui_MainWindow(object):
         self.treeGroup.setMinimumSize(QtCore.QSize(0, 0))
         self.treeGroup.setObjectName(_fromUtf8("treeGroup"))
         self.verticalLayout_3 = QtGui.QVBoxLayout(self.treeGroup)
-        self.verticalLayout_3.setContentsMargins(0, 6, 4, 6)
         self.verticalLayout_3.setSpacing(0)
+        self.verticalLayout_3.setContentsMargins(0, 6, 4, 6)
         self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
         self.treeWidget = QtGui.QTreeWidget(self.treeGroup)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -404,8 +405,8 @@ class Ui_MainWindow(object):
         self.dockWidgetContents_3.setSizePolicy(sizePolicy)
         self.dockWidgetContents_3.setObjectName(_fromUtf8("dockWidgetContents_3"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.dockWidgetContents_3)
-        self.verticalLayout_2.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout_2.setSpacing(3)
+        self.verticalLayout_2.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))

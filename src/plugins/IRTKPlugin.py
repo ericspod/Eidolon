@@ -952,19 +952,6 @@ class IRTKPluginMixin(object):
 
     @taskmethod('Cropping object')
     def cropMotionObject(self,srcname,filtersize,threshold,task):
-#       f=Future()
-#       @taskroutine('Motion-cropping Image Object')
-#       def _crop(imgobj,threshold,task):
-#           with f:
-#               imgobj=self.findObject(imgobj)
-#               diffimgs=calculateMotionMask(imgobj,task)
-#               cobj=applyVolumeMask(imgobj,diffimgs,threshold)
-#               f.setObject(self.saveToNifti([cobj]))
-#
-#       self.mgr.runTasks([_crop(imgobj,threshold)])
-#       return self.loadNiftiFiles(f)
-
-#        raise NotImplementedError('This cropping method needs work to get correct behaviour still')
         imgobj=self.findObject(srcname)
         name=self.getUniqueShortName(srcname,'Crop')
         cobj=cropMotionImage(imgobj,name,filtersize,threshold)

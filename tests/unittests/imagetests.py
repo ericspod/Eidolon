@@ -18,7 +18,7 @@
 
 try:
     import sys
-    sys.path.append(scriptdir)
+    sys.path.append(scriptdir+'..')
 except:
     pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
 

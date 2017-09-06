@@ -17,6 +17,10 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
+import compiler
+import os
+import math
+
 from eidolon import *
 from ui import Ui_Seg2DView, Ui_SegObjProp
 
@@ -1211,6 +1215,7 @@ class SegmentPlugin(ScenePlugin):
 
         prop.genMeshButton.clicked.connect(lambda:self._generateMeshButton(prop,obj))
         prop.genMaskButton.clicked.connect(lambda:self._generateMaskButton(prop,obj))
+        prop.cropButton.clicked.connect(lambda:self._cropImageButton(prop,obj))
 
         return prop
 
@@ -1222,6 +1227,7 @@ class SegmentPlugin(ScenePlugin):
 
         fillTable(obj.getPropTuples(),prop.propTable)
         fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
+        fillList(prop.cropBox,imgnames)
 
         # if not source object has been selected, select the first one
         if not obj.get(DatafileParams.srcimage) and len(imgnames)>0:
@@ -1493,6 +1499,12 @@ class SegmentPlugin(ScenePlugin):
 
             f=self.createImageMask(obj,obj.getName()+'_Mask',imgobj,maskfunc)
             self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(f))
+            
+    def _cropImageButton(self,prop,obj):
+        imgname=str(prop.cropBox.currentText())
+        margin=prop.marginBox.value()
+        imgobj=self.mgr.findObject(imgname)
+        
 
 
 addPlugin(SegmentPlugin())

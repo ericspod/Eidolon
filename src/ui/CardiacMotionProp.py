@@ -2,7 +2,8 @@
 
 # Form implementation generated from reading ui file 'src/ui/CardiacMotionProp.ui'
 #
-# Created by: PyQt4 UI code generator 4.11.4
+# Created: Wed Sep  6 15:42:09 2017
+#      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -39,7 +40,7 @@ class Ui_CardiacMotionProp(object):
         self.toolBox.setFrameShape(QtGui.QFrame.StyledPanel)
         self.toolBox.setObjectName(_fromUtf8("toolBox"))
         self.page = QtGui.QWidget()
-        self.page.setGeometry(QtCore.QRect(0, 0, 879, 224))
+        self.page.setGeometry(QtCore.QRect(0, 0, 434, 224))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -101,7 +102,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_8.addWidget(self.groupBox)
         self.toolBox.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 879, 480))
+        self.page_2.setGeometry(QtCore.QRect(0, 0, 351, 480))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -224,7 +225,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_9.addWidget(self.groupBox_5)
         self.toolBox.addItem(self.page_2, _fromUtf8(""))
         self.page_3 = QtGui.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 866, 889))
+        self.page_3.setGeometry(QtCore.QRect(0, 0, 497, 889))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -436,7 +437,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_10.addWidget(self.legacyBox)
         self.toolBox.addItem(self.page_3, _fromUtf8(""))
         self.page_5 = QtGui.QWidget()
-        self.page_5.setGeometry(QtCore.QRect(0, -648, 866, 1389))
+        self.page_5.setGeometry(QtCore.QRect(0, 0, 485, 1389))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -865,7 +866,7 @@ class Ui_CardiacMotionProp(object):
         self.verticalLayout_12.addWidget(self.groupBox_16)
         self.toolBox.addItem(self.page_5, _fromUtf8(""))
         self.page_4 = QtGui.QWidget()
-        self.page_4.setGeometry(QtCore.QRect(0, -791, 866, 1540))
+        self.page_4.setGeometry(QtCore.QRect(0, -799, 866, 1540))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -1557,13 +1558,19 @@ class Ui_CardiacMotionProp(object):
         self.groupBox_18.setTitle(_translate("CardiacMotionProp", "Reorder Multicycle Image", None))
         self.label_15.setText(_translate("CardiacMotionProp", "Source Series", None))
         self.label_16.setText(_translate("CardiacMotionProp", "Start Time", None))
+        self.reorderStartBox.setToolTip(_translate("CardiacMotionProp", "The time in the selected image to use as the new starting time", None))
         self.label_17.setText(_translate("CardiacMotionProp", "Timestep", None))
+        self.reorderStepBox.setToolTip(_translate("CardiacMotionProp", "The interval between timesteps to assign to the resulting image", None))
+        self.reorderButton.setToolTip(_translate("CardiacMotionProp", "Reorder the selected image series so that the timestep nearest to the selected start time becomes the first timestep", None))
         self.reorderButton.setText(_translate("CardiacMotionProp", "Reorder", None))
         self.groupBox_6.setTitle(_translate("CardiacMotionProp", "Motion Crop (Experimental)", None))
         self.label_18.setText(_translate("CardiacMotionProp", "Source Series", None))
+        self.mCropButton.setToolTip(_translate("CardiacMotionProp", "Crop the selected image based on the observed motion over time using the filter size and threshold values to calculate a square bounding area", None))
         self.mCropButton.setText(_translate("CardiacMotionProp", "Crop", None))
         self.label_79.setText(_translate("CardiacMotionProp", "Filter Size", None))
+        self.filterSizeBox.setToolTip(_translate("CardiacMotionProp", "Sets the size of square filters to average motion values over, larger values create a larger \"margin\" around the motion areas of the image", None))
         self.label_19.setText(_translate("CardiacMotionProp", "Threshold", None))
+        self.cropThresholdBox.setToolTip(_translate("CardiacMotionProp", "Sets the threshold percentage of observed motion values to include in the bounding area, larger values include more motion so larger area, 1.0 includes whole image", None))
         self.groupBox_8.setTitle(_translate("CardiacMotionProp", "Create Grid Mesh (Experimental)", None))
         self.label_23.setText(_translate("CardiacMotionProp", "Source Series", None))
         self.label_24.setText(_translate("CardiacMotionProp", "W", None))

@@ -45,7 +45,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>879</width>
+        <width>434</width>
         <height>224</height>
        </rect>
       </property>
@@ -202,7 +202,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>879</width>
+        <width>351</width>
         <height>480</height>
        </rect>
       </property>
@@ -444,7 +444,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>866</width>
+        <width>497</width>
         <height>889</height>
        </rect>
       </property>
@@ -862,8 +862,8 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-648</y>
-        <width>866</width>
+        <y>0</y>
+        <width>485</width>
         <height>1389</height>
        </rect>
       </property>
@@ -1633,7 +1633,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-791</y>
+        <y>-799</y>
         <width>866</width>
         <height>1540</height>
        </rect>
@@ -2344,6 +2344,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
             <item>
              <widget class="QSpinBox" name="reorderStartBox">
+              <property name="toolTip">
+               <string>The time in the selected image to use as the new starting time</string>
+              </property>
               <property name="minimum">
                <number>0</number>
               </property>
@@ -2364,6 +2367,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
             <item>
              <widget class="QSpinBox" name="reorderStepBox">
+              <property name="toolTip">
+               <string>The interval between timesteps to assign to the resulting image</string>
+              </property>
               <property name="minimum">
                <number>1</number>
               </property>
@@ -2397,6 +2403,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Reorder the selected image series so that the timestep nearest to the selected start time becomes the first timestep</string>
             </property>
             <property name="text">
              <string>Reorder</string>
@@ -2446,6 +2455,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="toolTip">
+             <string>Crop the selected image based on the observed motion over time using the filter size and threshold values to calculate a square bounding area</string>
+            </property>
             <property name="text">
              <string>Crop</string>
             </property>
@@ -2465,6 +2477,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
             <item>
              <widget class="QSpinBox" name="filterSizeBox">
+              <property name="toolTip">
+               <string>Sets the size of square filters to average motion values over, larger values create a larger &quot;margin&quot; around the motion areas of the image</string>
+              </property>
               <property name="value">
                <number>20</number>
               </property>
@@ -2479,6 +2494,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             </item>
             <item>
              <widget class="QDoubleSpinBox" name="cropThresholdBox">
+              <property name="toolTip">
+               <string>Sets the threshold percentage of observed motion values to include in the bounding area, larger values include more motion so larger area, 1.0 includes whole image</string>
+              </property>
               <property name="minimum">
                <double>0.050000000000000</double>
               </property>

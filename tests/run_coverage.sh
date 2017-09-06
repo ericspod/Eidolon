@@ -43,7 +43,7 @@ else
 	export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
-if [ ! -f .coverage];
+if [ ! -f .coverage ]
 then
     coverage run --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py --help
 fi

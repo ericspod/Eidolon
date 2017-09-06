@@ -18,7 +18,7 @@
 
 try:
     import sys
-    sys.path.append(scriptdir)
+    sys.path.append(scriptdir+'..')
 except:
     pass
 

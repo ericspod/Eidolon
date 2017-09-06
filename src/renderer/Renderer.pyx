@@ -1984,9 +1984,9 @@ cdef class Texture:
             self.val.fillColor((<color>col_mat).val)
         elif isinstance(col_mat,ColorMatrix):
             self.val.fillColor((<ColorMatrix>col_mat).mat,depth)
-        else:
+        elif isinstance(col_mat,RealMatrix):
             self.val.fillColor((<RealMatrix>col_mat).mat,depth,minval,maxval,colormat.mval if colormat!=None else <iMaterial*>NULL,alphamat.mat if alphamat!=None else <iRealMatrix*>NULL,mulAlpha)
-
+        # else col_mat is NULL so do nothing  
 
 cdef class GPUProgram:
     cdef iGPUProgram* val
