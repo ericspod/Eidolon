@@ -156,4 +156,4 @@ def testInv1():
         eq_(r1*(r1/v),v)
 
 
-nose.runmodule()    
+#nose.runmodule()    

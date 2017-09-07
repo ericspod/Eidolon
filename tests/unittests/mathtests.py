@@ -35,4 +35,4 @@ def testLine1NL():
     eq_(et.geom,GeomType._Line)
     
 
-nose.runmodule()    
+#nose.runmodule()    

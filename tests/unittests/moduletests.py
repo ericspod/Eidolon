@@ -21,15 +21,12 @@ from eidolon import getSceneMgr, asyncfunc,printFlush,timing
 
     
 class TestModules(object):
-    def __init__(self):
-        pass
-    
     @staticmethod
     def addTestFunc(func,args):
         proxy=lambda _:func(*args)
         proxy.__name__='test_'+func.__name__
         proxy.__doc__=func.__doc__
-        
+        printFlush(proxy)
         setattr(TestModules,proxy.__name__,proxy)
         del proxy
     
@@ -39,7 +36,8 @@ for pname in mgr.getPluginNames():
     plugin=mgr.getPlugin(pname)
 
     for testcase in plugin.getTests():
-        TestModules.addTestFunc(testcase[0],testcase[1:])    
+        TestModules.addTestFunc(testcase[0],testcase[1:])
+        
 
 
 # @asyncfunc
@@ -49,4 +47,4 @@ for pname in mgr.getPluginNames():
 # 
 # _runtests()
 
-nose.runmodule()
+#nose.runmodule()

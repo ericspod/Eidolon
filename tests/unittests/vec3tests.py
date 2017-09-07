@@ -86,6 +86,6 @@ def testLineDist():
 
     
     
-nose.runmodule()
+#nose.runmodule()
 
 

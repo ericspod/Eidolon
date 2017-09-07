@@ -27,8 +27,8 @@ import mmap
 import datetime
 import time
 import re
+import Queue
 from collections import OrderedDict, namedtuple
-from Queue import Queue
 from StringIO import StringIO
 from random import randint
 import numpy as np
@@ -301,7 +301,16 @@ def testLoad():
     assert dcm
 
 
-def testLoadDir(plugin):
+def testLoadDigest():
+    '''Test loading a digest file.'''
+    plugin=getSceneMgr().getPlugin('Dicom')
+    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+    ds=plugin.loadDigestFile(dcmdir,None)
+    assert ds is not None
+    
+
+def testLoadDir():
+    plugin=getSceneMgr().getPlugin('Dicom')
     dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
     f=plugin.loadDirDataset(dcmdir)
     result=Future.get(f,10)
@@ -826,7 +835,7 @@ class DicomPlugin(ImageScenePlugin):
         return '\nUsage: --dicomdir[=scan-dir-path]'
     
     def getTests(self):
-        return [(testLoad,),(testLoadDir,self)]
+        return [(testLoad,),(testLoadDigest,self),(testLoadDir,self)]
 
     def getDatasets(self):
         return list(self.dirobjs.values())

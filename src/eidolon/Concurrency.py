@@ -418,12 +418,12 @@ class ProcessServer(threading.Thread):
         # continually read items from `self.jobqueue' and send the execution requests to the processes
         while not self.stopEvent.is_set():
             valrange,numprocs,task,target,args,kwargs,result=self.jobqueue.get(True) # get message
-
+            
             partArgs=kwargs.pop('partitionArgs',()) # get list of objects to partition between processes
             numprocs=min(valrange,self.realnumprocs if numprocs<=0 or numprocs>self.realnumprocs else numprocs) # get number of processes to use,
 
             self.sharer.clear()
-
+            
             for i in range(self.realnumprocs): # reset the progress counting shared array
                 self.progress[i]=0
 
@@ -437,7 +437,7 @@ class ProcessServer(threading.Thread):
                         localproc=AlgorithmProcess(0,1,None,None,None,None,None,task,None,0)
                         localproc.endval=valrange
                         localproc.maxval=valrange
-
+                                
                         tresult=target(localproc,*args,**kwargs)
                         result.setObject({0:tresult})
                     except Exception as e:

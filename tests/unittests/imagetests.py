@@ -78,4 +78,4 @@ def testPlaneXiFunc():
     r=rotator(*randnums(4,-1,1))
     eq_(vec3(0),getPlaneXi(v,v,r,vec3(1)))
     
-nose.runmodule()    
+#nose.runmodule()    
