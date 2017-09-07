@@ -28,10 +28,40 @@ import glob
 #import nose
 import multiprocessing
 import threading
-from TestUtils import eq_
-from eidolon import asyncfunc,Future,timing, AlgorithmProcess, ProcessServer, printFlush,listResults,concurrencyTest1Range,concurrencyTest2Range, checkResultMap
+from TestUtils import eq_,eqas_
+import eidolon
+from eidolon import asyncfunc,Future,timing, AlgorithmProcess, ProcessServer, printFlush,listResults, checkResultMap, listSum
+    
+    
+def testServer1():
+    serv=ProcessServer.globalServer
+    assert serv is not None
+    assert serv.realnumprocs>0
 
-import pytest
+
+def testServer2():    
+    result=ProcessServer.globalServer.callProcessFunc(100,1,None,eidolon.concurrencyTest2Range)
+    assert result() is not None
+
+
+def testConcurrency1(values=range(20),numprocs=0,task=None):
+    result=eidolon.concurrencyTest1Range(len(values),numprocs,task,values)
+    checkResultMap(result)
+    eqas_(values,listSum(listResults(result)))
+    #printFlush([len(result[i]) for i in sorted(result)])
+
+
+def testConcurrency2(numvals=100,numprocs=0,task=None):
+    result=ProcessServer.globalServer.callProcessFunc(numvals,numprocs,task,eidolon.concurrencyTest2Range)
+    checkResultMap(result())
+    #printFlush(listResults(result()))
+
+
+def testConcurrency3(values=range(20),numprocs=0,task=None):
+    result=eidolon.concurrencyTest3Range(len(values),numprocs,task,values,partitionArgs=(values,))
+    checkResultMap(result)
+    #printFlush(listResults(result))
+    
 
 #def testRange1():
 #    values=range(100)
@@ -59,33 +89,17 @@ import pytest
 #    printFlush(values)
 #    result=concurrencyTest3Range(len(values),numprocs,task,concurrencyTest3Range,values,partitionArgs=(values,))
 #    printFlush(listResults(result))
- 
-
-def testPipe1():
-    result=[]
-    def createPipe():
-        result.append(multiprocessing.Pipe())
-        
-    t=threading.Thread(target=createPipe)
-    t.start()
-    time.sleep(1.0)
-    assert len(result)==1
-    
-    
-@timing
-def testAlgorithmProcessAsync1():
-    '''Test asynchronously instantiating an AlgorithmProcess instance.'''
-    proc=asyncfunc(AlgorithmProcess)(0,1,None,None,None,None,None,None,None,0)
-    assert proc.result(1.0) is not None
-    
-    
-def testServer1():
-    serv=ProcessServer.globalServer
-    assert serv is not None
-    assert serv.realnumprocs>0
-    
-    result=ProcessServer.globalServer.callProcessFunc(100,1,None,concurrencyTest2Range)
-    assert result(1.0) is not None
+# 
+#
+#def testPipe1():
+#    result=[]
+#    def createPipe():
+#        result.append(multiprocessing.Pipe())
+#        
+#    t=threading.Thread(target=createPipe)
+#    t.start()
+#    time.sleep(1.0)
+#    assert len(result)==1
     
 
 #nose.runmodule() 

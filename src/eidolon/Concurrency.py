@@ -550,6 +550,10 @@ def chooseProcCount(numelems,refine,threshold):
 
 @concurrent
 def concurrencyTest1Range(process,values):
+    '''
+    For each range index value, prints each indexed value in `values' to stdout, syncing at every process.total index.
+    Returns the process' index range of `values'.
+    '''
     result=[]
     for i in process.prange():
         printFlush(process.index,i,values[i])
@@ -561,27 +565,12 @@ def concurrencyTest1Range(process,values):
     return result
 
 
-def concurrencyTest1(values,numprocs=0,task=None):
-    result=concurrencyTest1Range(len(values),numprocs,task,values)
-    printFlush([len(result[i]) for i in sorted(result)])
-
-
 def concurrencyTest2Range(process):
+    '''Returns the index, PID, startval, and endval for the given `process' object.'''
     return (process.index,os.getpid(),int(process.startval),int(process.endval))
-
-
-def concurrencyTest2(numvals=100,numprocs=0,task=None):
-    result=ProcessServer.globalServer.callProcessFunc(numvals,numprocs,task,concurrencyTest2Range)
-    printFlush(listResults(result()))
     
 
 @concurrent 
 def concurrencyTest3Range(process,values):
+    '''Returns the `process' index and `values'.'''
     return (process.index,values)
-
-
-def concurrencyTest3(values=range(20),numprocs=0,task=None):
-    printFlush(values)
-    result=concurrencyTest3Range(len(values),numprocs,task,concurrencyTest3Range,values,partitionArgs=(values,))
-    printFlush(listResults(result))
-    

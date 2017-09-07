@@ -294,30 +294,6 @@ def isPhaseImage(image):
     return phasevalue1 in imagetype or phasevalue2 in imagetype
 
 
-def testLoad():
-    '''Test loading a dicom file from the tutorial directory.'''
-    dcmfile=os.path.join(getAppDir(),'tutorial','DicomData','SA_00000.dcm')
-    dcm=DicomSharedImage(dcmfile)
-    assert dcm
-
-
-def testLoadDigest():
-    '''Test loading a digest file.'''
-    plugin=getSceneMgr().getPlugin('Dicom')
-    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
-    ds=plugin.loadDigestFile(dcmdir,None)
-    assert ds is not None
-    
-
-def testLoadDir():
-    plugin=getSceneMgr().getPlugin('Dicom')
-    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
-    f=plugin.loadDirDataset(dcmdir)
-    result=Future.get(f,10)
-    assert result is not None,'%r is None'%result
-    assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
-
-
 def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
     '''
     This pseudo-constructor creates a SharedImage object from a DICOM file. If `dcm' is None then the file is read
@@ -834,9 +810,6 @@ class DicomPlugin(ImageScenePlugin):
     def getHelp(self):
         return '\nUsage: --dicomdir[=scan-dir-path]'
     
-    def getTests(self):
-        return [(testLoad,),(testLoadDigest,self),(testLoadDir,self)]
-
     def getDatasets(self):
         return list(self.dirobjs.values())
 
@@ -1278,4 +1251,42 @@ class DicomPlugin(ImageScenePlugin):
                 self.mgr.checkFutureResult(f)
 
 
+### Add plugin to environment
+
 addPlugin(DicomPlugin())
+
+### Unit tests
+
+def testLoad():
+    '''Test loading a dicom file from the tutorial directory.'''
+    dcmfile=os.path.join(getAppDir(),'tutorial','DicomData','SA_00000.dcm')
+    dcm=DicomSharedImage(dcmfile)
+    assert dcm
+
+
+def testLoadDigest():
+    '''Test loading a digest file.'''
+    plugin=getSceneMgr().getPlugin('Dicom')
+    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+    digestfile=os.path.join(dcmdir,digestFilename)
+    
+    ds=plugin.loadDigestFile(dcmdir,None)
+    
+    assert ds is not None
+    assert os.path.isfile(digestfile)
+    os.remove(digestfile)
+    
+
+def testLoadDir():
+    plugin=getSceneMgr().getPlugin('Dicom')
+    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+    digestfile=os.path.join(dcmdir,digestFilename)
+    
+    f=plugin.loadDirDataset(dcmdir)
+    result=Future.get(f)
+    
+    assert result is not None,'%r is None'%result
+    assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
+    assert os.path.isfile(digestfile)
+    os.remove(digestfile)
+    
