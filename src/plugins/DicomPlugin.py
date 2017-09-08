@@ -28,6 +28,7 @@ import datetime
 import time
 import re
 import Queue
+import zipfile
 from collections import OrderedDict, namedtuple
 from StringIO import StringIO
 from random import randint
@@ -196,6 +197,26 @@ def loadSharedImages(process,rootdir,files,crop=None):
             result.append(dcm)
 
     return result
+
+
+def loadDicomZipFile(filename):
+    dds=DicomDataset(filename)
+    
+    with zipfile.ZipFile(filename) as z:
+        for n in z.namelist():
+            try:
+                s=StringIO.StringIO(z.read(n))
+                ds=read_file(s)
+                
+                series=dds.getSeries(ds.SeriesInstanceUID,True)
+                series.addFile(n)
+                series.addSharedImages([DicomSharedImage(n,dcm=ds)])
+                series.desc=series.desc or str(ds.get('SeriesDescription',series.desc)).strip()
+                series.seriesNum=series.seriesNum or int(ds.get('SeriesNumber',series.seriesNum))
+            except:
+                pass
+            
+    return dds
 
 
 def convertToDict(dcm):
@@ -819,6 +840,7 @@ class DicomPlugin(ImageScenePlugin):
                 yield s
 
     def loadSeriesImages(self,series,selection,loadSequential=False,crop=None):
+        '''Load the actual image data from the files in `series' and store them as SharedImage objects in series.simgs.'''
         f=Future()
         assert selection==None or all(s<len(series.filenames) for s in selection)
 
@@ -939,7 +961,7 @@ class DicomPlugin(ImageScenePlugin):
         return ds
 
     def loadDirDataset(self,dirpath,loadSequential=False):
-        '''Loads the dataset directory as an asset.'''
+        '''Loads the dataset directory as an asset and create the DicomDataset object keyed to `dirpath' in self.dirobjs.'''
         f=Future()
 
         @taskroutine('Loading Dicom Directory')
