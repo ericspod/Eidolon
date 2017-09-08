@@ -27,7 +27,6 @@ def testServer1():
     serv=ProcessServer.globalServer
     assert serv is not None
     assert serv.realnumprocs>0
-    assert False
 
 
 def testServer2():    
