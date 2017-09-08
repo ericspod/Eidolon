@@ -1502,7 +1502,7 @@ class SegmentPlugin(ScenePlugin):
 
             f=self.createImageMask(obj,obj.getName()+'_Mask',imgobj,maskfunc)
             self.mgr.checkFutureResult(f)
-            self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(f))
+            self.mgr.addSceneObjectTask(f)
             
     def _cropImageButton(self,prop,obj):
         imgname=str(prop.cropBox.currentText())
@@ -1511,7 +1511,7 @@ class SegmentPlugin(ScenePlugin):
         
         f=self.cropImageBySegment(imgobj,obj,margin)
         self.mgr.checkFutureResult(f)
-        self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(f))
+        self.mgr.addSceneObjectTask(f)
 
 
 addPlugin(SegmentPlugin())

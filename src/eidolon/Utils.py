@@ -889,23 +889,6 @@ def wrapper(func):
     return _newdecorator
 
 
-#def delayedcall(delay):
-#   '''
-#   Wrapper for defining a delayed call function. When the function is called, up to `delay' seconds elapses before
-#   the call actually occurs. Subsequent calls to the function before this time elapses resets the counter but will
-#   not induce multiple calls. The most recent arguments passed to the wrapped function are the ones used when the
-#   call does occur; there is never a return value.
-#   '''
-#   def funcwrap(func):
-#       @wraps(func)
-#       def delayCall(*args,**kwargs):
-#           DelayThread.callGlobalTarget(delay,func,args,kwargs)
-#
-#       return delayCall
-#
-#   return funcwrap
-
-
 @wrapper
 def delayedcall(func,args,kwargs,delay):
     DelayThread.callGlobalTarget(delay,func,args,kwargs)
@@ -946,7 +929,7 @@ def taskroutine(func,args,kwargs,taskLabel=None,selfName='task'):
 def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
     '''
     Wraps a given method such that it will execute the method's body in a task and store the result in a returned
-    Future object. This assumes the method's receiver has a member called `mgrName' which references a TaskQueue
+    Future object. This assumes the method's receiver has a member named by `mgrName' which references a TaskQueue
     object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
     The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
 
