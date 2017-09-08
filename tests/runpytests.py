@@ -33,21 +33,24 @@ import pytest
 import glob
 import StringIO
 
-import termios
-import struct
-import fcntl
+try: # attempt to tweak terminal settings, this will fail on systems (win32) without terminal control
+	import termios
+	import struct
+	import fcntl
+	
+	call = fcntl.ioctl(1,termios.TIOCGWINSZ,"\000"*8)
+	row,col = struct.unpack( "hhhh", call ) [:2] # save the current terminal row and column values
+	
+	def setTerminalSize(fd, row, col):
+		'''Set the terminal row and columns for the file descriptor `fd'.'''
+		winsize = struct.pack("HHHH", row, col, 0, 0)
+		fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+except: # quietly do nothing since terminal control is aesthetic anyhow
+	row,col=0,0
+	def setTerminalSize(fd, row, col):pass
 
+	
 sys.path.append(scriptdir) # used by test scripts to import TestUtils
-
-
-call = fcntl.ioctl(1,termios.TIOCGWINSZ,"\000"*8)
-row,col = struct.unpack( "hhhh", call ) [:2] # save the current terminal row and column values
-
-def setTerminalSize(fd, row, col):
-    '''Set the terminal row and columns for the file descriptor `fd'.'''
-    winsize = struct.pack("HHHH", row, col, 0, 0)
-    fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
-    
 
 # collect unit test script files and plugin source files which may contain unit tests
 srcfiles=glob.glob(os.path.join(scriptdir,'unittests','*.py'))+glob.glob(os.path.join(scriptdir,'..','src','plugins','*.py'))

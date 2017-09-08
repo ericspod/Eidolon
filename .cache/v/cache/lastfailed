@@ -1,0 +1,3 @@
+{
+  "tests/unittests/concurrencytests.py::testServer1": true
+}
