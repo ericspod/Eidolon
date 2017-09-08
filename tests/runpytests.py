@@ -23,13 +23,43 @@ Run this script through the GUI through the menu "File -> Open Script" or on the
     ./run.sh tests/runpytests.py
 '''
 
+# pylint cleanup stuff
+mgr=mgr # pylint:disable=invalid-name,used-before-assignment
+scriptdir=scriptdir # pylint:disable=invalid-name,used-before-assignment
+
 import os
 import sys
 import pytest
 import glob
+import StringIO
+
+import termios
+import struct
+import fcntl
 
 sys.path.append(scriptdir) # used by test scripts to import TestUtils
 
+
+call = fcntl.ioctl(1,termios.TIOCGWINSZ,"\000"*8)
+row,col = struct.unpack( "hhhh", call ) [:2] # save the current terminal row and column values
+
+def setTerminalSize(fd, row, col):
+    '''Set the terminal row and columns for the file descriptor `fd'.'''
+    winsize = struct.pack("HHHH", row, col, 0, 0)
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+    
+
+# collect unit test script files and plugin source files which may contain unit tests
 srcfiles=glob.glob(os.path.join(scriptdir,'unittests','*.py'))+glob.glob(os.path.join(scriptdir,'..','src','plugins','*.py'))
 
+sys.stdout=sys.stderr=out=StringIO.StringIO() # redirect stdout/stderr to the StringIO object out
+
+setTerminalSize(sys.__stdout__.fileno(),10,50) # tweak the terminal size so that the separator lines aren't too large
 pytest.main(srcfiles)
+setTerminalSize(sys.__stdout__.fileno(),row,col) # restore terminal size
+
+# restore streams
+sys.stdout=sys.__stdout__
+sys.stderr=sys.__stderr__
+
+mgr.showTextBox('Pytest results:','Results',out.getvalue(),height=600)

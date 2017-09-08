@@ -898,7 +898,7 @@ class SceneManager(TaskQueue):
         self.showMsg(msg,title,format_exc,False)
 
     def showMsg(self,msg,title='Message',text=None,doLog=True,width=600,height=300):
-        '''Shows the given message in a message window if the UI is present, as writes it to the log file.'''
+        '''Shows the given message in a message window if the UI is present, and writes it to the log file.'''
         if doLog:
             self.logMsg(title+':',msg,text)
 
@@ -906,10 +906,12 @@ class SceneManager(TaskQueue):
             self.win.showMsg(msg,title,text,width,height)
 
     def showTextBox(self,msg,title,text,width=600,height=300):
+        '''Shows the given `text' string in a large textbox widget in a window, this is intended for large text blocks.'''
         if self.win:
             self.win.showTextBox(msg,title,text,width,height)
 
     def showStatusBarMsg(self,msg,timeout=1000):
+        '''Set the status bar message to `msg' with a timeout in milliseconds before it disappears.'''
         timeout=max(1000,timeout)
         if self.win:
             self.callThreadSafe(self.win.statusBar.showMessage,msg,timeout)

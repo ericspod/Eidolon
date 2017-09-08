@@ -16,27 +16,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-try:
-    import sys
-    sys.path.append(scriptdir+'..')
-except:
-    pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
 
-import os
-import time
-import glob
-#import nose
-import multiprocessing
-import threading
-from TestUtils import eq_,eqas_
+from TestUtils import eqas_
 import eidolon
-from eidolon import asyncfunc,Future,timing, AlgorithmProcess, ProcessServer, printFlush,listResults, checkResultMap, listSum
+from eidolon import ProcessServer, listResults, checkResultMap, listSum
     
     
 def testServer1():
+    '''Test the global ProcessServer instance was created.'''
     serv=ProcessServer.globalServer
     assert serv is not None
     assert serv.realnumprocs>0
+    assert False
 
 
 def testServer2():    
