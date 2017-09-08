@@ -21,6 +21,10 @@ Simple script to invoke pytest and run unit tests in the "unittest" directory as
 Run this script through the GUI through the menu "File -> Open Script" or on the command line: 
     
     ./run.sh tests/runpytests.py
+    
+This can be run in conjunction with coverage for even more testing information:
+    
+    ./tests/run_coverage.sh tests/runpytests.py
 '''
 
 # pylint cleanup stuff
@@ -58,7 +62,7 @@ srcfiles=glob.glob(os.path.join(scriptdir,'unittests','*.py'))+glob.glob(os.path
 sys.stdout=sys.stderr=out=StringIO.StringIO() # redirect stdout/stderr to the StringIO object out
 
 setTerminalSize(sys.__stdout__.fileno(),10,50) # tweak the terminal size so that the separator lines aren't too large
-pytest.main(srcfiles)
+pytest.main(['-p','no:cacheprovider']+srcfiles) # run with the cache provided disabled so no .cache directory is left behind
 setTerminalSize(sys.__stdout__.fileno(),row,col) # restore terminal size
 
 # restore streams

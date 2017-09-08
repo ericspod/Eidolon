@@ -16,18 +16,14 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-try:
-    import sys
-    sys.path.append(scriptdir+'..')
-except:
-    pass
 
-import nose
-from TestUtils import *
-from eidolon import vec3    
+import math
+from TestUtils import eq_, eqa_, neq_, randnums
+from eidolon import vec3, halfpi
 
     
 def testMembers():
+    '''Test members assigned to a vec3 are returned correctly.'''
     x,y,z=randnums(3,-5,5)
     v=vec3(x,y,z)
     
@@ -38,11 +34,13 @@ def testMembers():
     
     
 def testNan():
+    '''Test NaN as a vector component value.'''
     v=vec3(float('nan'))
     neq_(v.len(), v.len()) # NaN is never equal to itself
     
     
 def testInf():
+    '''Test +inf and -inf as vector component values.'''
     v=vec3(float('+inf'),float('-inf')) 
     
     eq_(v.x(),float('+inf'))
@@ -82,10 +80,4 @@ def testLineDist():
     x,y=randnums(2,-5,5)
     v=vec3(x,y,0.5)
     eqa_(v.lineDist(vec3(),vec3.Z()),(v*vec3(1,1,0)).len())
-
-
-    
-    
-#nose.runmodule()
-
 

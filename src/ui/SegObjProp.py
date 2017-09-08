@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/ui/SegObjProp.ui'
 #
-# Created: Wed Sep  6 15:42:09 2017
+# Created: Fri Sep  8 16:02:54 2017
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -186,6 +186,11 @@ class Ui_SegObjProp(object):
         self.marginBox.setObjectName(_fromUtf8("marginBox"))
         self.formLayout_2.setWidget(1, QtGui.QFormLayout.FieldRole, self.marginBox)
         self.cropButton = QtGui.QPushButton(self.groupBox_4)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.cropButton.sizePolicy().hasHeightForWidth())
+        self.cropButton.setSizePolicy(sizePolicy)
         self.cropButton.setObjectName(_fromUtf8("cropButton"))
         self.formLayout_2.setWidget(2, QtGui.QFormLayout.FieldRole, self.cropButton)
         self.verticalLayout.addWidget(self.groupBox_4)

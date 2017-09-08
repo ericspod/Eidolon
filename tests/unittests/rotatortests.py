@@ -16,15 +16,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-try:
-    import sys
-    sys.path.append(scriptdir+'..')
-except:
-    pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
 
-import nose
-from TestUtils import *
-from eidolon import vec3    ,rotator, listSum
+import math
+from TestUtils import eq_, eqas_, randnums, randangle
+from eidolon import vec3, rotator, listSum, halfpi
 import numpy as np
 
 
@@ -155,5 +150,3 @@ def testInv1():
         r1=rotator(y,p,r)
         eq_(r1*(r1/v),v)
 
-
-#nose.runmodule()    

@@ -16,14 +16,8 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-try:
-    import sys
-    sys.path.append(scriptdir+'..')
-except:
-    pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
 
-import nose
-from TestUtils import *
+from TestUtils import eq_,eqa_
 from eidolon import ElemType, GeomType
 
 
@@ -34,5 +28,3 @@ def testLine1NL():
     eqa_(1,et.xis[1][0])
     eq_(et.geom,GeomType._Line)
     
-
-#nose.runmodule()    

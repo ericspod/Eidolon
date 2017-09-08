@@ -508,7 +508,7 @@ def concurrent(func):
         def testfunc(process,values):
             return (process.index,values)
         
-        values=range(20)
+        values=range(10)
         result=testfunc(len(values),3,None,values,partitionArgs=(values,))
         printFlush(listResults(result))
         
@@ -548,29 +548,37 @@ def chooseProcCount(numelems,refine,threshold):
         return 0
 
 
+### Routines used by unit tests, these have to be here to be defined in the module namespace
+
 @concurrent
-def concurrencyTest1Range(process,values):
+def concurrencyTestRange(process,values):
     '''
-    For each range index value, prints each indexed value in `values' to stdout, syncing at every process.total index.
-    Returns the process' index range of `values'.
+    For each range index value, appends the value from `values' to the result. At every process.total index, prints each 
+    indexed value in `values' to stdout then syncs with other processes. Returns the process' index range of `values'.
     '''
     result=[]
     for i in process.prange():
-        printFlush(process.index,i,values[i])
         result.append(i)
             
         if (i-process.startval)%process.total==0:
+            printFlush(process.index,i,values[i])
             process.sync()
 
     return result
 
 
-def concurrencyTest2Range(process):
+def concurrencyTestProcessValues(process):
     '''Returns the index, PID, startval, and endval for the given `process' object.'''
     return (process.index,os.getpid(),int(process.startval),int(process.endval))
     
 
 @concurrent 
-def concurrencyTest3Range(process,values):
+def concurrencyTestReturnArg(process,values):
     '''Returns the `process' index and `values'.'''
     return (process.index,values)
+
+
+@concurrent
+def concurrencyTestShareObjects(process):
+    '''Test sharing objects bween processes using ShareObject().'''
+    printFlush('Index',process.index,'Shared Object:',process.shareObject('index',process.index))

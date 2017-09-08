@@ -1396,21 +1396,23 @@ class SegmentPlugin(ScenePlugin):
 
         return self.mgr.runTasks(_create(segobj,name,refine,reinterpolateVal,calcAHA,isVolume,inner),f)
 
-    def createImageMask(self,segobj,name,template,labelfunc='1'):
+    @taskmethod('Creating Segmentation Mask')
+    def createImageMask(self,segobj,name,template,labelfunc='1',task=None):
         '''Create a mask image object from `segobj'. See generateImageMask() for description.'''
-        f=Future()
-        @taskroutine('Creating Hemisphere Mesh')
-        def _create(segobj,name,template,labelfunc,task):
-            with f:
-                name=name or (segobj.getName()+'Mask')
-                contours=zip(*segobj.enumContours())[0]
-                contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
-                mask=generateImageMask(name,contours,template,labelfunc,task)
-                mask.source=None
-                mask.plugin=None
-                f.setObject(mask)
-
-        return self.mgr.runTasks(_create(segobj,name,template,labelfunc),f)
+        name=name or (segobj.getName()+'Mask')
+        contours=zip(*segobj.enumContours())[0]
+        contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
+        mask=generateImageMask(name,contours,template,labelfunc,task)
+        mask.source=None
+        mask.plugin=None
+        return mask
+    
+    @taskmethod('Cropping Image Using Segmentation as Boundbox')
+    def cropImageBySegment(self,obj,segobj,margin,task=None):
+        mask=self.createImageMask(segobj,'tempmask',obj)
+        mask.plugin=obj.plugin
+        cmask=cropObjectEmptySpace(mask,'tempcrop',20,False)
+        return cropRefImage(obj,cmask,obj.getName()+'_Crop',margin,margin)
 
     @timing
     def createSegObjectFromMask(self,name,mask,numctrls,stype,maskindex=0):
@@ -1462,6 +1464,7 @@ class SegmentPlugin(ScenePlugin):
             aha=prop.ahaBox.isChecked()
 
             f=self.createHemisphereMesh(obj,obj.getName()+'Mesh',refine,reinterp,aha,volume,inner)
+            self.mgr.checkFutureResult(f)
             self.mgr.addSceneObjectTask(f)
 
     def _generateMaskButton(self,prop,obj):
@@ -1491,13 +1494,14 @@ class SegmentPlugin(ScenePlugin):
             if prop.hemMaskButton.isChecked():
                 maskfunc='1 if len(contours)==1 else 0' # hemisphere mask, only put down a pixel if within 1 contour only
             elif prop.cavMaskButton.isChecked():
-                maskfunc='1 if len(contours)==%i else 0'%lens[0] # cavity mask, only put down a pixel if within all contoursat once
+                maskfunc='1 if len(contours)==%i else 0'%lens[0] # cavity mask, only put down a pixel if within all contours at once
             elif prop.hemcavButton.isChecked():
                 maskfunc='1'  # hemisphere+cavity mask, only put down a pixel if within any contours
             else:
                 maskfunc='2 if len(contours)>1 else 3' # 2-label mask, put down 2 for hemisphere and 1 for cavity
 
             f=self.createImageMask(obj,obj.getName()+'_Mask',imgobj,maskfunc)
+            self.mgr.checkFutureResult(f)
             self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(f))
             
     def _cropImageButton(self,prop,obj):
@@ -1505,6 +1509,9 @@ class SegmentPlugin(ScenePlugin):
         margin=prop.marginBox.value()
         imgobj=self.mgr.findObject(imgname)
         
+        f=self.cropImageBySegment(imgobj,obj,margin)
+        self.mgr.checkFutureResult(f)
+        self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(f))
 
 
 addPlugin(SegmentPlugin())

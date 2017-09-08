@@ -16,16 +16,8 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-try:
-    import sys
-    sys.path.append(scriptdir+'..')
-except:
-    pass # the script is run 2nd time by nose which doesn't have scriptdir in its namespace, this can safely fail silently
-
-import nose
-from TestUtils import *
+from TestUtils import eq_, randnums
 from eidolon import vec3,rotator, SharedImage, getPlaneXi
-import numpy as np
 
 
 def testXis1():
@@ -78,4 +70,3 @@ def testPlaneXiFunc():
     r=rotator(*randnums(4,-1,1))
     eq_(vec3(0),getPlaneXi(v,v,r,vec3(1)))
     
-#nose.runmodule()    
