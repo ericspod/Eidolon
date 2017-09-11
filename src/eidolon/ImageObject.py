@@ -485,10 +485,11 @@ class ImageSceneObject(SceneObject):
 
             if len(orientlists)>0:
                 for ts in xrange(len(orientlists[0])): # ts is the index of a timestep,
+                #TODO: is this really needed? Can `inds' get by with differing lengths
                     # this ensures that all timesteps have the same number of images
-                    assert all(ts<len(olist) for olist in orientlists),'Not all orient lists have value for timestep %s\norient list lengths are: %r'%(ts,map(len,orientlists))
+                    #assert all(ts<len(olist) for olist in orientlists),'Not all orient lists have value for timestep %s\norient list lengths are: %r'%(ts,map(len,orientlists))
 
-                    inds=[olist[ts] for olist in orientlists] # indices of all images for this timestep
+                    inds=[olist[ts] for olist in orientlists if ts<len(olist)] # indices of all images for this timestep
                     images=indexList(inds,self.images) # get the SharedImage objects
                     
                     sortorder=sortImageStack(images) # determine the ordering of the images by trying to sort into a bottom-up stack

@@ -49,7 +49,18 @@ from ui import Ui_SeriesProp, Ui_ChooseSeriesDialog, Ui_Dicom2DView
 AssetType.append('dcm','Dicom Sources','Dicom Datasets (Directory References)') # adds the DICOM directory asset type to the asset panel
 digestFilename='dicomdataset.ini' # name of digest file
 headerPrecision=4 # precision of float values in DICOM headers, values are only correct to this number plus one of significant figures
-keywordToTag={v[4]:(k>>16,k&0xffff) for k,v in DicomDictionary.items()} # maps tag keywords to 2 part tag numbers
+keywordToTag={v[4]:Tag(k) for k,v in DicomDictionary.items()} # maps tag keywords to 2 part tag numbers
+
+positionTag='ImagePositionPatient'
+orientationTag='ImageOrientationPatient'
+slopeTag='RescaleSlope'
+interTag='RescaleIntercept'
+seriesTag='SeriesInstanceUID'
+spacingTag='PixelSpacing'
+rowsTag='Rows'
+colsTag='Columns'
+triggerTag='TriggerTime'
+commentTag='ImageComments'
 
 # non-standard Dicom tags that are used by different groups
 NonstandardTags=enum(
@@ -95,7 +106,7 @@ def readDicomHeartRate(series_or_dcm):
 
     # if the HeartRate tag isn't given attempt to parse the RR time from the comment field
     if not heartrate:
-        comment=dcm.get('ImageComments','')
+        comment=dcm.get(commentTag,'')
         m1=re.search('RR\s*(\d+)\s*',comment)
 
         if m1:
@@ -119,11 +130,11 @@ def readDicomTimeValue(series_or_dcm):
     else:
         dcm=series_or_dcm
 
-    trigger=dcm.get('TriggerTime',None)
+    trigger=dcm.get(triggerTag,None)
     if trigger is not None:
         return float(trigger)
 
-    m=re.search('(\d+)\s*%',dcm.get('ImageComments',''))
+    m=re.search('(\d+)\s*%',dcm.get(commentTag,''))
     if m:
         return float(m.groups()[0])
 
@@ -199,7 +210,8 @@ def loadSharedImages(process,rootdir,files,crop=None):
     return result
 
 
-def loadDicomZipFile(filename):
+@timing
+def loadDicomZipFile(filename, includeTags=False):
     dds=DicomDataset(filename)
     
     with zipfile.ZipFile(filename) as z:
@@ -207,14 +219,16 @@ def loadDicomZipFile(filename):
             try:
                 s=StringIO.StringIO(z.read(n))
                 ds=read_file(s)
+                dsi=DicomSharedImage(n,dcm=ds,includeTags=includeTags)
                 
                 series=dds.getSeries(ds.SeriesInstanceUID,True)
                 series.addFile(n)
-                series.addSharedImages([DicomSharedImage(n,dcm=ds)])
+                series.addSharedImages([dsi])
                 series.desc=series.desc or str(ds.get('SeriesDescription',series.desc)).strip()
                 series.seriesNum=series.seriesNum or int(ds.get('SeriesNumber',series.seriesNum))
-            except:
-                pass
+            except Exception as e:
+                printFlush(e)
+                raise e
             
     return dds
 
@@ -225,10 +239,8 @@ def convertToDict(dcm):
         for elem in dcm:
             name=elem.name
             value=_elemToValue(elem)
-            tag=(elem.tag.group,elem.tag.elem)
-
             if value:
-                result[tag]=(name,value)
+                result[elem.tag]=(name,value)
 
         return result
 
@@ -239,9 +251,7 @@ def convertToDict(dcm):
             for i,item in enumerate(elem):
                 value['item_%i'%i]=_datasetToDict(item)
         elif elem.name!='Pixel Data':
-            value=elem.value
-            if not isPicklable(value):
-                value=str(value)
+            value=str(elem.value)
 
         return value
 
@@ -315,20 +325,30 @@ def isPhaseImage(image):
     return phasevalue1 in imagetype or phasevalue2 in imagetype
 
 
-def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
+def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None,includeTags=False):
     '''
     This pseudo-constructor creates a SharedImage object from a DICOM file. If `dcm' is None then the file is read
-    from `filename', which must always be the valid path to the loaded DICOM. The `index' value is for the ordering the
-    caller imposes on a series of DICOM images, usually this is the index of the image in its containing DICOM series.
+    from `filename', which must always be the valid path to the loaded DICOM, otherwise `dcm' must be the loaded Dicom
+    object. The `index' value is for the ordering the caller imposes on a series of DICOM images, usually this is the 
+    index of the image in its containing DICOM series. If `isShared' is True the image matrix is allocated in shared 
+    memory. If `rescale' is True then the image data is rescaled according to the slope and intercept tags. The `timestep'
+    value of the returned object is defined by the TriggerTime tag or inferred from the image comment if not present.
+    
+    Additional members are defined for the returned SharedImage object:
+        * seriesID: string of the SeriesInstanceUID tag value or ''
+        * imageType: string of the ImageType tag
+        * isSpatial: is True if there's a valid pixel array and image position/orientation tags
+        * isCompressed: True if the image data is compressed in a way which can't be read
+        * tags: a dictionary of the Dicom tags taken from the loaded file if `includeTags' is True, {} otherwise
     '''
     dcm=read_file(filename) if dcm is None else dcm
     assert dcm!=None
 
-    position=vec3(*roundHeaderVals(*dcm.get('ImagePositionPatient',[0,0,0]))) # top-left corner
-    dimensions=(dcm.get('Columns',0),dcm.get('Rows',0))
-    spacing=map(float,dcm.get('PixelSpacing',[1,1]))
+    position=vec3(*roundHeaderVals(*dcm.get(positionTag,[0,0,0]))) # top-left corner
+    dimensions=(dcm.get(colsTag,0),dcm.get(rowsTag,0))
+    spacing=map(float,dcm.get(spacingTag,[1,1]))
 
-    a,b,c,d,e,f=roundHeaderVals(*dcm.get('ImageOrientationPatient',[1,0,0,0,-1,0]))
+    a,b,c,d,e,f=roundHeaderVals(*dcm.get(orientationTag,[1,0,0,0,-1,0]))
     orientation=rotator(vec3(a,b,c).norm(),vec3(d,e,f).norm(),vec3(1,0,0),vec3(0,-1,0))
     
     si=SharedImage(filename,position,orientation,dimensions,spacing)
@@ -340,12 +360,12 @@ def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
 
     si.index=index
     # extract Dicom properties of interest
-    si.seriesID=str(dcm.get('SeriesInstanceUID',''))
+    si.seriesID=str(dcm.get(seriesTag,''))
     si.imageType=list(dcm.get('ImageType',[]))
-    si.isSpatial=validPixelArray and dcm.get('ImagePositionPatient',None)!=None
+    si.isSpatial=validPixelArray and positionTag in dcm and orientationTag in dcm
     si.timestep=readDicomTimeValue(dcm) #float(dcm.get('TriggerTime',-1))
     si.isCompressed=not validPixelArray and not getattr(dcm,'_is_uncompressed_transfer_syntax',lambda:False)()
-    #si.tags=convertToDict(dcm)
+    si.tags=convertToDict(dcm) if includeTags else {}
 
     if 0<=si.timestep<2: # convert from seconds to milliseconds
         si.timestep*=1000
@@ -353,8 +373,8 @@ def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None):
     if validPixelArray:
         #wincenter=dcm.get('WindowCenter',None)
         #winwidth=dcm.get('WindowWidth',None)
-        rslope=float(dcm.get('RescaleSlope',1))
-        rinter=float(dcm.get('RescaleIntercept',0))
+        rslope=float(dcm.get(slopeTag,1))
+        rinter=float(dcm.get(interTag,0))
         #rtype=dcm.get('RescaleType',None)
 
         # TODO: proper rescaling?
