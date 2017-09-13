@@ -216,9 +216,12 @@ def loadDicomZipFile(filename, includeTags=False):
     
     with zipfile.ZipFile(filename) as z:
         for n in z.namelist():
+            s=StringIO.StringIO(z.read(n))
             try:
-                s=StringIO.StringIO(z.read(n))
                 ds=read_file(s)
+            except:
+                pass # ignore files which aren't Dicom files
+            else:
                 dsi=DicomSharedImage(n,dcm=ds,includeTags=includeTags)
                 
                 series=dds.getSeries(ds.SeriesInstanceUID,True)
@@ -226,9 +229,6 @@ def loadDicomZipFile(filename, includeTags=False):
                 series.addSharedImages([dsi])
                 series.desc=series.desc or str(ds.get('SeriesDescription',series.desc)).strip()
                 series.seriesNum=series.seriesNum or int(ds.get('SeriesNumber',series.seriesNum))
-            except Exception as e:
-                printFlush(e)
-                raise e
             
     return dds
 
@@ -251,7 +251,7 @@ def convertToDict(dcm):
             for i,item in enumerate(elem):
                 value['item_%i'%i]=_datasetToDict(item)
         elif elem.name!='Pixel Data':
-            value=str(elem.value)
+            value=elem.value
 
         return value
 
