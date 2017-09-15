@@ -395,6 +395,20 @@ def isCTImageSeries(imgs=None,minv=None,maxv=None,hist=None):
     return len(maximi)>3
 
 
+def calculateBinaryMaskBox(image,maxFilterSize=20,maskThreshold=0.75):
+    '''
+    Returns the extents of a box containing the pixels of a mask calculated from `maskmat'. The input 3D array `image'
+    is filtered through a maxmimum filter with size `maxFilterSize', normalized, then thresholded by `maskThreshold'.
+    Return value is minimum x (column) index, minimum y (row) index, maximum x index, and maximum y index of the box
+    in `image' containing these calculated pixels.
+    '''
+    mask=scipy.ndimage.maximum_filter(image, size=maxFilterSize)
+    mask=rescaleArray(mask)>maskThreshold
+    inds=scipy.ndimage.find_objects(mask)[0]
+    
+    return inds[1].start, inds[0].start, inds[1].stop, inds[0].stop
+
+
 @timing
 def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
     '''
@@ -423,13 +437,14 @@ def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
             out[:,:,i]=im
             
         # reduce out to a mask of voxels at and above `maskThreshold' of the value range
-        mask=scipy.ndimage.maximum_filter(out, size=maxFilterSize)
-        mask=(mask-np.min(mask))/(np.max(mask)-np.min(mask))
-        mask=mask>maskThreshold
-        
-        inds=scipy.ndimage.find_objects(mask)[0]
+        box=calculateBinaryMaskBox(out,maxFilterSize,maskThreshold)
+#        mask=scipy.ndimage.maximum_filter(out, size=maxFilterSize)
+#        mask=(mask-np.min(mask))/(np.max(mask)-np.min(mask))
+#        mask=mask>maskThreshold
+#        
+#        inds=scipy.ndimage.find_objects(mask)[0]
     
-    return out, inds[1].start, inds[0].start, inds[1].stop, inds[0].stop
+    return (out,)+box
 
 
 def applySlopeIntercept(imgobj,slope=None,inter=None):

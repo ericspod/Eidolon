@@ -26,6 +26,8 @@ from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes
 import os
 import shutil
 import gzip
+import math
+import numpy as np
 
 class NiftiPlugin(ImageScenePlugin):
     def __init__(self):

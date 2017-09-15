@@ -180,7 +180,7 @@ class SharedImage(object):
 
         return SharedImage(self.filename,newpos,self.orientation,(cols,rows),self.spacing,self.timestep,newimg,newmin,newmax)
 
-    def allocateImg(self,name,isShared=True):
+    def allocateImg(self,name,isShared=False):
         cols,rows=self.dimensions
         self.img=RealMatrix(name,'',rows,cols,isShared)
 

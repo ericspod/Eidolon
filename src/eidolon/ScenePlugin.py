@@ -1041,7 +1041,7 @@ class ImageScenePlugin(ScenePlugin):
         _,prop.ctcheck=VisualizerUI.addCustomUIRow(prop.layout(),1,CustomUIType._checkbox,'ctCheck','Is CT Image')
         prop.ctcheck.clicked.connect(lambda i:self.setCTImageRange(obj,i))
 
-        obj.histogram=ImageAlgorithms.calculateImageStackHistogram(obj,*ctImageRange) # pre-calculate and store the histogram for later possible use
+        #obj.histogram=ImageAlgorithms.calculateImageStackHistogram(obj,*ctImageRange) # pre-calculate and store the histogram for later possible use
         #self.setCTImageRange(obj,isCTImageSeries(hist=obj.histogram))
 
         return prop

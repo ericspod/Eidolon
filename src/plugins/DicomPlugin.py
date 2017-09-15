@@ -325,7 +325,7 @@ def isPhaseImage(image):
     return phasevalue1 in imagetype or phasevalue2 in imagetype
 
 
-def DicomSharedImage(filename,index=-1,isShared=True,rescale=True,dcm=None,includeTags=False):
+def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,includeTags=False):
     '''
     This pseudo-constructor creates a SharedImage object from a DICOM file. If `dcm' is None then the file is read
     from `filename', which must always be the valid path to the loaded DICOM, otherwise `dcm' must be the loaded Dicom

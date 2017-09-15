@@ -47,6 +47,7 @@ from ui import Ui_RegionGraphWidget
 addLibraryFile('pyqtgraph-0.9.10-py2.7')
 
 import pyqtgraph as pg
+import numpy as np
 
 
 DatafileParams=enum(
@@ -762,6 +763,14 @@ class PlotPlugin(ScenePlugin):
         obj=PlotSceneObject(name,filename,None,self)
         obj.load()
         return obj
+    
+    def plotImageMatrix(self,image,title='Image View',width=200,height=200):
+        def createView():
+            view=pg.ImageView()
+            view.setImage(image,xvals=np.arange(image.shape[0]+1))
+            return view
+        
+        return self.mgr.createDockWidget(createView,title,width,height)
 
     def _openFileDialog(self):
         filename=self.mgr.win.chooseFileDialog('Choose Plot filename',filterstr='Plot Files (*.plot)')
