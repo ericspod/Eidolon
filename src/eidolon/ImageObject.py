@@ -374,7 +374,6 @@ class ImageSceneObject(SceneObject):
         if len(stack)==0:
             return transform()
 
-        #stack0=stack[0][:2]
         img0=self.images[stack[0][0]]
         img1=self.images[stack[0][-1]]
         
@@ -384,7 +383,7 @@ class ImageSceneObject(SceneObject):
         if self.is2D and make2DVol:
             depth=max(abs(img0.spacing[0]),abs(img0.spacing[1]))*2 # fabricate a thickness value for the 2D plane
             pos-=img0.norm*(depth*0.5)
-            scale=img0.dimvec+vec3(0,0,depth)
+            scale+=vec3(0,0,depth)
 #            return transform(img0.position-(img0.norm*(depth*0.5)),img0.dimvec+vec3(0,0,depth),img0.orientation)
 #        else:
 #            return transform(img0.position,self.getVolumeDims(),img0.orientation)

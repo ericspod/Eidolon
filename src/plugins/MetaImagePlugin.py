@@ -195,6 +195,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 dat=np.ndarray(dimsize,dtype=np.dtype(MetaImageTypes[elemtype]),buffer=raw,order='F')
                 dat=np.transpose(dat,(1,0,2,3)[:len(dat.shape)])  # transpose rows and columns
 
+                printFlush(spacing)
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
                 obj.source=hdr
                 f.setObject(obj)
@@ -238,13 +239,13 @@ class MetaImagePlugin(ImageScenePlugin):
 
                 # convert the image into a 2D/3D/4D matrix and pull out the header information
                 mat=self.getImageObjectArray(obj,MetaImageTypes[datatype])
-                dat=mat['dat']
-                pos=obj.getVolumeTransform()*vec3.Z() # choose the top corner as the origin instead of mat['pos'] for compatibility with other programs
+                dat=mat['array']
+                pos=obj.getTransform()*vec3.Z() # choose the top corner as the origin instead of mat['pos'] for compatibility with other programs
                 spacing=[i or 1 for i in mat['spacing']] # all values of spacing must be non-zero
                 rot=mat['rot']
                 toffset=mat['toffset']
                 interval=mat['interval']
-                rows,cols,depth,numsteps=mat['shape']
+                rows,cols,depth,numsteps=dat.shape
                 dims=4 if obj.isTimeDependent else 3
 
                 xdir=rot*vec3.X()

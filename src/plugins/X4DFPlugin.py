@@ -131,9 +131,9 @@ def convertImage(obj,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
     filename='%s.dat'%filenamePrefix if filenamePrefix else None
 
     imgarrmap=tmpplugin.getImageObjectArray(obj)
-    imgarr=imgarrmap['dat']
+    imgarr=imgarrmap['array']
     pos=imgarrmap['pos']
-    shape=imgarrmap['shape']
+    shape=imgarr.shape
     spacing=imgarrmap['spacing']*vec3(shape[1],shape[0],shape[2])
     rot=imgarrmap['rot']
 

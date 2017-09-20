@@ -241,7 +241,7 @@ class NiftiPlugin(ImageScenePlugin):
                     datatype=np.float32
 
                 mat=self.getImageObjectArray(obj,datatype)
-                dat=mat['dat']
+                dat=mat['array']
                 pos=mat['pos']
                 spacex,spacey,spacez=mat['spacing']
                 rot=rotator(vec3(0,0,1),math.pi)*mat['rot']*rotator(vec3(0,0,1),-halfpi)

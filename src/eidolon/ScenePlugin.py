@@ -1314,33 +1314,29 @@ class ImageScenePlugin(ScenePlugin):
 
     def getImageObjectArray(self,obj,datatype=float):
         '''
-        Create a 2D/3D/4D Numpy array of type `datatype' from the image data in `obj'. This array is intended to be
-        suitable as input for a number of libraries for writing image files, hence the multiple dimensions possible.
-        The result is a dictionary with the following keys:
+        Create a 4D Numpy array of type `datatype' from the image data in `obj'. This array is intended to be
+        suitable as input to libraries for writing image files. The result is a dictionary with the following keys:
+            array : numpy array, shape is (width,height,depth,timestep)
             pos : position in space
             spacing : pixel/voxel dimensions
             rot : spatial rotation
-            dat : numpy array, shape is (width,height,depth,timestep) for time images, (width,height,depth) for
-                static volume, (width,height) for 2D image
             toffset : time offset
             interval : time interval
-            shape : 4D image shape (rows,cols,depth,numsteps), doesn't necessarily match matrix dimensions
         '''
         assert isinstance(obj,ImageSceneObject)
         assert len(obj.getOrientMap())==1, 'Cannot produce a array from non-stack image objects'
         #assert isinstance(datatype,np.dtype) or datatype in 'fdbBhHiIlL'
 
-        timesteps,stacks=zip(*obj.getTimestepIndices())
-        img0=obj.images[stacks[0][0]]
-        img1=obj.images[stacks[0][-1]]
-        pos=img0.position
-        rot=img0.orientation
-        spacing=vec3(img0.spacing[0],img0.spacing[1],pos.distTo(img1.position)/(len(stacks[0])-1))
-        toffset=timesteps[0]
-        interval=Utils.avgspan(timesteps) if len(timesteps)>1 else 0
-
-        with processImageNp(obj,False,datatype) as dat:
-            return dict(pos=pos,spacing=spacing,rot=rot,dat=dat,toffset=toffset,interval=interval,shape=tuple(dat.shape))
+        with processImageNp(obj,False,datatype) as array:
+            timesteps=obj.getTimestepList()
+            trans=obj.getTransform()
+            pos=trans.getTranslation()
+            rot=trans.getRotation()
+            spacing=trans.getScale().abs()*vec3(array.shape[0],array.shape[1],array.shape[2]-1).inv()
+            toffset=timesteps[0]
+            interval=Utils.avgspan(timesteps) if len(timesteps)>1 else 0
+            
+            return dict(pos=pos,spacing=spacing,rot=rot,array=array,toffset=toffset,interval=interval)
 
 #        timesteps=obj.getTimestepList()
 #
@@ -1352,7 +1348,7 @@ class ImageScenePlugin(ScenePlugin):
 #        depth=1
 #        img1=None
 #        img2=None
-
+#
 #        if obj.isTimeDependent:
 #            timeseqs=obj.getVolumeStacks()
 #            assert len(timeseqs)==numsteps,'%i != %i'%(len(timeseqs),numsteps)
