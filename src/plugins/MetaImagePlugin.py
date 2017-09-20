@@ -278,6 +278,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 dat=np.transpose(dat,(1,0,2,3)[:len(dat.shape)]) # transpose rows and columns
                 
                 dat=dat[:,:,::-1,...] # since the top corner is the origin, invert the Z axis in the matrix
+                dat=np.squeeze(dat)
 
                 with open(path,'wb') as o:
                     for k in hdrnames:
@@ -314,7 +315,8 @@ class MetaImagePlugin(ImageScenePlugin):
 
             filename=self.mgr.win.chooseFileDialog('Choose MetaImage Header filename',filterstr='Header Files (*.mhd *.mha)',isOpen=False)
             if filename!='':
-                self.saveImage(filename,obj)
+                f=self.saveImage(filename,obj)
+                self.mgr.checkFutureResult(f)
 
     def getScriptCode(self,obj,**kwargs):
         configSection=kwargs.get('configSection',False)

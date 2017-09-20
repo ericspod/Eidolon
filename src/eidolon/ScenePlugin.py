@@ -33,7 +33,7 @@ from .Utils import first, ParamType, ParamDef, Future, taskroutine, timing, toIt
 from .MathDef import ElemType
 from .VisualizerUI import CustomUIType, setChecked, fillList, ParamPanel, IconName
 from .MeshAlgorithms import ValueFunc, UnitFunc, VecFunc, calculateFieldMinMax
-from .ImageAlgorithms import matrixToArray
+from .ImageAlgorithms import matrixToArray, processImageNp
 from .SceneObject import ReprType,SceneObjectRepr, MeshSceneObject, MeshSceneObjectRepr, TDMeshSceneObjectRepr
 from .ImageObject import ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr
 
@@ -1330,54 +1330,66 @@ class ImageScenePlugin(ScenePlugin):
         assert len(obj.getOrientMap())==1, 'Cannot produce a array from non-stack image objects'
         #assert isinstance(datatype,np.dtype) or datatype in 'fdbBhHiIlL'
 
-        timesteps=obj.getTimestepList()
-
-        numsteps=len(timesteps)
-        cols=obj.maxcols
-        rows=obj.maxrows
-        interval=int(Utils.avg(timesteps[i]-timesteps[i-1] for i in range(1,len(timesteps))))
+        timesteps,stacks=zip(*obj.getTimestepIndices())
+        img0=obj.images[stacks[0][0]]
+        img1=obj.images[stacks[0][-1]]
+        pos=img0.position
+        rot=img0.orientation
+        spacing=vec3(img0.spacing[0],img0.spacing[1],pos.distTo(img1.position)/(len(stacks[0])-1))
         toffset=timesteps[0]
-        depth=1
-        img1=None
-        img2=None
+        interval=Utils.avgspan(timesteps) if len(timesteps)>1 else 0
 
-        if obj.isTimeDependent:
-            timeseqs=obj.getVolumeStacks()
-            assert len(timeseqs)==numsteps,'%i != %i'%(len(timeseqs),numsteps)
+        with processImageNp(obj,False,datatype) as dat:
+            return dict(pos=pos,spacing=spacing,rot=rot,dat=dat,toffset=toffset,interval=interval,shape=tuple(dat.shape))
 
-            img1=obj.images[timeseqs[0][0]]
-            img2=img1 if obj.is2D else obj.images[timeseqs[0][1]]
+#        timesteps=obj.getTimestepList()
+#
+#        numsteps=len(timesteps)
+#        cols=obj.maxcols
+#        rows=obj.maxrows
+#        interval=int(Utils.avg(timesteps[i]-timesteps[i-1] for i in range(1,len(timesteps))))
+#        toffset=timesteps[0]
+#        depth=1
+#        img1=None
+#        img2=None
 
-            depth=len(timeseqs[0])
-            dat=np.zeros((rows,cols,depth,numsteps),datatype)
-
-            for t,ts in enumerate(timeseqs):
-                for d,dd in enumerate(ts):
-                    dat[:,:,d,t]=matrixToArray(obj.images[dd].img,datatype)
-
-        elif not obj.is2D:
-            timeseqs=obj.getVolumeStacks()[0]
-
-            img1=obj.images[timeseqs[0]]
-            img2=obj.images[timeseqs[1]]
-
-            depth=len(timeseqs)
-            dat=np.zeros((rows,cols,depth),datatype)
-
-            for d,dd in enumerate(timeseqs):
-                dat[:,:,d]=matrixToArray(obj.images[dd].img)
-
-        else:
-            img1=obj.images[0]
-            img2=img1
-            dat=np.zeros((rows,cols),datatype)
-            dat[:,:]=matrixToArray(obj.images[0].img)
-
-        pos=img1.position
-        spacing=vec3(img1.spacing[0],img1.spacing[1],pos.distTo(img2.position))
-        shape=(rows,cols,depth,numsteps)
-
-        return dict(pos=pos,spacing=spacing,rot=img1.orientation,dat=dat,toffset=toffset,interval=interval,shape=shape)
+#        if obj.isTimeDependent:
+#            timeseqs=obj.getVolumeStacks()
+#            assert len(timeseqs)==numsteps,'%i != %i'%(len(timeseqs),numsteps)
+#
+#            img1=obj.images[timeseqs[0][0]]
+#            img2=img1 if obj.is2D else obj.images[timeseqs[0][1]]
+#
+#            depth=len(timeseqs[0])
+#            dat=np.zeros((rows,cols,depth,numsteps),datatype)
+#
+#            for t,ts in enumerate(timeseqs):
+#                for d,dd in enumerate(ts):
+#                    dat[:,:,d,t]=matrixToArray(obj.images[dd].img,datatype)
+#
+#        elif not obj.is2D:
+#            timeseqs=obj.getVolumeStacks()[0]
+#
+#            img1=obj.images[timeseqs[0]]
+#            img2=obj.images[timeseqs[1]]
+#
+#            depth=len(timeseqs)
+#            dat=np.zeros((rows,cols,depth),datatype)
+#
+#            for d,dd in enumerate(timeseqs):
+#                dat[:,:,d]=matrixToArray(obj.images[dd].img)
+#
+#        else:
+#            img1=obj.images[0]
+#            img2=img1
+#            dat=np.zeros((rows,cols),datatype)
+#            dat[:,:]=matrixToArray(obj.images[0].img)
+#
+#        pos=img1.position
+#        spacing=vec3(img1.spacing[0],img1.spacing[1],pos.distTo(img2.position))
+#        shape=(rows,cols,depth,numsteps)
+#
+#        return dict(pos=pos,spacing=spacing,rot=img1.orientation,dat=dat,toffset=toffset,interval=interval,shape=shape)
 
 
 class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):

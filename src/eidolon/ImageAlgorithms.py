@@ -92,7 +92,7 @@ def rescaleArray(arr,minv=0.0,maxv=1.0):
 
 
 @contextlib.contextmanager
-def processImageNp(imgobj,dtype=np.float,writeBack=True):
+def processImageNp(imgobj,writeBack=True,dtype=np.float):
     '''
     Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
     image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
@@ -427,7 +427,7 @@ def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
     if not obj.isTimeDependent:
         raise ValueError('Image object %r must be time-dependent for calculating motion ROI.'%obj.getName())
         
-    with processImageNp(obj,writeBack=False) as mat:
+    with processImageNp(obj,False) as mat:
         out=np.zeros(mat.shape[:3],np.float32)
         
         for i in range(mat.shape[2]):

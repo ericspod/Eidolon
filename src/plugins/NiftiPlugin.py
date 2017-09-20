@@ -299,7 +299,8 @@ class NiftiPlugin(ImageScenePlugin):
 
             filename=self.mgr.win.chooseFileDialog('Choose NIfTI filename',filterstr='NIfTI Files (*.nii *.nii.gz)',isOpen=False)
             if filename!='':
-                self.saveObject(obj,filename,True)
+                f=self.saveObject(obj,filename,True)
+                self.mgr.checkFutureResult(f)
 
     def getScriptCode(self,obj,**kwargs):
         configSection=kwargs.get('configSection',False)

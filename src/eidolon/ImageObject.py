@@ -338,45 +338,62 @@ class ImageSceneObject(SceneObject):
         '''Get actual minimal and maximal image values as stored in the SharedImage objects themselves.'''
         return minmax(((i.imgmin,i.imgmax) for i in self.images),ranges=True)
 
-    def getVoxelSize(self):
-        '''Get the size of each voxel in the volume in world space units.'''
-        stack=self.getVolumeStacks()
-        if len(stack)==0 or len(stack[0])==1:
-            return vec3()
-
-        img0=self.images[stack[0][0]]
-        img1=self.images[stack[0][-1]]
-
-        return vec3(img0.spacing[0],img0.spacing[1],img0.position.distTo(img1.position)/(len(stack[0])-1))
-
     def getArrayDims(self):
         '''Get the 4 dimensions (rows, columns, height, time) for a 4D array containing the volume image data.'''
         inds=self.getTimestepIndices()
         return (self.maxrows,self.maxcols,len(inds[0][1]),len(inds))
 
-    def getVolumeDims(self):
-        '''Get the dimension vector the image volume in world space units.'''
+    def getVoxelSize(self):
+        '''Get the size of each voxel in the volume in world space units.'''
         stack=self.getVolumeStacks()
-        if len(stack)==0 or len(stack[0])==1:
+        if len(stack)==0:
             return vec3()
 
-        img0=self.images[stack[0][0]]
-        img1=self.images[stack[0][-1]]
-        return img0.dimvec+vec3(0,0,img0.position.distTo(img1.position))
+        stack0=stack[0][:2]
+        img0=self.images[stack0[0]]
+        img1=self.images[stack0[-1]]
+        return vec3(img0.spacing[0],img0.spacing[1],img0.position.distTo(img1.position))
 
-    def getVolumeTransform(self):
-        '''Get the transform from the unit cube to the hexahedron in world space defined by the image volume.'''
+#    def getVolumeDims(self):
+#        '''Get the dimension vector the image volume in world space units.'''
+#        stack=self.getVolumeStacks()
+#        if len(stack)==0:
+#            return vec3()
+#
+#        img0=self.images[stack[0][0]]
+#        img1=self.images[stack[0][-1]]
+#        return img0.dimvec+vec3(0,0,img0.position.distTo(img1.position))
+
+    def getVolumeTransform(self,make2DVol=True):
+        '''
+        Get the transform from the unit cube to the hexahedron in world space defined by the image volume. if the image
+        is 2D and `make2DVol', the transform defined a 3D volume as thick as the largest pixel spacing value instead of
+        a 2D plane in space.
+        '''
         stack=self.getVolumeStacks()
         if len(stack)==0:
             return transform()
 
+        #stack0=stack[0][:2]
         img0=self.images[stack[0][0]]
-
-        if self.is2D:
+        img1=self.images[stack[0][-1]]
+        
+        pos=img0.position
+        scale=img0.dimvec+vec3(0,0,img0.position.distTo(img1.position))
+        
+        if self.is2D and make2DVol:
             depth=max(abs(img0.spacing[0]),abs(img0.spacing[1]))*2 # fabricate a thickness value for the 2D plane
-            return transform(img0.position-(img0.norm*(depth*0.5)),img0.dimvec+vec3(0,0,depth),img0.orientation)
-        else:
-            return transform(img0.position,self.getVolumeDims(),img0.orientation)
+            pos-=img0.norm*(depth*0.5)
+            scale=img0.dimvec+vec3(0,0,depth)
+#            return transform(img0.position-(img0.norm*(depth*0.5)),img0.dimvec+vec3(0,0,depth),img0.orientation)
+#        else:
+#            return transform(img0.position,self.getVolumeDims(),img0.orientation)
+
+        return transform(pos,scale,img0.orientation)
+    
+    def getTransform(self):
+        '''Return the actual image transform, defining a 3D volume for 3D images and 2D plane for 2D images.'''
+        return self.getVolumeTransform(False)
 
     def setTransform(self,trans):
         '''
