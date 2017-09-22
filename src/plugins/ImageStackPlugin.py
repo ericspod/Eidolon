@@ -21,9 +21,9 @@ from eidolon import *
 from ui import Ui_OpenImgStackDialog
 
 
-class ChooseImgStackDialog(QtGui.QDialog,Ui_OpenImgStackDialog):
+class ChooseImgStackDialog(QtWidgets.QDialog,Ui_OpenImgStackDialog):
     def __init__(self, plugin,parent=None):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self.setupUi(self)
         self.plugin=plugin
         self.filenames=[]

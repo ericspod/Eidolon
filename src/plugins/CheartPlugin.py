@@ -263,9 +263,9 @@ def loadFileSequence(files,typename=None,dim=None,task=None):
     return [filemap.get(f) for f in files]
 
 
-class BaseLoadDialog(QtGui.QDialog):
+class BaseLoadDialog(QtWidgets.QDialog):
     def __init__(self,mgr,parent=None):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self.setupUi(self)
         self.mgr=mgr
         self.lastdir=self.tr('.')
@@ -389,8 +389,8 @@ class LoadTDDialog(Ui_TDDialog,BaseLoadDialog):
         self.xfileTable.verticalHeader().setMovable(True)
         self.dfileTable.verticalHeader().setMovable(True)
 
-        self.xfileTable.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
-        self.dfileTable.setDragDropMode(QtGui.QAbstractItemView.InternalMove)
+        self.xfileTable.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        self.dfileTable.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
 
         self.xfileTable.itemChanged.connect(lambda i:self._moveRow(i.row(),self.xkeyframes,self.xfileTable))
         setattr(self.xfileTable,'keyPressEvent',lambda e:self._delRow(e,self.xkeyframes,self.xfileTable))
@@ -411,7 +411,7 @@ class LoadTDDialog(Ui_TDDialog,BaseLoadDialog):
             itemlist.pop(index)
             fillEnumTable(itemlist,table)
 
-        QtGui.QTableWidget.keyPressEvent(table,event)
+        QtWidgets.QTableWidget.keyPressEvent(table,event)
 
     def _moveRow(self,j,itemlist,table):
         index=first(i.row() for i in table.selectedIndexes()) or -1

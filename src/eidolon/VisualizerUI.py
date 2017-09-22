@@ -102,7 +102,7 @@ def initUI(args=None):
     global globalApp
 
     if globalApp==None:
-        globalApp = QtGui.QApplication(sys.argv if args==None else args)
+        globalApp = QtWidgets.QApplication(sys.argv if args==None else args)
         globalApp.setAttribute(Qt.AA_DontUseNativeMenuBar) # in OSX, forces menubar to be in window
 
     return globalApp
@@ -181,7 +181,7 @@ def traverseWidget(widg, func=lambda i:True):
         for d in dir(w):
             obj=getattr(w,d)
             try:
-                if obj not in found and isinstance(obj,QtGui.QWidget) and func(obj):
+                if obj not in found and isinstance(obj,QtWidgets.QWidget) and func(obj):
                     widgstack.push(obj)
             except:
                 pass
@@ -212,12 +212,12 @@ def setCollapsibleGroupbox(box,isVisible=True):
     Transforms the QGroupBox `box' into a collapsible one, which will have a check box that collapses its contents if
     unchecked. The box will be initially collapsed if `isVisible' is False.
     '''
-    w=QtGui.QWidget()
+    w=QtWidgets.QWidget()
     w.setLayout(box.layout())
     w.setContentsMargins(0,0,0,0)
     w.setStyleSheet('.QWidget{background-color:0x00000000;}')
     box.setStyleSheet('.QGroupBox::title { padding-left:-1px; }')
-    layout = QtGui.QVBoxLayout(box)
+    layout = QtWidgets.QVBoxLayout(box)
     layout.addWidget(w)
     layout.setContentsMargins(0,0,0,0)
     box.setCheckable(True)
@@ -241,13 +241,13 @@ QLabel { background-color:rgba(0,0,0,150.0); padding:1px;}'''
 def centerWindow(wind):
     '''Centers the window `wind' on the desktop by moving it only.'''
     geom = wind.geometry()
-    geom.moveCenter(QtGui.QDesktopWidget().availableGeometry().center())
+    geom.moveCenter(QtWidgets.QDesktopWidget().availableGeometry().center())
     wind.move(geom.topLeft())
 
 
 def resizeScreenRelative(wind,w,h):
     geom = wind.geometry()
-    desk=QtGui.QDesktopWidget().availableGeometry()
+    desk=QtWidgets.QDesktopWidget().availableGeometry()
     nw=geom.width()
     nh=geom.height()
 
@@ -327,10 +327,10 @@ def fillTable(vals,table):
             table.verticalHeader().setVisible(False)
 
         for i,(n,v) in enumerate(vals):
-            item=QtGui.QTableWidgetItem(n)
+            item=QtWidgets.QTableWidgetItem(n)
             item.setFlags((item.flags() & ~Qt.ItemIsEditable)|Qt.ItemIsSelectable)
             table.setItem(i,0,item)
-            item=QtGui.QTableWidgetItem(v)
+            item=QtWidgets.QTableWidgetItem(v)
             item.setFlags((item.flags() & ~Qt.ItemIsEditable)|Qt.ItemIsSelectable)
             table.setItem(i,1,item)
 
@@ -352,10 +352,10 @@ def fillList(listobj,items,curitem=-1,defaultitem=None,checkChanges=False):
     `listobj' are compared to `items' and is only refilled if they differ; the expense of this operation versus refilling
     the list are up to the caller to determine.
     '''
-    assert isinstance(listobj,(QtGui.QComboBox,QtGui.QListWidget))
+    assert isinstance(listobj,(QtWidgets.QComboBox,QtWidgets.QListWidget))
 
     # define simple interface functions for interacting with `listobj'
-    if isinstance(listobj,QtGui.QComboBox):
+    if isinstance(listobj,QtWidgets.QComboBox):
         getItem=lambda i: (str(listobj.itemText(i)),listobj.itemData(i))
         addItem=listobj.addItem
         setCurrentIndex=listobj.setCurrentIndex
@@ -392,7 +392,7 @@ def fillList(listobj,items,curitem=-1,defaultitem=None,checkChanges=False):
 
 def createSplitWidget(parent,widg1,widg2,isVertical=True):
     '''Create a splitter widget within `parent' with `widg1' and `widg2' as its two halves, vertical if `isVertical.'''
-    split=QtGui.QSplitter(parent)
+    split=QtWidgets.QSplitter(parent)
     split.setOrientation(Qt.Vertical if isVertical else Qt.Horizontal)
     split.setChildrenCollapsible(False)
     widg1.setParent(split)
@@ -407,7 +407,7 @@ def createMenu(title,values,defaultFunc=lambda v:None,parent=None):
     function is called with the string passed as an argument, if only a string is given then `defaultFunc' is called
     instead with that string as argument.
     '''
-    menu=QtGui.QMenu(parent)
+    menu=QtWidgets.QMenu(parent)
     if title:
         #menu.setTitle(title)
         menu.addAction(title,lambda:None)
@@ -438,13 +438,13 @@ def mapWidgetValues(widget):
 
     for d in dir(widget):
         at=getattr(widget,d)
-        if isinstance(at,(QtGui.QCheckBox,QtGui.QRadioButton)):
+        if isinstance(at,(QtWidgets.QCheckBox,QtWidgets.QRadioButton)):
             results[d]=at.isChecked()
-        elif isinstance(at,(QtGui.QSpinBox,QtGui.QDoubleSpinBox)):
+        elif isinstance(at,(QtWidgets.QSpinBox,QtWidgets.QDoubleSpinBox)):
             results[d]=at.value()
-        elif isinstance(at,QtGui.QComboBox):
+        elif isinstance(at,QtWidgets.QComboBox):
             results[d]=(at.currentIndex(),str(at.currentText()))
-        elif isinstance(at,QtGui.QLineEdit):
+        elif isinstance(at,QtWidgets.QLineEdit):
             results[d]=str(at.text())
 
     return results
@@ -455,13 +455,13 @@ def setWidgetValues(widget,vals):
         at=getattr(widget,k,None)
         if at:
             with signalBlocker(at):
-                if isinstance(at,(QtGui.QCheckBox,QtGui.QRadioButton)):
+                if isinstance(at,(QtWidgets.QCheckBox,QtWidgets.QRadioButton)):
                     at.setChecked(v)
-                elif isinstance(at,(QtGui.QSpinBox,QtGui.QDoubleSpinBox)):
+                elif isinstance(at,(QtWidgets.QSpinBox,QtWidgets.QDoubleSpinBox)):
                     at.setValue(v)
-                elif isinstance(at,QtGui.QComboBox):
+                elif isinstance(at,QtWidgets.QComboBox):
                     at.setCurrentIndex(v)
-                elif isinstance(at,QtGui.QLineEdit):
+                elif isinstance(at,QtWidgets.QLineEdit):
                     at.setText(v)
 
 
@@ -471,57 +471,57 @@ def addCustomUIRow(layout,index,uitype,name,labelText,minval=0,maxval=0,stepval=
     usesLabel=True
 
     if uitype==CustomUIType._label:
-        opt= QtGui.QLabel()
+        opt= QtWidgets.QLabel()
         opt.setText(labelText)
         usesLabel=False
     elif uitype==CustomUIType._int:
-        opt=QtGui.QSpinBox()
+        opt=QtWidgets.QSpinBox()
         setSpinBox(opt,minval,maxval,stepval)
     elif uitype==CustomUIType._real:
-        opt=QtGui.QDoubleSpinBox()
+        opt=QtWidgets.QDoubleSpinBox()
         setSpinBox(opt,minval,maxval,stepval,decimals)
     elif uitype==CustomUIType._str:
-        opt=QtGui.QLineEdit()
+        opt=QtWidgets.QLineEdit()
     elif uitype==CustomUIType._strlist:
-        opt=QtGui.QComboBox()
+        opt=QtWidgets.QComboBox()
     elif uitype==CustomUIType._checkbox:
-        opt=QtGui.QCheckBox()
+        opt=QtWidgets.QCheckBox()
         opt.setText(labelText)
         usesLabel=False
     elif uitype==CustomUIType._button:
-        opt=QtGui.QPushButton()
+        opt=QtWidgets.QPushButton()
         opt.setText(labelText)
         usesLabel=False
     elif uitype==CustomUIType._hslider:
-        opt=QtGui.QSlider(Qt.Horizontal)
+        opt=QtWidgets.QSlider(Qt.Horizontal)
         opt.setRange(int(minval),int(maxval))
         opt.setSingleStep(int(stepval))
-        opt.setTickPosition(QtGui.QSlider.TicksBelow)
+        opt.setTickPosition(QtWidgets.QSlider.TicksBelow)
     elif uitype==CustomUIType._radio:
-        opt=QtGui.QRadioButton()
+        opt=QtWidgets.QRadioButton()
         opt.setText(labelText)
         usesLabel=False
 
     if usesLabel:
-        label= QtGui.QLabel()
+        label= QtWidgets.QLabel()
         label.setText(labelText)
     else:
         label=None
 
-    if isinstance(layout,QtGui.QFormLayout):
+    if isinstance(layout,QtWidgets.QFormLayout):
         layout.insertRow(index,label,opt)
-    elif isinstance(layout,QtGui.QGridLayout):
+    elif isinstance(layout,QtWidgets.QGridLayout):
         if not usesLabel:
             layout.addWidget(opt,index,0,1,1)
         else:
-            form=QtGui.QFormLayout()
+            form=QtWidgets.QFormLayout()
             form.insertRow(0,label,opt)
             form.setAlignment(Qt.AlignLeft)
             layout.addLayout(form,index,0,1,1)
     elif not usesLabel:
         layout.insertWidget(index,opt)
     else:
-        form=QtGui.QFormLayout()
+        form=QtWidgets.QFormLayout()
         form.insertRow(0,label,opt)
         form.setAlignment(Qt.AlignLeft)
         layout.insertLayout(index,form)
@@ -535,8 +535,8 @@ class ParamPanel(QtWidgets.QWidget):
     parameter input UI elements, for example choosing representation object parameters.
     '''
     def __init__(self,params,parent=None):
-        QtGui.QWidget.__init__(self,parent)
-        self.layout=QtGui.QFormLayout(self)
+        QtWidgets.QWidget.__init__(self,parent)
+        self.layout=QtWidgets.QFormLayout(self)
         self.layout.setContentsMargins(0,0,0,0)
         self.params=list(params)
         self.uimap={}
@@ -750,9 +750,9 @@ def signalclass(cls):
     return cls
 
 
-class LogFileView(QtGui.QWidget):
+class LogFileView(QtWidgets.QWidget):
     def __init__(self,filename,win,dimensions=(800,800)):
-        QtGui.QWidget.__init__(self,None)
+        QtWidgets.QWidget.__init__(self,None)
 
         self.setWindowTitle('Log File View')
         self.setAttribute(Qt.WA_QuitOnClose,False) # don't wait for this window to close when exiting the application
@@ -762,8 +762,8 @@ class LogFileView(QtGui.QWidget):
         self.readtime=0
         self.readsize=0
 
-        self.gridLayout = QtGui.QGridLayout(self)
-        self.logEdit = QtGui.QPlainTextEdit(self)
+        self.gridLayout = QtWidgets.QGridLayout(self)
+        self.logEdit = QtWidgets.QPlainTextEdit(self)
         self.logEdit.setReadOnly(True)
         self.gridLayout.addWidget(self.logEdit, 0, 0, 1, 1)
 
@@ -779,7 +779,7 @@ class LogFileView(QtGui.QWidget):
         if e.key() == Qt.Key_Escape:
             self.close()
         else:
-            QtGui.QWidget.keyPressEvent(self,e)
+            QtWidgets.QWidget.keyPressEvent(self,e)
 
     def _setText(self,text):
         def setTextWin():
@@ -807,26 +807,26 @@ class LogFileView(QtGui.QWidget):
             time.sleep(1)
 
 
-class TextBoxDialog(QtGui.QDialog):
+class TextBoxDialog(QtWidgets.QDialog):
     def __init__(self,title,msg,text,parent,width=600,height=300):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self.setWindowTitle(title)
         self.resize(width, height)
         centerWindow(self)
 
-        self.msgLabel = QtGui.QLabel(self)
+        self.msgLabel = QtWidgets.QLabel(self)
         self.msgLabel.setWordWrap(True)
         self.msgLabel.setText(msg)
 
-        self.textEdit = QtGui.QPlainTextEdit(self)
+        self.textEdit = QtWidgets.QPlainTextEdit(self)
         self.textEdit.setReadOnly(True)
         self.textEdit.setPlainText(text)
 
-        self.buttonBox = QtGui.QDialogButtonBox(self)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self)
         self.buttonBox.setOrientation(Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
 
-        self.verticalLayout = QtGui.QVBoxLayout(self)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.verticalLayout.addWidget(self.msgLabel)
         self.verticalLayout.addWidget(self.textEdit)
         self.verticalLayout.addWidget(self.buttonBox)
@@ -834,9 +834,9 @@ class TextBoxDialog(QtGui.QDialog):
         self.buttonBox.accepted.connect(self.close)
 
 
-class ShowMessageDialog(QtGui.QDialog,Ui_ShowMsg):
+class ShowMessageDialog(QtWidgets.QDialog,Ui_ShowMsg):
     def __init__(self,parent):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self.setupUi(self)
         self.msgs=[]
         self.curMsg=0
@@ -868,9 +868,9 @@ class ShowMessageDialog(QtGui.QDialog,Ui_ShowMsg):
         self.setVisible(True)
 
 
-class ObjectPropertyWidget(QtGui.QWidget,Ui_ObjProp):
+class ObjectPropertyWidget(QtWidgets.QWidget,Ui_ObjProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
         setCollapsibleGroupbox(self.propertiesBox,False)
 
@@ -900,9 +900,9 @@ class ObjectPropertyWidget(QtGui.QWidget,Ui_ObjProp):
             self.paramLayout.addWidget(panel)
 
 
-class ObjectReprPropertyWidget(QtGui.QWidget,Ui_ObjReprProp):
+class ObjectReprPropertyWidget(QtWidgets.QWidget,Ui_ObjReprProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
         setCollapsibleGroupbox(self.propertiesBox,False)
 
@@ -971,15 +971,15 @@ class ObjectReprPropertyWidget(QtGui.QWidget,Ui_ObjReprProp):
             self.roll.setValue(Utils.radCircularConvert(self.roll.value()))
 
 
-class ProjectPropertyWidget(QtGui.QWidget,Ui_ProjProp):
+class ProjectPropertyWidget(QtWidgets.QWidget,Ui_ProjProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
 
-class MaterialPropertyWidget(QtGui.QWidget,Ui_matProp):
+class MaterialPropertyWidget(QtWidgets.QWidget,Ui_matProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
         self.geomBox.setVisible(False)
         self.geomList.setVisible(False)
@@ -1001,9 +1001,9 @@ class MaterialPropertyWidget(QtGui.QWidget,Ui_matProp):
         fillList(self.geomList,geoms,curgeom,'None')
 
 
-class LightPropertyWidget(QtGui.QWidget,Ui_LightProp):
+class LightPropertyWidget(QtWidgets.QWidget,Ui_LightProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
     def getPosition(self):
@@ -1013,11 +1013,11 @@ class LightPropertyWidget(QtGui.QWidget,Ui_LightProp):
         return self.dirx.value(),self.diry.value(),self.dirz.value()
 
 
-class GPUProgramPropertyWidget(QtGui.QWidget,Ui_gpuProp):
+class GPUProgramPropertyWidget(QtWidgets.QWidget,Ui_gpuProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
-        self.srcEdit.setLineWrapMode(QtGui.QTextEdit.NoWrap)
+        self.srcEdit.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
 
     def setSourceCode(self,src,force=False):
         if self.srcEdit.toPlainText()=='' or force:
@@ -1033,7 +1033,7 @@ class GPUProgramPropertyWidget(QtGui.QWidget,Ui_gpuProp):
         self.setSrcButton.setPalette(palette)
 
 
-class Base2DWidget(QtGui.QWidget):
+class Base2DWidget(QtWidgets.QWidget):
     '''
     Defines the base class for 2D views, handling the redraw cycle and mouse and key input callback methods. The method
     modifyDrawWidget() modifies its argument widget by replacing the paintEvent, wheelEvent, and mouse*Event, and
@@ -1044,7 +1044,7 @@ class Base2DWidget(QtGui.QWidget):
     except modifyDrawWidget(), getDrawDims(), and getBoxFitScale() must be overridden to implement behaviour.
     '''
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setFocusPolicy(Qt.StrongFocus)
         self.imgFormat=QtGui.QImage.Format_RGB32
         self.img=None
@@ -1113,12 +1113,12 @@ class Base2DWidget(QtGui.QWidget):
         pass
 
     def keyPress(self,e):
-        '''By default passes the event `e' to QtGui.QWidget.keyPressEvent.'''
-        QtGui.QWidget.keyPressEvent(self,e)
+        '''By default passes the event `e' to QtWidgets.QWidget.keyPressEvent.'''
+        QtWidgets.QWidget.keyPressEvent(self,e)
 
     def keyRelease(self,e):
-        '''By default passes the event `e' to QtGui.QWidget.keyReleaseEvent.'''
-        QtGui.QWidget.keyReleaseEvent(self,e)
+        '''By default passes the event `e' to QtWidgets.QWidget.keyReleaseEvent.'''
+        QtWidgets.QWidget.keyReleaseEvent(self,e)
 
     def parentClosed(self,e):
         '''
@@ -1154,9 +1154,9 @@ class Draw2DView(Ui_Draw2DView):
         self.setupUi(self)
 
         self.secondsSelected=set() # set of selected secondary representation names or labels
-        self.secondsMenu=QtGui.QMenu(self)
+        self.secondsMenu=QtWidgets.QMenu(self)
         self.secondsButton.setMenu(self.secondsMenu)
-        self.secondsButton.setPopupMode(QtGui.QToolButton.InstantPopup)
+        self.secondsButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
 
         self.setImageStackMax(10)
         self.vsplit.setCollapsible(1,False) # right side is not collapsible
@@ -1280,7 +1280,7 @@ class Draw2DView(Ui_Draw2DView):
         return self.vsplit.isEnabled()
 
 
-class RenderWidget(QtGui.QWidget):
+class RenderWidget(QtWidgets.QWidget):
     '''
     This class is used for the actual rendering window. It acquires a RenderAdapter object from the C++ renderer in its
     constructor and associates it with the `conf' argument. After the object is constructed and placed in a layout,
@@ -1290,7 +1290,7 @@ class RenderWidget(QtGui.QWidget):
     be called to create the RenderScene object necessary to interface with the renderer.
     '''
     def __init__(self,conf,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setAttribute(Qt.WA_PaintOnScreen,True)
         self.setAttribute(Qt.WA_NoSystemBackground, True)
@@ -1311,8 +1311,10 @@ class RenderWidget(QtGui.QWidget):
         elif Utils.isDarwin:
             return str(int(self.winId()))
         else:
-            info=self.x11Info()
-            return '%i:%i:%i'%(sip.unwrapinstance(info.display()),info.screen(),self.winId())
+            if qtversion==4:
+                info=self.x11Info()
+                return '%i:%i:%i'%(sip.unwrapinstance(info.display()),info.screen(),self.winId())
+            return '0:0:%i'%self.winId()
 
     def initViz(self):
         '''
@@ -1325,9 +1327,12 @@ class RenderWidget(QtGui.QWidget):
         self.conf.set(RenderParamGroup,paramname,self._getWinHandle()) # set the config parameter createWindow needs
 
         if Utils.isLinux: # call XSync to ensure the handle for the window referred to in `paramname' is valid
-            import ctypes,ctypes.util
-            x11=ctypes.CDLL(ctypes.util.find_library('X11'))
-            x11.XSync(sip.unwrapinstance(self.x11Info().display()),False)
+            if qtversion==4:
+                import ctypes,ctypes.util
+                x11=ctypes.CDLL(ctypes.util.find_library('X11'))
+                x11.XSync(sip.unwrapinstance(self.x11Info().display()),False)
+            else:
+                globalApp.sync() # TODO: is this the correct equivalent for Qt5?
 
         self.wid=self.adapt.createWindow(self.width(),self.height())
 
@@ -1355,7 +1360,7 @@ class RenderWidget(QtGui.QWidget):
         Triggered when the widget resizes, this handles sending the correct resize information to the adapter which
         must keep track of size in platform-specific ways. This triggers the widgetResize event and calls repaint().
         '''
-        QtGui.QWidget.resizeEvent(self,e)
+        QtWidgets.QWidget.resizeEvent(self,e)
 
         r=self.geometry() if not Utils.isDarwin else QtCore.QRect()
         self.adapt.resize(*r.getRect())
@@ -1366,12 +1371,12 @@ class RenderWidget(QtGui.QWidget):
     def update(self):
         self.eventTriggered=True
         self._triggerEvent(EventType._widgetPreDraw)
-        QtGui.QWidget.update(self)
+        QtWidgets.QWidget.update(self)
         self._triggerEvent(EventType._widgetPostDraw)
 
     def repaint(self,*q):
         self.eventTriggered=True
-        QtGui.QWidget.repaint(self,*q)
+        QtWidgets.QWidget.repaint(self,*q)
 
     def mousePressEvent(self,e):
         self._triggerEvent(EventType._mousePress,e)
@@ -1390,11 +1395,11 @@ class RenderWidget(QtGui.QWidget):
 
     def keyPressEvent(self,e):
         self._triggerEvent(EventType._keyPress,e)
-        QtGui.QWidget.keyPressEvent(self,e)
+        QtWidgets.QWidget.keyPressEvent(self,e)
 
     def keyReleaseEvent(self,e):
         self._triggerEvent(EventType._keyRelease,e)
-        QtGui.QWidget.keyReleaseEvent(self,e)
+        QtWidgets.QWidget.keyReleaseEvent(self,e)
 
     def paintEvent(self,e):
         '''
@@ -1413,14 +1418,14 @@ class RenderWidget(QtGui.QWidget):
             self.adapt.paint()
 
 
-class ConsoleWidget(QtGui.QTextEdit):
+class ConsoleWidget(QtWidgets.QTextEdit):
     '''
     Simulates a Python terminal in a QTextEdit widget. This is similar to code.InteractiveConsole in how it executes
     individual lines of source. It includes a basic session history feature.
     '''
 
     def __init__(self,win,conf,parent=None):
-        QtGui.QTextEdit.__init__(self,parent)
+        QtWidgets.QTextEdit.__init__(self,parent)
         self.setFont(QtGui.QFont('Courier', 10))
 
         self.win=win
@@ -1664,14 +1669,14 @@ class ConsoleWidget(QtGui.QTextEdit):
     def focusOutEvent(self,event):
         self.isMetaDown=False
         self.metadown=0
-        QtGui.QTextEdit.focusOutEvent(self,event)
+        QtWidgets.QTextEdit.focusOutEvent(self,event)
 
     def keyReleaseEvent(self, event):
         if event.key() in self.metakeys:
             self.isMetaDown=False
             self.metadown ^= event.key()
 
-        QtGui.QTextEdit.keyReleaseEvent(self,event)
+        QtWidgets.QTextEdit.keyReleaseEvent(self,event)
 
     def insertFromMimeData(self,src):
         '''Triggered when pasting text, print out then interpret this line-by-line'''
@@ -1721,7 +1726,7 @@ class ConsoleWidget(QtGui.QTextEdit):
             callSuper=False
 
         if callSuper:
-            QtGui.QTextEdit.keyPressEvent(self,event)
+            QtWidgets.QTextEdit.keyPressEvent(self,event)
 
         # don't move the cursor if a meta key combination (such as ctrl+c) is pressed
         if not self.isMetaDown and key not in (Qt.Key_Return, Qt.Key_Enter):
@@ -1738,7 +1743,7 @@ class ConsoleWidget(QtGui.QTextEdit):
                 self._setCursor()
 
 
-class BaseSpectrumWidget(QtGui.QWidget):
+class BaseSpectrumWidget(QtWidgets.QWidget):
     '''
     This widget implements a generic color spectrum with an alpha curve. The interface is defined a number of template
     methods that are used to pass data between instances of this widget and an associated spectrum object. It stores
@@ -1769,14 +1774,17 @@ class BaseSpectrumWidget(QtGui.QWidget):
             p.setBrush(QtGui.QBrush(Qt.GlobalColor(Qt.white)))
             p.setFont(QtGui.QFont('Courier', 10 if Utils.isDarwin else 8))
 
-            p.drawRoundRect(dx,dy,self.w,self.h)
+            if qtversion==5:
+                p.drawRoundedRect(dx,dy,self.w,self.h)
+            else:
+                p.drawRoundRect(dx,dy,self.w,self.h)
             p.drawText(dx+3,dy+10,self.text)
 
     UPARROW=u'\u25b2'
     DOWNARROW=u'\u25bc'
 
     def __init__(self,parent=None,minheight=240):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setMinimumSize(QtCore.QSize(10, minheight))
         self.setMaximumSize(QtCore.QSize(5000, 800))
         self.setFocusPolicy(Qt.StrongFocus)
@@ -1868,7 +1876,7 @@ class BaseSpectrumWidget(QtGui.QWidget):
         if self.colorselected!=None:
             origcolor=toQtColor(self.colors[self.colorselected])
 
-            c = QtGui.QColorDialog.getColor(origcolor, self)
+            c = QtWidgets.QColorDialog.getColor(origcolor, self)
             if c.isValid():
                 r,g,b,a=c.getRgbF()
                 a=self.colors[self.colorselected][3]
@@ -1929,7 +1937,7 @@ class BaseSpectrumWidget(QtGui.QWidget):
         self.setToolTip('%i %i'%(w,h))
 
     def mousePressEvent(self,e):
-        QtGui.QWidget.mousePressEvent(self,e)
+        QtWidgets.QWidget.mousePressEvent(self,e)
         pt=(e.x(),e.y())
 
         if self.delMarker.isClicked(*pt):
@@ -1994,19 +2002,19 @@ class BaseSpectrumWidget(QtGui.QWidget):
             self._setSelectedColorPos(dx)
 
             t=self.colorpos[self.colorselected]
-            QtGui.QToolTip.showText(e.globalPos(),'T: %.3f'%t)
+            QtWidgets.QToolTip.showText(e.globalPos(),'T: %.3f'%t)
         elif self.alphaselected!=None:
             self._setSelectedAlphaPos(dx,dy)
 
             x,y,z=self.alphactrls[self.alphaselected]
-            QtGui.QToolTip.showText(e.globalPos(),'T: %.3f A: %.3f'%(x,y))
+            QtWidgets.QToolTip.showText(e.globalPos(),'T: %.3f A: %.3f'%(x,y))
 
     def keyPressEvent(self,e):
         if e.key() in (Qt.Key_Backspace,Qt.Key_Delete):
             self._remove()
             self.update()
         else:
-            QtGui.QWidget.keyPressEvent(self,e)
+            QtWidgets.QWidget.keyPressEvent(self,e)
 
     def paintEvent(self,e):
         self.getValues()
@@ -2066,9 +2074,9 @@ class BaseSpectrumWidget(QtGui.QWidget):
         p.end()
 
 
-class ScreenshotDialog(QtGui.QDialog,Ui_ScreenshotForm):
+class ScreenshotDialog(QtWidgets.QDialog,Ui_ScreenshotForm):
     def __init__(self,win,start,end,fps,steps,cameras):
-        QtGui.QDialog.__init__(self,win)
+        QtWidgets.QDialog.__init__(self,win)
         self.setupUi(self)
         self.win=win
         self.cameras=cameras
@@ -2148,7 +2156,7 @@ class ScreenshotDialog(QtGui.QDialog,Ui_ScreenshotForm):
 
 
 @signalclass
-class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
+class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
     '''
     The main window of the application. This contains the render widget, scene panel, console panel, scratch pad panel,
     and whatever dock windows are created. The code defined in this class is meant only to actuate the UI, fill lists
@@ -2166,7 +2174,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
         self.setupUi(self)
         self.setWindowTitle(mainTitleString%(eidolon.__appname__,eidolon.__version__))
-        self.setDockOptions(QtGui.QMainWindow.AllowNestedDocks)
+        self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks)
 
         self.objMap={} # maps UI items to ObjMapTuple instances
         self.mgr=None # scene manager object, set later
@@ -2203,20 +2211,20 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         setCollapsibleGroupbox(self.treeGroup)
 
         # add the progress bar and text box to the status bar
-        self.statusProgressBar=QtGui.QProgressBar()
+        self.statusProgressBar=QtWidgets.QProgressBar()
         self.statusProgressBar.setMaximumWidth(200)
         self.statusProgressBar.setRange(0,1)
         self.statusProgressBar.setValue(1)
         self.statusProgressBar.setFormat('%p% (%v / %m)')
         self.statusProgressBar.setTextVisible(True)
         self.statusProgressBar.setVisible(False)
-        self.statusText=QtGui.QLabel(self)
+        self.statusText=QtWidgets.QLabel(self)
         self.statusBar.addWidget(self.statusProgressBar)
         self.statusBar.addWidget(self.statusText)
         self.setStatus('Ready')
 
         for key,name,desc in AssetType:
-            self.assetRootMap[key]=QtGui.QTreeWidgetItem(self.assetList)
+            self.assetRootMap[key]=QtWidgets.QTreeWidgetItem(self.assetList)
             self.assetRootMap[key].setText(0,name)
             self.assetRootMap[key].setToolTip(0,desc)
 
@@ -2265,7 +2273,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
     def _showAbout(self):
         vals=(eidolon.__appname__,eidolon.__copyright__,eidolon.__version__,sys.version,str(QtCore.qVersion()),QtCore.PYQT_VERSION_STR)
         msg='%s\n%s\n\nVersion: %s\nPython Version: %s\nQt Version: %s\nPyQt Version: %s'%vals
-        QtGui.QMessageBox.about(self,'About %s'%eidolon.__appname__,msg)
+        QtWidgets.QMessageBox.about(self,'About %s'%eidolon.__appname__,msg)
 
     @signalmethod
     def setRenderWinSize(self,w,h):
@@ -2285,7 +2293,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         elif e.key() == Qt.Key_Escape:
             self.close()
         else:
-            QtGui.QMainWindow.keyPressEvent(self,e)
+            QtWidgets.QMainWindow.keyPressEvent(self,e)
 
     def callFuncUIThread(self,func,*args,**kwargs):
         '''
@@ -2475,9 +2483,9 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         '''
         assert menuName in ('File','Import','Export','Create','Project')
 
-        action= QtGui.QAction(self)
+        action= QtWidgets.QAction(self)
         action.setObjectName(objName)
-        action.setText(QtGui.QApplication.translate("MainWindow", text, None, QtGui.QApplication.UnicodeUTF8))
+        action.setText(text)
         action.triggered.connect(callback)
 
         if menuName=='File':
@@ -2504,7 +2512,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
     @signalmethod
     def createDock(self,name,widg,minw=200,minh=200):
         '''Add the widget `widg' to the interface in its own docked subwindow with minimum dimensions (minw,minh).'''
-        d = QtGui.QDockWidget(self)
+        d = QtWidgets.QDockWidget(self)
         d.setFloating(False)
         d.setWindowTitle(Utils.uniqueStr(name,[w.parent().windowTitle() for w in self.dockWidgets],' '))
         d.setWidget(widg)
@@ -2545,7 +2553,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         callable `callback' is invoked with the RGBA color tuple passed as the single argument, otherwise does nothing.
         This is threadsafe and non-blocking.
         '''
-        c = QtGui.QColorDialog.getColor(toQtColor(origcolor), self)
+        c = QtWidgets.QColorDialog.getColor(toQtColor(origcolor), self)
         if c.isValid():
             callback(c.getRgbF())
 
@@ -2555,8 +2563,8 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         Opens a Yes/No dialog box with message string `msg' and title string `title'. If Yes is selected, the callable
         `callback' is called with no arguments. This is threadsafe and non-blocking.
         '''
-        reply=QtGui.QMessageBox.question(self, title, msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-        if reply==QtGui.QMessageBox.Yes:
+        reply=QtWidgets.QMessageBox.question(self, title, msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply==QtWidgets.QMessageBox.Yes:
             callback()
 
     @signalmethod
@@ -2566,8 +2574,8 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         object `future' is set to True, otherwise False. This is threadsafe and non-blocking.
         '''
         with future:
-            reply=QtGui.QMessageBox.question(self, title, msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            future.setObject(reply==QtGui.QMessageBox.Yes)
+            reply=QtWidgets.QMessageBox.question(self, title, msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            future.setObject(reply==QtWidgets.QMessageBox.Yes)
 
     @signalmethod
     def chooseStrDialog(self,title,defaultval,callback):
@@ -2576,22 +2584,22 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         When the dialog closes, the callable `callback' is called with the given string value as the only argument.
         This is threadsafe and non-blocking.
         '''
-        text, ok = QtGui.QInputDialog.getText(self, 'Input String',title,text=defaultval)
+        text, ok = QtWidgets.QInputDialog.getText(self, 'Input String',title,text=defaultval)
         if ok:
             callback(str(text))
 
     @signalmethod
     def chooseListItemsDialog(self,title,msg,items,callback,selected=[],multiSelect=False):
-        d=QtGui.QDialog(self)
+        d=QtWidgets.QDialog(self)
         d.setWindowTitle(title)
         d.resize(400, Utils.clamp(len(items)*10,200,800))
-        d.verticalLayout = QtGui.QVBoxLayout(d)
-        d.label = QtGui.QLabel(d)
+        d.verticalLayout = QtWidgets.QVBoxLayout(d)
+        d.label = QtWidgets.QLabel(d)
         d.label.setText(msg)
         d.verticalLayout.addWidget(d.label)
-        d.listWidget = QtGui.QListWidget(d)
-        d.listWidget.setSelectionMode(QtGui.QAbstractItemView.MultiSelection if multiSelect else QtGui.QAbstractItemView.SingleSelection )
-        d.listWidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        d.listWidget = QtWidgets.QListWidget(d)
+        d.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection if multiSelect else QtWidgets.QAbstractItemView.SingleSelection )
+        d.listWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         d.verticalLayout.addWidget(d.listWidget)
 
         fillList(d.listWidget,map(str,items))
@@ -2608,9 +2616,9 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
             callback(selinds)
             d.close()
 
-        d.buttonBox = QtGui.QDialogButtonBox(d)
+        d.buttonBox = QtWidgets.QDialogButtonBox(d)
         d.buttonBox.setOrientation(Qt.Horizontal)
-        d.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
+        d.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
         d.buttonBox.setCenterButtons(False)
         d.buttonBox.accepted.connect(_getSelected)
         d.verticalLayout.addWidget(d.buttonBox)
@@ -2637,19 +2645,19 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
         if isOpen:
             if chooseMultiple:
-                fnames=QtGui.QFileDialog.getOpenFileNames(parent, self.tr(title),opendir, self.tr(filterstr))
+                fnames=QtWidgets.QFileDialog.getOpenFileNames(parent, self.tr(title),opendir, self.tr(filterstr))
                 names=map(lambda i:os.path.abspath(str(i)),fnames)
                 if len(names)>0:
                     self.dialogDir=os.path.split(names[0])[0]
                 return names
             else:
-                fname=QtGui.QFileDialog.getOpenFileName(parent, self.tr(title),opendir, self.tr(filterstr))
+                fname=QtWidgets.QFileDialog.getOpenFileName(parent, self.tr(title),opendir, self.tr(filterstr))
         else:
-            options=QtGui.QFileDialog.Options()
+            options=QtWidgets.QFileDialog.Options()
             if not confirmOverwrite:
-                options|=QtGui.QFileDialog.DontConfirmOverwrite
+                options|=QtWidgets.QFileDialog.DontConfirmOverwrite
 
-            fname=QtGui.QFileDialog.getSaveFileName(parent, self.tr(title),self.tr(opendir), self.tr(filterstr),None,options)
+            fname=QtWidgets.QFileDialog.getSaveFileName(parent, self.tr(title),self.tr(opendir), self.tr(filterstr),None,options)
 
         name=str(fname)
         if name:
@@ -2662,7 +2670,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
         opendir=opendir or self.dialogDir
 
-        dirname=str(QtGui.QFileDialog.getExistingDirectory(self,title,opendir))
+        dirname=str(QtWidgets.QFileDialog.getExistingDirectory(self,title,opendir))
         if dirname:
             dirname=os.path.abspath(dirname)
             self.dialogDir=os.path.split(dirname)[0]
@@ -2681,7 +2689,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         a text box within a message dialog that recalls previous messages, otherwise a simple dialog is used.
         '''
         if text==None:
-            box=QtGui.QMessageBox(self)
+            box=QtWidgets.QMessageBox(self)
             box.setText(msg)
             box.setWindowTitle(title)
             box.show()
@@ -2708,13 +2716,13 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         elif parentName:
             parentItem=Utils.first(self.treeWidget.findItems(parentName,Qt.MatchExactly|Qt.MatchRecursive))
             if not parentItem:
-                parentItem=QtGui.QTreeWidgetItem(self.treeWidget)
+                parentItem=QtWidgets.QTreeWidgetItem(self.treeWidget)
                 parentItem.setText(0,parentName)
                 parentItem.setExpanded(True)
         else:
             parentItem=self.treeWidget
 
-        treeItem= QtGui.QTreeWidgetItem(parentItem)
+        treeItem= QtWidgets.QTreeWidgetItem(parentItem)
         treeItem.setText(0,label)
         treeItem.setIcon(0,QtGui.QIcon(icon))
 
@@ -2736,7 +2744,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
     @signalmethod
     def addProjectObj(self,proj,name,prop,updateFunc):
-        treeItem= QtGui.QTreeWidgetItem(None)
+        treeItem= QtWidgets.QTreeWidgetItem(None)
         treeItem.setText(0,name)
         self._addUIObj(treeItem,proj,prop,None,updateFunc)
 
@@ -2744,7 +2752,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
     @signalmethod
     def addAsset(self,asset,text,assettype,propbox=None,updateFunc=None):
-        li=QtGui.QTreeWidgetItem(self.assetRootMap[assettype])
+        li=QtWidgets.QTreeWidgetItem(self.assetRootMap[assettype])
         li.setText(0,text)
         self.assetRootMap[assettype].setExpanded(True)
         self._addUIObj(li,asset,propbox,assettype,updateFunc)
@@ -2755,16 +2763,16 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
 
     @signalmethod
     def addSpectrum(self,spec):
-#       prop=QtGui.QWidget()
-#       prop.groupBox=QtGui.QGroupBox(prop)
+#       prop=QtWidgets.QWidget()
+#       prop.groupBox=QtWidgets.QGroupBox(prop)
 #       prop.groupBox.setTitle('Spectrum')
-#       prop.groupBox.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
-#       prop.gridLayout = QtGui.QGridLayout(prop.groupBox)
+#       prop.groupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+#       prop.gridLayout = QtWidgets.QGridLayout(prop.groupBox)
 
-        prop=QtGui.QGroupBox()
+        prop=QtWidgets.QGroupBox()
         prop.setTitle('Spectrum')
-        prop.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
-        prop.gridLayout = QtGui.QGridLayout(prop)
+        prop.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        prop.gridLayout = QtWidgets.QGridLayout(prop)
 
         self.addAsset(spec,spec.getName(),AssetType._spec,prop)
 
@@ -2784,7 +2792,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
     def fillTextureList(self,textures):
         self.texList.clear()
         for tex in textures:
-            li=QtGui.QListWidgetItem(self.texList)
+            li=QtWidgets.QListWidgetItem(self.texList)
             li.setText(tex)
 
     def getSelectedObject(self):

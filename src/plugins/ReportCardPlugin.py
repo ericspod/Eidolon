@@ -175,15 +175,15 @@ class ReportCardPlugin(ScenePlugin):
         prop=ScenePlugin.createObjPropBox(self,obj)
         
         prop.reportmodel=TagTableModel(obj)
-        prop.reportview=QtGui.QTableView(prop)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.MinimumExpanding)
+        prop.reportview=QtWidgets.QTableView(prop)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(prop.reportview.sizePolicy().hasHeightForWidth())
         prop.reportview.setSizePolicy(sizePolicy)
         prop.reportview.setMinimumSize(QtCore.QSize(50, 0))
-        prop.reportview.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
-        prop.reportview.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        prop.reportview.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        prop.reportview.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
         prop.reportview.setShowGrid(False)
         prop.reportview.setSortingEnabled(False)
         prop.reportview.horizontalHeader().setCascadingSectionResizes(True)
@@ -198,7 +198,7 @@ class ReportCardPlugin(ScenePlugin):
         prop.verticalLayout.insertWidget(2,prop.reportview)
         prop.verticalLayout.removeItem(prop.verticalLayout.itemAt(3))
         
-#       prop.saveButton=QtGui.QPushButton('Save Edits',prop)
+#       prop.saveButton=QtWidgets.QPushButton('Save Edits',prop)
 #       prop.verticalLayout.insertWidget(3,prop.saveButton)
 #       prop.saveButton.clicked.connect(obj.save)
         

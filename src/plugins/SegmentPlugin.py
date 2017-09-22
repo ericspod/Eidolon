@@ -39,15 +39,15 @@ SegViewPoints=enum(
 )
 
 
-class SegPropertyWidget(QtGui.QWidget,Ui_SegObjProp):
+class SegPropertyWidget(QtWidgets.QWidget,Ui_SegObjProp):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
 
-class Seg2DWidget(QtGui.QWidget,Ui_Seg2DView):
+class Seg2DWidget(QtWidgets.QWidget,Ui_Seg2DView):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
 

@@ -366,9 +366,9 @@ class IsoplaneModifier(ModifierBase):
             nodecolors.append(fakerep.nodecolors)
 
 
-class SlicePropertyWidget(QtGui.QWidget,Ui_SliceObjProp):
+class SlicePropertyWidget(QtWidgets.QWidget,Ui_SliceObjProp):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
 
@@ -965,13 +965,13 @@ class SlicePlugin(ScenePlugin):
         table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
 
         for i,r in enumerate(reprs):
-            chkBoxItem = QtGui.QTableWidgetItem()
+            chkBoxItem = QtWidgets.QTableWidgetItem()
             chkBoxItem.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
             chkBoxItem.setCheckState(Qt.Checked if obj.isSlicingRepr(r) else Qt.Unchecked)
 
             self.checkboxMap[chkBoxItem]=(obj,r)
 
-            label=QtGui.QTableWidgetItem(r.getLabel())
+            label=QtWidgets.QTableWidgetItem(r.getLabel())
             label.setFlags((label.flags() & ~Qt.ItemIsEditable)|Qt.ItemIsSelectable)
 
             table.setItem(i,0,chkBoxItem)
@@ -1001,10 +1001,10 @@ class SlicePlugin(ScenePlugin):
     def createReprPropBox(self,rep):
         prop=ScenePlugin.createReprPropBox(self,rep)
 
-        updatebox = QtGui.QGroupBox(prop)
+        updatebox = QtWidgets.QGroupBox(prop)
         updatebox.setTitle('ObjReprProp')
         prop.verticalLayout.insertWidget(2,updatebox)
-        formLayout = QtGui.QFormLayout(updatebox)
+        formLayout = QtWidgets.QFormLayout(updatebox)
 
         label,button=addCustomUIRow(formLayout,0,CustomUIType._button,'updateButton','Update')
         

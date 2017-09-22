@@ -201,15 +201,15 @@ class MeasureSceneObject(SceneObject):
             storeBasicConfig(self.filename,self.datamap)
         
         
-class MeasurePropertyWidget(QtGui.QWidget,Ui_MeasureObjProp):
+class MeasurePropertyWidget(QtWidgets.QWidget,Ui_MeasureObjProp):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
         
 
-class Measure2DWidget(QtGui.QWidget,Ui_Measure2DView):
+class Measure2DWidget(QtWidgets.QWidget,Ui_Measure2DView):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
             
             
@@ -610,9 +610,9 @@ class MeasurementPlotWidget(TimePlotWidget):
             self.repaint()
             
         
-class MeasureSplitView(QtGui.QSplitter):
+class MeasureSplitView(QtWidgets.QSplitter):
     def __init__(self,mgr,camera,parent=None):
-        QtGui.QSplitter.__init__(self)
+        QtWidgets.QSplitter.__init__(self)
         self.mgr=mgr
         self.setOrientation(Qt.Horizontal)
         self.setChildrenCollapsible(True)
@@ -620,19 +620,19 @@ class MeasureSplitView(QtGui.QSplitter):
         
         self.measure.measurementChanged.connect(self.updateMeasurement)
         
-        self.plotwidg=QtGui.QWidget(self)
-        self.plotLayout=QtGui.QVBoxLayout(self.plotwidg)
+        self.plotwidg=QtWidgets.QWidget(self)
+        self.plotLayout=QtWidgets.QVBoxLayout(self.plotwidg)
 
         self.plot=MeasurementPlotWidget(mgr.getPlugin('Plot'),self.plotwidg)
         
-        self.plotctrls=QtGui.QGroupBox('Choose Plot Measurements',self.plotwidg)
-        self.plotCtrlLayout=QtGui.QHBoxLayout(self.plotctrls)
+        self.plotctrls=QtWidgets.QGroupBox('Choose Plot Measurements',self.plotwidg)
+        self.plotCtrlLayout=QtWidgets.QHBoxLayout(self.plotctrls)
 
-        self.chooseMenu=QtGui.QMenu(self)       
-        self.plotChooseButton=QtGui.QToolButton(self.plotctrls)
+        self.chooseMenu=QtWidgets.QMenu(self)       
+        self.plotChooseButton=QtWidgets.QToolButton(self.plotctrls)
         self.plotChooseButton.setText('Choose Measurements')        
         self.plotChooseButton.setMenu(self.chooseMenu)
-        self.plotChooseButton.setPopupMode(QtGui.QToolButton.InstantPopup)
+        self.plotChooseButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         
         self.plotCtrlLayout.addWidget(self.plotChooseButton)
         

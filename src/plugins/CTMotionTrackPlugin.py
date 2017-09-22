@@ -6,9 +6,9 @@ from plugins.SegmentPlugin import SegmentTypes,SegSceneObject,DatafileParams
 from ui import Ui_CTMotionProp
 
 
-class CTmotionProjPropWidget(QtGui.QWidget,Ui_CTMotionProp):
+class CTmotionProjPropWidget(QtWidgets.QWidget,Ui_CTMotionProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
 

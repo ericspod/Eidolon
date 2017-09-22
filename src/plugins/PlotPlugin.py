@@ -44,7 +44,7 @@ A simple time graph plotting two values over time can be added to the scene as s
 from eidolon import *
 from ui import Ui_RegionGraphWidget
 
-addLibraryFile('pyqtgraph-0.9.10-py2.7')
+addLibraryFile('pyqtgraph-0.10.0+g0321ecb-py2-none-any')
 
 import pyqtgraph as pg
 import numpy as np
@@ -99,7 +99,7 @@ class ColorBar(pg.GraphicsObject):
         self.minval=0.0
         self.maxval=1.0
         self.numticks=numticks
-        self.pic = pg.QtGui.QPicture()
+        self.pic = QtGui.QPicture()
 
         self.drawBar()
         self.translate(self.cx,self.cy)
@@ -108,15 +108,15 @@ class ColorBar(pg.GraphicsObject):
         '''Redraw the bar into the self.pic value. This should be called after changing any stored value.'''
         stops, colors = self.colormap.getStops('float')
 
-        with pg.QtGui.QPainter(self.pic) as p:
+        with QtGui.QPainter(self.pic) as p:
             p.setPen(pg.mkPen('w'))
-            grad = pg.QtGui.QLinearGradient(self.cwidth/2.0, 0.0, self.cwidth/2.0, self.cheight*1.0)
+            grad = QtGui.QLinearGradient(self.cwidth/2.0, 0.0, self.cwidth/2.0, self.cheight*1.0)
 
             for stop, color in zip(stops, colors):
-                grad.setColorAt(1.0 - stop, pg.QtGui.QColor(*[255*c for c in color]))
+                grad.setColorAt(1.0 - stop, QtGui.QColor(*[255*c for c in color]))
 
-            p.setBrush(pg.QtGui.QBrush(grad))
-            p.drawRect(pg.QtCore.QRectF(0, 0, self.cwidth, self.cheight))
+            p.setBrush(QtGui.QBrush(grad))
+            p.drawRect(QtCore.QRectF(0, 0, self.cwidth, self.cheight))
 
             for tick in range(self.numticks):
                 tick/=float(self.numticks-1)
@@ -128,8 +128,8 @@ class ColorBar(pg.GraphicsObject):
                 p.drawText(self.cwidth+8.0,y+br.height()/4,label)
 
     def paint(self, p, *args):
-        p.setPen(pg.QtGui.QColor(255, 255, 255, 0))
-        p.setBrush(pg.QtGui.QColor(255, 255, 255, 0))
+        p.setPen(QtGui.QColor(255, 255, 255, 0))
+        p.setBrush(QtGui.QColor(255, 255, 255, 0))
         p.drawPicture(0, 0, self.pic)
 
     def boundingRect(self):
@@ -387,7 +387,7 @@ class RegionPlotWidget(BasePlotWidget):
         '''
         startd=math.degrees(start)*16
         endd=math.degrees(end)*16
-        reg=pg.QtGui.QGraphicsEllipseItem(x-rad,y-rad,rad*2,rad*2)
+        reg=QtWidgets.QGraphicsEllipseItem(x-rad,y-rad,rad*2,rad*2)
         reg.setStartAngle(-startd)
         reg.setSpanAngle(startd-endd)
         reg.setPen(pg.mkPen(0.5))
@@ -395,7 +395,7 @@ class RegionPlotWidget(BasePlotWidget):
         self.addItem(reg)
         self.regions.append(reg)
 
-    def createLabel(self,x,y,rad,angle,text,color=0.0,font=pg.QtGui.QFont("Arial",20)):
+    def createLabel(self,x,y,rad,angle,text,color=0.0,font=QtGui.QFont("Arial",20)):
         '''Create a label centered at (x,y) and offset by the polar vector (rad,angle).'''
         label=pg.TextItem(text,anchor=(0.5,0.5),color=color)
         label.setPos(x+math.cos(-angle)*rad,y-math.sin(-angle)*rad)
@@ -454,9 +454,9 @@ def PoolRegionPlotWidget(plugin,parent=None):
     return widg
 
 
-class RegionGraphDockWidget(QtGui.QWidget,Ui_RegionGraphWidget):
+class RegionGraphDockWidget(QtWidgets.QWidget,Ui_RegionGraphWidget):
     def __init__(self,plugin,numRegions,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
         self.plugin=plugin
@@ -471,13 +471,13 @@ class RegionGraphDockWidget(QtGui.QWidget,Ui_RegionGraphWidget):
         checkcols=9
         gridlayout=self.checkboxGroup.layout()
         for i in range(numRegions):
-            check= QtGui.QCheckBox(self.checkboxGroup)
+            check= QtWidgets.QCheckBox(self.checkboxGroup)
             check.setText(str(i+1))
             check.clicked.connect(self.updatePlot)
             self.dataChecks.append(check)
             gridlayout.addWidget(check, i/checkcols, i%checkcols, 1, 1)
 
-        self.allcheck=QtGui.QCheckBox(self.checkboxGroup)
+        self.allcheck=QtWidgets.QCheckBox(self.checkboxGroup)
         self.allcheck.setText('All')
         self.allcheck.clicked.connect(self.selectAll)
         gridlayout.addWidget(self.allcheck, numRegions/checkcols, numRegions%checkcols, 1, 1)

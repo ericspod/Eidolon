@@ -559,9 +559,9 @@ def calculateRegionSumField(field,regionfield,choosevals):
     return summap,sumfield
 
 
-class CardiacMotionPropWidget(QtGui.QWidget,Ui_CardiacMotionProp):
+class CardiacMotionPropWidget(QtWidgets.QWidget,Ui_CardiacMotionProp):
     def __init__(self,parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
         tb=self.toolBox
         tb.setCurrentIndex(0)

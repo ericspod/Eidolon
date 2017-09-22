@@ -393,15 +393,15 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
     return si
 
 
-class SeriesPropertyWidget(QtGui.QWidget,Ui_SeriesProp):
+class SeriesPropertyWidget(QtWidgets.QWidget,Ui_SeriesProp):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self,parent)
+        QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
 
 
-class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
+class ChooseSeriesDialog(QtWidgets.QDialog,Ui_ChooseSeriesDialog):
     def __init__(self,plugin,resultf,dirpath=None,parent=None,allowMultiple=True,params=None,subject=None):
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         self.setupUi(self)
         self.plugin=plugin
         self.mgr=plugin.mgr
@@ -420,7 +420,7 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
 
         self.chooseDirButton.clicked.connect(self._chooseDir)
 
-        selmode=QtGui.QAbstractItemView.MultiSelection if allowMultiple else QtGui.QAbstractItemView.SingleSelection
+        selmode=QtWidgets.QAbstractItemView.MultiSelection if allowMultiple else QtWidgets.QAbstractItemView.SingleSelection
         self.seriesList.setSelectionMode(selmode)
 
         if params!=None: # create the parameters panel and put it in the group box
@@ -475,13 +475,13 @@ class ChooseSeriesDialog(QtGui.QDialog,Ui_ChooseSeriesDialog):
         self.done(0)
 
 
-class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
+class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
     PreviewState=namedtuple('PreviewState','stackStart stackEnd minx miny maxx maxy')
 
     def __init__(self,serieslist,resultf,mgr,plugin,parent=None):
         assert isMainThread()
         assert len(serieslist)>0
-        QtGui.QDialog.__init__(self,parent)
+        QtWidgets.QDialog.__init__(self,parent)
         BaseCamera2DWidget.__init__(self,mgr,mgr.createCamera(isSecondary=True))
         self.setupUi(self)
         self.modifyDrawWidget(self.drawWidget)
@@ -670,7 +670,7 @@ class TimeMultiSeriesDialog(QtGui.QDialog,BaseCamera2DWidget,Ui_Dicom2DView):
 
     def reject(self):
         self.resultf.setObject(None)
-        QtGui.QDialog.reject(self)
+        QtWidgets.QDialog.reject(self)
 
 
 class DicomSeries(object):

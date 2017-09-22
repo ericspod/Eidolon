@@ -1519,9 +1519,9 @@ class IRTKPluginMixin(object):
         return self.mgr.runTasks(_checkJobs(jids),f,False)
 
 
-class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
+class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
     def __init__(self,serverdir,serverport,motiontrackpath):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.setupUi(self)
 
         self.serverdir=serverdir
@@ -1597,8 +1597,8 @@ class MotionTrackServerWidget(QtGui.QWidget,Ui_mtServerForm):
         ind=self.jobList.currentRow()
         if ind>=0:
             msg='This kills the tracking job, are you sure?'
-            reply = QtGui.QMessageBox.question(self, 'Kill Job', msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-            if reply == QtGui.QMessageBox.Yes:
+            reply = QtWidgets.QMessageBox.question(self, 'Kill Job', msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
                 proc=self.runningProcs[ind][0]
                 proc.kill()
 
@@ -1734,13 +1734,13 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
         if e.key() == Qt.Key_Escape:
             self.close()
         else:
-            QtGui.QDialog.keyPressEvent(self,e)
+            QtWidgets.QDialog.keyPressEvent(self,e)
 
     def closeEvent(self,event):
         msg='Closing the server will kill all running jobs, are you sure?'
-        reply = QtGui.QMessageBox.question(self, 'Quit', msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        reply = QtWidgets.QMessageBox.question(self, 'Quit', msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
 
-        if reply == QtGui.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.Yes:
             self.stopServer()
             event.accept()
         else:
@@ -1749,6 +1749,6 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
     @staticmethod
     def run():
         printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
-        app = QtGui.QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
         mt=MotionTrackServerDialog(*sys.argv[-3:])
         sys.exit(app.exec_())
