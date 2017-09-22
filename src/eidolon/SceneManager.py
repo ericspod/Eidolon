@@ -44,7 +44,7 @@ import SceneComponents
 import ScenePlugin
 import ImageObject
 
-from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture
+from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture, PyVertexBuffer, PyIndexBuffer
 from .Camera2DView import Camera2DView
 from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, Future, FutureError, timeBackupFile, setTrace, TaskQueue
 from .VisualizerUI import QtGui, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
@@ -1408,8 +1408,8 @@ class SceneManager(TaskQueue):
             @self.callThreadSafe
             def _createfigure():
                 aabbnodes,indices=SceneUtils.generateLineBox([vec3(-0.5),vec3(0.5)])
-                vb=SceneUtils.PyVertexBuffer(aabbnodes,[vec3(0,0,1)]*len(aabbnodes),[color()]*len(aabbnodes),None)
-                ib=SceneUtils.PyIndexBuffer(indices)
+                vb=PyVertexBuffer(aabbnodes,[vec3(0,0,1)]*len(aabbnodes),[color()]*len(aabbnodes),None)
+                ib=PyIndexBuffer(indices)
 
                 fig=self.scene.createFigure(rep.getName()+' BoundBox',matname,renderer.FT_LINELIST)
                 fig.fillData(vb,ib)

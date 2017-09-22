@@ -1338,55 +1338,6 @@ class ImageScenePlugin(ScenePlugin):
             
             return dict(pos=pos,spacing=spacing,rot=rot,array=array,toffset=toffset,interval=interval)
 
-#        timesteps=obj.getTimestepList()
-#
-#        numsteps=len(timesteps)
-#        cols=obj.maxcols
-#        rows=obj.maxrows
-#        interval=int(Utils.avg(timesteps[i]-timesteps[i-1] for i in range(1,len(timesteps))))
-#        toffset=timesteps[0]
-#        depth=1
-#        img1=None
-#        img2=None
-#
-#        if obj.isTimeDependent:
-#            timeseqs=obj.getVolumeStacks()
-#            assert len(timeseqs)==numsteps,'%i != %i'%(len(timeseqs),numsteps)
-#
-#            img1=obj.images[timeseqs[0][0]]
-#            img2=img1 if obj.is2D else obj.images[timeseqs[0][1]]
-#
-#            depth=len(timeseqs[0])
-#            dat=np.zeros((rows,cols,depth,numsteps),datatype)
-#
-#            for t,ts in enumerate(timeseqs):
-#                for d,dd in enumerate(ts):
-#                    dat[:,:,d,t]=matrixToArray(obj.images[dd].img,datatype)
-#
-#        elif not obj.is2D:
-#            timeseqs=obj.getVolumeStacks()[0]
-#
-#            img1=obj.images[timeseqs[0]]
-#            img2=obj.images[timeseqs[1]]
-#
-#            depth=len(timeseqs)
-#            dat=np.zeros((rows,cols,depth),datatype)
-#
-#            for d,dd in enumerate(timeseqs):
-#                dat[:,:,d]=matrixToArray(obj.images[dd].img)
-#
-#        else:
-#            img1=obj.images[0]
-#            img2=img1
-#            dat=np.zeros((rows,cols),datatype)
-#            dat[:,:]=matrixToArray(obj.images[0].img)
-#
-#        pos=img1.position
-#        spacing=vec3(img1.spacing[0],img1.spacing[1],pos.distTo(img2.position))
-#        shape=(rows,cols,depth,numsteps)
-#
-#        return dict(pos=pos,spacing=spacing,rot=img1.orientation,dat=dat,toffset=toffset,interval=interval,shape=shape)
-
 
 class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
     '''
@@ -1396,31 +1347,6 @@ class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
     def __init__(self,name):
         MeshScenePlugin.__init__(self,name)
         ImageScenePlugin.__init__(self,name)
-
-#       meshmems=set(s for s in dir(MeshScenePlugin) if s[0:2]!='__')
-#       imgmems=set(s for s in dir(ImageScenePlugin) if s[0:2]!='__')
-#       selfmems=set(s for s in type(self).__dict__.keys() if s[0:2]!='__')
-#
-#       printFlush(type(self),meshmems.intersection(imgmems).difference(selfmems))
-#
-#       for mem in meshmems.intersection(imgmems).difference(selfmems):
-#           def _call(*args,**kwargs):
-#               obj=first(args)
-#
-#               if isinstance(obj,(MeshSceneObject,MeshSceneObjectRepr)):
-#                   ptype=MeshScenePlugin
-#               elif  isinstance(obj,(ImageSceneObject,ImageSceneObjectRepr)):
-#                   ptype=ImageScenePlugin
-#               else:
-#                   ptype=type(self)
-#
-#               try:
-#                   return getattr(ptype,mem)(self,*args,**kwargs)
-#               except:
-#                   printFlush(mem,self,args,kwargs)
-#                   raise
-#
-#           setattr(self,mem,_call)
 
     def init(self,plugid,win,mgr):
         ScenePlugin.init(self,plugid,win,mgr)

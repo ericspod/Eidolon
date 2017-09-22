@@ -351,18 +351,8 @@ class ImageSceneObject(SceneObject):
 
         stack0=stack[0][:2]
         img0=self.images[stack0[0]]
-        img1=self.images[stack0[-1]]
+        img1=self.images[stack0[-1]] # either next in stack or same as img0
         return vec3(img0.spacing[0],img0.spacing[1],img0.position.distTo(img1.position))
-
-#    def getVolumeDims(self):
-#        '''Get the dimension vector the image volume in world space units.'''
-#        stack=self.getVolumeStacks()
-#        if len(stack)==0:
-#            return vec3()
-#
-#        img0=self.images[stack[0][0]]
-#        img1=self.images[stack[0][-1]]
-#        return img0.dimvec+vec3(0,0,img0.position.distTo(img1.position))
 
     def getVolumeTransform(self,make2DVol=True):
         '''
@@ -375,18 +365,15 @@ class ImageSceneObject(SceneObject):
             return transform()
 
         img0=self.images[stack[0][0]]
-        img1=self.images[stack[0][-1]]
+        img1=self.images[stack[0][-1]] # same as img0 if is2D
         
         pos=img0.position
         scale=img0.dimvec+vec3(0,0,img0.position.distTo(img1.position))
         
-        if self.is2D and make2DVol:
+        if self.is2D and make2DVol: # define the 2D plane as a thin volume instead for mathematical reasons
             depth=max(abs(img0.spacing[0]),abs(img0.spacing[1]))*2 # fabricate a thickness value for the 2D plane
             pos-=img0.norm*(depth*0.5)
             scale+=vec3(0,0,depth)
-#            return transform(img0.position-(img0.norm*(depth*0.5)),img0.dimvec+vec3(0,0,depth),img0.orientation)
-#        else:
-#            return transform(img0.position,self.getVolumeDims(),img0.orientation)
 
         return transform(pos,scale,img0.orientation)
     
@@ -418,8 +405,8 @@ class ImageSceneObject(SceneObject):
     def getVolumeCorners(self):
         '''Get the 8 corner vectors of the image volume.'''
         stack=self.getVolumeStacks()
-        if len(stack)==0 or len(stack[0])==1:
-            return vec3()
+        if len(stack)==0:
+            return [vec3()]
 
         img0=self.images[stack[0][0]]
         img1=self.images[stack[0][-1]]
@@ -486,8 +473,10 @@ class ImageSceneObject(SceneObject):
         Returns a list of pairs containing the time for each timestep (ie. the average timing value of the images
         defining the timestep) and a list if image indices for those images at that time. If this image is not time-
         dependent, then each member of the list has the same time value but represents an independent image series
-        which are differentiated by position and orientation. The indices are always sorted in stack order. The
-        ordering of the indices is dependent on the ordering of self.images.
+        which are differentiated by position and orientation. The indices are always sorted in stack order. If multiple 
+        stacks define volumes at the same position and time they will be listed one after the other. The ordering of the 
+        indices is dependent on the ordering of self.images. 2D image series are treated as single image stacks, so the 
+        result will be a list of lists containing single indices.
         '''
 
         timesteps=[]

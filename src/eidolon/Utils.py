@@ -1577,8 +1577,8 @@ def isMainThread():
 
 def asyncfunc(func):
     '''
-    Wraps the function `func' with a asynchronous version which executes the function's body in a daemon thread. The
-    return value is the threading.Thread object executing the function, which an extra member `result' containing the
+    Wraps the callable `func' with a asynchronous version which executes the callable in a daemon thread. The
+    return value is the threading.Thread object executing the callable, which an extra member `result' containing the
     Future object which will eventually store the return value or raised exception from calling `func'.
     '''
     @wraps(func)
@@ -1588,7 +1588,7 @@ def asyncfunc(func):
             with f:
                 f.setObject(func(*args,**kwargs))
 
-        t=threading.Thread(target=_call)
+        t=Thread(target=_call)
         t.daemon=True
         t.result=f
         t.start()
