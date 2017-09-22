@@ -28,16 +28,6 @@ import collections
 import contextlib
 import signal
 import codeop
-
-try:
-    from PyQt5 import QtGui, QtCore, QtWidgets
-    from PyQt5.QtCore import Qt
-    qtversion=5
-except ImportError:
-    from PyQt4 import QtCore, QtGui
-    from PyQt4.QtCore import Qt
-    QtWidgets=QtGui
-    qtversion=4
     
 import sip
 
@@ -47,6 +37,7 @@ from eidolon.Utils import EventType, ParamType, ConfVars
 
 from renderer import getRenderAdapter,RenderParamGroup,platformID
 
+from ui import Qt, QtCore, QtGui, QtWidgets, QtVersion
 from ui import Ui_MainWindow, Ui_ProjProp, Ui_ObjReprProp, Ui_ObjProp, Ui_matProp, Ui_LightProp, Ui_gpuProp,\
         Ui_Draw2DView, Ui_ScreenshotForm, Ui_ShowMsg #,loadGPUScript
 
@@ -413,7 +404,7 @@ def createMenu(title,values,defaultFunc=lambda v:None,parent=None):
         menu.addAction(title,lambda:None)
         menu.addSeparator()
 
-    def _callFunc(v,func):
+    def _callFunc(v,func): # needed to ensure v and func are fresh
         return lambda:func(v)
 
     for val in values:
@@ -603,7 +594,7 @@ class ParamPanel(QtWidgets.QWidget):
     def setParamChangeFunc(self,basefunc):
         def func(name,value):
             '''Converts QString values (in PyQt4) to normal strings before calling `basefunc'.'''
-            if qtversion==4 and isinstance(value,QtCore.QString):
+            if QtVersion==4 and isinstance(value,QtCore.QString):
                 value=str(value)
 
             basefunc(name,value)
@@ -1311,10 +1302,11 @@ class RenderWidget(QtWidgets.QWidget):
         elif Utils.isDarwin:
             return str(int(self.winId()))
         else:
-            if qtversion==4:
+            if QtVersion==4:
                 info=self.x11Info()
                 return '%i:%i:%i'%(sip.unwrapinstance(info.display()),info.screen(),self.winId())
-            return '0:0:%i'%self.winId()
+            else:
+                return '0:0:%i'%self.winId() # TODO: correct for PyQt5?
 
     def initViz(self):
         '''
@@ -1327,7 +1319,7 @@ class RenderWidget(QtWidgets.QWidget):
         self.conf.set(RenderParamGroup,paramname,self._getWinHandle()) # set the config parameter createWindow needs
 
         if Utils.isLinux: # call XSync to ensure the handle for the window referred to in `paramname' is valid
-            if qtversion==4:
+            if QtVersion==4:
                 import ctypes,ctypes.util
                 x11=ctypes.CDLL(ctypes.util.find_library('X11'))
                 x11.XSync(sip.unwrapinstance(self.x11Info().display()),False)
@@ -1774,8 +1766,8 @@ class BaseSpectrumWidget(QtWidgets.QWidget):
             p.setBrush(QtGui.QBrush(Qt.GlobalColor(Qt.white)))
             p.setFont(QtGui.QFont('Courier', 10 if Utils.isDarwin else 8))
 
-            if qtversion==5:
-                p.drawRoundedRect(dx,dy,self.w,self.h)
+            if QtVersion==5:
+                p.drawRoundedRect(dx,dy,self.w,self.h,25,25,Qt.RelativeSize) # TODO: ugly, fix
             else:
                 p.drawRoundRect(dx,dy,self.w,self.h)
             p.drawText(dx+3,dy+10,self.text)
@@ -2646,6 +2638,9 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         if isOpen:
             if chooseMultiple:
                 fnames=QtWidgets.QFileDialog.getOpenFileNames(parent, self.tr(title),opendir, self.tr(filterstr))
+                if QtVersion==5:
+                    fnames=fnames[0]
+                    
                 names=map(lambda i:os.path.abspath(str(i)),fnames)
                 if len(names)>0:
                     self.dialogDir=os.path.split(names[0])[0]
@@ -2659,6 +2654,9 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
             fname=QtWidgets.QFileDialog.getSaveFileName(parent, self.tr(title),self.tr(opendir), self.tr(filterstr),None,options)
 
+        if fname and QtVersion==5: # throw out the filter part that's returned in PyQt5
+            fname=fname[0]
+            
         name=str(fname)
         if name:
             self.dialogDir=os.path.dirname(os.path.abspath(name))

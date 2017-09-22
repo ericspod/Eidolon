@@ -19,10 +19,10 @@
 
 try:
     import PyQt5
-    qtversion=5
+    QtVersion=5
 except:
     import PyQt4
-    qtversion=4
+    QtVersion=4
     
 import subprocess
 import glob
@@ -32,7 +32,7 @@ import os
 def generateResFile():
     '''Generates the resource file from the resources in ../../res and stores it in a PyQt version specific file.'''
     cmd='pyrcc%(ver)i ../../res/Resources.qrc > Resources_rc%(ver)i.py'
-    subprocess.check_call(cmd%{'ver':qtversion}, shell=True)
+    subprocess.check_call(cmd%{'ver':QtVersion}, shell=True)
 
 
 def generateUIFile():
@@ -47,11 +47,13 @@ def generateUIFile():
             o.write('</qresource>\n</RCC>\n')
             
         cmd='pyrcc%(ver)i ui.qrc > UI_rc%(ver)i.py'
-        subprocess.check_call(cmd%{'ver':qtversion}, shell=True)
+        subprocess.check_call(cmd%{'ver':QtVersion}, shell=True)
         os.remove('ui.qrc')
     
     
 if __name__=='__main__':
+    print('Generating Resource Module')
     generateResFile()
+    print('Generating UI Module')
     generateUIFile()
     
