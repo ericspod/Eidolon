@@ -28,7 +28,7 @@ import MeshAlgorithms
 from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, FT_TRILIST, FT_LINELIST
 from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
 from .SceneUtils import BoundBox
-from .VisualizerUI import Qt, QtGui, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
+from .VisualizerUI import Qt, QtWidgets, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
 from .SceneObject import MeshSceneObjectRepr, TDMeshSceneObjectRepr
 from .ImageObject import ImageSceneObject, ImageSceneObjectRepr, ImageSeriesRepr, ImageVolumeRepr
 
@@ -673,7 +673,7 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
             scale=10 if e.modifiers()&Qt.ShiftModifier else 1
             self.setImageStackPosition(self.getImageStackPosition()+(direction*scale))
         else:
-            QtGui.QWidget.keyPressEvent(self,e)
+            QtWidgets.QWidget.keyPressEvent(self,e)
 
 
 class PointChooseMixin(object):
@@ -688,8 +688,8 @@ class PointChooseMixin(object):
         have title `grouplabel'.
         '''
         self.pointMap={} # maps positionable point names to the (handle,label,button,edit)  tuple
-        self.ptBox = QtGui.QGroupBox(grouplabel,self) # UI box containing controls for the points
-        self.gridLayout = QtGui.QGridLayout(self.ptBox)
+        self.ptBox = QtWidgets.QGroupBox(grouplabel,self) # UI box containing controls for the points
+        self.gridLayout = QtWidgets.QGridLayout(self.ptBox)
         layout.addWidget(self.ptBox)
         setCollapsibleGroupbox(self.ptBox,showBox)
 
@@ -700,9 +700,9 @@ class PointChooseMixin(object):
         this point, storing it in self.pointMap keyed to name as well as returning it.
         '''
         handle=SceneComponents.PointHandle2D(self,vec3(),col)
-        label=QtGui.QLabel(text)
-        button=QtGui.QPushButton('Set Plane')
-        edit=QtGui.QLineEdit()
+        label=QtWidgets.QLabel(text)
+        button=QtWidgets.QPushButton('Set Plane')
+        edit=QtWidgets.QLineEdit()
 
         self.gridLayout.addWidget(label,len(self.pointMap),0)
         self.gridLayout.addWidget(button,len(self.pointMap),1)

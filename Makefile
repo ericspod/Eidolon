@@ -44,7 +44,7 @@ PYUIC=pyuic4
 PYRCC=pyrcc4
 PYINST?=pyinstaller
 
-# find the path to the python exe using the registry
+# find the path to the python exe using the registry, this uses cygpath to produce a Cygwin-formatted path
 ifeq ($(PLAT),win64_mingw)
 	REG="$(shell cat /proc/registry/HKEY_CURRENT_USER/Software/Python/PythonCore/2.7/InstallPath/@ 2>/dev/null)"
 	ifeq ($(REG),"")
@@ -63,18 +63,21 @@ PYUIC=$(PYTHON) $(QTDIR)/uic/pyuic.py
 
 #--------------------------------------------------------------------------------------
 
-.PHONY: clean clean_gen header all ui renderer pyxlibs resource distfile tutorialfile
+.PHONY: clean clean_gen header all ui renderer pyxlibs resource distfile tutorialfile app
 
 all: header ui renderer pyxlibs
 
-%.py : %.ui
-	$(PYUIC) $< > $@
+#%.py : %.ui
+#	$(PYUIC) $< > $@
+#
+#ui : $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui))
+#
+#resource:
+#	$(PYRCC) res/Resources.qrc -py3 -o $(SRC)/ui/Resources_rc.py
 
-ui : $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui))
-
-resource:
-	$(PYRCC) res/Resources.qrc -py3 -o $(SRC)/ui/Resources_rc.py
-
+ui:
+	cd $(SRC)/ui && $(PYTHON) setup.py
+    
 renderer:
 	cd $(RESRC) && $(PYTHON) setup.py build_ext --inplace
 
@@ -96,7 +99,7 @@ distfile: # creates the universal distributable zip file with path DISTNAME.zip
 	rm -rf $(DISTNAME)
 	
 app:
-	#$(MAKE)
+	$(MAKE) ui
 	./run.sh --version
 	rm -rf dist
 ifeq ($(PLAT),win64_mingw)

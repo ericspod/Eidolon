@@ -1731,7 +1731,7 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
         self.show()
 
     def keyPressEvent(self,e):
-        if e.key() == QtCore.Qt.Key_Escape:
+        if e.key() == Qt.Key_Escape:
             self.close()
         else:
             QtGui.QDialog.keyPressEvent(self,e)

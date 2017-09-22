@@ -29,8 +29,16 @@ import contextlib
 import signal
 import codeop
 
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+try:
+    from PyQt5 import QtGui, QtCore, QtWidgets
+    from PyQt5.QtCore import Qt
+    qtversion=5
+except ImportError:
+    from PyQt4 import QtCore, QtGui
+    from PyQt4.QtCore import Qt
+    QtWidgets=QtGui
+    qtversion=4
+    
 import sip
 
 import eidolon
@@ -305,8 +313,8 @@ def setTableHeaders(table):
     # The designer properties for these are horizontalHeaderCascadingSectionResizes and verticalHeaderCascadingSectionResizes
     table.verticalHeader().setCascadingSectionResizes(True)
     table.horizontalHeader().setCascadingSectionResizes(True)
-    table.verticalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft) # why doesn't this stick in the designer?
-    table.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
+    table.verticalHeader().setDefaultAlignment(Qt.AlignLeft) # why doesn't this stick in the designer?
+    table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
     table.horizontalHeader().setStretchLastSection(True)
 
 
@@ -385,7 +393,7 @@ def fillList(listobj,items,curitem=-1,defaultitem=None,checkChanges=False):
 def createSplitWidget(parent,widg1,widg2,isVertical=True):
     '''Create a splitter widget within `parent' with `widg1' and `widg2' as its two halves, vertical if `isVertical.'''
     split=QtGui.QSplitter(parent)
-    split.setOrientation(QtCore.Qt.Vertical if isVertical else QtCore.Qt.Horizontal)
+    split.setOrientation(Qt.Vertical if isVertical else Qt.Horizontal)
     split.setChildrenCollapsible(False)
     widg1.setParent(split)
     widg2.setParent(split)
@@ -485,7 +493,7 @@ def addCustomUIRow(layout,index,uitype,name,labelText,minval=0,maxval=0,stepval=
         opt.setText(labelText)
         usesLabel=False
     elif uitype==CustomUIType._hslider:
-        opt=QtGui.QSlider(QtCore.Qt.Horizontal)
+        opt=QtGui.QSlider(Qt.Horizontal)
         opt.setRange(int(minval),int(maxval))
         opt.setSingleStep(int(stepval))
         opt.setTickPosition(QtGui.QSlider.TicksBelow)
@@ -508,20 +516,20 @@ def addCustomUIRow(layout,index,uitype,name,labelText,minval=0,maxval=0,stepval=
         else:
             form=QtGui.QFormLayout()
             form.insertRow(0,label,opt)
-            form.setAlignment(QtCore.Qt.AlignLeft)
+            form.setAlignment(Qt.AlignLeft)
             layout.addLayout(form,index,0,1,1)
     elif not usesLabel:
         layout.insertWidget(index,opt)
     else:
         form=QtGui.QFormLayout()
         form.insertRow(0,label,opt)
-        form.setAlignment(QtCore.Qt.AlignLeft)
+        form.setAlignment(Qt.AlignLeft)
         layout.insertLayout(index,form)
 
     return label,opt
 
 
-class ParamPanel(QtGui.QWidget):
+class ParamPanel(QtWidgets.QWidget):
     '''
     This widget generates custom UI forms from a list of ParamDef objects. This can be used to create custom and dynamic
     parameter input UI elements, for example choosing representation object parameters.
@@ -594,8 +602,8 @@ class ParamPanel(QtGui.QWidget):
 
     def setParamChangeFunc(self,basefunc):
         def func(name,value):
-            '''Converts QString values to normal strings before calling `basefunc'.'''
-            if isinstance(value,QtCore.QString):
+            '''Converts QString values (in PyQt4) to normal strings before calling `basefunc'.'''
+            if qtversion==4 and isinstance(value,QtCore.QString):
                 value=str(value)
 
             basefunc(name,value)
@@ -747,7 +755,7 @@ class LogFileView(QtGui.QWidget):
         QtGui.QWidget.__init__(self,None)
 
         self.setWindowTitle('Log File View')
-        self.setAttribute(QtCore.Qt.WA_QuitOnClose,False) # don't wait for this window to close when exiting the application
+        self.setAttribute(Qt.WA_QuitOnClose,False) # don't wait for this window to close when exiting the application
 
         self.filename=filename
         self.win=win
@@ -768,7 +776,7 @@ class LogFileView(QtGui.QWidget):
         self.updateThread.start()
 
     def keyPressEvent(self,e):
-        if e.key() == QtCore.Qt.Key_Escape:
+        if e.key() == Qt.Key_Escape:
             self.close()
         else:
             QtGui.QWidget.keyPressEvent(self,e)
@@ -815,7 +823,7 @@ class TextBoxDialog(QtGui.QDialog):
         self.textEdit.setPlainText(text)
 
         self.buttonBox = QtGui.QDialogButtonBox(self)
-        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setOrientation(Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
 
         self.verticalLayout = QtGui.QVBoxLayout(self)
@@ -1037,7 +1045,7 @@ class Base2DWidget(QtGui.QWidget):
     '''
     def __init__(self,parent=None):
         QtGui.QWidget.__init__(self,parent)
-        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocusPolicy(Qt.StrongFocus)
         self.imgFormat=QtGui.QImage.Format_RGB32
         self.img=None
         self.prevX=0
@@ -1186,7 +1194,7 @@ class Draw2DView(Ui_Draw2DView):
     def mouseWheelMove(self,e):
         '''Move through the image stack when the mouse wheel moves with the cursor over the 2D drawing widget.'''
         delta=1 if e.delta()>0 else -1
-        if e.orientation()==QtCore.Qt.Horizontal: # horizontal scrolling in the widget is opposite to the slider
+        if e.orientation()==Qt.Horizontal: # horizontal scrolling in the widget is opposite to the slider
             delta*=-1
 
         pos=self.getImageStackPosition()+delta
@@ -1283,10 +1291,10 @@ class RenderWidget(QtGui.QWidget):
     '''
     def __init__(self,conf,parent=None):
         QtGui.QWidget.__init__(self,parent)
-        self.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.setAttribute(QtCore.Qt.WA_PaintOnScreen,True)
-        self.setAttribute(QtCore.Qt.WA_NoSystemBackground, True)
-        self.setAttribute(QtCore.Qt.WA_OpaquePaintEvent, True)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setAttribute(Qt.WA_PaintOnScreen,True)
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
+        self.setAttribute(Qt.WA_OpaquePaintEvent, True)
         self.conf=conf
         self.scene=None
         self.evtHandler=None
@@ -1757,8 +1765,8 @@ class BaseSpectrumWidget(QtGui.QWidget):
 
         def draw(self,p):
             dx,dy=self.pos()
-            p.setPen(QtGui.QPen(QtCore.Qt.GlobalColor(QtCore.Qt.black)))
-            p.setBrush(QtGui.QBrush(QtCore.Qt.GlobalColor(QtCore.Qt.white)))
+            p.setPen(QtGui.QPen(Qt.GlobalColor(Qt.black)))
+            p.setBrush(QtGui.QBrush(Qt.GlobalColor(Qt.white)))
             p.setFont(QtGui.QFont('Courier', 10 if Utils.isDarwin else 8))
 
             p.drawRoundRect(dx,dy,self.w,self.h)
@@ -1771,12 +1779,12 @@ class BaseSpectrumWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self,parent)
         self.setMinimumSize(QtCore.QSize(10, minheight))
         self.setMaximumSize(QtCore.QSize(5000, 800))
-        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocusPolicy(Qt.StrongFocus)
 
         self.minheight=minheight
         self.isDblHeight=False
-        self.bg=QtGui.QBrush(QtCore.Qt.GlobalColor(QtCore.Qt.white))
-        self.bar=QtGui.QBrush(QtCore.Qt.GlobalColor(QtCore.Qt.lightGray))
+        self.bg=QtGui.QBrush(Qt.GlobalColor(Qt.white))
+        self.bar=QtGui.QBrush(Qt.GlobalColor(Qt.lightGray))
 
         self.colors=[] # spectrum colors
         self.colorpos=[] # positions of elements in self.colors
@@ -1994,7 +2002,7 @@ class BaseSpectrumWidget(QtGui.QWidget):
             QtGui.QToolTip.showText(e.globalPos(),'T: %.3f A: %.3f'%(x,y))
 
     def keyPressEvent(self,e):
-        if e.key() in (QtCore.Qt.Key_Backspace,QtCore.Qt.Key_Delete):
+        if e.key() in (Qt.Key_Backspace,Qt.Key_Delete):
             self._remove()
             self.update()
         else:
@@ -2026,10 +2034,10 @@ class BaseSpectrumWidget(QtGui.QWidget):
             if prevcurve==None:
                 prevcurve=(x,y-1)
 
-            p.setPen(QtGui.QPen(QtCore.Qt.GlobalColor(QtCore.Qt.white)))
+            p.setPen(QtGui.QPen(Qt.GlobalColor(Qt.white)))
             p.drawLine(prevcurve[0],prevcurve[1]-1,x,y-1)
             #p.drawLine(prevcurve[0],prevcurve[1]+1,x,y+1)
-            p.setPen(QtGui.QPen(QtCore.Qt.GlobalColor(QtCore.Qt.black)))
+            p.setPen(QtGui.QPen(Qt.GlobalColor(Qt.black)))
             p.drawLine(prevcurve[0],prevcurve[1],x,y)
             prevcurve=(x,y)
 
@@ -2274,7 +2282,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
     def keyPressEvent(self,e):
         if e.key() == Qt.Key_F11:
             self.toggleFullscreen()
-        elif e.key() == QtCore.Qt.Key_Escape:
+        elif e.key() == Qt.Key_Escape:
             self.close()
         else:
             QtGui.QMainWindow.keyPressEvent(self,e)
@@ -2445,7 +2453,8 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
                 result=Utils.first((v.obj,v.updateFunc) for v in self.objMap.values() if v.propbox==widg)
                 if result:
                     obj,func=result
-                    func(obj,widg)
+                    if func is not None:
+                        func(obj,widg)
 
         updateObj(self.propScrollArea.widget())
         updateObj(self.assetScrollArea.widget())
@@ -2501,7 +2510,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         d.setWidget(widg)
         d.setMinimumWidth(minw*2) # initialize the minimum width to twice given so that the dock starts out larger
         d.setMinimumHeight(minh)
-        d.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+        d.setAttribute(Qt.WA_DeleteOnClose, True)
 
         def closeEvent(e):
             if hasattr(widg,'parentClosed'):
@@ -2515,7 +2524,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
         setattr(d,'closeEvent',closeEvent)
         setattr(d,'showEvent',showEvent)
 
-        self.addDockWidget(QtCore.Qt.DockWidgetArea(2), d)
+        self.addDockWidget(Qt.DockWidgetArea(2), d)
         self.dockWidgets.append(widg)
 
     def findWidgetItem(self,obj):
@@ -2600,7 +2609,7 @@ class VisualizerWindow(QtGui.QMainWindow,Ui_MainWindow):
             d.close()
 
         d.buttonBox = QtGui.QDialogButtonBox(d)
-        d.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        d.buttonBox.setOrientation(Qt.Horizontal)
         d.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
         d.buttonBox.setCenterButtons(False)
         d.buttonBox.accepted.connect(_getSelected)

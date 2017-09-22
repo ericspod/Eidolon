@@ -407,7 +407,7 @@ class LoadTDDialog(Ui_TDDialog,BaseLoadDialog):
 
     def _delRow(self,event,itemlist,table):
         index=first(i.row() for i in table.selectedIndexes()) or -1
-        if event.key() in (QtCore.Qt.Key_Delete,QtCore.Qt.Key_Backspace) and 0<=index<len(itemlist):
+        if event.key() in (Qt.Key_Delete,Qt.Key_Backspace) and 0<=index<len(itemlist):
             itemlist.pop(index)
             fillEnumTable(itemlist,table)
 

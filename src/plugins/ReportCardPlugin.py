@@ -96,7 +96,7 @@ class TagTableModel(QtCore.QAbstractTableModel):
             
 #   def flags(self,index):
 #       '''Allows editability.'''
-#       return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+#       return Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsSelectable
 #       
 #   def setData(self, index, value,role):
 #       '''Allows a cell to be edited.'''

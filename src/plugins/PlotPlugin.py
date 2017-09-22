@@ -124,7 +124,7 @@ class ColorBar(pg.GraphicsObject):
                 p.drawLine(self.cwidth, y, self.cwidth+5.0, y)
 
                 label='%.3f'%lerp(tick,self.minval,self.maxval)
-                br = p.boundingRect(0, 0, 0, 0, pg.QtCore.Qt.AlignLeft, label)
+                br = p.boundingRect(0, 0, 0, 0, pg.Qt.AlignLeft, label)
                 p.drawText(self.cwidth+8.0,y+br.height()/4,label)
 
     def paint(self, p, *args):

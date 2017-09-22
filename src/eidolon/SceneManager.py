@@ -47,7 +47,7 @@ import ImageObject
 from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture, PyVertexBuffer, PyIndexBuffer
 from .Camera2DView import Camera2DView
 from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, Future, FutureError, timeBackupFile, setTrace, TaskQueue
-from .VisualizerUI import QtGui, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
+from .VisualizerUI import QtWidgets, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
 from .SceneObject import SceneObject, SceneObjectRepr, MeshSceneObject
 from .SceneComponents import LightType, CenterType, AxesType, SceneLight, ScriptWriter
 
@@ -310,13 +310,13 @@ class Project(object):
         VisualizerUI.setTableHeaders(table)
 
         for i,o in enumerate(objs):
-            chkBoxItem = QtGui.QTableWidgetItem()
+            chkBoxItem = QtWidgets.QTableWidgetItem()
             chkBoxItem.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
             chkBoxItem.setCheckState(Qt.Checked if o in self.memberObjs else Qt.Unchecked)
 
             self.checkboxMap[chkBoxItem]=o.getName()
 
-            label=QtGui.QTableWidgetItem(o.name)
+            label=QtWidgets.QTableWidgetItem(o.name)
             label.setFlags((label.flags() & ~Qt.ItemIsEditable)|Qt.ItemIsSelectable)
 
             table.setItem(i,0,chkBoxItem)

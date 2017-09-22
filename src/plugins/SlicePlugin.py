@@ -920,7 +920,7 @@ class SlicePlugin(ScenePlugin):
     def _setApplyToReprCheck(self,item):
         if item in self.checkboxMap:
             obj,rep=self.checkboxMap[item]
-            obj.setApplyToRepr(rep,item.checkState()==QtCore.Qt.Checked)
+            obj.setApplyToRepr(rep,item.checkState()==Qt.Checked)
             self.mgr.repaint()
 
     def _alignToObj(self,obj,prop):
@@ -961,13 +961,13 @@ class SlicePlugin(ScenePlugin):
 
         table.verticalHeader().setCascadingSectionResizes(True)
         table.horizontalHeader().setCascadingSectionResizes(True)
-        table.verticalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft) # why doesn't this stick in the designer?
-        table.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignLeft)
+        table.verticalHeader().setDefaultAlignment(Qt.AlignLeft) # why doesn't this stick in the designer?
+        table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
 
         for i,r in enumerate(reprs):
             chkBoxItem = QtGui.QTableWidgetItem()
-            chkBoxItem.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-            chkBoxItem.setCheckState(QtCore.Qt.Checked if obj.isSlicingRepr(r) else QtCore.Qt.Unchecked)
+            chkBoxItem.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            chkBoxItem.setCheckState(Qt.Checked if obj.isSlicingRepr(r) else Qt.Unchecked)
 
             self.checkboxMap[chkBoxItem]=(obj,r)
 

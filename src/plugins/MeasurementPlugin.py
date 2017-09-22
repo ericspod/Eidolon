@@ -614,7 +614,7 @@ class MeasureSplitView(QtGui.QSplitter):
     def __init__(self,mgr,camera,parent=None):
         QtGui.QSplitter.__init__(self)
         self.mgr=mgr
-        self.setOrientation(QtCore.Qt.Horizontal)
+        self.setOrientation(Qt.Horizontal)
         self.setChildrenCollapsible(True)
         self.measure=MeasurementView(mgr,camera,self)
         
