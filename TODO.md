@@ -5,7 +5,7 @@
  * 2D flow/deformation visualization
  * 2D glyph visualization
  * Streamlines representation type
- * PyQt5 compatibility
+ * ~~PyQt5 compatibility~~
  * PACS access
 
 ### 12 Dec 2016

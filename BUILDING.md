@@ -14,9 +14,7 @@ For all platforms the following are required either separately, as included with
 
 ## Setup
 
-### Linux (Ubuntu 12/14, other distros) 
-
-**Ubuntu 12.*** doesn't require anything extra if Anaconda is installed, so this is the easiest way to get started with development.
+### Linux (Ubuntu 14, other distros) 
 
 **Ubuntu 14.*** version of Eidolon uses the Qt development tools and Cython:
 
