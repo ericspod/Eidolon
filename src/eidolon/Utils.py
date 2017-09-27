@@ -95,6 +95,8 @@ import ast
 import string
 import inspect
 
+py3 = sys.version_info.major > 2
+
 from codeop import compile_command
 from functools import wraps
 from threading import Thread, RLock, Event,currentThread,_MainThread
@@ -286,7 +288,7 @@ class Future(object):
 
         # if an exception was raised instead of setting a value, raise it
         if isinstance(self.obj,FutureError) and self.obj.exc_value:
-            if hasattr(self.obj,'with_traceback'): # Python3 compatibility
+            if py3: # Python3 compatibility
                 raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
             else:
                 raise self.obj.exc_type,self.obj.exc_value,self.obj.tb

@@ -373,8 +373,8 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
     if validPixelArray:
         #wincenter=dcm.get('WindowCenter',None)
         #winwidth=dcm.get('WindowWidth',None)
-        rslope=float(dcm.get(slopeTag,1))
-        rinter=float(dcm.get(interTag,0))
+        rslope=float(dcm.get(slopeTag,1) or 1)
+        rinter=float(dcm.get(interTag,0) or 0)
         #rtype=dcm.get('RescaleType',None)
 
         # TODO: proper rescaling?

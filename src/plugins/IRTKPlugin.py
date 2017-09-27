@@ -1041,7 +1041,7 @@ class IRTKPluginMixin(object):
         isFrameByFrame=conf[JobMetaValues._tracktype] in (TrackTypes._gpunreg,TrackTypes._mirtkregister) and not isSingleDof
         resultname=self.getUniqueShortName(obj.getName(),'Tracked',trackname_or_dir)
         f=Future()
-
+        
         assert isinstance(obj,(ImageSceneObject,MeshSceneObject))
         assert trackfiles
 

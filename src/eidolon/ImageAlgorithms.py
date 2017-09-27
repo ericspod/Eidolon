@@ -438,11 +438,6 @@ def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
             
         # reduce out to a mask of voxels at and above `maskThreshold' of the value range
         box=calculateBinaryMaskBox(out,maxFilterSize,maskThreshold)
-#        mask=scipy.ndimage.maximum_filter(out, size=maxFilterSize)
-#        mask=(mask-np.min(mask))/(np.max(mask)-np.min(mask))
-#        mask=mask>maskThreshold
-#        
-#        inds=scipy.ndimage.find_objects(mask)[0]
     
     return (out,)+box
 

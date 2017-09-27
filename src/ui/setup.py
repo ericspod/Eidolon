@@ -17,17 +17,11 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-try:
-    import PyQt5
-    QtVersion=5
-except:
-    import PyQt4
-    QtVersion=4
-    
 import subprocess
 import glob
 import os
 
+from __init__ import QtVersion
 
 def generateResFile():
     '''Generates the resource file from the resources in ../../res and stores it in a PyQt version specific file.'''
