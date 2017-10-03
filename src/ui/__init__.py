@@ -69,21 +69,17 @@ def loadUI(xmlstr):
     setattr(module,uiclass.__name__,uiclass) # store as module member
     
 
-try:
-    # list all .ui files, if there are none then attempt to load from a resource script file
-    uifiles=glob.glob(os.path.join(os.path.dirname(__file__),'*.ui'))
-    if len(uifiles)==0:
-        raise IOError('No .ui files')        
-    
+# list all .ui files, if there are none then attempt to load from a resource script file
+uifiles=glob.glob(os.path.join(os.path.dirname(__file__),'*.ui'))
+if len(uifiles)!=0:
     # load the class from each ui file and store it as a member of this module
     for ui in uifiles:
         loadUI(open(ui).read())
-        
-except Exception as e:
+else:
     # load the resource module containing the .ui files appropriate to which version of PyQt is being used
-    try:
+    if QtVersion==5:
         import UI_rc5
-    except ImportError:
+    else:
         import UI_rc4
         
     # iterate over every file in the layout section of the resources and load them into this module

@@ -2637,22 +2637,22 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
         if isOpen:
             if chooseMultiple:
-                fnames=QtWidgets.QFileDialog.getOpenFileNames(parent, self.tr(title),opendir, self.tr(filterstr))
+                fnames=QtWidgets.QFileDialog.getOpenFileNames(parent, title,opendir, filterstr)
                 if QtVersion==5:
                     fnames=fnames[0]
                     
-                names=map(lambda i:os.path.abspath(str(i)),fnames)
+                names=[os.path.abspath(str(f)) for f in fnames]
                 if len(names)>0:
                     self.dialogDir=os.path.split(names[0])[0]
                 return names
             else:
-                fname=QtWidgets.QFileDialog.getOpenFileName(parent, self.tr(title),opendir, self.tr(filterstr))
+                fname=QtWidgets.QFileDialog.getOpenFileName(parent, title,opendir, filterstr)
         else:
             options=QtWidgets.QFileDialog.Options()
             if not confirmOverwrite:
                 options|=QtWidgets.QFileDialog.DontConfirmOverwrite
 
-            fname=QtWidgets.QFileDialog.getSaveFileName(parent, self.tr(title),self.tr(opendir), self.tr(filterstr),None,options)
+            fname=QtWidgets.QFileDialog.getSaveFileName(parent, title,opendir, filterstr,None,options)
 
         if fname and QtVersion==5: # throw out the filter part that's returned in PyQt5
             fname=fname[0]
