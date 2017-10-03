@@ -46,5 +46,5 @@ else
 	export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
-python2.7 "$APPDIR/main.py" "$@"
+python "$APPDIR/main.py" "$@"
 

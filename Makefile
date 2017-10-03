@@ -27,7 +27,6 @@ else ifeq ($(KERNEL_NAME),Darwin)
 else ifeq ($(findstring MINGW,$(KERNEL_NAME)),MINGW)
 	PLAT=win64_mingw
 else ifeq ($(findstring CYGWIN,$(KERNEL_NAME)),CYGWIN)
-	#PLAT=win64_cygwin
 	PLAT=win64_mingw
 endif
 
@@ -40,8 +39,6 @@ UI=$(SRC)/ui
 
 PYTHON=$(shell which python)
 PYTHON_VERNAME=python2.7
-PYUIC=pyuic4
-PYRCC=pyrcc4
 PYINST?=pyinstaller
 
 # find the path to the python exe using the registry, this uses cygpath to produce a Cygwin-formatted path
@@ -56,24 +53,13 @@ ifeq ($(PLAT),win64_mingw)
 endif
 
 PYTHONVER=$(shell $(PYTHON) -V 2>&1)
-CYTHONVER=$(shell $(PYTHON) -c 'import cython;print cython.__version__')
-
-QTDIR=$(shell $(PYTHON) -c 'import PyQt4;print PyQt4.__path__[0].replace("\\","/")')
-PYUIC=$(PYTHON) $(QTDIR)/uic/pyuic.py
+CYTHONVER=$(shell $(PYTHON) -c 'import cython;print(cython.__version__)')
 
 #--------------------------------------------------------------------------------------
 
-.PHONY: clean clean_gen header all ui renderer pyxlibs resource distfile tutorialfile app
+.PHONY: clean clean_gen header all ui renderer pyxlibs distfile tutorialfile app
 
 all: header ui renderer pyxlibs
-
-#%.py : %.ui
-#	$(PYUIC) $< > $@
-#
-#ui : $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui))
-#
-#resource:
-#	$(PYRCC) res/Resources.qrc -py3 -o $(SRC)/ui/Resources_rc.py
 
 ui:
 	cd $(SRC)/ui && $(PYTHON) setup.py
@@ -86,6 +72,7 @@ pyxlibs:
 	rm -f $(patsubst %.pyx,%.cpp,$(wildcard $(PYSRC)/*.pyx))
 
 distfile: # creates the universal distributable zip file with path DISTNAME.zip
+	$(MAKE) ui
 	$(eval DISTNAME?=Eidolon_All_$(shell ./run.sh --version 2>&1))
 	mkdir $(DISTNAME)
 	cp -Rf src EidolonLibs tutorial tests res $(DISTNAME)
@@ -138,9 +125,6 @@ else
 	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
-tutorialfile:
-	tar czf Tutorials.tgz tutorial
-
 clean:
 ifeq ($(PLAT),win64_mingw)
 	rm -rf $(SRC)/*/*.pyd
@@ -149,9 +133,6 @@ else ifeq ($(PLAT),osx)
 else
 	rm -rf $(SRC)/*/*.so.linux 
 endif
-
-clean_gen:
-	rm -rf $(patsubst %.ui,%.py,$(wildcard $(UI)/*.ui $(PLUGINS)/*.ui))
 
 header:
 	@echo "---------------------------------"
@@ -163,8 +144,5 @@ header:
 	@echo " Python      : $(PYTHON)         "
 	@echo " PYTHONVER   : $(PYTHONVER)      "
 	@echo " CYTHONVER   : $(CYTHONVER)      "
-	@echo " PYUIC       : $(PYUIC)          "
-	@echo " PYRCC       : $(PYRCC)          "
-	@echo " QTDIR       : $(QTDIR)          "
 	@echo "---------------------------------"
 
