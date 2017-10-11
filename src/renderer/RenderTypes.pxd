@@ -290,6 +290,7 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
         void toMatrix(real v[16]) const
 
         i32 hash() const
+        
 
     cdef cppclass transform:
         transform()
@@ -879,6 +880,7 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
     sval calculateHexValueIntersects(real val,real* vals,intersect* results)
 
 
+# use a separate extern definition without "nogil" for these types since they call into Cython/Python during which time the GIL must be held
 cdef extern from "RenderTypes.h" namespace "RenderTypes":
     cdef cppclass CallbackVertexBuffer[T](VertexBuffer):
         CallbackVertexBuffer(T context, sval numvertices, vec3 (*vertfunc)(T,int) , vec3 (*normalfunc)(T,int) , color (*colorfunc)(T,int), vec3 (*uvwfunc)(T,int) )

@@ -30,7 +30,7 @@ def generateResFile():
 
 
 def generateUIFile():
-    '''Generate a PyQt version specific resource file containing the .ui layout files.'''
+    '''Generate a PyQt version specific resource file containing the .ui layout files with section prefix "layout".'''
     uifiles=glob.glob(os.path.join(os.path.dirname(__file__),'*.ui'))
     if uifiles:
         # write out a temporary resource spec file

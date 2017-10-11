@@ -92,7 +92,7 @@ def rescaleArray(arr,minv=0.0,maxv=1.0):
 
 
 @contextlib.contextmanager
-def processImageNp(imgobj,writeBack=True,dtype=np.float):
+def processImageNp(imgobj,writeBack=False,dtype=np.float):
     '''
     Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
     image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
@@ -755,7 +755,7 @@ def mergeImages(imgobjs,imgout,mergefunc=None,task=None):
     
 def dilateImageVolume(obj,size=(5,5,5)):
     '''Dilate the image `obj' by `size' using grey dilation. This overwrites the data in `obj'.'''
-    with processImageNp(obj) as mat:
+    with processImageNp(obj,True) as mat:
         for i in range(mat.shape[-1]):
             mat[...,i]=scipy.ndimage.grey_dilation(mat[...,i],size)
             

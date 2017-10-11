@@ -383,7 +383,6 @@ class SceneManager(TaskQueue):
         self.timestepMin=0
         self.timestepMax=0
         self.timestepSpan=0
-        #self.maxTimestep=0
         self.timeFPS=25
         self.timeStepsPerSec=1.0
         self.playerEvent=threading.Event()
@@ -396,6 +395,7 @@ class SceneManager(TaskQueue):
             self.showExcept(msg,str(value),'Unhandled Exception')
         sys.excepthook = exception_hook
 
+        # create default plugins for meshes and images added to the manager without one provided
         self.meshplugin=ScenePlugin.MeshScenePlugin('MeshPlugin')
         self.imageplugin=ScenePlugin.ImageScenePlugin('ImgPlugin')
 
@@ -764,6 +764,16 @@ class SceneManager(TaskQueue):
     def getPluginNames(self):
         '''Returns the names of loaded plugins.'''
         return [p.name for p in globalPlugins]
+    
+    def addRuntimePlugin(self,plug):
+        '''
+        Add a plugin to the system at runtime. Typically plugins are loaded at load time and their init() method called 
+        before the SceneManager is created. This method is used to load plugins which can be initialized at a later time.
+        '''
+        if self.getPlugin(plug.name) is None:
+            plug.init(len(globalPlugins),self.win,self)
+            globalPlugins.append(plug)
+            self.scriptlocals[plug.name.replace(' ','_')]=plug
 
     def createProjectObj(self,name, rootdir,projconst):
         '''

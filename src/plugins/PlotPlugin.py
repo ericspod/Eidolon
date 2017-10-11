@@ -41,14 +41,18 @@ A simple time graph plotting two values over time can be added to the scene as s
 
 '''
 
-from eidolon import *
+from eidolon import Qt, QtGui, QtCore, QtWidgets, SceneObject, ScenePlugin
+from eidolon import enum,lerp, minmax, isIterable, toIterable, first, matIter, clamp, EventType, halfpi,splitPathExt
+import eidolon
+
 from ui import Ui_RegionGraphWidget
 
-addLibraryFile('pyqtgraph-0.10.0+g0321ecb-py2-none-any')
+eidolon.addLibraryFile('pyqtgraph-0.10.0+g0321ecb-py2-none-any')
 
 import pyqtgraph as pg
 import numpy as np
-
+import math
+import os
 
 DatafileParams=enum(
     'name',
@@ -124,7 +128,7 @@ class ColorBar(pg.GraphicsObject):
                 p.drawLine(self.cwidth, y, self.cwidth+5.0, y)
 
                 label='%.3f'%lerp(tick,self.minval,self.maxval)
-                br = p.boundingRect(0, 0, 0, 0, pg.Qt.AlignLeft, label)
+                br = p.boundingRect(0, 0, 0, 0, Qt.AlignLeft, label)
                 p.drawText(self.cwidth+8.0,y+br.height()/4,label)
 
     def paint(self, p, *args):
@@ -133,7 +137,7 @@ class ColorBar(pg.GraphicsObject):
         p.drawPicture(0, 0, self.pic)
 
     def boundingRect(self):
-        return pg.QtCore.QRectF(self.pic.boundingRect())
+        return QtCore.QRectF(self.pic.boundingRect())
 
     def setValRange(self,minval,maxval):
         '''Set the bar's value range.'''
@@ -149,7 +153,7 @@ class ColorBar(pg.GraphicsObject):
 
 class BasePlotWidget(pg.PlotWidget):
     def __init__(self,plugin,parent=None):
-        assert isMainThread()
+        assert eidolon.isMainThread()
         pg.PlotWidget.__init__(self,parent)
         self.plugin=plugin
         self.title=''
@@ -415,7 +419,7 @@ class RegionPlotWidget(BasePlotWidget):
 
     def updateGraph(self):
         for i,data in enumerate(self.matrix[self.currentTimeIndex]):
-            xi=clamp(lerpXi(data,*self.dataRange),0.0,1.0)
+            xi=clamp(eidolon.lerpXi(data,*self.dataRange),0.0,1.0)
             q=self.colormap.mapToQColor(xi)
             self.setRegionColor(i,q)
 
@@ -524,7 +528,7 @@ class RegionGraphDockWidget(QtWidgets.QWidget,Ui_RegionGraphWidget):
         if isSelected==None:
             isSelected=self.allcheck.isChecked()
 
-        with signalBlocker(*([self.allcheck]+self.dataChecks)):
+        with eidolon.signalBlocker(*([self.allcheck]+self.dataChecks)):
             self.allcheck.setChecked(isSelected)
             for check in self.dataChecks:
                 check.setChecked(isSelected)
@@ -591,12 +595,12 @@ class PlotSceneObject(SceneObject):
 
     def load(self):
         if self.filename:
-            self.datamap=readBasicConfig(self.filename)
+            self.datamap=eidolon.readBasicConfig(self.filename)
             self._updatePropTuples()
 
     def save(self):
         if self.filename:
-            storeBasicConfig(self.filename,self.datamap)
+            eidolon.storeBasicConfig(self.filename,self.datamap)
 
 
 class PlotPlugin(ScenePlugin):
@@ -621,7 +625,7 @@ class PlotPlugin(ScenePlugin):
 
         # read command line argument, loading files as requested, note these tasks are queued at module load time
         if mgr.conf.hasValue('args','--plot'):
-            @taskroutine('Loading Plot File(s)')
+            @eidolon.taskroutine('Loading Plot File(s)')
             def _loadTask(filenames,task=None):
                 for f in filenames:
                     obj=self.loadObject(f)
@@ -630,7 +634,7 @@ class PlotPlugin(ScenePlugin):
             self.mgr.runTasks(_loadTask(mgr.conf.get('args','--plot').split(',')))
 
     def getIcon(self,obj):
-        return IconName.Bars
+        return eidolon.IconName.Bars
 
     def getMenu(self,obj):
         return [obj.getName(),'Show Plot'],self.objectMenuItem
@@ -652,7 +656,7 @@ class PlotPlugin(ScenePlugin):
     def renameObjFiles(self,obj,oldname,overwrite=False):
         assert isinstance(obj,SceneObject) and obj.plugin==self
         if os.path.isfile(obj.filename):
-            obj.filename=renameFile(obj.filename,obj.getName(),overwriteFile=overwrite)
+            obj.filename=eidolon.renameFile(obj.filename,obj.getName(),overwriteFile=overwrite)
 
     def getObjFiles(self,obj):
         return [obj.filename] if obj.filename else []
@@ -676,7 +680,7 @@ class PlotPlugin(ScenePlugin):
             args['filename']=convertpath(obj.filename)
             script+='%(varname)s = Plot.loadObject(%(filename)s,%(objname)r)\n'
 
-        return setStrIndent(script % args).strip()+'\n'
+        return eidolon.setStrIndent(script % args).strip()+'\n'
 
     def createRepr(self,obj,reprtype,refine=0,**kwargs):
         self.createPlotObjectDock(obj)
@@ -739,7 +743,7 @@ class PlotPlugin(ScenePlugin):
         else:
             xvals=range(mat.n())
 
-        return self.plotSimpleGraph(mat.getName(),(xvals,matrixToList(mat)))
+        return self.plotSimpleGraph(mat.getName(),(xvals,eidolon.matrixToList(mat)))
 
     def createPlotObjectDock(self,obj,w=400,h=400):
         if self.win:
@@ -764,10 +768,14 @@ class PlotPlugin(ScenePlugin):
         obj.load()
         return obj
     
-    def plotImageMatrix(self,image,title='Image View',width=200,height=200):
+    def plotImageMatrix(self,image,title='Image View',width=200,height=200,transpose=True):
         def createView():
+            im=image
+            if transpose:
+                im=np.transpose(im,[-1]+list(range(im.ndim-1))) # move last dimension to first
+                
             view=pg.ImageView()
-            view.setImage(image,xvals=np.arange(image.shape[0]+1))
+            view.setImage(im,xvals=np.arange(im.shape[0]+1))
             return view
         
         return self.mgr.createDockWidget(createView,title,width,height)
@@ -778,4 +786,4 @@ class PlotPlugin(ScenePlugin):
             self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(self.loadObject(filename)),'Importing Plot File')
 
 
-addPlugin(PlotPlugin())
+eidolon.addPlugin(PlotPlugin())

@@ -33,9 +33,8 @@ from .Utils import first, ParamType, ParamDef, Future, taskroutine, timing, toIt
 from .MathDef import ElemType
 from .VisualizerUI import CustomUIType, setChecked, fillList, ParamPanel, IconName
 from .MeshAlgorithms import ValueFunc, UnitFunc, VecFunc, calculateFieldMinMax
-from .ImageAlgorithms import matrixToArray, processImageNp
 from .SceneObject import ReprType,SceneObjectRepr, MeshSceneObject, MeshSceneObjectRepr, TDMeshSceneObjectRepr
-from .ImageObject import ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr
+from .ImageObject import ImageSceneObject, ImageSceneObjectRepr,ImageSeriesRepr, ImageVolumeRepr
 
 
 ctImageRange=(ImageAlgorithms.Hounsfield.min,ImageAlgorithms.Hounsfield.max)
@@ -429,12 +428,6 @@ class ScenePlugin(object):
         matname=str(prop.matnameBox.currentText())
         rep.applyMaterial(self.mgr.getMaterial(matname),prop=prop)
         self.mgr.addFuncTask(prop.update)
-
-    def _delSceneObjectButton(self,obj):
-        self.mgr.removeSceneObject(obj)
-
-    def _delReprButton(self,rep):
-        self.mgr.removeSceneObjectRepr(rep)
 
     def _setReprVisibleCheckbox(self,rep):
         rep.setVisible(not rep.isVisible())
@@ -993,9 +986,6 @@ class ImageScenePlugin(ScenePlugin):
     def __init__(self,name):
         ScenePlugin.__init__(self,name)
 
-    def init(self,plugid,win,mgr):
-        ScenePlugin.init(self,plugid,win,mgr)
-
     def getIcon(self,obj):
         return IconName.Image
 
@@ -1327,7 +1317,7 @@ class ImageScenePlugin(ScenePlugin):
         assert len(obj.getOrientMap())==1, 'Cannot produce a array from non-stack image objects'
         #assert isinstance(datatype,np.dtype) or datatype in 'fdbBhHiIlL'
 
-        with processImageNp(obj,False,datatype) as array:
+        with ImageAlgorithms.processImageNp(obj,False,datatype) as array:
             timesteps=obj.getTimestepList()
             trans=obj.getTransform()
             pos=trans.getTranslation()
@@ -1348,14 +1338,13 @@ class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
         MeshScenePlugin.__init__(self,name)
         ImageScenePlugin.__init__(self,name)
 
-    def init(self,plugid,win,mgr):
-        ScenePlugin.init(self,plugid,win,mgr)
-
     def _getSupertype(self,obj_or_rep):
         if isinstance(obj_or_rep,(MeshSceneObject,MeshSceneObjectRepr)):
             return MeshScenePlugin
-        else:
+        elif isinstance(obj_or_rep,(ImageSceneObject,ImageSceneObjectRepr)):
             return ImageScenePlugin
+        else:
+            return ScenePlugin
 
     def getIcon(self,obj):
         return self._getSupertype(obj).getIcon(self,obj)

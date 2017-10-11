@@ -16,18 +16,19 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import *
+import eidolon
+from eidolon import vec3,timing, first, frange, splitPathExt, StdProps, CombinedScenePlugin, MeshSceneObject
 
 import ast
 import os
 import numpy as np
 
-addLibraryFile('x4df-0.1.0-py2-none-any')
+eidolon.addLibraryFile('x4df-0.1.0-py2-none-any')
 
 import x4df
 from x4df import readFile, writeFile, idTransform, validFieldTypes, ASCII, BASE64, BASE64_GZ, BINARY, BINARY_GZ
 
-ConfigArgs=enum(
+ConfigArgs=eidolon.enum(
     ('filename','Name of .x4df file the object is stored in'),
     ('filenames','Names of array files, may be [] or not present'),
     ('loadorder','Which mesh/image the object is loaded from in the original file'),
@@ -80,7 +81,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 
     # spatial topologies only for now?
     for ind in obj.datasets[0].enumIndexSets():
-        if isSpatialIndex(ind):
+        if eidolon.isSpatialIndex(ind):
             indmat=np.asarray(ind)
             shape=' '.join(map(str,indmat.shape))
             filename='%s_%s.dat'%(filenamePrefix,ind.getName()) if filenamePrefix else None
@@ -117,11 +118,10 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 
 
 @timing
-def convertImage(obj,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
+def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
     if len(obj.getOrientMap())>1:
         raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
 
-    tmpplugin=ImageScenePlugin('tmp')
     start,step=obj.getTimestepScheme()
     tscheme=(start,step) if start!=0 or step!=0 else None
 
@@ -130,7 +130,7 @@ def convertImage(obj,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
 
     filename='%s.dat'%filenamePrefix if filenamePrefix else None
 
-    imgarrmap=tmpplugin.getImageObjectArray(obj)
+    imgarrmap=plugin.getImageObjectArray(obj)
     imgarr=imgarrmap['array']
     pos=imgarrmap['pos']
     shape=imgarr.shape
@@ -187,7 +187,7 @@ def importMeshes(x4):
         for t in topos:
             tname, tsrc, et, spatial,_=t
             arr=array2MatrixForm(arrs[tsrc].data,np.uint32)
-            tmat=IndexMatrix(tname,et or '',*arr.shape)
+            tmat=eidolon.IndexMatrix(tname,et or '',*arr.shape)
             filenames.append(arrs[tsrc].filename)
 
             if spatial:
@@ -206,7 +206,7 @@ def importMeshes(x4):
             initnodes=arrs.get(mnodes[i].initialnodes,0) # get initial nodes or default 0
             filenames.append(arrs[mnodes[i].src].filename)
 
-            nmat=Vec3Matrix('nodes%i'%i, arr.shape[0])
+            nmat=eidolon.Vec3Matrix('nodes%i'%i, arr.shape[0])
             np.asarray(nmat)[:,:]=array2MatrixForm(arr+initnodes,np.double)
 
             # read in each field, there will be a separate entry for this timestep or a single entry that is copied for each timestep
@@ -216,7 +216,7 @@ def importMeshes(x4):
                 arr=array2MatrixForm(arrs[src].data,np.double)
                 filenames.append(arrs[src].filename)
 
-                fmat=RealMatrix(fname,*arr.shape)
+                fmat=eidolon.RealMatrix(fname,*arr.shape)
                 fmat.meta(StdProps._topology,ftopo)
                 fmat.meta(StdProps._spatial,fspatial)
                 fmat.meta(StdProps._elemdata,str(fieldtype==validFieldTypes[0]))
@@ -225,7 +225,7 @@ def importMeshes(x4):
                 np.asarray(fmat)[:,:]=arr
                 fields.append(fmat)
 
-            dss.append(PyDataSet('%s%i'%(name,i),nmat,topomats,fields))
+            dss.append(eidolon.PyDataSet('%s%i'%(name,i),nmat,topomats,fields))
 
         obj=MeshSceneObject(name,dss,filenames=filter(bool,filenames))
 
@@ -238,10 +238,9 @@ def importMeshes(x4):
     return results
 
 
-def importImages(x4):
+def importImages(x4,plugin):
     arrs={a.name:a for a in x4.arrays}
     results=[]
-    tmpplugin=ImageScenePlugin('tmp')
 
     for im in x4.images:
         name, timescheme, trans, imagedata,_=im
@@ -263,13 +262,13 @@ def importImages(x4):
                 offset,interval=tstart+i*tstep,0
 
             pos=vec3(*imgtrans.position)
-            rot=rotator(*imgtrans.rmatrix.flatten())
+            rot=eidolon.rotator(*imgtrans.rmatrix.flatten())
             spacing=vec3(*imgtrans.scale)*vec3(arr.shape[1], arr.shape[0], arr.shape[2] if len(arr.shape)>2 else 0).inv()
 
-            obj=tmpplugin.createObjectFromArray('tmp',arr,interval,offset,pos,rot,spacing)
+            obj=plugin.createObjectFromArray('tmp',arr,interval,offset,pos,rot,spacing)
             images+=obj.images
 
-        results.append(ImageSceneObject(name,None,images,filenames=filter(bool,filenames)))
+        results.append(eidolon.ImageSceneObject(name,None,images,filenames=filter(bool,filenames)))
 
     return results
 
@@ -309,7 +308,7 @@ class X4DFPlugin(CombinedScenePlugin):
 
         for f in self.getObjFiles(obj):
             newfile=os.path.join(sdir,os.path.basename(f))
-            copyfileSafe(f,newfile,overwrite)
+            eidolon.copyfileSafe(f,newfile,overwrite)
             newfiles.append(newfile)
 
         obj.kwargs['filename']=newfiles[0]
@@ -329,16 +328,16 @@ class X4DFPlugin(CombinedScenePlugin):
 
         for f in self.getObjFiles(obj):
             newbasename=splitPathExt(f)[1].replace(oldbasename,newname)
-            newfiles.append(renameFile(f,newbasename,overwriteFile=overwrite))
+            newfiles.append(eidolon.renameFile(f,newbasename,overwriteFile=overwrite))
 
         obj.kwargs['filename']=newfiles[0]
         obj.kwargs['filenames']=newfiles[1:]
 
-    @taskmethod('Loading X4DF Object')
+    @eidolon.taskmethod('Loading X4DF Object')
     def loadObject(self,filename,name=None,task=None,**kwargs):
-        printFlush(task)
+        eidolon.printFlush(task)
         x4=timing(readFile)(filename)
-        objs=timing(importMeshes)(x4)+timing(importImages)(x4)
+        objs=timing(importMeshes)(x4)+timing(importImages)(x4,self)
         #basepath=os.path.dirname(filename)
 
         # free array data but keep the rest
@@ -354,9 +353,9 @@ class X4DFPlugin(CombinedScenePlugin):
 
         return objs
 
-    @taskmethod('Saving X4DF Object')
+    @eidolon.taskmethod('Saving X4DF Object')
     def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64_GZ,dataFormat='f4',separateFiles=False,**kwargs):
-        path=ensureExt(path,'.x4df')
+        path=eidolon.ensureExt(path,'.x4df')
         fileprefix=os.path.splitext(path) if separateFiles else None
 
         if not overwrite and os.path.exists(path):
@@ -365,7 +364,7 @@ class X4DFPlugin(CombinedScenePlugin):
         if isinstance(obj,MeshSceneObject):
             x4=convertMesh(obj,arrayFormat,fileprefix)
         else:
-            x4=convertImage(obj,arrayFormat,dataFormat,fileprefix)
+            x4=convertImage(obj,self,arrayFormat,dataFormat,fileprefix)
 
         timing(writeFile)(x4,path)
 
@@ -381,13 +380,13 @@ class X4DFPlugin(CombinedScenePlugin):
             obj.kwargs[ConfigArgs._source]=x4
 
     def _openFileDialog(self):
-        filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='VTK Files (*.x4df)')
+        filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='X4DF Files (*.x4df)')
         if filename:
             self.mgr.addFuncTask(lambda:map(self.mgr.addSceneObject,self.loadObject(filename)),'Importing X4DF file')
 
     def _saveFileDialog(self):
         obj=self.win.getSelectedObject()
-        if isinstance(obj,SceneObjectRepr):
+        if isinstance(obj,eidolon.SceneObjectRepr):
             obj=obj.parent
 
         filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='X4DF Files (*.x4df)',isOpen=False)
@@ -407,9 +406,9 @@ class X4DFPlugin(CombinedScenePlugin):
                 args['filename']=convertpath(obj.kwargs['filename'])
                 script+='%(varname)s=X4DF.loadObject(%(filename)s,%(objname)r)[%(loadorder)]'
 
-            return setStrIndent(script % args).strip()+'\n'
+            return eidolon.setStrIndent(script % args).strip()+'\n'
         else:
-            return MeshScenePlugin.getScriptCode(self,obj,**kwargs)
+            return eidolon.MeshScenePlugin.getScriptCode(self,obj,**kwargs)
 
 
-addPlugin(X4DFPlugin())
+eidolon.addPlugin(X4DFPlugin())
