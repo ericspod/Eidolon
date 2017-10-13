@@ -524,7 +524,7 @@ class SceneManager(TaskQueue):
         setattr(self.win.treeWidget,'keyPressEvent',keyPressEvent)
 
     def _updateUI(self):
-        if self.controller:
+        if self.win and self.controller:
             VisualizerUI.fillTable(self.controller.getPropTuples(),self.win.cameraProps) # TODO: causes jittering when rotating fast, replace with something faster
             self.setCameraConfig()
 
@@ -774,6 +774,8 @@ class SceneManager(TaskQueue):
             plug.init(len(globalPlugins),self.win,self)
             globalPlugins.append(plug)
             self.scriptlocals[plug.name.replace(' ','_')]=plug
+            if self.win:
+                self.win.console.updateLocals(self.scriptlocals)
 
     def createProjectObj(self,name, rootdir,projconst):
         '''
@@ -835,9 +837,11 @@ class SceneManager(TaskQueue):
         return appdir
         
     def getUserAppFile(self,filename):
+        '''Returns the path to a file named `filename' in the per-user application directory. This file may not exist.'''
         return os.path.join(self.getUserAppDir(),filename)
         
     def getUserTempDir(self,dirname):
+        '''Create a temporary directory (deleted on exit) in the per-user application directory and return its path.'''
         tempdir=tempfile.mkdtemp(prefix=dirname+'_',dir=self.getUserAppDir())
         atexit.register(shutil.rmtree,tempdir)
         return tempdir
@@ -953,12 +957,25 @@ class SceneManager(TaskQueue):
             self.win.showTimeDialog(doShow,self.timestepMin,self.timestepMax,self.timestepSpan)
 
     def isTimeDialogShown(self):
+        '''Returns True if the time dialog box is visible.'''
         return self.win and self.win.timeWidget.isVisible()
 
     def create2DView(self,name=None,constr=Camera2DView):
-        return self.createDockWidget(lambda:constr(self,self.createCamera(name,True)),name or 'Cam2D%i'%len(self.cameras))
+        '''
+        Create a 2D view, add it to a dock in the main window, and return the dock object. This expects `constr' to be a
+        callable accepting self and a newly created Camera object, and returning the 2D view object. By default this is
+        Camera2DView so without modification this method creates a generic 2D view, the expectation is that `constr' can
+        be set to a subtype of Camera2DView although any widget subtype with the expected signature would work. 
+        '''
+        newconstr=lambda:constr(self,self.createCamera(name,True))
+        return self.createDockWidget(newconstr,name or 'Cam2D%i'%len(self.cameras))
 
     def createDockWidget(self,constr,title,w=200,h=200):
+        '''
+        Create a widget and add it to a dock widget in the main window, returning the dock object. This expects `constr'
+        to be callable with no arguments and return the widget object to add to the dock, it will be called in the main
+        thread. If self.win is None then this method instead does nothing.
+        '''
         if self.win:
             widg=self.callThreadSafe(constr)
             self.win.createDock(title,widg,w,h)

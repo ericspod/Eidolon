@@ -840,7 +840,7 @@ class DelayThread(Thread):
 def wrapper(func):
     '''
     This decorator is applied to functions to simplify the definitions of decorators. A function this is applied to
-    becomes a decorator itself. It's first three arguments must be the function to wrap, the list of positional arguments,
+    becomes a decorator itself. Its first three arguments must be the function to wrap, the list of positional arguments,
     and the dictionary of keyword arguments. The remaining arguments are those provided by the decorator call itself.
     The body of the function is responsible for replacing or augmenting the behaviour of the provided function just like
     any other decorator. This results in a decorator function which expects the arguments after the first three to be
@@ -851,7 +851,7 @@ def wrapper(func):
 
         @wrapper
         def printdeco(func,args,kwargs,msg='No Message'):
-            print 'Calling',func,msg
+            print('Calling',func,msg)
             return func(*args,**kwargs)
 
     This is equivalent to:
@@ -860,14 +860,14 @@ def wrapper(func):
             def _outer(func):
                 @wraps(func)
                 def _wrapper(*args,**kwargs):
-                    print 'Calling',func,msg
+                    print('Calling',func,msg)
                     return func(*args,**kwargs)
 
     This is used as such:
 
         @printdeco('Ni!')
         def spam(x):
-            print 'Spam and',x
+            print('Spam and',x)
 
     Calling this function with "Eggs" as the argument prints the following:
 

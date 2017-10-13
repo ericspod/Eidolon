@@ -731,6 +731,9 @@ class MeshScenePlugin(ScenePlugin):
                         subreprs.append(rep)
 
                     rep=TDMeshSceneObjectRepr(subreprs,obj,reprtype,obj.reprcount,matname)
+                    
+                if matname!='Default':
+                    self.applyMaterial(rep,matname)
 
                 obj.reprs.append(rep)
                 f.setObject(rep)
@@ -740,7 +743,7 @@ class MeshScenePlugin(ScenePlugin):
             raise ValueError('Representation Parameter Error:\n   '+'\n   '.join(errlist))
 
         tasks=[self.calculateExtAdj(obj),createReprTask()]
-
+        
         return self.mgr.runTasks(tasks,f)
 
     def loadDataField(self,obj,*args,**kwargs):

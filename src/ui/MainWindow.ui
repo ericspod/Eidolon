@@ -33,7 +33,16 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <property name="margin">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
      <number>0</number>
     </property>
     <item>
@@ -51,7 +60,7 @@
      <x>0</x>
      <y>0</y>
      <width>872</width>
-     <height>25</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -127,8 +136,8 @@
   <widget class="QDockWidget" name="interfaceDock">
    <property name="minimumSize">
     <size>
-     <width>412</width>
-     <height>596</height>
+     <width>300</width>
+     <height>400</height>
     </size>
    </property>
    <property name="toolTip">
@@ -148,7 +157,16 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="margin">
+     <property name="leftMargin">
+      <number>4</number>
+     </property>
+     <property name="topMargin">
+      <number>4</number>
+     </property>
+     <property name="rightMargin">
+      <number>4</number>
+     </property>
+     <property name="bottomMargin">
       <number>4</number>
      </property>
      <item>
@@ -168,7 +186,16 @@
          <string>View and manipulate data objects loaded into the scene</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout">
-         <property name="margin">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
           <number>0</number>
          </property>
          <item row="0" column="0">
@@ -417,8 +444,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>459</width>
-              <height>235</height>
+              <width>423</width>
+              <height>270</height>
              </rect>
             </property>
            </widget>
@@ -438,7 +465,16 @@
          <string>View and manipulate scene assets</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_5">
-         <property name="margin">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
           <number>0</number>
          </property>
          <item row="4" column="0">
@@ -451,8 +487,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>459</width>
-              <height>251</height>
+              <width>423</width>
+              <height>291</height>
              </rect>
             </property>
            </widget>
@@ -468,6 +504,9 @@
            </property>
            <item row="1" column="1">
             <widget class="QPushButton" name="loadShaderButton">
+             <property name="toolTip">
+              <string>Load a GPU script file</string>
+             </property>
              <property name="text">
               <string>Load GPU Script</string>
              </property>
@@ -475,6 +514,9 @@
            </item>
            <item row="1" column="0">
             <widget class="QPushButton" name="loadTextureButton">
+             <property name="toolTip">
+              <string>Load a texture file</string>
+             </property>
              <property name="text">
               <string>Load Texture</string>
              </property>
@@ -508,6 +550,9 @@
          </item>
          <item row="1" column="0">
           <layout class="QHBoxLayout" name="horizontalLayout">
+           <property name="spacing">
+            <number>6</number>
+           </property>
            <item>
             <widget class="QPushButton" name="removeAssetButton">
              <property name="sizePolicy">
@@ -592,23 +637,39 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="newSpecButton">
+            <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>New Spectrum</string>
+              <string>New:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="newSpecButton">
+             <property name="toolTip">
+              <string>Create a new spectrum object</string>
+             </property>
+             <property name="text">
+              <string>Spectrum</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="newMatButton">
+             <property name="toolTip">
+              <string>Create a new material object</string>
+             </property>
              <property name="text">
-              <string>New Material</string>
+              <string>Material</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="newLightButton">
+             <property name="toolTip">
+              <string>Create a new light object</string>
+             </property>
              <property name="text">
-              <string>New Light</string>
+              <string>Light</string>
              </property>
             </widget>
            </item>
@@ -628,7 +689,16 @@
          <string>Modify configuration settings for scene</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_2">
-         <property name="margin">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
           <number>0</number>
          </property>
          <item row="0" column="0">
@@ -637,7 +707,16 @@
             <string>Camera</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
-            <property name="margin">
+            <property name="leftMargin">
+             <number>6</number>
+            </property>
+            <property name="topMargin">
+             <number>6</number>
+            </property>
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
              <number>6</number>
             </property>
             <item row="4" column="1">
@@ -805,7 +884,16 @@
             <property name="fieldGrowthPolicy">
              <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
             </property>
-            <property name="margin">
+            <property name="leftMargin">
+             <number>6</number>
+            </property>
+            <property name="topMargin">
+             <number>6</number>
+            </property>
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
              <number>6</number>
             </property>
             <item row="0" column="0">
@@ -865,7 +953,16 @@
             <property name="fieldGrowthPolicy">
              <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
             </property>
-            <property name="margin">
+            <property name="leftMargin">
+             <number>6</number>
+            </property>
+            <property name="topMargin">
+             <number>6</number>
+            </property>
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
              <number>6</number>
             </property>
             <item row="0" column="1">
