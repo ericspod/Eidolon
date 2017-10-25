@@ -25,7 +25,7 @@ import VisualizerUI
 import ImageAlgorithms
 import MeshAlgorithms
 
-from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, FT_TRILIST, FT_LINELIST
+from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, pointSearchLinHex, FT_TRILIST, FT_LINELIST
 from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
 from .SceneUtils import BoundBox
 from .VisualizerUI import Qt, QtWidgets, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
@@ -356,8 +356,8 @@ class BaseCamera2DWidget(Base2DWidget):
 
     def getBBTransform(self):
         '''
-        Returns the transform which adjusts the figures to fit inside the selected viewing area based on the scene
-        bound box, scroll, and zoom parameters.
+        Returns the boundbox transform which adjusts the figures to fit inside the selected viewing area based on the 
+        scene bound box, scroll, and zoom parameters.
         '''
         bbw,bbh,bbd=self.sceneBB.getDimensions()
         bscale=self.getBoxFitScale(bbw,bbh)
@@ -384,6 +384,26 @@ class BaseCamera2DWidget(Base2DWidget):
         center is (0,0) and bottom-right is (1,1).
         '''
         return (self._planeToWorldTransform()/pos)*vec3(1,1)
+    
+    def getImagePosition(self,x,y):
+        pos=self.camera.getWorldPosition(x,y)
+        rep=self.mgr.findObject(self.sourceName) 
+        
+        imgstackpos=self.getImageStackPosition()
+        trans=rep.getDefinedTransform(imgstackpos)
+        bbt=self.getBBTransform()
+        invtrans=self.viewplane.inverse()
+        invtrans.setScale(vec3(1,1))
+        
+        quad=(vec3(-0.5,0.5), vec3(0.5,0.5), vec3(-0.5,-0.5), vec3(0.5,-0.5))
+        worldnodes=[trans*v for v in quad]
+        screennodes=[bbt*(invtrans*v) for v in worldnodes]
+        
+        nodes=screennodes+[n+vec3(0,0,1) for n in screennodes]
+        
+        xi=pointSearchLinHex(pos,*nodes)
+        return xi*trans.getScale(),imgstackpos
+        
 
     def setFigTransforms(self):
         '''Set the transforms for all figures to fit them in the viewing area and translate/scale as inputed by user.'''
@@ -398,8 +418,10 @@ class BaseCamera2DWidget(Base2DWidget):
         '''
         assert rep!=None, 'Cannot find representation for 2D view'
 
+        # get the mesh for the plane figure in world space coordinates
         nodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
 
+        # transform nodes into camera space coordinates
         invtrans=planetrans.inverse()
         invtrans.setScale(vec3(1,1))
         nodes=[invtrans*v for v in nodes]
@@ -645,7 +667,10 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
         timestep=self.mgr.timestep
         rep=self.mgr.findObject(self.sourceName)
         results='World Position: %r\n'%pt
-
+        
+        ipt=self.getImagePosition(e.x(),e.y())
+        results+='Image Position: %r\n'%(ipt,)
+        
         if rep:
             results+='%r = %r\n'%(self.sourceName,ImageAlgorithms.sampleImageVolume(rep.parent,pt,timestep))
 
@@ -757,7 +782,7 @@ class DrawContourMixin(object):
     def __init__(self,numNodes,matname='newContour',drawcolor=color(1,0,0)):
         self.numNodes=numNodes
         self.drawingContour=False
-        self.contour=[]
+        self.contour=[] #stores the output contour nodes after a contour has been drawn
         self.drawcolor=drawcolor
 
         self.contourMat=self.mgr.getMaterial(matname) or self.mgr.createMaterial(matname)

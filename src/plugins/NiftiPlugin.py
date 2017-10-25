@@ -17,14 +17,14 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from eidolon import *
+from eidolon import vec3, rotator, taskroutine, splitPathExt, halfpi, Future,ImageScenePlugin, ImageSceneObject, ImageSceneObjectRepr
+import eidolon
 
-addLibraryFile('nibabel-1.4.0dev-py2.7') # http://nipy.org/nibabel/index.html
+eidolon.addLibraryFile('nibabel-1.4.0dev-py2.7') # http://nipy.org/nibabel/index.html
 
 import nibabel
 from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes
 import os
-import shutil
 import gzip
 import math
 import numpy as np
@@ -44,7 +44,7 @@ class NiftiPlugin(ImageScenePlugin):
             niftiload=mgr.conf.get('args','--nifti').split(',')
             filereprs=[]
             for ni in niftiload:
-                if ni in ReprType and len(filereprs)>0:
+                if ni in eidolon.ReprType and len(filereprs)>0:
                     filereprs[-1][1]=ni
                 else:
                     filereprs.append([ni,None])
@@ -82,12 +82,12 @@ class NiftiPlugin(ImageScenePlugin):
             return []
 
     def renameObjFiles(self,obj,oldname,overwrite=False):
-        assert isinstance(obj,SceneObject) and obj.plugin==self
-        obj.source['filename']=renameFile(obj.source['filename'],obj.getName(),overwriteFile=overwrite)
+        assert isinstance(obj,eidolon.SceneObject) and obj.plugin==self
+        obj.source['filename']=eidolon.renameFile(obj.source['filename'],obj.getName(),overwriteFile=overwrite)
 
     def copyObjFiles(self,obj,sdir,overwrite=False):
         filename=os.path.join(sdir,os.path.basename(obj.source['filename']))
-        copyfileSafe(obj.source['filename'],filename,overwrite)
+        eidolon.copyfileSafe(obj.source['filename'],filename,overwrite)
         obj.source['filename']=filename
 
     def decompressNifti(self,filename,outdir):
@@ -106,7 +106,7 @@ class NiftiPlugin(ImageScenePlugin):
         f=Future()
 
         @taskroutine('Loading NIfTI File')
-        @timing
+        @eidolon.timing
         def _loadNiftiFile(filename,name,imgObj,task):
             with f:
                 filename=Future.get(filename)
@@ -126,8 +126,8 @@ class NiftiPlugin(ImageScenePlugin):
                 d=float(hdr['quatern_d'])
                 toffset=float(hdr['toffset'])
                 interval=float(pixdim[4])
-                inter=float(hdr['scl_inter'])
-                slope=float(hdr['scl_slope'])
+                #inter=float(hdr['scl_inter'])
+                #slope=float(hdr['scl_slope'])
 
                 if interval==0.0 and len(img.shape)==4 and img.shape[-1]>1:
                     interval=1.0
@@ -142,6 +142,7 @@ class NiftiPlugin(ImageScenePlugin):
                     affine=img.get_affine()
                     position=vec3(-affine[0,3],-affine[1,3],affine[2,3])
                     rmat=np.asarray([-affine[0,:3],-affine[1,:3],affine[2,:3]])
+                    #rmat=np.asarray([affine[0,:3]/-spacing.x(),affine[1,:3]/-spacing.y(),affine[2,:3]/spacing.z()])
                     rot=rotator(*rmat.flatten().tolist())*rotator(vec3.Z(),halfpi)
 
                 xyzunit=xyzt_units & 0x07 # isolate space units with a bitmask of 7
@@ -181,7 +182,7 @@ class NiftiPlugin(ImageScenePlugin):
 
                 # apply slope since this isn't done automatically when using memmap
                 if not filename.endswith('.gz'):
-                    applySlopeIntercept(obj,*img.get_header().get_slope_inter())
+                    eidolon.applySlopeIntercept(obj,*img.get_header().get_slope_inter())
 
                 f.setObject(obj)
 
@@ -334,6 +335,6 @@ class NiftiPlugin(ImageScenePlugin):
             else:
                 script= "%(varname)s=%(pname)s.createRepr(ReprType._%(reprtype)s,imgmat=%(matname)s)\n"
 
-        return setStrIndent(script % args).strip()+'\n'
+        return eidolon.setStrIndent(script % args).strip()+'\n'
 
-addPlugin(NiftiPlugin())
+eidolon.addPlugin(NiftiPlugin())

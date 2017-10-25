@@ -406,6 +406,7 @@ def LineDataSet(name,nodes,inds=None,fields=[]):
 
 
 class FieldObject(object):
+    '''Represents a field and its interpolation, currently unused.'''
     def __init__(self,dataset,field,spatialtopo=None):
         self.dataset=dataset
         if isinstance(field,RealMatrix):
@@ -2330,7 +2331,7 @@ def pointSearchElem(elemtype,elemnodes,pt,refine):
     better approximations.
     '''
     isSimplex=GeomType[elemtype.geom][2]
-    pointSearchFunc=pointSearchLinTet if isSimplex else pointSearchLinHex
+    pointSearchFunc=ren.pointSearchLinTet if isSimplex else ren.pointSearchLinHex
     divet=ElemType.Tet1NL if isSimplex else ElemType.Hex1NL
 
     if elemtype.order==1:

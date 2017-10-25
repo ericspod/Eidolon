@@ -280,7 +280,6 @@ void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
 		return;
 			
 	trylock(&mutex,0.0001){
-
 		// `deferFillOp' is true if a data fill operation was deferred until now, so now if there vertex or index data
 		// create the buffers, fill the data, and delete the temporary buffers, otherwise fill with the default data
 		if(deferFillOp){
@@ -299,7 +298,7 @@ void OgreBaseRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
 		bool doSort=parent!=NULL && depthSorting && scene!=NULL && scene->getRenderHighQuality();
 
 		if(doSort) // if sorting is requested, only do so for triangles if there's more than 2 and we're not rendering in the main queue
-			doSort=getRenderQueueGroup()!=Ogre::RENDER_QUEUE_MAIN && _numIndices>2 && _opType==Ogre::RenderOperation::OT_TRIANGLE_LIST;
+			doSort=getRenderQueueGroup()!=Ogre::RENDER_QUEUE_MAIN && (_numIndices/3)>2 && _opType==Ogre::RenderOperation::OT_TRIANGLE_LIST;
 
 		// if distance sorting is set and this object stores a triangle list, sort the triangle indices by inverse distance from the camera
 		if(doSort){
@@ -1813,17 +1812,18 @@ u64 OgreRenderAdapter::createWindow(int width, int height) throw(RenderTypes::Re
 
 void OgreRenderAdapter::paint()
 {
-	scene->applyResourceOps();
-	
-	if(!root->_fireFrameStarted())
-		return;
-	
-	win->update();
-
-	root->_fireFrameRenderingQueued();
-	root->_fireFrameEnded();
-
-	scene->setRenderHighQuality(false);
+	if(scene){
+		scene->applyResourceOps();
+		
+		if(root->_fireFrameStarted()){
+			win->update();
+		
+			root->_fireFrameRenderingQueued();
+			root->_fireFrameEnded();
+		
+			scene->setRenderHighQuality(false);
+		}
+	}
 }
 
 void OgreRenderAdapter::resize(int x, int y,int width, int height)

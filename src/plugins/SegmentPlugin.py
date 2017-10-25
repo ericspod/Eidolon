@@ -21,8 +21,13 @@ import compiler
 import os
 import math
 
-from eidolon import *
-from ui import Ui_Seg2DView, Ui_SegObjProp
+from eidolon import (
+        enum, color, vec3, rotator, avg, timing, first, halfpi, clamp, frange, group, successive,indexList,listSum, taskroutine,
+        BoundBox, Ray, Camera2DView, PointChooseMixin, ElemType, ImageSceneObject, SceneObject, ScenePlugin
+)
+import eidolon
+
+from ui import QtWidgets, Qt, Ui_Seg2DView, Ui_SegObjProp
 
 import itertools
 
@@ -82,7 +87,7 @@ def contoursCoplanar(con1,con2):
     '''Returns True if the plane normals of `con1' and `con2' match and the barycenter of `con2' is on the plane of `con1'.'''
     c1,n1=getContourPlane(con1)
     c2,n2=getContourPlane(con2)
-    return equalPlanes(c1,n1,c2,n2)
+    return eidolon.equalPlanes(c1,n1,c2,n2)
 
 
 def yieldContourIntersects(ray,contour):
@@ -156,7 +161,7 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
     pts=[p.planeProject(center,norm) for p in pts1] # ensure the points lie on the plane for numerical accuracy reasons
     newcontour=[]
 
-    assert equalsEpsilon(startdir.angleTo(norm),halfpi),'Start vector for contour reinterpolation not on contour plane'
+    assert eidolon.equalsEpsilon(startdir.angleTo(norm),halfpi),'Start vector for contour reinterpolation not on contour plane'
 
     for i in frange(0,1,1.0/numnodes):
         rdir=rotator(norm,i*2*math.pi)*startdir
@@ -208,7 +213,7 @@ def sortContours(contours,startdir=None):
         if startdir:
             #rightvec1=rightvec.planeProject(center,downvec)-center
             firstind=min((startdir.angleTo(v-center),i) for i,v in enumerate(nodes))[1]
-            nodes=indexList(rotateIndices(firstind,len(nodes)),nodes)
+            nodes=indexList(eidolon.rotateIndices(firstind,len(nodes)),nodes)
 
         # ensures all contours are in the same circular order
         if sortorder==None:
@@ -221,7 +226,7 @@ def sortContours(contours,startdir=None):
     # sort contours in order along the plane normal
     maxdist=max(c1[0].distTo(c2[0]) for c1 in ctrls for c2 in ctrls)
     farpoint=ctrls[0][0]-downvec*maxdist*2
-    sortinds=sortIndices([c[0].distTo(farpoint) for c in ctrls])
+    sortinds=eidolon.sortIndices([c[0].distTo(farpoint) for c in ctrls])
     ctrls=[ctrls[i][1] for i in sortinds]
 
     # ensure contours are in top-down order, if the boundbox of the top contour is smaller than the bottom invert order
@@ -325,7 +330,7 @@ def mapContoursToPlanes(contours):
     contourMap={}
     for con in contours:
         c,n=getContourPlane([vec3(*n) for n in con[0]])
-        p=first((c1,n1) for c1,n1 in contourMap if equalPlanes(c,n,c1,n1))
+        p=first((c1,n1) for c1,n1 in contourMap if eidolon.equalPlanes(c,n,c1,n1))
         if p!=None:
             contourMap[p].append(con)
         else:
@@ -338,10 +343,10 @@ def generateContoursFromMask(images,numctrls,stype):
     result=[]
 
     for img in images:
-        minx,miny,maxx,maxy=calculateBoundSquare(img.img,img.imgmin)
+        minx,miny,maxx,maxy=eidolon.calculateBoundSquare(img.img,img.imgmin)
         assert minx>=0, 'Empty image?'
         minc,maxc=vec3(minx,miny),vec3(maxx,maxy)
-        mid=lerp(0.5,minc,maxc)
+        mid=eidolon.lerp(0.5,minc,maxc)
         rad=(mid-minc).len()*1.2
 
         contour1=[]
@@ -353,7 +358,7 @@ def generateContoursFromMask(images,numctrls,stype):
             addvec=vec3(0.5,0.5)
             numsamples=max(maxx-minx,maxy-miny)*2
 
-            samples=sampleImageRay(img.img,mid,ray,numsamples) # get the sample of pixels along the ray
+            samples=eidolon.sampleImageRay(img.img,mid,ray,numsamples) # get the sample of pixels along the ray
             transitions=[i for i,(a,b) in enumerate(successive(samples)) if a!=b]
 
             if not transitions:
@@ -399,7 +404,7 @@ def generateApexContours(contours,scale=0.5,givenapex=None):
         finalapex=initialapex=givenapex # define the initial and final apex points as the given one
 
     # define a middle ring of control points as the median between the initial apex point and the last contour
-    midring=[lerp(0.5,i,initialapex)+planeshift for i in c1]
+    midring=[eidolon.lerp(0.5,i,initialapex)+planeshift for i in c1]
     # define an inverted or crossed-over ring segment to allow interpolation to cross over the xi_2=1 boundary
     invertring=[midring[(clen/2+i)%clen] for i in xrange(clen)]
 
@@ -421,15 +426,15 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
     aharegions=([2,3,4,5,6,1],[8,9,10,11,12,7],[13,14,15,16],[17],[18])
     ahaheights=(1/3.0,2/3.0,1.0) # bottom heights of each region
 
-    aha=RealMatrix('AHA',len(inds))
-    aha.meta(StdProps._elemdata,'True')
+    aha=eidolon.RealMatrix('AHA',len(inds))
+    aha.meta(eidolon.StdProps._elemdata,'True')
 
     nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))] # heights of each node from the top plane
     maxheight=max(nodeheights) # node farthest from top plane, should be in apex
     minheight=max(0,startpos.planeDist(topcenter,norm)) # starting position for assign regions, everything between here and the top plane becomes region 18
 
     apexdist=apex.planeDist(topcenter,norm) # distance from top plane to inner apex point
-    apexheight=lerpXi(apexdist,minheight,maxheight) if include17 else 1.0 # height of apex relative to (minheight,maxheight) range
+    apexheight=eidolon.lerpXi(apexdist,minheight,maxheight) if include17 else 1.0 # height of apex relative to (minheight,maxheight) range
     thresholds=[apexheight*h for h in ahaheights] # thresholds for each layer of regions
 
     # choose X and Y values to determine which region an element belongs to
@@ -440,7 +445,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
         theights=indexList(ind,nodeheights)
         txis=indexList(ind,xis)
         xvals.append(min(n.x() for n in txis if not 0<n.z()<1)) # use the minimal x values since triangles straddling the seam won't have adjacent xi values
-        yvals.append(lerpXi(max(theights),minheight,maxheight)) # calculate height relative to the (minheight,maxheight) range
+        yvals.append(eidolon.lerpXi(max(theights),minheight,maxheight)) # calculate height relative to the (minheight,maxheight) range
 
     # fill in the field aha to assign a region to each element
     for i in xrange(len(inds)):
@@ -478,8 +483,8 @@ def calculateCavityField(xis,inds):
     # AHA regions given in xi order since xi=(0,0,0) is at the top of the rim along the ray from the center to a "rightwards" direction
     aharegions=(18,19,20,21,22,23)
 
-    aha=RealMatrix('AHA',len(inds))
-    aha.meta(StdProps._elemdata,'True')
+    aha=eidolon.RealMatrix('AHA',len(inds))
+    aha.meta(eidolon.StdProps._elemdata,'True')
 
     # fill in the field aha to assign a region to each element
     for i in xrange(len(inds)):
@@ -512,14 +517,14 @@ def cartToPolarXi(n):
 def generatePCRTriHemisphere(ctrls,refine,task=None):
     assert all(len(c)==len(ctrls[0]) for c in ctrls)
 
-    hnodes,inds=generateHemisphere(refine+1) # get the nodes for a hemisphere
-    nodes=listToMatrix(map(cartToPolarXi,hnodes),'nodes') # convert to xi coordinates
+    hnodes,inds=eidolon.generateHemisphere(refine+1) # get the nodes for a hemisphere
+    nodes=eidolon.listToMatrix(map(cartToPolarXi,hnodes),'nodes') # convert to xi coordinates
     xis=nodes.clone() # clone the xi values since entries in nodes are going to be overridden
 
     # apply the basis function to the list of xi values, this will convert each xi coordinate to a world coordinate
     args=(len(ctrls[0]),len(ctrls))
     kwargs=dict(limits=[(0,-1),(0,1)],circular=(True,False))
-    applyBasisConcurrent(nodes,listSum(ctrls),nodes,ElemType._Quad2PCR,args,kwargs,task)
+    eidolon.applyBasisConcurrent(nodes,listSum(ctrls),nodes,ElemType._Quad2PCR,args,kwargs,task)
 
     return nodes,inds,xis
 
@@ -540,7 +545,7 @@ def generatePCRTetHemisphere(ctrls,refine,task=None):
     ]
 
     # generate the xi values and indices for a hemisphere triangle mesh, this will be turned into a prism then a tet mesh below
-    hnodes,inds=generateHemisphere(refine) # get the nodes for a hemisphere
+    hnodes,inds=eidolon.generateHemisphere(refine) # get the nodes for a hemisphere
     nodes=[]
 
     # The process of generating a tet mesh from this point on is to first generate a prism mesh then break this into tets.
@@ -568,15 +573,15 @@ def generatePCRTetHemisphere(ctrls,refine,task=None):
 
     # reduce the mesh to remove duplicate xi nodes and join up the prism topology which will produce a joined tet topology
     prisms=list(group(xrange(len(nodes)),15)) # prisms have 15 elements: 6*2 for triangle faces plus 3 for median nodes
-    nodes,indlist,_=reduceMesh(listToMatrix(nodes,'nodes'),[listToMatrix(prisms,'prisms','')])
+    nodes,indlist,_=eidolon.reduceMesh(eidolon.listToMatrix(nodes,'nodes'),[eidolon.listToMatrix(prisms,'prisms','')])
     xis=nodes.clone()
 
     # apply the basis function to the list of xi values, this will convert each xi coordinate to a world coordinate
     args=(len(ctrls[0][0]),len(ctrls[0]),len(ctrls)) # XYZ dimensions
     kwargs=dict(limits=[(0,-1),(0,1),(0,0)],circular=(True,False,False)) # directional overlap limits for the PCR basis function
-    applyBasisConcurrent(nodes,listSum(ctrls[0])+listSum(ctrls[1]),nodes,ElemType._Hex3PCR,args,kwargs,task)
+    eidolon.applyBasisConcurrent(nodes,listSum(ctrls[0])+listSum(ctrls[1]),nodes,ElemType._Hex3PCR,args,kwargs,task)
 
-    inds=IndexMatrix('tets',ElemType._Tet1NL,0,4)
+    inds=eidolon.IndexMatrix('tets',ElemType._Tet1NL,0,4)
     # fill inds with indices for tets which divide the prisms into symmetric shapes
     for i in xrange(len(indlist[0])):
         prism=indlist[0].getRow(i)
@@ -670,7 +675,7 @@ def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinter
         norm=getHemiAxis(ctrls)
         fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,not innerSurface))
 
-    return TriDataSet(name+'DS',nodes,inds,fields)
+    return eidolon.TriDataSet(name+'DS',nodes,inds,fields)
 
 
 @timing
@@ -750,10 +755,10 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
         norm=getHemiAxis(listSum(ctrls))
         fields.append(calculateAHAField(nodes,xis,inds,topcenter,norm,innerapex,startpos,not innerOnly))
 
-    return PyDataSet(name+'DS',nodes,[inds],fields)
+    return eidolon.PyDataSet(name+'DS',nodes,[inds],fields)
 
 
-@concurrent
+@eidolon.concurrent
 def generateImageMaskRange(process,contours,planes,images,labelfunc):
     comp=compiler.compile(labelfunc,'labelfunc','eval')
     func=lambda pt,img,contours:float(eval(comp))
@@ -767,7 +772,7 @@ def generateImageMaskRange(process,contours,planes,images,labelfunc):
         imgcontours=[]
         for con,plane in zip(contours,planes):
             angle=plane[1].angleTo(img.norm)
-            if (angle<epsilon or angle>(math.pi-epsilon)) and abs(img.getDist(plane[0]))<=Handle2D.defaultPlaneMargin:
+            if (angle<eidolon.epsilon or angle>(math.pi-eidolon.epsilon)) and abs(img.getDist(plane[0]))<=eidolon.Handle2D.defaultPlaneMargin:
                 transcon=[(trans*c)*vec3(1,1) for c in con]
                 box=BoundBox(transcon)
                 box=BoundBox([box.minv-vec3(0,0,1),box.maxv+vec3(0,0,1)])
@@ -777,7 +782,7 @@ def generateImageMaskRange(process,contours,planes,images,labelfunc):
             continue
 
         # iterate over every pixel in the image and set to the value specified by `labelfunc', this clearly could be optimized
-        for n,m in matIterate(img.img):
+        for n,m in eidolon.matIterate(img.img):
             pt=vec3(float(m)/img.img.m(),float(n)/img.img.n())
             incontours=[c for c,bb,ce in imgcontours if pointInContour(pt,c,(vec3(),vec3(0,0,1)),bb,ce)]
             if incontours:
@@ -798,24 +803,24 @@ def generateImageMask(name,contours,template,labelfunc='1',task=None):
     planes=map(getContourPlane,contours)
     mask=template.plugin.extractTimesteps(template,name,indices=[0])
     mask.setShared(True)
-    proccount=chooseProcCount(len(mask.images),0,10)
+    proccount=eidolon.chooseProcCount(len(mask.images),0,10)
 
     generateImageMaskRange(len(mask.images),proccount,task,contours,planes,mask.images,labelfunc)
 
     for i in mask.images:
-        i.imgmin,i.imgmax=minmaxMatrixReal(i.img)
+        i.imgmin,i.imgmax=eidolon.minmaxMatrixReal(i.img)
 
     return mask
 
 
-class LVSeg2DMixin(DrawContourMixin):
+class LVSeg2DMixin(eidolon.DrawContourMixin):
     '''
     This mixin implements the interface for defining contour segmentations in the 2D view. Contours can be drawn around
     features in images using closed line handles defined with a set number of control points and 1D piecewise Catmull-
     Rom basis type.
     '''
     def __init__(self,layout):
-        DrawContourMixin.__init__(self,16)
+        eidolon.DrawContourMixin.__init__(self,16)
         self.uiobj=Seg2DWidget()
         self.uiobj.segBox.setParent(None)
         layout.addWidget(self.uiobj.segBox)
@@ -823,7 +828,7 @@ class LVSeg2DMixin(DrawContourMixin):
         self.segobj=None
         self.handlecol=color(1,0,0)
         self.handleradius=5.0
-        self.planeMargin=Handle2D.defaultPlaneMargin
+        self.planeMargin=eidolon.Handle2D.defaultPlaneMargin
 
         self.uiobj.numCtrlBox.setValue(self.numNodes)
         self.uiobj.numCtrlBox.valueChanged.connect(self.setNumNodes)
@@ -838,7 +843,7 @@ class LVSeg2DMixin(DrawContourMixin):
 
         self.uiobj.contourList.itemSelectionChanged.connect(self._selectContour)
 
-        setCollapsibleGroupbox(self.uiobj.segBox)
+        eidolon.setCollapsibleGroupbox(self.uiobj.segBox)
 
         self.uiobj.genButton.setVisible(False) # TODO: implement contour interpolation
 
@@ -883,7 +888,7 @@ class LVSeg2DMixin(DrawContourMixin):
     def setNumNodes(self,n):
         if n>=4:
             self.numNodes=n
-            with signalBlocker(self.uiobj.numCtrlBox):
+            with eidolon.signalBlocker(self.uiobj.numCtrlBox):
                 self.uiobj.numCtrlBox.setValue(n)
 
             for i in self.contourNames:
@@ -897,10 +902,10 @@ class LVSeg2DMixin(DrawContourMixin):
         self.addContour(wnodes)
 
     def addContour(self,nodes,name=None,timestep=None):
-        name=uniqueStr(name or 'contour',['contour']+[n for n,_ in self.contourNames.values()])
+        name=eidolon.uniqueStr(name or 'contour',['contour']+[n for n,_ in self.contourNames.values()])
 
         timestep=self.mgr.timestep if timestep==None else timestep
-        h=PolyHandle2D(self,[vec3(*n) for n in nodes],True,self.handlecol,ElemType.Line1PCR,self.handleradius)
+        h=eidolon.PolyHandle2D(self,[vec3(*n) for n in nodes],True,self.handlecol,ElemType.Line1PCR,self.handleradius)
         self.addHandle(h)
         self.contourNames[len(self.handles)-1]=(name,timestep)
         h.setVisible3D(self.isContoursVisible())
@@ -930,7 +935,7 @@ class LVSeg2DMixin(DrawContourMixin):
 
         listitem=first(self.uiobj.contourList.findItems(name+' @ ',Qt.MatchStartsWith))
         if listitem:
-            with signalBlocker(self.uiobj.contourList):
+            with eidolon.signalBlocker(self.uiobj.contourList):
                 self.uiobj.contourList.setCurrentItem(listitem)
 
         self._repaintDelay()
@@ -948,7 +953,7 @@ class LVSeg2DMixin(DrawContourMixin):
         return self.uiobj.showContoursBox.isChecked()
 
     def setContoursVisible(self,isVisible):
-        setChecked(isVisible,self.uiobj.showContoursBox)
+        eidolon.setChecked(isVisible,self.uiobj.showContoursBox)
 
         for i in self.contourNames:
             self.handles[i].setVisible3D(isVisible)
@@ -960,16 +965,16 @@ class LVSeg2DMixin(DrawContourMixin):
         handles=self.contourNames.items()
         contours=['%s @ %.3f'%hn for i,hn in handles]
         selected=self.getActiveIndex()
-        fillList(self.uiobj.contourList,contours,selected if selected!=None else -1,None,True)
+        eidolon.fillList(self.uiobj.contourList,contours,selected if selected!=None else -1,None,True)
 
         curtime=self.mgr.timestep
         rep=self.mgr.findObject(self.sourceName)
         tslist=rep.getTimestepList() if rep else []
-        mintimeind=minmaxIndices(abs(ts-curtime) for ts in tslist)[0] if rep else -1
+        mintimeind=eidolon.minmaxIndices(abs(ts-curtime) for ts in tslist)[0] if rep else -1
 
         # only handles for the current timestep should be visible
         for i,(n,ts) in self.contourNames.items():
-            curtimeind=minmaxIndices(abs(ts1-ts) for ts1 in tslist)[0] if rep else -2
+            curtimeind=eidolon.minmaxIndices(abs(ts1-ts) for ts1 in tslist)[0] if rep else -2
             self.handles[i].setVisible(self.handles[i].isVisible() and curtimeind==mintimeind)
 
         self.fillContourFig()
@@ -1075,7 +1080,7 @@ class SegSceneObject(SceneObject):
     '''
     def __init__(self,name,filename,plugin,**kwargs):
         SceneObject.__init__(self,name,plugin,**kwargs)
-        self.filename=ensureExt(filename,segExt)
+        self.filename=eidolon.ensureExt(filename,segExt)
         self.datamap={DatafileParams.name:name,DatafileParams.title:name}
         self._updatePropTuples()
 
@@ -1103,7 +1108,7 @@ class SegSceneObject(SceneObject):
     def enumContours(self):
         '''Yields (nodes,name,timestep) tuples for each contour in name order.'''
         names=self.getContourNames()
-        sortind=getStrSortIndices(names,-1)
+        sortind=eidolon.getStrSortIndices(names,-1)
         for i in sortind:
             k=names[i]
             ts,n=self.datamap[k]
@@ -1122,7 +1127,7 @@ class SegSceneObject(SceneObject):
         elif not name.startswith('contour_'):
                 name='contour_'+name
 
-        name=uniqueStr(name,['contour']+self.getContourNames())
+        name=eidolon.uniqueStr(name,['contour']+self.getContourNames())
 
         self.datamap[name]=(timestep,map(tuple,nodes))
         return name
@@ -1148,12 +1153,12 @@ class SegSceneObject(SceneObject):
 
     def load(self):
         if self.filename:
-            self.datamap=readBasicConfig(self.filename)
+            self.datamap=eidolon.readBasicConfig(self.filename)
             self._updatePropTuples()
 
     def save(self):
         if self.filename:
-            storeBasicConfig(self.filename,self.datamap)
+            eidolon.storeBasicConfig(self.filename,self.datamap)
 
 
 class SegmentPlugin(ScenePlugin):
@@ -1189,7 +1194,7 @@ class SegmentPlugin(ScenePlugin):
         self.mgr.addSceneObject(obj)
 
     def getIcon(self,obj):
-        return IconName.Seg
+        return eidolon.IconName.Seg
 
     def getMenu(self,obj):
         return [obj.getName(),'Show Segmentation View'],self.objectMenuItem
@@ -1225,16 +1230,16 @@ class SegmentPlugin(ScenePlugin):
 
         imgnames=[o.getName() for o in self.mgr.objs if isinstance(o,ImageSceneObject)]
 
-        fillTable(obj.getPropTuples(),prop.propTable)
-        fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
-        fillList(prop.cropBox,imgnames)
+        eidolon.fillTable(obj.getPropTuples(),prop.propTable)
+        eidolon.fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
+        eidolon.fillList(prop.cropBox,imgnames)
 
         # if not source object has been selected, select the first one
         if not obj.get(DatafileParams.srcimage) and len(imgnames)>0:
             prop.srcBox.activated.emit(0)
 
     def acceptFile(self,filename):
-        return splitPathExt(filename)[2].lower() == segExt
+        return eidolon.splitPathExt(filename)[2].lower() == segExt
 
     def checkFileOverwrite(self,obj,dirpath,name=None):
         outfile=os.path.join(dirpath,name or obj.getName())+segExt
@@ -1246,7 +1251,7 @@ class SegmentPlugin(ScenePlugin):
     def renameObjFiles(self,obj,oldname,overwrite=False):
         assert isinstance(obj,SceneObject) and obj.plugin==self
         if os.path.isfile(obj.filename):
-            obj.filename=renameFile(obj.filename,obj.getName(),overwriteFile=overwrite)
+            obj.filename=eidolon.renameFile(obj.filename,obj.getName(),overwriteFile=overwrite)
 
     def getObjFiles(self,obj):
         return [obj.filename] if obj.filename else []
@@ -1272,7 +1277,7 @@ class SegmentPlugin(ScenePlugin):
             args['filename']=convertpath(obj.filename)
             script+='%(varname)s = Segment.loadObject(%(filename)s,%(objname)r)\n'
 
-        return setStrIndent(script % args).strip()+'\n'
+        return eidolon.setStrIndent(script % args).strip()+'\n'
 
     def createSegmentObject(self,filename,name,stype):
         obj=SegSceneObject(name,filename,self)
@@ -1280,7 +1285,7 @@ class SegmentPlugin(ScenePlugin):
         return obj
 
     def createRepr(self,obj,reprtype,refine=0,**kwargs):
-        f=Future()
+        f=eidolon.Future()
         @taskroutine('Creating Segmentation View')
         def _create(task):
             with f:
@@ -1290,7 +1295,7 @@ class SegmentPlugin(ScenePlugin):
                 # make a representation of the source object visible if one doesn't already exist
                 if isinstance(sobj,ImageSceneObject) and not len(sobj.reprs):
                     isEmpty=first(self.mgr.enumSceneObjectReprs())==None
-                    r=sobj.createRepr(ReprType._imgtimestack if sobj.isTimeDependent else ReprType._imgstack)
+                    r=sobj.createRepr(eidolon.ReprType._imgtimestack if sobj.isTimeDependent else eidolon.ReprType._imgstack)
                     self.mgr.addSceneObjectRepr(r)
                     if isEmpty:
                         self.mgr.setCameraSeeAll()
@@ -1321,7 +1326,7 @@ class SegmentPlugin(ScenePlugin):
         return self.loadObject(filename,name)
 
     def loadObject(self,filename,name=None,**kwargs):
-        name=name or splitPathExt(filename)[1]
+        name=name or eidolon.splitPathExt(filename)[1]
         obj=SegSceneObject(name,filename,self)
         obj.load()
 
@@ -1336,9 +1341,9 @@ class SegmentPlugin(ScenePlugin):
             raise ValueError('Can only save segment objects with SegmentPlugin')
 
         if os.path.isdir(path):
-            path=os.path.join(path,getValidFilename(obj.getName()))
+            path=os.path.join(path,eidolon.getValidFilename(obj.getName()))
 
-        path=ensureExt(path,segExt)
+        path=eidolon.ensureExt(path,segExt)
         oldpath=obj.filename
         obj.filename=path
         obj.save()
@@ -1349,7 +1354,7 @@ class SegmentPlugin(ScenePlugin):
         return path
 
     def createHemisphereMesh(self,segobj,name,refine,reinterpolateVal=20,calcAHA=False,isVolume=False,inner=True,plugin=None):
-        f=Future()
+        f=eidolon.Future()
         @taskroutine('Creating Hemisphere Mesh')
         def _create(segobj,name,refine,reinterpolateVal,calcAHA,isVolume,inner,task):
             with f:
@@ -1392,11 +1397,11 @@ class SegmentPlugin(ScenePlugin):
                         apex=None
 
                 ds=genfunc(name+'DS',contours,refine,rightpos,apex,reinterpolateVal,calcAHA,None,inner,task)
-                f.setObject(MeshSceneObject(name,ds,plugin))
+                f.setObject(eidolon.MeshSceneObject(name,ds,plugin))
 
         return self.mgr.runTasks(_create(segobj,name,refine,reinterpolateVal,calcAHA,isVolume,inner),f)
 
-    @taskmethod('Creating Segmentation Mask')
+    @eidolon.taskmethod('Creating Segmentation Mask')
     def createImageMask(self,segobj,name,template,labelfunc='1',task=None):
         '''Create a mask image object from `segobj'. See generateImageMask() for description.'''
         name=name or (segobj.getName()+'Mask')
@@ -1407,12 +1412,12 @@ class SegmentPlugin(ScenePlugin):
         mask.plugin=None
         return mask
     
-    @taskmethod('Cropping Image Using Segmentation as Boundbox')
+    @eidolon.taskmethod('Cropping Image Using Segmentation as Boundbox')
     def cropImageBySegment(self,obj,segobj,margin,task=None):
         mask=self.createImageMask(segobj,'tempmask',obj)
         mask.plugin=obj.plugin
-        cmask=cropObjectEmptySpace(mask,'tempcrop',20,False)
-        return cropRefImage(obj,cmask,obj.getName()+'_Crop',margin,margin)
+        cmask=eidolon.cropObjectEmptySpace(mask,'tempcrop',20,False)
+        return eidolon.cropRefImage(obj,cmask,obj.getName()+'_Crop',margin,margin)
 
     @timing
     def createSegObjectFromMask(self,name,mask,numctrls,stype,maskindex=0):
@@ -1425,7 +1430,7 @@ class SegmentPlugin(ScenePlugin):
         assert isinstance(mask,ImageSceneObject)
         assert stype in SegmentTypes
 
-        name=getValidFilename(name)
+        name=eidolon.getValidFilename(name)
         obj=SegSceneObject(name,name,self)
         obj.datamap[DatafileParams.type]=stype
         obj.datamap[DatafileParams.srcimage]=mask.getName()
@@ -1514,4 +1519,4 @@ class SegmentPlugin(ScenePlugin):
         self.mgr.addSceneObjectTask(f)
 
 
-addPlugin(SegmentPlugin())
+eidolon.addPlugin(SegmentPlugin())

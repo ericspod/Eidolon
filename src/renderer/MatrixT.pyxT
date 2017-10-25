@@ -259,6 +259,20 @@ cdef class {N}Matrix:
             return None
         else:
             return r.first,r.second
+            
+    def validIndices(self,int n,int m=0):
+        return 0<=n<self.n() and 0<=m<self.m()
+        
+    def iterIndices(self):
+        for n in range(self.n()):
+            for m in range(self.m()):
+                yield n,m
+                
+    def toList(self):
+        if self.m()==1:
+            return [{_To}(self.mat.atc(i,0)) for i in range(self.n())]
+        else:
+            return [self.getRow(i) for i in range(self.n())]
 
     def fromList(self,listmat):
         cdef object line

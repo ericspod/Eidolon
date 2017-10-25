@@ -53,9 +53,9 @@ def array2MatrixForm(arr,dtype):
 def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
     '''
     Convert the MeshSceneObject `obj' into a x4df structure. The arrays are all formatted the same using `arrayformat'
-    and are stored in files whose names begin with `filenamePrefix' if this is given (or if the format is binary in
-    which case the name of `obj' is the prefix if this is not given), otherwise they are stored in the XML document.
-    The return value is a single x4df object containing a single mesh.
+    and are stored in files whose names begin with `filenamePrefix' if this is given, otherwise they are stored in the 
+    XML document. If the format is binary and `filenamePrefix' is not given, the name of `obj' is used instead. The
+    return value is a single x4df object containing a single mesh.
     '''
     ts=obj.getTimestepList()
     if arrayformat in (BINARY, BINARY_GZ):
@@ -119,6 +119,13 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 
 @timing
 def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
+    '''
+    Convert the ImageSceneObject `obj' into a x4df structure. The arrays are all formatted the same using `arrayformat'
+    and are stored in files whose names begin with `filenamePrefix' if this is given, otherwise they are stored in the 
+    XML document. If the format is binary and `filenamePrefix' is not given, the name of `obj' is used instead. The 
+    `plugin' value should be an ImageScenePlugin instance used to generate an object array from obj, typically this is
+    `obj.plugin' but doesn't have to be. The return value is a single x4df object containing a single mesh.
+    '''
     if len(obj.getOrientMap())>1:
         raise NotImplementedError('Cannot yet convert image objects which are not single 2D planes or 3D volumes')
 
@@ -152,6 +159,7 @@ def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=Non
 
 
 def importMeshes(x4):
+    '''Import meshes from the X4DF object `x4', returning a list of MeshSceneObject instances.'''
     arrs={a.name:a for a in x4.arrays}
     results=[]
 
@@ -239,6 +247,10 @@ def importMeshes(x4):
 
 
 def importImages(x4,plugin):
+    '''
+    Import images from the X4DF object `x4', returning a list of ImageSceneObject instances. The `plugin' must be an
+    ImageScenePlugin instance used to create the objects.
+    '''
     arrs={a.name:a for a in x4.arrays}
     results=[]
 
