@@ -603,8 +603,8 @@ def sampleImageVolume(obj,pt,timestep,transinv=None):
     
 def calculateReprIsoplaneMesh(rep,planetrans,stackpos,slicewidth):
     '''
-    Calculates the mesh for image representation object `rep' at plane `planetrans' at the stack position `stackpos' 
-    (which is meaning only for ImageSeriesRepr types). This will determine where `rep' is intersected by `planetrans' 
+    Calculates the mesh for image representation object `rep' at plane `planetrans' and at the stack position `stackpos' 
+    (which is meaningful only for ImageSeriesRepr types). This will determine where `rep' is intersected by `planetrans' 
     and returns the triple (nodes,indices,xis) representing a mesh for that intersecting geometry. 2D images viewed at
     oblique angles produces slices which are `slicewidth' wide. Returns a (nodes,indices,xis) triple where the nodes are
     in world space coordinates.

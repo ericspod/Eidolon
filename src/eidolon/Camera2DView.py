@@ -25,9 +25,10 @@ import VisualizerUI
 import ImageAlgorithms
 import MeshAlgorithms
 
-from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, pointSearchLinHex, FT_TRILIST, FT_LINELIST
-from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
+from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, pointSearchLinHex, pointSearchLinTet, FT_TRILIST, FT_LINELIST
+from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices, printFlush
 from .SceneUtils import BoundBox
+from .MathDef import ElemType
 from .VisualizerUI import Qt, QtWidgets, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
 from .SceneObject import MeshSceneObjectRepr, TDMeshSceneObjectRepr
 from .ImageObject import ImageSceneObject, ImageSceneObjectRepr, ImageSeriesRepr, ImageVolumeRepr
@@ -385,24 +386,47 @@ class BaseCamera2DWidget(Base2DWidget):
         '''
         return (self._planeToWorldTransform()/pos)*vec3(1,1)
     
+    def getScreenOrthoPosition(self,x,y):
+        '''Returns the screen orthographic coordinate from the screen coordinate (x,y).'''
+        return self.camera.getWorldPosition(x,y) # because the camera doesn't move from the origin this converts to ortho coordinates
+    
     def getImagePosition(self,x,y):
-        pos=self.camera.getWorldPosition(x,y)
+        pos=self.getScreenOrthoPosition(x,y) 
         rep=self.mgr.findObject(self.sourceName) 
         
         imgstackpos=self.getImageStackPosition()
         trans=rep.getDefinedTransform(imgstackpos)
-        bbt=self.getBBTransform()
+#        bbt=self.getBBTransform()
         invtrans=self.viewplane.inverse()
         invtrans.setScale(vec3(1,1))
         
-        quad=(vec3(-0.5,0.5), vec3(0.5,0.5), vec3(-0.5,-0.5), vec3(0.5,-0.5))
-        worldnodes=[trans*v for v in quad]
-        screennodes=[bbt*(invtrans*v) for v in worldnodes]
+        #quad=(vec3(-0.5,0.5), vec3(0.5,0.5), vec3(-0.5,-0.5), vec3(0.5,-0.5))
+        #worldnodes=[trans*v for v in quad]
+#        worldnodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,self.viewplane,imgstackpos,self.slicewidth)
+#        screennodes=[bbt*(invtrans*v) for v in worldnodes]
         
-        nodes=screennodes+[n+vec3(0,0,1) for n in screennodes]
+        #nodes=screennodes+[n+vec3(0,0,1) for n in screennodes]
         
-        xi=pointSearchLinHex(pos,*nodes)
-        return xi*trans.getScale(),imgstackpos
+        screennodes,indices,xis=self._imagePlaneMesh(rep,self.viewplane,imgstackpos,True)
+        
+        for tri in indices:
+            nodes=[screennodes[i] for i in tri]
+            trixis=[xis[i] for i in tri]
+            nodes+=[nodes[0]+nodes[0].planeNorm(nodes[1],nodes[2])]
+            
+            xi=pointSearchLinTet(pos,*nodes)
+            
+            if xi.isInUnitCube() and sum(xi)<=1.0:
+                imgxi=ElemType.Tri1NL.applyBasis(trixis,xi.x(),xi.y(),0)
+                return imgxi*trans.getScale().abs(),imgstackpos
+        
+        return None,imgstackpos
+#        xi=pointSearchLinHex(pos,*nodes)
+#        
+#        printFlush(worldnodes,indices,xis)
+#        
+#        return ElemType.Quad1NL.applyBasis(xis,xi.x(),xi.y(),0),imgstackpos
+#        #return xi*trans.getScale(),imgstackpos
         
 
     def setFigTransforms(self):
@@ -411,13 +435,8 @@ class BaseCamera2DWidget(Base2DWidget):
         for _,figs in self.objFigMap.values():
             for fig in figs:
                 fig.setTransform(bbt)
-
-    def _updatePlaneFig(self,fig,rep,planetrans,stackpos=0):
-        '''
-        Updates `fig' to contain data for plane cut through `rep' at plane `planetrans' or image stack position `stackpos'.
-        '''
-        assert rep!=None, 'Cannot find representation for 2D view'
-
+                
+    def _imagePlaneMesh(self,rep,planetrans,stackpos,centerInView=False):
         # get the mesh for the plane figure in world space coordinates
         nodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
 
@@ -425,7 +444,29 @@ class BaseCamera2DWidget(Base2DWidget):
         invtrans=planetrans.inverse()
         invtrans.setScale(vec3(1,1))
         nodes=[invtrans*v for v in nodes]
+        
+        # transform the nodes to fit within the current viewing bound box
+        if centerInView:
+            bbt=self.getBBTransform()
+            nodes=[bbt*n for n in nodes]
+            
+        return nodes,indices,xis
 
+    def _updatePlaneFig(self,fig,rep,planetrans,stackpos=0):
+        '''
+        Updates `fig' to contain data for plane cut through `rep' at plane `planetrans' or image stack position `stackpos'.
+        '''
+        assert rep!=None, 'Cannot find representation for 2D view'
+
+#        # get the mesh for the plane figure in world space coordinates
+#        nodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
+#
+#        # transform nodes into camera space coordinates
+#        invtrans=planetrans.inverse()
+#        invtrans.setScale(vec3(1,1))
+#        nodes=[invtrans*v for v in nodes]
+
+        nodes,indices,xis=self._imagePlaneMesh(rep,planetrans,stackpos)
         vb=PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),None,xis)
         ib=PyIndexBuffer(indices)
         fig.fillData(vb,ib)
