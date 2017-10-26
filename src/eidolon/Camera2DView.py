@@ -25,8 +25,8 @@ import VisualizerUI
 import ImageAlgorithms
 import MeshAlgorithms
 
-from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, pointSearchLinHex, pointSearchLinTet, FT_TRILIST, FT_LINELIST
-from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices, printFlush
+from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, pointSearchLinTet, FT_TRILIST, FT_LINELIST
+from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
 from .SceneUtils import BoundBox
 from .MathDef import ElemType
 from .VisualizerUI import Qt, QtWidgets, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
@@ -41,9 +41,14 @@ class BaseCamera2DWidget(Base2DWidget):
     which will create Figure objects only visible to the internal camera. This class has no UI components and relies on
     inheriting subtypes calling modifyDrawWidget() to perform the correct association between the widget to draw into
     and the fillImage() method which updates the camera and copies its data over.
+    
+    The UI notion of this widget is to view a single primary image representation object in 2D, which can be dragged and
+    zoomed. An image stack value allows scrolling in the through-plane direction if supported, this represents moving in
+    the through-plane direction of an image volume or between planes of an image stack. Secondary images and meshes can 
+    be rendered over top of this image, these are sliced at the plane in 3D space which 2D view is currently "viewing".
 
     The following methods return default values and must be overridden in a subtype for this class to function:
-    getImageStackPosition(), getImageStackMax(), getSecondaryNames(),
+    getImageStackPosition(), getImageStackMax(), getSecondaryNames().
     '''
 
     defaultQuad=(
@@ -370,8 +375,8 @@ class BaseCamera2DWidget(Base2DWidget):
 
     def getWorldPosition(self,x,y,isAbsolute=True):
         '''
-        Returns the world position of the screen coordinate (x,y) if `isAbsolute' is True, or screen proportionate
-        coordinates otherwise (ie. (0,0) is top-left corner of screen and (1,1) is bottom-right).
+        Returns the world position of the screen coordinate (x,y). If `isAbsolute',, (x,y) is an absolute pixel coordinate,
+        otherwise it is a screen proportionate coordinates (ie. (0,0) is top-left corner of screen and (1,1) is bottom-right).
         '''
         return self._planeToWorldTransform()*self.camera.getWorldPosition(x,y,isAbsolute)
 
@@ -396,16 +401,8 @@ class BaseCamera2DWidget(Base2DWidget):
         
         imgstackpos=self.getImageStackPosition()
         trans=rep.getDefinedTransform(imgstackpos)
-#        bbt=self.getBBTransform()
         invtrans=self.viewplane.inverse()
         invtrans.setScale(vec3(1,1))
-        
-        #quad=(vec3(-0.5,0.5), vec3(0.5,0.5), vec3(-0.5,-0.5), vec3(0.5,-0.5))
-        #worldnodes=[trans*v for v in quad]
-#        worldnodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,self.viewplane,imgstackpos,self.slicewidth)
-#        screennodes=[bbt*(invtrans*v) for v in worldnodes]
-        
-        #nodes=screennodes+[n+vec3(0,0,1) for n in screennodes]
         
         screennodes,indices,xis=self._imagePlaneMesh(rep,self.viewplane,imgstackpos,True)
         
@@ -421,13 +418,6 @@ class BaseCamera2DWidget(Base2DWidget):
                 return imgxi*trans.getScale().abs(),imgstackpos
         
         return None,imgstackpos
-#        xi=pointSearchLinHex(pos,*nodes)
-#        
-#        printFlush(worldnodes,indices,xis)
-#        
-#        return ElemType.Quad1NL.applyBasis(xis,xi.x(),xi.y(),0),imgstackpos
-#        #return xi*trans.getScale(),imgstackpos
-        
 
     def setFigTransforms(self):
         '''Set the transforms for all figures to fit them in the viewing area and translate/scale as inputed by user.'''
@@ -437,6 +427,11 @@ class BaseCamera2DWidget(Base2DWidget):
                 fig.setTransform(bbt)
                 
     def _imagePlaneMesh(self,rep,planetrans,stackpos,centerInView=False):
+        '''
+        Returns the (nodes,indices,xis) mesh for the isoplane mesh defining the slice of of image representation `rep' 
+        at stack position `stackpos' or plane position `planetrans'. The nodes are in screen ortho coordinate space, 
+        adjusted to be within the viewing bound box if `centerInView' is True. 
+        '''
         # get the mesh for the plane figure in world space coordinates
         nodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
 
@@ -454,20 +449,13 @@ class BaseCamera2DWidget(Base2DWidget):
 
     def _updatePlaneFig(self,fig,rep,planetrans,stackpos=0):
         '''
-        Updates `fig' to contain data for plane cut through `rep' at plane `planetrans' or image stack position `stackpos'.
+        Updates `fig' to contain mesh data for isoplane cut through `rep' at plane `planetrans' if `rep' is a volume,
+        otherwise at image stack position `stackpos'. Returns the bound box of the mesh.
         '''
         assert rep!=None, 'Cannot find representation for 2D view'
 
-#        # get the mesh for the plane figure in world space coordinates
-#        nodes,indices,xis=ImageAlgorithms.calculateReprIsoplaneMesh(rep,planetrans,stackpos,self.slicewidth)
-#
-#        # transform nodes into camera space coordinates
-#        invtrans=planetrans.inverse()
-#        invtrans.setScale(vec3(1,1))
-#        nodes=[invtrans*v for v in nodes]
-
-        nodes,indices,xis=self._imagePlaneMesh(rep,planetrans,stackpos)
-        vb=PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),None,xis)
+        nodes,indices,xis=self._imagePlaneMesh(rep,planetrans,stackpos) # mesh in screen ortho coordinates
+        vb=PyVertexBuffer(nodes,[vec3.Z()]*len(nodes),None,xis)
         ib=PyIndexBuffer(indices)
         fig.fillData(vb,ib)
 

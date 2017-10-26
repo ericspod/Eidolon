@@ -976,6 +976,7 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
         for i,(n,ts) in self.contourNames.items():
             curtimeind=eidolon.minmaxIndices(abs(ts1-ts) for ts1 in tslist)[0] if rep else -2
             self.handles[i].setVisible(self.handles[i].isVisible() and curtimeind==mintimeind)
+            self.handles[i].setVisible3D(self.isContoursVisible() and curtimeind==mintimeind)
 
         self.fillContourFig()
 
