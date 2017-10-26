@@ -141,8 +141,8 @@ class NiftiPlugin(ImageScenePlugin):
                 else:
                     affine=img.get_affine()
                     position=vec3(-affine[0,3],-affine[1,3],affine[2,3])
-                    rmat=np.asarray([-affine[0,:3],-affine[1,:3],affine[2,:3]])
-                    #rmat=np.asarray([affine[0,:3]/-spacing.x(),affine[1,:3]/-spacing.y(),affine[2,:3]/spacing.z()])
+                    #rmat=np.asarray([-affine[0,:3],-affine[1,:3],affine[2,:3]])
+                    rmat=np.asarray([affine[0,:3]/-spacing.x(),affine[1,:3]/-spacing.y(),affine[2,:3]/spacing.z()])
                     rot=rotator(*rmat.flatten().tolist())*rotator(vec3.Z(),halfpi)
 
                 xyzunit=xyzt_units & 0x07 # isolate space units with a bitmask of 7
