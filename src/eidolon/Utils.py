@@ -95,16 +95,16 @@ import ast
 import string
 import inspect
 
-py3 = sys.version_info.major > 2
+py3 = sys.version_info.major == 3
 
 from codeop import compile_command
-from functools import wraps
+from functools import wraps, reduce
 from threading import Thread, RLock, Event,currentThread,_MainThread
 
-try: # Python 2/3 fix
-    import ConfigParser as configparser
-except:
+if py3: # Python 2/3 fix
     import configparser
+else:
+    import ConfigParser as configparser
 
 
 halfpi=math.pi/2.0
@@ -1023,7 +1023,11 @@ def setTrace():
 
 def getAppDir():
     '''Returns the application's directory as stored in the APPDIRVAR environment variable.'''
-    import __init__
+    if py3:
+        from . import __init__
+    else:
+        import __init__
+        
     return os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
 
 
@@ -1051,7 +1055,11 @@ def setLogging(logfile='eidolon.log',filemode='a'):
 
 def addLibraryFile(lib):
     '''Add the nominated egg/wheel file to the end of the system path, assuming this is in ${APPDIR}/Libs/python.'''
-    import __init__
+    if py3:
+        from . import __init__
+    else:
+        import __init__
+        
     lib=os.path.join(getAppDir(),__init__.LIBSDIR,'python',lib)
     egg=ensureExt(lib,'.egg')
     whl=ensureExt(lib,'.whl')
@@ -1124,7 +1132,7 @@ def addPathVariable(varname,path,append=True):
         paths=[p.strip() for p in var.split(os.pathsep)] # split by the separator and strip whitespace just in case
         paths.insert(len(paths) if append else 0,path) # append or prepend `path'
         if '' in paths: # need to move the blank path to the end to prevent :: from appearing in the variable
-            paths=filter(bool,paths)+['']
+            paths=list(filter(bool,paths))+['']
     else:
         paths=[path] # variable is new so only text is `path'
 
@@ -1657,7 +1665,7 @@ def getStrSortIndices(strs,sortIndex,regex=None):
         except:
             return n[sortIndex]
 
-    return sortIndices(map(convertFunc,strcomps))
+    return sortIndices(list(map(convertFunc,strcomps)))
 
 
 def getStrCommonality(str1,str2):
