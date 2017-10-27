@@ -326,7 +326,11 @@ def getHemisphereControls(contours,inner=True):
 
 
 def mapContoursToPlanes(contours):
-    '''Returns a map relating (center,normal) pairs to a list of contours lying on that plane.'''
+    '''
+    Returns a map relating (center,normal) pairs to a list of contours lying on that plane. The `contours' list should
+    contains tuples of the form (nodes,name,timestep) storing the nodes in world space as 3-tuples, contour name, and
+    contour timestep respective. Each value in the returned map will be sorted in temporal order.
+    '''
     contourMap={}
     for con in contours:
         c,n=getContourPlane([vec3(*n) for n in con[0]])
@@ -335,6 +339,9 @@ def mapContoursToPlanes(contours):
             contourMap[p].append(con)
         else:
             contourMap[(c,n)]=[con]
+
+    for v in contourMap.values():
+        v.sort(key=lambda i:i[2])
 
     return contourMap
 
@@ -771,7 +778,7 @@ def generateImageMaskRange(process,contours,contourtimes,planes,images,labelfunc
         # collect the contours that are on this image and transform them to the image reference space
         imgcontours=[]
         for con,ctime,plane in zip(contours,contourtimes,planes):
-            if ctime==img.timestep and contourOnPlane(con,img.position,img.norm):
+            if eidolon.equalsEpsilon(ctime,img.timestep) and contourOnPlane(con,img.position,img.norm):
 #            angle=plane[1].angleTo(img.norm)
 #            if (angle<eidolon.epsilon or angle>(math.pi-eidolon.epsilon)) and abs(img.getDist(plane[0]))<=eidolon.Handle2D.defaultPlaneMargin:
                 transcon=[(trans*c)*vec3(1,1) for c in con]
@@ -793,12 +800,14 @@ def generateImageMaskRange(process,contours,contourtimes,planes,images,labelfunc
 
 def generateImageMask(name,contours,contourtimes,template,labelfunc='1',task=None):
     '''
-    Generate a static mask from the given contour segmentation `contours'. The image `template' is used as the spatial
+    Generate a mask image from the given contour segmentation `contours'. The image `template' is used as the spatial
     definition of the resulting image, the contours are expected to be coplanar with the planes of this image. The
     expression `labelfunc' determines what the mask value should be for each pixel found within at least one contour.
     It will have available to it the point `pt' in image coordinate space corresponding to the current pixel, the
     SharedImage `img' currently being filled, and `contours' list of contour objects in image coordinate space which
-    `pt' falls within. The default expression will set any pixel within a contour to 1, ie. a binary mask.
+    `pt' falls within. The default expression will set any pixel within a contour to 1, ie. a binary mask. The `contours'
+    list should contain lists of vec3 nodes in world space coordinates, and `contourtimes' a timestep value for each 
+    contour to align each correctly in time. 
     '''
     #contours=sortContours(contours)
     planes=map(getContourPlane,contours)
@@ -812,6 +821,7 @@ def generateImageMask(name,contours,contourtimes,template,labelfunc='1',task=Non
     proccount=eidolon.chooseProcCount(len(mask.images),0,10)
 
     generateImageMaskRange(len(mask.images),proccount,task,contours,contourtimes,planes,mask.images,labelfunc)
+    mask.setShared(False)
 
     for i in mask.images:
         i.imgmin,i.imgmax=eidolon.minmaxMatrixReal(i.img)
@@ -1485,20 +1495,24 @@ class SegmentPlugin(ScenePlugin):
             w.save()
 
         conmap=mapContoursToPlanes(obj.enumContours())
+        
+        for k,v in conmap.items(): # keep only the contours for the first timestep stored for each plane
+            conmap[k]=[vv for vv in v if v[2]==vv[0][2]]
+        
         lens=map(len,conmap.values())
         msg=None
         imgobj=self.mgr.findObject(obj.get(DatafileParams.srcimage))
         
         if not imgobj:
             msg='Cannot find source image object %r'%obj.get(DatafileParams.srcimage)
-#        elif len(conmap)==0:
-#            msg='Contour object is empty.'
-#        elif any(l not in (0,1,2) for l in lens):
-#            msg='All planes with contours must have 1 or 2 contours only.'
-#        elif any(l not in (0,lens[0]) for l in lens):
-#            msg='All planes with contours must have the same number of contours.'
-#        elif lens[0]==1 and not prop.cavMaskButton.isChecked():
-#            msg='Can only generate cavity mask if only 1 contour defined per plane.'
+        elif len(conmap)==0:
+            msg='Contour object is empty.'
+        elif any(l not in (0,1,2) for l in lens):
+            msg='All planes with contours must have 1 or 2 contours only.'
+        elif any(l not in (0,lens[0]) for l in lens):
+            msg='All planes with contours must have the same number of contours.'
+        elif lens[0]==1 and not prop.cavMaskButton.isChecked():
+            msg='Can only generate cavity mask if only 1 contour defined per plane.'
 
         if msg:
             self.mgr.showMsg(msg,'Cannot Generate Mask')

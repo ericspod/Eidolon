@@ -84,7 +84,7 @@
           <string>Name</string>
          </property>
          <property name="textAlignment">
-          <set>AlignLeft|AlignVCenter</set>
+          <set>AlignLeading|AlignVCenter</set>
          </property>
         </column>
         <column>
@@ -92,7 +92,7 @@
           <string>Value</string>
          </property>
          <property name="textAlignment">
-          <set>AlignLeft|AlignVCenter</set>
+          <set>AlignLeading|AlignVCenter</set>
          </property>
         </column>
        </widget>
@@ -116,7 +116,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="srcBox"/>
+      <widget class="QComboBox" name="srcBox">
+       <property name="toolTip">
+        <string>Contours are defined on planes of this image</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -141,6 +145,9 @@
      <layout class="QFormLayout" name="formLayout">
       <item row="3" column="1">
        <widget class="QCheckBox" name="ahaBox">
+        <property name="toolTip">
+         <string>Include a field in the mesh assigning AHA regions to each element</string>
+        </property>
         <property name="text">
          <string>Include AHA Field</string>
         </property>
@@ -156,6 +163,9 @@
         </property>
         <item row="0" column="1">
          <widget class="QRadioButton" name="cavButton">
+          <property name="toolTip">
+           <string>generate a cavity mesh from 1/2 contours</string>
+          </property>
           <property name="text">
            <string>Cavity Mesh</string>
           </property>
@@ -163,6 +173,9 @@
         </item>
         <item row="0" column="0">
          <widget class="QRadioButton" name="hemButton">
+          <property name="toolTip">
+           <string>Generate a hemisphere from 2 contours</string>
+          </property>
           <property name="text">
            <string>Hemisphere Mesh</string>
           </property>
@@ -173,6 +186,9 @@
         </item>
         <item row="1" column="1">
          <widget class="QRadioButton" name="innerButton">
+          <property name="toolTip">
+           <string>Generate an inner shell from 1/2 contours</string>
+          </property>
           <property name="text">
            <string>Inner Surface</string>
           </property>
@@ -180,6 +196,9 @@
         </item>
         <item row="1" column="0">
          <widget class="QRadioButton" name="outerButton">
+          <property name="toolTip">
+           <string>Generate an outer shell from 1/2 contours</string>
+          </property>
           <property name="text">
            <string>Outer Surface</string>
           </property>
@@ -194,6 +213,9 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Generate a mesh from the contours of this segmentation</string>
         </property>
         <property name="text">
          <string>Generate</string>
@@ -214,6 +236,9 @@
         </item>
         <item>
          <widget class="QSpinBox" name="refineBox">
+          <property name="toolTip">
+           <string>Mesh refinement value, larger values create more detailed meshes</string>
+          </property>
           <property name="minimum">
            <number>1</number>
           </property>
@@ -244,6 +269,9 @@
         </item>
         <item>
          <widget class="QSpinBox" name="reinterpBox">
+          <property name="toolTip">
+           <string>Smoothness of spline interpolation, jagged mesh edges imply this may need to be larger</string>
+          </property>
           <property name="minimum">
            <number>0</number>
           </property>
@@ -273,6 +301,9 @@
         </property>
         <item row="0" column="1">
          <widget class="QRadioButton" name="cavMaskButton">
+          <property name="toolTip">
+           <string>Generate a mask from 1/2 contours representing an inner filled area</string>
+          </property>
           <property name="text">
            <string>Cavity Mask</string>
           </property>
@@ -280,13 +311,22 @@
         </item>
         <item row="0" column="0">
          <widget class="QRadioButton" name="hemMaskButton">
+          <property name="toolTip">
+           <string>Generate a mask from 2 contours representing a hollow hemisphere</string>
+          </property>
           <property name="text">
            <string>Hemisphere Mask</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
          <widget class="QRadioButton" name="label2Button">
+          <property name="toolTip">
+           <string>Generate a mask from 2 contours representing a hemisphere and cavity with different labels</string>
+          </property>
           <property name="text">
            <string>2 Label Mask</string>
           </property>
@@ -294,6 +334,9 @@
         </item>
         <item row="1" column="0">
          <widget class="QRadioButton" name="hemcavButton">
+          <property name="toolTip">
+           <string>Generate a mask from 1/2 contours representing a filled hemisphere</string>
+          </property>
           <property name="text">
            <string>Hemi+Cavity Mask</string>
           </property>
@@ -303,6 +346,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="genMaskButton">
+        <property name="toolTip">
+         <string>Generate a mask image from the contours of this segmentation</string>
+        </property>
         <property name="text">
          <string>Generate</string>
         </property>
