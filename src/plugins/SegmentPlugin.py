@@ -366,12 +366,12 @@ def generateContoursFromMask(images,numctrls,stype):
         if maxx==minx: # no segmentation
             continue
         
-        region = np.argwhere(np.asarray(img.img))
+        nparr=np.asarray(img.img).T # convert the image to numpy
+        region = np.argwhere(nparr==nparr.max()) # find the pixels which are equal to the max value
         hull = ConvexHull(region)
-        pts=[vec3(region[h,0],region[h,1]) for h in hull.vertices]
+        pts=[vec3(region[h,0],region[h,1]) for h in hull.vertices] # get image coordinates of polygon
         
         ctrls=reinterpolateCircularContour(pts,ElemType.Line1PCR,vec3.X(),1,numctrls)
-#        ctrls=[pts[i] for i in range(0,len(pts),max(1,len(pts)//numctrls)]
         assert len(ctrls)==numctrls,'%r != %r'%(len(ctrls),numctrls)
         
         result.append([img.getPlanePos(c,False) for c in ctrls])
