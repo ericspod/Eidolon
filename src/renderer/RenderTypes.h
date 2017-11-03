@@ -695,7 +695,7 @@ public:
 	vec3 fromCylindrical() const { return vec3(cos(_x)*_z,sin(_x)*_z,_y); }
 
 	/// Returns true if the length of the vector is within dEPSILON of 0
-	bool isZero() const { return equalsEpsilon(_x+_y+_z,0.0); }
+	bool isZero() const { return equalsEpsilon(lenSq(),0.0); }
 
 	/// Returns true if the vector is within the axis-aligned bounding box defined by the given min and max corners with a 'dEPSILON' margin of error 
 	bool inAABB(const vec3& minv, const vec3& maxv) const

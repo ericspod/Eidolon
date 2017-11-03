@@ -23,13 +23,17 @@ import math
 
 from eidolon import (
         enum, color, vec3, rotator, avg, timing, first, halfpi, clamp, frange, group, successive,indexList,listSum, taskroutine,
-        BoundBox, Ray, Camera2DView, PointChooseMixin, ElemType, ImageSceneObject, SceneObject, ScenePlugin
+        BoundBox, Ray, Camera2DView, PointChooseMixin, ElemType, ImageSceneObject, SceneObject, ScenePlugin, printFlush
 )
 import eidolon
 
 from ui import QtWidgets, Qt, Ui_Seg2DView, Ui_SegObjProp
 
 import itertools
+
+import numpy as np
+from scipy.spatial import ConvexHull
+
 
 DatafileParams=enum('name','title','type','srcimage')
 SegmentTypes=enum('LVPool','LV')
@@ -165,7 +169,12 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
 
     for i in frange(0,1,1.0/numnodes):
         rdir=rotator(norm,i*2*math.pi)*startdir
-        ray=Ray(center,rdir)
+        try:
+            ray=Ray(center,rdir)
+        except:
+            printFlush(center,norm,startdir,rdir)
+            raise
+            
         newpt=first(yieldContourIntersects(ray,pts))
         assert newpt!=None,'Did not find an intersect when interpolating contour at regular rotational intervals, is this contour coplanar?'
         newcontour.append(newpt)
@@ -346,43 +355,58 @@ def mapContoursToPlanes(contours):
     return contourMap
 
 
+@timing
 def generateContoursFromMask(images,numctrls,stype):
     result=[]
 
     for img in images:
         minx,miny,maxx,maxy=eidolon.calculateBoundSquare(img.img,img.imgmin)
         assert minx>=0, 'Empty image?'
-        minc,maxc=vec3(minx,miny),vec3(maxx,maxy)
-        mid=eidolon.lerp(0.5,minc,maxc)
-        rad=(mid-minc).len()*1.2
-
-        contour1=[]
-        contour2=[]
-
-        # cast `numctrls' rays out from the center of the bound box and position control points along each ray where mask values change
-        for angle in frange(0,math.pi*2,(math.pi*2)/numctrls):
-            ray=vec3(angle,halfpi,rad).fromPolar()
-            addvec=vec3(0.5,0.5)
-            numsamples=max(maxx-minx,maxy-miny)*2
-
-            samples=eidolon.sampleImageRay(img.img,mid,ray,numsamples) # get the sample of pixels along the ray
-            transitions=[i for i,(a,b) in enumerate(successive(samples)) if a!=b]
-
-            if not transitions:
-                raise ValueError('Mask does not appear to be mostly convex')
-
-            contour1.append(mid+addvec+ray*(float(transitions[0]+1)/numsamples))
-            if stype==SegmentTypes._LV and len(transitions)>1:
-                contour2.append(mid+addvec+ray*(float(transitions[-1]+1)/numsamples))
-
-        # if this is an LV type but the second contour wasn't found, add nothing because we're probably at the base
-        if stype!=SegmentTypes._LV or len(contour2)==len(contour1):
-            assert len(contour1)==numctrls
-            result.append([img.getPlanePos(c,False) for c in contour1])
-
-            if stype==SegmentTypes._LV:
-                assert len(contour2)==numctrls
-                result.append([img.getPlanePos(c,False) for c in contour2])
+        
+        if maxx==minx: # no segmentation
+            continue
+        
+        region = np.argwhere(np.asarray(img.img))
+        hull = ConvexHull(region)
+        pts=[vec3(region[h,0],region[h,1]) for h in hull.vertices]
+        
+        ctrls=reinterpolateCircularContour(pts,ElemType.Line1PCR,vec3.X(),1,numctrls)
+#        ctrls=[pts[i] for i in range(0,len(pts),max(1,len(pts)//numctrls)]
+        assert len(ctrls)==numctrls,'%r != %r'%(len(ctrls),numctrls)
+        
+        result.append([img.getPlanePos(c,False) for c in ctrls])
+        
+#        minc,maxc=vec3(minx,miny),vec3(maxx,maxy)
+#        mid=eidolon.lerp(0.5,minc,maxc)
+#        rad=(mid-minc).len()*1.2
+#
+#        contour1=[]
+#        contour2=[]
+#
+#        # cast `numctrls' rays out from the center of the bound box and position control points along each ray where mask values change
+#        for angle in frange(0,math.pi*2,(math.pi*2)/numctrls):
+#            ray=vec3(angle,halfpi,rad).fromPolar()
+#            addvec=vec3(0.5,0.5)
+#            numsamples=max(maxx-minx,maxy-miny)*2
+#
+#            samples=eidolon.sampleImageRay(img.img,mid,ray,numsamples) # get the sample of pixels along the ray
+#            transitions=[i for i,(a,b) in enumerate(successive(samples)) if a!=b]
+#
+#            if not transitions:
+#                raise ValueError('Mask does not appear to be mostly convex')
+#
+#            contour1.append(mid+addvec+ray*(float(transitions[0]+1)/numsamples))
+#            if stype==SegmentTypes._LV and len(transitions)>1:
+#                contour2.append(mid+addvec+ray*(float(transitions[-1]+1)/numsamples))
+#
+#        # if this is an LV type but the second contour wasn't found, add nothing because we're probably at the base
+#        if stype!=SegmentTypes._LV or len(contour2)==len(contour1):
+#            assert len(contour1)==numctrls
+#            result.append([img.getPlanePos(c,False) for c in contour1])
+#
+#            if stype==SegmentTypes._LV:
+#                assert len(contour2)==numctrls
+#                result.append([img.getPlanePos(c,False) for c in contour2])
 
     return result
 
@@ -1459,7 +1483,7 @@ class SegmentPlugin(ScenePlugin):
         contours=generateContoursFromMask(imgs,numctrls,stype)
         for c in contours:
             obj.addContour(c)
-
+            
         return obj
 
     def _generateMeshButton(self,prop,obj):
@@ -1497,7 +1521,7 @@ class SegmentPlugin(ScenePlugin):
         conmap=mapContoursToPlanes(obj.enumContours())
         
         for k,v in conmap.items(): # keep only the contours for the first timestep stored for each plane
-            conmap[k]=[vv for vv in v if v[2]==vv[0][2]]
+            conmap[k]=[vv for vv in v if vv[2]==v[0][2]]
         
         lens=map(len,conmap.values())
         msg=None

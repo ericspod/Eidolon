@@ -190,10 +190,10 @@ class SharedImage(object):
             self.img=None
             self.imgmin=0.0
             self.imgmax=0.0
-
-#   def setArrayImg(self,arr):
-#       self.setMinMaxValues(arr.min(),arr.max())
-#       arrayToMatrix(arr,self.img)
+            
+    def setArrayImg(self,arr):
+        self.setMinMaxValues(arr.min(),arr.max())
+        self.img[:,:]=arr[:,:]
 
     def setMinMaxValues(self,minv,maxv):
         if self.img:
