@@ -1280,7 +1280,8 @@ class SceneManager(TaskQueue):
     def addSceneObject(self,obj,category=None):
         '''
         Adds the SceneObject instance to the scene. If `obj' has no plugin, the appropriate default is assigned. If
-        the name of `obj' is not unique, it will be changed to a unique name by suffixing a number. (`category' not used) 
+        the name of `obj' is not unique, it will be changed to a unique name by suffixing a number. (`category' not used).
+        The `obj' value can be either a SceneObject or a Future which eventually contains one.
         '''
         obj=Future.get(obj)
         assert isinstance(obj,SceneObject),'%r is type %r'%(obj,type(obj))

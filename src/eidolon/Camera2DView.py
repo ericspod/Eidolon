@@ -378,7 +378,7 @@ class BaseCamera2DWidget(Base2DWidget):
         Returns the world position of the screen coordinate (x,y). If `isAbsolute',, (x,y) is an absolute pixel coordinate,
         otherwise it is a screen proportionate coordinates (ie. (0,0) is top-left corner of screen and (1,1) is bottom-right).
         '''
-        return self._planeToWorldTransform()*self.camera.getWorldPosition(x,y,isAbsolute)
+        return self._planeToWorldTransform()*self.getScreenOrthoPosition(x,y,isAbsolute)
 
     def getScreenPosition(self,pos):
         '''Returns the screen coordinate of the world vector `pos'.'''
