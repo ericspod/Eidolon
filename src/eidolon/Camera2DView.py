@@ -143,30 +143,18 @@ class BaseCamera2DWidget(Base2DWidget):
     def mousePress(self,e):
         # check for handle selection
         if e.buttons()==Qt.LeftButton:
-            selected=None
-            for h in self.handles:
-                if h.checkSelected(vec3(e.x(),e.y())):
-                    selected=selected or h
-
-            # if a handle was selected, call the notice method and set all other handles to be inactive
-            if selected:
-                self.handleSelected(selected)
-                for h in self.handles:
-                    h.setActive(h==selected)
-
-                self._repaintDelay()
+            self.selectHandleScreenCoord(e.x(),e.y())
         else:
-            for h in self.handles:
-                h.setSelected(False)
+            self.deselectHandles()
 
-        # reset view
-        if e.buttons()==Qt.MiddleButton:
-            self.scroll=vec3()
-            self.zoom=1.0
-            self._repaintDelay()
+            # reset view
+            if e.buttons()==Qt.MiddleButton:
+                self.scroll=vec3()
+                self.zoom=1.0
+                self._repaintDelay()
 
     def mouseDrag(self,e,dx,dy):
-        h=first(h for h in self.handles if h.isSelected())
+        h=self.getSelectedHandle()
         if h:
             h.mouseDrag(e,vec3(dx,dy))
         elif e.buttons()==Qt.LeftButton:
@@ -177,8 +165,7 @@ class BaseCamera2DWidget(Base2DWidget):
         self._repaintDelay()
 
     def mouseRelease(self,e):
-        for h in self.handles:
-            h.setSelected(False)
+        self.deselectHandles()
 
     def parentClosed(self,e):
         self.removeHandles()
@@ -297,11 +284,39 @@ class BaseCamera2DWidget(Base2DWidget):
     def getHandle(self,index):
         '''Return handle at position `index' in the list of handles.'''
         return self.handles[index]
+    
+    def getSelectedHandle(self):
+        '''Returns the selected handle, None otherwise.'''
+        return first(h for h in self.handles if h.isSelected())
+    
+    def selectHandleScreenCoord(self,x,y):
+        '''Select a handle based on the screen coordinate (`x',`y'). Returns the handle is selected, None otherwise.'''
+        selected=None
+        pos=vec3(x,y)
+        for h in self.handles:
+            if h.checkSelected(pos): # call this to set each handle's selected property
+                selected=selected or h
+
+        # if a handle was selected, call the notice method and set all other handles to be inactive
+        if selected:
+            self.handleSelected(selected)
+            for h in self.handles:
+                h.setActive(h==selected)
+
+            self._repaintDelay()
+            
+        return selected
+    
+    def deselectHandles(self):
+        '''Deselect all handles.'''
+        for h in self.handles:
+            h.setSelected(False)
 
     def handleSelected(self,handle):
         '''
-        Called when the given handle object is selected by mouse click. If this is not overridden, handles are not
-        selectable but the view will otherwise function correctly.
+        Called when the given handle object is selected by mouse click. If this is not overridden, handles are never
+        activated but the view will otherwise function correctly. This method should be overridden to make a selected
+        handle active.
         '''
         pass
 
@@ -720,23 +735,23 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
     def keyPress(self,e):
         key=e.key()
         
-        if key in (Qt.Key_Left, Qt.Key_Right):
+        if key in (Qt.Key_Left, Qt.Key_Right): # move forward/backward in time
             rep=self.mgr.findObject(self.sourceName)
             if rep:
                 timesteps=rep.getTimestepList()
                 nearest,_=minmaxIndices(abs(self.mgr.timestep-v) for v in timesteps)# index of the nearest timestep to the current time
                 nearest=clamp(nearest+(1 if key==Qt.Key_Right else -1),0,len(timesteps)-1)
                 self.mgr.setTimestep(timesteps[nearest])
-        elif key in (Qt.Key_Up, Qt.Key_Down):
-            direction=1 if key==Qt.Key_Up else -1
-            scale=10 if e.modifiers()&Qt.ShiftModifier else 1
-            self.setImageStackPosition(self.getImageStackPosition()+(direction*scale))
-        elif key in (Qt.Key_Home,Qt.Key_End):
+        elif key in (Qt.Key_Home,Qt.Key_End): # move to beginning/end of time
             rep=self.mgr.findObject(self.sourceName)
             if rep:
                 timesteps=rep.getTimestepList()
                 self.mgr.setTimestep(timesteps[0 if key==Qt.Key_Home else -1])
-        elif key in (Qt.Key_PageUp, Qt.Key_PageDown):
+        elif key in (Qt.Key_Up, Qt.Key_Down): # move up/down in stack
+            direction=1 if key==Qt.Key_Up else -1
+            scale=10 if e.modifiers()&Qt.ShiftModifier else 1
+            self.setImageStackPosition(self.getImageStackPosition()+(direction*scale))
+        elif key in (Qt.Key_PageUp, Qt.Key_PageDown): # move to top/bottom of stack
             self.setImageStackPosition(0 if key==Qt.Key_PageDown else self.getImageStackMax())
         else:
             QtWidgets.QWidget.keyPressEvent(self,e)

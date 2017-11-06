@@ -238,7 +238,7 @@ class Handle2D(Handle):
         self.widg2D=widg2D
         self.planeMargin=Handle2D.defaultPlaneMargin
         self.selectRadius=abs(selectRadius or 5.0)
-        self.selectedNodeInd=-1
+        self.selectedNodeInd=-1 # node index closest to the select point if the handle is selected, -1 otherwise
         self._isActive=True # set to True if is manipulable by user input
         self._isChanged=False # set to True if structure is changed, not when repositioned
         self._isVisible3D=False # True if this handle makes visible any sort of representation it might have in the 3D view

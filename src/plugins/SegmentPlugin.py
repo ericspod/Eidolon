@@ -1468,7 +1468,6 @@ class SegmentPlugin(ScenePlugin):
         return eidolon.cropRefImage(obj,cmask,obj.getName()+'_Crop',margin,margin)
 
     @eidolon.taskmethod('Creating contours from mask image')
-    @timing    
     def createSegObjectFromMask(self,name,stype,mask,numctrls,innerseg,minSegSize=100,maskindex=0,task=None):
         '''
         Given a mask image `mask', calculate a segmentation with each contour having `numctrls' control points. The
@@ -1483,10 +1482,6 @@ class SegmentPlugin(ScenePlugin):
         obj=SegSceneObject(name,name,self)
         obj.datamap[DatafileParams.type]=stype
         obj.datamap[DatafileParams.srcimage]=mask.getName()
-
-        # get all non-blank images for the first timestep
-#        inds = mask.getVolumeStacks()[maskindex] # extract indices for segmenting, default is first timestep
-#        imgs=[mask.images[i] for i in inds if mask.images[i].imgmax>mask.images[i].imgmin] # keep non-blank images
 
         contours=generateContoursFromMask(mask.images,numctrls,innerseg,minSegSize,2,task)
         for ts,nodes in contours:
