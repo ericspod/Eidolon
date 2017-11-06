@@ -33,13 +33,15 @@ import itertools
 
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
-from scipy.ndimage import binary_erosion
+from scipy.ndimage import binary_erosion,label,sum as ndsum
 
 
 DatafileParams=enum('name','title','type','srcimage')
 SegmentTypes=enum('LVPool','LV')
 
 segExt='.seg'
+
+defaultNumNodes=16 # default number of contour nodes
 
 SegViewPoints=enum(
     ('rvAttach','RV Anterior Attachment',color(1,0,1)),
@@ -357,7 +359,7 @@ def mapContoursToPlanes(contours):
 
 
 @timing
-def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine=2):
+def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine=2,task=None):
     '''
     Generate contours for the masks given in the list of ShareImage objects `images'. This returns a list of 
     (timestep,nodes list) pairs of contours with `numctrls' number of nodes are in world space coordinates. An outer
@@ -376,8 +378,14 @@ def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine
         
         result.append((img.timestep,[img.getPlanePos(c,False) for c in ctrls])) # add the contour in world space coords
         
+    if task:
+        task.setMaxProgress(len(images))
+        
 
-    for img in images:
+    for i,img in enumerate(images):
+        if task:
+            task.setProgress(i)
+            
         if img.imgmin>=img.imgmax: # skip blank images
             continue
 
@@ -398,11 +406,22 @@ def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine
         if np.sum(mask)>minSegSize: # if mask is too small this indicates a bad segmentation
             _addContour(img,region,hull)
             
-            if innerSeg:
+            if innerSeg: # if an inner segmentation is present, attempt to isolate it and add a contour
                 inner=mask*(nparr!=nparr.max()) # mask of inner portion of mask
+                labeled,numfeatures=label(inner) 
+                
+                # keep only the largest piece in the inner segmentation region
+                sums=ndsum(inner,labeled,np.arange(numfeatures+1))
+                maxfeature=np.where(sums==np.max(sums)) # choose the maximum sum whose index will be the label number
+                inner=inner*(labeled==maxfeature)
+                
                 if np.sum(inner)>0:
-                    iregion = np.argwhere(inner==inner.max()) 
-                    ihull = ConvexHull(iregion)
+                    try:
+                        iregion = np.argwhere(inner==inner.max()) 
+                        ihull = ConvexHull(iregion)
+                    except:
+                        continue # ignore errors with Qhull, there's nothing to be done to fix these anyway
+                    
                     _addContour(img,iregion,ihull)
 
     return result
@@ -856,8 +875,8 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
     features in images using closed line handles defined with a set number of control points and 1D piecewise Catmull-
     Rom basis type.
     '''
-    def __init__(self,layout):
-        eidolon.DrawContourMixin.__init__(self,16)
+    def __init__(self,layout,numNodes=defaultNumNodes):
+        eidolon.DrawContourMixin.__init__(self,numNodes)
         self.uiobj=Seg2DWidget()
         self.uiobj.segBox.setParent(None)
         layout.addWidget(self.uiobj.segBox)
@@ -875,25 +894,11 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
         self.uiobj.setPlaneButton.clicked.connect(self._setContourPlane)
         self.uiobj.setTSButton.clicked.connect(self._setContourTS)
         self.uiobj.cloneButton.clicked.connect(self._cloneContour)
-        self.uiobj.genButton.clicked.connect(self._generateContours)
         self.uiobj.showContoursBox.clicked.connect(lambda:self.setContoursVisible(self.isContoursVisible()))
 
         self.uiobj.contourList.itemSelectionChanged.connect(self._selectContour)
 
         eidolon.setCollapsibleGroupbox(self.uiobj.segBox)
-
-        self.uiobj.genButton.setVisible(False) # TODO: implement contour interpolation
-
-    def _generateContours(self):
-#       imgobj=self.mgr.findObject(segobj.get(DatafileParams.srcimage))
-#       if not imgobj:
-#           self.mgr.showMsg('Cannot find object','Cannot generate')
-#       if not isinstance(imgobj,ImageSeriesRepr):
-#           self.mgr.showMsg('Contours can only be generated for an Image Series representation','Cannot generate')
-#       else:
-#           trans=imgobj.getVolumeTransform()
-#           rightvec=(trans.getRotation()*vec3(0,0.5,0))
-        raise NotImplementedError('Soon')
 
     def setSegObject(self,segobj):
         self.segobj=segobj
@@ -1080,9 +1085,9 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
 
 class LVSegView(LVSeg2DMixin,PointChooseMixin,Camera2DView):
 
-    def __init__(self,mgr,camera):
+    def __init__(self,mgr,camera,numNodes=defaultNumNodes):
         Camera2DView.__init__(self,mgr,camera)
-        LVSeg2DMixin.__init__(self,self.mainLayout)
+        LVSeg2DMixin.__init__(self,self.mainLayout,numNodes)
         PointChooseMixin.__init__(self,self.mainLayout)
 
         for p in SegViewPoints:
@@ -1253,9 +1258,12 @@ class SegmentPlugin(ScenePlugin):
     def createObjPropBox(self,obj):
         prop=SegPropertyWidget()
 
+        prop.ctrlsBox.setValue(defaultNumNodes)
+        
         prop.showButton.clicked.connect(lambda:self.mgr.addFuncTask(lambda:obj.createRepr(None)))
         prop.srcBox.activated.connect(lambda i:obj.set(DatafileParams.srcimage,str(prop.srcBox.itemText(i))))
 
+        prop.createContButton.clicked.connect(lambda:self._createContoursButton(prop,obj))
         prop.genMeshButton.clicked.connect(lambda:self._generateMeshButton(prop,obj))
         prop.genMaskButton.clicked.connect(lambda:self._generateMaskButton(prop,obj))
         prop.cropButton.clicked.connect(lambda:self._cropImageButton(prop,obj))
@@ -1271,7 +1279,9 @@ class SegmentPlugin(ScenePlugin):
         eidolon.fillTable(obj.getPropTuples(),prop.propTable)
         eidolon.fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
         eidolon.fillList(prop.cropBox,imgnames)
-
+        eidolon.fillList(prop.cropBox,imgnames)
+        eidolon.fillList(prop.maskImgBox,imgnames)
+        
         # if not source object has been selected, select the first one
         if not obj.get(DatafileParams.srcimage) and len(imgnames)>0:
             prop.srcBox.activated.emit(0)
@@ -1457,8 +1467,9 @@ class SegmentPlugin(ScenePlugin):
         cmask=eidolon.cropObjectEmptySpace(mask,'tempcrop',20,False)
         return eidolon.cropRefImage(obj,cmask,obj.getName()+'_Crop',margin,margin)
 
-    @timing
-    def createSegObjectFromMask(self,name,mask,numctrls,stype,maskindex=0):
+    @eidolon.taskmethod('Creating contours from mask image')
+    @timing    
+    def createSegObjectFromMask(self,name,stype,mask,numctrls,innerseg,minSegSize=100,maskindex=0,task=None):
         '''
         Given a mask image `mask', calculate a segmentation with each contour having `numctrls' control points. The
         name of the resulting object will be `name' or a modified form thereof acceptable as a filename. The `stype'
@@ -1477,11 +1488,32 @@ class SegmentPlugin(ScenePlugin):
 #        inds = mask.getVolumeStacks()[maskindex] # extract indices for segmenting, default is first timestep
 #        imgs=[mask.images[i] for i in inds if mask.images[i].imgmax>mask.images[i].imgmin] # keep non-blank images
 
-        contours=generateContoursFromMask(mask.images,numctrls)
+        contours=generateContoursFromMask(mask.images,numctrls,innerseg,minSegSize,2,task)
         for ts,nodes in contours:
             obj.addContour(nodes,timestep=ts)
             
         return obj
+    
+    def _createContoursButton(self,prop,obj):
+        maskname=str(prop.maskImgBox.currentText())
+        numctrls=prop.ctrlsBox.value()
+        innerseg=prop.innerContBox.isChecked()
+        mask=self.findObject(maskname)
+        
+        newobj=self.createSegObjectFromMask('',SegmentTypes._LV,mask,numctrls,innerseg)
+
+        @taskroutine('Replacing contours')    
+        def _replace(task):
+            obj.clearContours()
+            
+            for c in newobj().enumContours():
+                obj.addContour(*c)
+                
+            widg=obj.getWidget()
+            if widg:
+                self.mgr.callThreadSafe(widg.setSegObject,obj)
+        
+        self.mgr.runTasks(_replace())
 
     def _generateMeshButton(self,prop,obj):
         conmap=mapContoursToPlanes(obj.enumContours())

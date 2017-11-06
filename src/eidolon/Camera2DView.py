@@ -718,17 +718,26 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
         Draw2DView.mouseWheelMove(self,e)
 
     def keyPress(self,e):
-        if e.key() in (Qt.Key_Left, Qt.Key_Right):
+        key=e.key()
+        
+        if key in (Qt.Key_Left, Qt.Key_Right):
             rep=self.mgr.findObject(self.sourceName)
             if rep:
                 timesteps=rep.getTimestepList()
                 nearest,_=minmaxIndices(abs(self.mgr.timestep-v) for v in timesteps)# index of the nearest timestep to the current time
-                nearest=clamp(nearest+(1 if e.key()==Qt.Key_Right else -1),0,len(timesteps)-1)
+                nearest=clamp(nearest+(1 if key==Qt.Key_Right else -1),0,len(timesteps)-1)
                 self.mgr.setTimestep(timesteps[nearest])
-        elif e.key() in (Qt.Key_Up, Qt.Key_Down):
-            direction=1 if e.key()==Qt.Key_Up else -1
+        elif key in (Qt.Key_Up, Qt.Key_Down):
+            direction=1 if key==Qt.Key_Up else -1
             scale=10 if e.modifiers()&Qt.ShiftModifier else 1
             self.setImageStackPosition(self.getImageStackPosition()+(direction*scale))
+        elif key in (Qt.Key_Home,Qt.Key_End):
+            rep=self.mgr.findObject(self.sourceName)
+            if rep:
+                timesteps=rep.getTimestepList()
+                self.mgr.setTimestep(timesteps[0 if key==Qt.Key_Home else -1])
+        elif key in (Qt.Key_PageUp, Qt.Key_PageDown):
+            self.setImageStackPosition(0 if key==Qt.Key_PageDown else self.getImageStackMax())
         else:
             QtWidgets.QWidget.keyPressEvent(self,e)
 
