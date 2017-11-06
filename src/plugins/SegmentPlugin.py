@@ -381,29 +381,29 @@ def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine
         if img.imgmin>=img.imgmax: # skip blank images
             continue
 
-        try:        
-            nparr=np.asarray(img.img).T # convert the image to numpy
-            region = np.argwhere(nparr==nparr.max()) # find the pixels which are equal to the max value
-            
+        nparr=np.asarray(img.img).T # convert the image to numpy
+        region = np.argwhere(nparr==nparr.max()) # find the pixels which are equal to the max value
+
+        try:                    
             hull = ConvexHull(region) # convex hull of whole segmentation
             de=Delaunay(region[hull.vertices]) # triangulation of that hull
+        except: 
+            continue # ignore errors with Qhull, there's nothing to be done to fix these anyway
             
-            # mask over whole convex hull
-            simplexpts=de.find_simplex(np.argwhere(nparr==nparr))
-            mask=(simplexpts.reshape(nparr.shape)!=-1).astype(int)
-            mask=binary_erosion(mask)
+        # mask over whole convex hull
+        simplexpts=de.find_simplex(np.argwhere(nparr==nparr))
+        mask=(simplexpts.reshape(nparr.shape)!=-1).astype(int)
+        mask=binary_erosion(mask)
+        
+        if np.sum(mask)>minSegSize: # if mask is too small this indicates a bad segmentation
+            _addContour(img,region,hull)
             
-            if np.sum(mask)>minSegSize: # if mask is too small this indicates a bad segmentation
-                _addContour(img,region,hull)
-                
-                if innerSeg:
-                    inner=mask*(nparr!=nparr.max()) # mask of inner portion of mask
-                    if np.sum(inner)>0:
-                        iregion = np.argwhere(inner==inner.max()) 
-                        ihull = ConvexHull(iregion)
-                        _addContour(img,iregion,ihull)
-        except:
-            pass
+            if innerSeg:
+                inner=mask*(nparr!=nparr.max()) # mask of inner portion of mask
+                if np.sum(inner)>0:
+                    iregion = np.argwhere(inner==inner.max()) 
+                    ihull = ConvexHull(iregion)
+                    _addContour(img,iregion,ihull)
 
     return result
 
