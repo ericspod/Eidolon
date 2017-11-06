@@ -375,8 +375,8 @@ class BaseCamera2DWidget(Base2DWidget):
 
     def getWorldPosition(self,x,y,isAbsolute=True):
         '''
-        Returns the world position of the screen coordinate (x,y). If `isAbsolute',, (x,y) is an absolute pixel coordinate,
-        otherwise it is a screen proportionate coordinates (ie. (0,0) is top-left corner of screen and (1,1) is bottom-right).
+        Returns the world position of the screen coordinate (x,y). If `isAbsolute', (x,y) is an absolute pixel coordinate,
+        otherwise it is a screen proportionate coordinate (ie. (0,0) is top-left corner of screen and (1,1) is bottom-right).
         '''
         return self._planeToWorldTransform()*self.getScreenOrthoPosition(x,y,isAbsolute)
 
@@ -391,9 +391,12 @@ class BaseCamera2DWidget(Base2DWidget):
         '''
         return (self._planeToWorldTransform()/pos)*vec3(1,1)
     
-    def getScreenOrthoPosition(self,x,y):
-        '''Returns the screen orthographic coordinate from the screen coordinate (x,y).'''
-        return self.camera.getWorldPosition(x,y) # because the camera doesn't move from the origin this converts to ortho coordinates
+    def getScreenOrthoPosition(self,x,y,isAbsolute=True):
+        '''
+        Returns the screen orthographic coordinate from the screen coordinate (x,y).If `isAbsolute', (x,y) is an absolute 
+        coordinate, otherwise it is a screen proportionate coordinate (ie. (0,0) is top-left corner, (1,1) is bottom-right).
+        '''
+        return self.camera.getWorldPosition(x,y,isAbsolute) # because the camera doesn't move from the origin this converts to ortho coordinates
     
     def getImagePosition(self,x,y):
         pos=self.getScreenOrthoPosition(x,y) 

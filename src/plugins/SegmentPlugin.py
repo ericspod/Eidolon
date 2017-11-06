@@ -32,7 +32,8 @@ from ui import QtWidgets, Qt, Ui_Seg2DView, Ui_SegObjProp
 import itertools
 
 import numpy as np
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull, Delaunay
+from scipy.ndimage import binary_erosion
 
 
 DatafileParams=enum('name','title','type','srcimage')
@@ -356,57 +357,53 @@ def mapContoursToPlanes(contours):
 
 
 @timing
-def generateContoursFromMask(images,numctrls,stype):
+def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine=2):
+    '''
+    Generate contours for the masks given in the list of ShareImage objects `images'. This returns a list of 
+    (timestep,nodes list) pairs of contours with `numctrls' number of nodes are in world space coordinates. An outer
+    contour for each non-blank image is first created, if the area of this is greater than `minSegSize' then it is added
+    to the result list. If `innerSeg' is True then there is expected to be an inner region which is then also converted 
+    to a contour. The `refine' value sets the refinement of the contour interpolation function used when reducing contours.
+    '''
     result=[]
-
-    for img in images:
-        minx,miny,maxx,maxy=eidolon.calculateBoundSquare(img.img,img.imgmin)
-        assert minx>=0, 'Empty image?'
-        
-        if maxx==minx: # no segmentation
-            continue
-        
-        nparr=np.asarray(img.img).T # convert the image to numpy
-        region = np.argwhere(nparr==nparr.max()) # find the pixels which are equal to the max value
-        hull = ConvexHull(region)
+    
+    def _addContour(img,region,hull):
         pts=[vec3(region[h,0],region[h,1]) for h in hull.vertices] # get image coordinates of polygon
         
-        ctrls=reinterpolateCircularContour(pts,ElemType.Line1PCR,vec3.X(),1,numctrls)
+        # reduce the contour down to the requested number of control points
+        ctrls=reinterpolateCircularContour(pts,ElemType.Line1PCR,vec3.X(),refine,numctrls)
         assert len(ctrls)==numctrls,'%r != %r'%(len(ctrls),numctrls)
         
-        result.append([img.getPlanePos(c,False) for c in ctrls])
+        result.append((img.timestep,[img.getPlanePos(c,False) for c in ctrls])) # add the contour in world space coords
         
-#        minc,maxc=vec3(minx,miny),vec3(maxx,maxy)
-#        mid=eidolon.lerp(0.5,minc,maxc)
-#        rad=(mid-minc).len()*1.2
-#
-#        contour1=[]
-#        contour2=[]
-#
-#        # cast `numctrls' rays out from the center of the bound box and position control points along each ray where mask values change
-#        for angle in frange(0,math.pi*2,(math.pi*2)/numctrls):
-#            ray=vec3(angle,halfpi,rad).fromPolar()
-#            addvec=vec3(0.5,0.5)
-#            numsamples=max(maxx-minx,maxy-miny)*2
-#
-#            samples=eidolon.sampleImageRay(img.img,mid,ray,numsamples) # get the sample of pixels along the ray
-#            transitions=[i for i,(a,b) in enumerate(successive(samples)) if a!=b]
-#
-#            if not transitions:
-#                raise ValueError('Mask does not appear to be mostly convex')
-#
-#            contour1.append(mid+addvec+ray*(float(transitions[0]+1)/numsamples))
-#            if stype==SegmentTypes._LV and len(transitions)>1:
-#                contour2.append(mid+addvec+ray*(float(transitions[-1]+1)/numsamples))
-#
-#        # if this is an LV type but the second contour wasn't found, add nothing because we're probably at the base
-#        if stype!=SegmentTypes._LV or len(contour2)==len(contour1):
-#            assert len(contour1)==numctrls
-#            result.append([img.getPlanePos(c,False) for c in contour1])
-#
-#            if stype==SegmentTypes._LV:
-#                assert len(contour2)==numctrls
-#                result.append([img.getPlanePos(c,False) for c in contour2])
+
+    for img in images:
+        if img.imgmin>=img.imgmax: # skip blank images
+            continue
+
+        try:        
+            nparr=np.asarray(img.img).T # convert the image to numpy
+            region = np.argwhere(nparr==nparr.max()) # find the pixels which are equal to the max value
+            
+            hull = ConvexHull(region) # convex hull of whole segmentation
+            de=Delaunay(region[hull.vertices]) # triangulation of that hull
+            
+            # mask over whole convex hull
+            simplexpts=de.find_simplex(np.argwhere(nparr==nparr))
+            mask=(simplexpts.reshape(nparr.shape)!=-1).astype(int)
+            mask=binary_erosion(mask)
+            
+            if np.sum(mask)>minSegSize: # if mask is too small this indicates a bad segmentation
+                _addContour(img,region,hull)
+                
+                if innerSeg:
+                    inner=mask*(nparr!=nparr.max()) # mask of inner portion of mask
+                    if np.sum(inner)>0:
+                        iregion = np.argwhere(inner==inner.max()) 
+                        ihull = ConvexHull(iregion)
+                        _addContour(img,iregion,ihull)
+        except:
+            pass
 
     return result
 
@@ -1477,12 +1474,12 @@ class SegmentPlugin(ScenePlugin):
         obj.datamap[DatafileParams.srcimage]=mask.getName()
 
         # get all non-blank images for the first timestep
-        inds = mask.getVolumeStacks()[maskindex] # extract indices for segmenting, default is first timestep
-        imgs=[mask.images[i] for i in inds if mask.images[i].imgmax>mask.images[i].imgmin] # keep non-blank images
+#        inds = mask.getVolumeStacks()[maskindex] # extract indices for segmenting, default is first timestep
+#        imgs=[mask.images[i] for i in inds if mask.images[i].imgmax>mask.images[i].imgmin] # keep non-blank images
 
-        contours=generateContoursFromMask(imgs,numctrls,stype)
-        for c in contours:
-            obj.addContour(c)
+        contours=generateContoursFromMask(mask.images,numctrls)
+        for ts,nodes in contours:
+            obj.addContour(nodes,timestep=ts)
             
         return obj
 
