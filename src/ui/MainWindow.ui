@@ -60,7 +60,7 @@
      <x>0</x>
      <y>0</y>
      <width>872</width>
-     <height>19</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -136,8 +136,8 @@
   <widget class="QDockWidget" name="interfaceDock">
    <property name="minimumSize">
     <size>
-     <width>300</width>
-     <height>400</height>
+     <width>360</width>
+     <height>0</height>
     </size>
    </property>
    <property name="toolTip">
@@ -444,8 +444,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>423</width>
-              <height>270</height>
+              <width>451</width>
+              <height>235</height>
              </rect>
             </property>
            </widget>
@@ -487,8 +487,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>423</width>
-              <height>291</height>
+              <width>451</width>
+              <height>251</height>
              </rect>
             </property>
            </widget>
@@ -503,24 +503,44 @@
             <number>0</number>
            </property>
            <item row="1" column="1">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Load:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
             <widget class="QPushButton" name="loadShaderButton">
              <property name="toolTip">
               <string>Load a GPU script file</string>
              </property>
              <property name="text">
-              <string>Load GPU Script</string>
+              <string>GPU Script</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
+           <item row="1" column="2">
             <widget class="QPushButton" name="loadTextureButton">
              <property name="toolTip">
               <string>Load a texture file</string>
              </property>
              <property name="text">
-              <string>Load Texture</string>
+              <string>Texture</string>
              </property>
             </widget>
+           </item>
+           <item row="1" column="0">
+            <spacer name="horizontalSpacer_7">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
           </layout>
          </item>
@@ -630,7 +650,7 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>40</width>
+               <width>0</width>
                <height>20</height>
               </size>
              </property>

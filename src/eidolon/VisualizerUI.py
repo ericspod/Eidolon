@@ -2303,7 +2303,8 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
     def _callFuncAsSignal(self,func,future,args,kwargs):
         '''Call the function `func' with the given arguments, and storing the result (or thrown exception) in `future'.'''
         with future:
-            future.setObject(func(*args,**kwargs))
+            v=func(*args,**kwargs)
+            future.setObject(v)
 
     def sync(self):
         '''Cause the calling thread to wait until all slot operations prior to this one have completed.'''
@@ -2582,6 +2583,8 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
     @signalmethod
     def chooseListItemsDialog(self,title,msg,items,callback,selected=[],multiSelect=False):
+        selectmode=QtWidgets.QAbstractItemView.MultiSelection if multiSelect else QtWidgets.QAbstractItemView.SingleSelection 
+
         d=QtWidgets.QDialog(self)
         d.setWindowTitle(title)
         d.resize(400, Utils.clamp(len(items)*10,200,800))
@@ -2590,7 +2593,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         d.label.setText(msg)
         d.verticalLayout.addWidget(d.label)
         d.listWidget = QtWidgets.QListWidget(d)
-        d.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection if multiSelect else QtWidgets.QAbstractItemView.SingleSelection )
+        d.listWidget.setSelectionMode(selectmode)
         d.listWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         d.verticalLayout.addWidget(d.listWidget)
 

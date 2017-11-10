@@ -1290,7 +1290,7 @@ class SceneManager(TaskQueue):
         obj.setName(self.getUniqueObjName(obj.getName()))
 
         self.objs.append(obj)
-
+    
         # if this object has no plugin, give it the default one appropriate for its type
         if not obj.plugin:
             if isinstance(obj,MeshSceneObject):
@@ -1301,9 +1301,9 @@ class SceneManager(TaskQueue):
                 obj.plugin=ScenePlugin('Default Plugin')
 
             obj.plugin.init(-1,self.win,self)
-
+    
         prop,updateFunc=obj.plugin.addSceneObject(obj)
-
+    
         if self.win and prop:
             icon=obj.plugin.getIcon(obj)
             menu,menuFunc=obj.plugin.getMenu(obj)

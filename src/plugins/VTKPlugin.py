@@ -16,17 +16,23 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-
-from eidolon import *
-
-addLibraryFile('pyparsing-2.0.5-py2.7')
-
-from pyparsing import *
+import os
 import xml.etree.ElementTree as ET
 import base64
-import zlib
 import StringIO
 import contextlib
+
+import numpy as np
+
+import eidolon
+from eidolon import (
+    vec3,enum, MeshScenePlugin, MeshSceneObject, splitPathExt, IndexMatrix, first, ElemType, StdProps, Future,
+    taskroutine,PyDataSet, uniqueStr, copyfileSafe
+)
+
+eidolon.addLibraryFile('pyparsing-2.0.5-py2.7')
+
+from pyparsing import ParserElement,Word, Suppress, Regex, OneOrMore, ZeroOrMore, alphas, alphanums, CharsNotIn, lineEnd, Optional, Keyword
 
 VTKProps=enum('header','desc','version','datasettype','griddims','attrtype','polyinds',desc='Metadata property names for storing VTK info in DataSet objects')
 DatasetTypes=enum('STRUCTURED_GRID','UNSTRUCTURED_GRID','POLYDATA',desc='Understood VTK dataset types')
@@ -58,13 +64,13 @@ def toMatrix(mtype):
         if mtype: # if there's a matrix type, convert each element of t accordingly
             tokens=t[0].strip().split()
             if mtype==vec3:
-                mat=[vec3(float(a),float(b),float(c)) for a,b,c in group(tokens,3)]
+                mat=[vec3(float(a),float(b),float(c)) for a,b,c in eidolon.group(tokens,3)]
             else:
                 mat=map(mtype,tokens)
         else: # otherwise assume the elements in t are converted already and just make a list of these
             mat=list(t)
             
-        return listToMatrix(mat,'mat'+str(matrixCounter))
+        return eidolon.listToMatrix(mat,'mat'+str(matrixCounter))
     
     return _split
     
@@ -155,7 +161,7 @@ def xmltag(out,name,**kwargs):
 
 class VTKPlugin(MeshScenePlugin):
     def __init__(self):
-        ScenePlugin.__init__(self,'VTK')
+        MeshScenePlugin.__init__(self,'VTK')
         self.objcount=0
 
     def init(self,plugid,win,mgr):
@@ -217,9 +223,9 @@ class VTKPlugin(MeshScenePlugin):
             obj.kwargs['filenames']=newnames
         
     def renameObjFiles(self,obj,oldname,overwrite=False):
-        assert isinstance(obj,SceneObject) and obj.plugin==self
+        assert isinstance(obj,eidolon.SceneObject) and obj.plugin==self
         if 'filename' in obj.kwargs:
-            obj.kwargs['filename']=renameFile(obj.kwargs['filename'],obj.getName(),overwriteFile=overwrite)
+            obj.kwargs['filename']=eidolon.renameFile(obj.kwargs['filename'],obj.getName(),overwriteFile=overwrite)
         elif 'filenames' in obj.kwargs:
             #obj.kwargs['filenames']=[renameFile(f,obj.getName()) for f in obj.kwargs['filenames']]
             newfiles=[]
@@ -227,7 +233,7 @@ class VTKPlugin(MeshScenePlugin):
             
             for f in obj.kwargs['filenames']:
                 newbasename=splitPathExt(f)[1].replace(oldname,newname,1)
-                newfiles.append(renameFile(f,newbasename,overwriteFile=overwrite))
+                newfiles.append(eidolon.renameFile(f,newbasename,overwriteFile=overwrite))
                 
             obj.kwargs['filenames']=newfiles
 
@@ -282,7 +288,7 @@ class VTKPlugin(MeshScenePlugin):
                         mat=IndexMatrix(matname,elemtypename,0,elemtype.numNodes())
                         indmats.append(mat)
                         for ind in inds:
-                            sortedinds=indexList(sortinds,cells.getRow(ind)[1:])
+                            sortedinds=eidolon.indexList(sortinds,cells.getRow(ind)[1:])
                             mat.append(*sortedinds)
                             
             elif data[0]==DatasetTypes._STRUCTURED_GRID:
@@ -293,9 +299,9 @@ class VTKPlugin(MeshScenePlugin):
                 assert dimy>1           
                 assert dimz>1           
                 
-                _,inds=generateHexBox(dimx-2,dimy-2,dimz-2)
+                _,inds=eidolon.generateHexBox(dimx-2,dimy-2,dimz-2)
                 
-                inds=listToMatrix(inds,'hexes')
+                inds=eidolon.listToMatrix(inds,'hexes')
                 inds.setType(ElemType._Hex1NL)
                 
                 indmats=[inds]
@@ -439,11 +445,11 @@ class VTKPlugin(MeshScenePlugin):
                                     cells.append(poly)
                             elif tname!=None:
                                 #unsortinds=list(reversed(indexList(sortinds,list(reversed(range(len(sortinds)))))))
-                                unsortinds=indexList(sortinds,range(len(sortinds)))
+                                unsortinds=eidolon.indexList(sortinds,range(len(sortinds)))
                             
                                 celltypes+=[cid]*inds.n()
                                 for ind in xrange(inds.n()):
-                                    cells.append(indexList(unsortinds,inds.getRow(ind)))
+                                    cells.append(eidolon.indexList(unsortinds,inds.getRow(ind)))
                                 
                         if len(cells)>0:
                             o.write('CELLS %i %i\n'%(len(cells),sum(len(c)+1 for c in cells)))
@@ -499,7 +505,7 @@ class VTKPlugin(MeshScenePlugin):
         def readNodes(nodearray,byteorder,compressor):
             assert _get(nodearray,'NumberOfComponents')=='3'                    
             arr=readArray(nodearray,byteorder,compressor)
-            nodes=Vec3Matrix('nodes',arr.shape[0]/3)
+            nodes=eidolon.Vec3Matrix('nodes',arr.shape[0]/3)
             np.asarray(nodes).flat[:]=arr
             del arr
             return nodes
@@ -513,7 +519,7 @@ class VTKPlugin(MeshScenePlugin):
                 fname=_get(array,'Name')
                 width=int(_get(array,'NumberOfComponents') or 1)
                 arr=readArray(array,byteorder,compressor)
-                mat=RealMatrix(fname,arr.shape[0]/width,width)
+                mat=eidolon.RealMatrix(fname,arr.shape[0]/width,width)
                 np.asarray(mat).flat[:]=arr
                 del arr
                     
@@ -537,7 +543,7 @@ class VTKPlugin(MeshScenePlugin):
                 
         f=Future()
         @taskroutine('Loading VTK XML File')
-        @timing
+        @eidolon.timing
         def _loadFile(filename,name,task):
             basename=name or os.path.basename(filename).split('.')[0]
             name=uniqueStr(basename,[o.getName() for o in self.mgr.enumSceneObjects()])
@@ -614,7 +620,7 @@ class VTKPlugin(MeshScenePlugin):
                     lines.append(a,b)
                     
                 for strip in yieldConnectedOffsets(pieces[0].find('Strips'),byteorder,compressor):
-                    for a,b,c in successive(strip,3):
+                    for a,b,c in eidolon.successive(strip,3):
                         tris.append(a,b,c)
                     
                 for poly in yieldConnectedOffsets(pieces[0].find('Polys'),byteorder,compressor):
@@ -687,7 +693,7 @@ class VTKPlugin(MeshScenePlugin):
             assert header[2].strip().lower()=='ascii',repr(header)
             assert header[3].strip().lower()=='dataset polydata',repr(header)
             
-            nodes=Vec3Matrix('nodes',0)
+            nodes=eidolon.Vec3Matrix('nodes',0)
             nodes.reserveRows(int(header[-1].split()[1])/3)
             vals=[]
             
@@ -813,7 +819,9 @@ class VTKPlugin(MeshScenePlugin):
         return self.mgr.runTasks([_saveFile(obj,filenameprefix,filetype,setObjArgs)],f)             
 
     def _openFileDialog(self,chooseMultiple=False):
-        filenames=self.mgr.win.chooseFileDialog('Choose VTK XML filename',filterstr='VTK Files (*.vtu *.vts *.vtp *.vtk)',chooseMultiple=chooseMultiple)
+        filterstr='VTK Files (*.vtu *.vts *.vtp *.vtk)'
+        filenames=self.mgr.win.chooseFileDialog('Choose VTK XML filename',filterstr=filterstr,chooseMultiple=chooseMultiple)
+        
         if filenames:
             if chooseMultiple:
                 obj=self.loadSequence(filenames)
@@ -824,7 +832,7 @@ class VTKPlugin(MeshScenePlugin):
             
     def _saveFileDialog(self):
         obj=self.win.getSelectedObject()
-        if isinstance(obj,SceneObjectRepr):
+        if isinstance(obj,eidolon.SceneObjectRepr):
             obj=obj.parent
 
         if not isinstance(obj,MeshSceneObject):
@@ -852,10 +860,10 @@ class VTKPlugin(MeshScenePlugin):
             else:
                 script+='%(varname)s.setTimestepList(%(timesteps)r)\n'
             
-            return setStrIndent(script % args).strip()+'\n'
+            return eidolon.setStrIndent(script % args).strip()+'\n'
         else:
             return MeshScenePlugin.getScriptCode(self,obj,**kwargs)     
             
         
-addPlugin(VTKPlugin())
+eidolon.addPlugin(VTKPlugin())
 
