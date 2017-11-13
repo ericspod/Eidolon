@@ -187,6 +187,14 @@ def signalBlocker(*objs):
         o.blockSignals(v)
 
 
+def getWheelDelta(qwheelevent):
+    '''PyQt4/5 compatibility wrapper around the QWheelEvent wheel delta, behaves like delts() in PyQt4.'''
+    if QtVersion==4:
+        return qwheelevent.delta() 
+    else:
+        return qwheelevent.angleDelta().y()
+
+
 def selectBoxIndex(val,box):
     '''Set the current index in `box' to be the first item whose text is `val', returning True if this was done.'''
     with signalBlocker(box):
@@ -1184,7 +1192,7 @@ class Draw2DView(Ui_Draw2DView):
 
     def mouseWheelMove(self,e):
         '''Move through the image stack when the mouse wheel moves with the cursor over the 2D drawing widget.'''
-        delta=1 if e.delta()>0 else -1
+        delta=1 if getWheelDelta(e)>0 else -1
         if e.orientation()==Qt.Horizontal: # horizontal scrolling in the widget is opposite to the slider
             delta*=-1
 
@@ -1983,7 +1991,7 @@ class BaseSpectrumWidget(QtWidgets.QWidget):
 
     def wheelEvent(self,e):
         if self.colorselected!=None:
-            self._setSelectedColorPos(self.colorpos[self.colorselected]+e.delta()*0.0001)
+            self._setSelectedColorPos(self.colorpos[self.colorselected]+getWheelDelta(e)*0.0001)
 
     def mouseMoveEvent(self,e):
         w,h=self.getSpectrumDim()
