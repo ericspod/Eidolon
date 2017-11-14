@@ -187,13 +187,47 @@ def signalBlocker(*objs):
         o.blockSignals(v)
 
 
-def getWheelDelta(qwheelevent):
-    '''PyQt4/5 compatibility wrapper around the QWheelEvent wheel delta, behaves like delts() in PyQt4.'''
+def getWheelXY(qwheelevent):
+    '''PyQt4/5 compatibility wrapper around the QWheelEvent wheel scroll angle, returns the (X,Y) scroll values.'''
     if QtVersion==4:
-        return qwheelevent.delta() 
+        #sign=-1 if qwheelevent.orientation()==Qt.Horizontal else 1
+        #return qwheelevent.delta()*sign
+        delta=qwheelevent.delta()
+        if qwheelevent.orientation()==Qt.Horizontal:
+            return delta,0
+        else:
+            return 0,delta
     else:
-        return qwheelevent.angleDelta().y()
+        delta=qwheelevent.angleDelta()
+        return delta.x(),delta.y()
+    
 
+def getWheelDelta(qwheelevent):
+    '''Returns a wheel scroll delta value combining the X and Y axes.'''
+    x,y=getWheelXY(qwheelevent)
+    return y or x*-1
+
+
+def validQVariant(qvar):
+    '''Returns True if the value `qvar' is a valid QVariant object in PyQt4 or if it is not None in PyQt5.'''
+    if QtVersion==4:
+        return qvar is not None and qvar.isValid()
+    else:
+        return qvar is not None
+    
+
+def validQVariantStr(qvar):
+    '''
+    In PyQt4 returns the string contents of the QVariant `qvar' if valid. In PyQt5 returns the string representation of
+    `qvar' (which can be anything) or empty string if it is None.
+    '''
+    if QtVersion==4 and validQVariant(qvar):
+        return qvar.toString()
+    elif QtVersion==5 and qvar is not None:
+        return str(qvar)
+    else:
+        return ''
+    
 
 def selectBoxIndex(val,box):
     '''Set the current index in `box' to be the first item whose text is `val', returning True if this was done.'''
@@ -291,10 +325,8 @@ def setSpinBox(box,minval=None,maxval=None,stepval=None,decimals=None):
 def currentIndexDataStr(obj):
     '''Returns the string form of the QVariant object at the current index in `obj', or the current text if that isn't valid.'''
     qvar=obj.itemData(obj.currentIndex())
-    if qvar.isValid():
-        return str(qvar.toString())
-    else:
-        return str(obj.currentText())
+    vstr=validQVariantStr(qvar)
+    return vstr or str(obj.currentText())
 
 
 def fillEnumTable(vals,table,numsSelectable=False):
@@ -1192,9 +1224,11 @@ class Draw2DView(Ui_Draw2DView):
 
     def mouseWheelMove(self,e):
         '''Move through the image stack when the mouse wheel moves with the cursor over the 2D drawing widget.'''
-        delta=1 if getWheelDelta(e)>0 else -1
-        if e.orientation()==Qt.Horizontal: # horizontal scrolling in the widget is opposite to the slider
-            delta*=-1
+        #delta=1 if getWheelDelta(e)>0 else -1
+        delta=getWheelDelta(e)
+        delta=delta/abs(delta) if delta else 0
+#        if e.orientation()==Qt.Horizontal: # horizontal scrolling in the widget is opposite to the slider
+#            delta*=-1
 
         pos=self.getImageStackPosition()+delta
         self.setImageStackPosition(pos)
@@ -1877,7 +1911,7 @@ class BaseSpectrumWidget(QtWidgets.QWidget):
             origcolor=toQtColor(self.colors[self.colorselected])
 
             c = QtWidgets.QColorDialog.getColor(origcolor, self)
-            if c.isValid():
+            if validQVariant(c):
                 r,g,b,a=c.getRgbF()
                 a=self.colors[self.colorselected][3]
                 self.colors[self.colorselected]=(r,g,b,a)
@@ -1991,7 +2025,9 @@ class BaseSpectrumWidget(QtWidgets.QWidget):
 
     def wheelEvent(self,e):
         if self.colorselected!=None:
-            self._setSelectedColorPos(self.colorpos[self.colorselected]+getWheelDelta(e)*0.0001)
+            delta=getWheelDelta(e)
+            delta=delta/abs(delta) if delta else 0
+            self._setSelectedColorPos(self.colorpos[self.colorselected]+delta*0.0001)
 
     def mouseMoveEvent(self,e):
         w,h=self.getSpectrumDim()
@@ -2555,7 +2591,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         This is threadsafe and non-blocking.
         '''
         c = QtWidgets.QColorDialog.getColor(toQtColor(origcolor), self)
-        if c.isValid():
+        if validQVariantStr(c):
             callback(c.getRgbF())
 
     @signalmethod

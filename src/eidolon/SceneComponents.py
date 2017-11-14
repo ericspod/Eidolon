@@ -1388,7 +1388,7 @@ class SingleCameraController(object):
         self.prevY=e.y()
 
     def _mouseWheelCB(self,e):
-        self.zoom(VisualizerUI.getWheelDelta(e)/-2)
+        self.zoom(VisualizerUI.getWheelXY(e)[1]/-2)
 
     def getPropTuples(self):
         return [
