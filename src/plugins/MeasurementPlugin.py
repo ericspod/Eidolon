@@ -17,10 +17,13 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from eidolon import *
+import os
 
-from ui import Ui_Measure2DView, Ui_MeasureObjProp
-from .SegmentPlugin import triangulateContour
+import eidolon
+from eidolon import vec3, color, enum, first, fillList, Camera2DView, DrawContourMixin, DrawLineMixin, PolyHandle2D
+
+from ui import QtWidgets, QtCore, Qt, Ui_Measure2DView, Ui_MeasureObjProp
+from .SegmentPlugin import triangulateContour, generateContoursFromMask
 from .PlotPlugin import TimePlotWidget
 import itertools
 
@@ -33,6 +36,9 @@ MeasureType=enum('point','line','contour')
 
 # extension of measurement files
 measureExt='.measure'
+
+defaultNumNodes=16 # default number of contour nodes
+defaultColor=color(1,0,0) # default handle colour
 
 # default colours for points
 PointColors=(color(1,0,0),color(0,1,0),color(0,0,1),color(1,1,0),color(1,0,1),color(0,1,1),color(1,1,1))
@@ -49,7 +55,7 @@ def calculateDisplacement(measure,objs):
 def calculateCircumference(measure,objs):
     results=[]
     for v in measure.values:
-        results.append(sum(a.distTo(b) for a,b in successive(v,cyclic=True)))
+        results.append(sum(a.distTo(b) for a,b in eidolon.successive(v,cyclic=True)))
         
     return results
 
@@ -63,6 +69,15 @@ def calculateArea(measure,objs):
     return results
     
 
+def calculateImageVolume(measure,objs):
+    area=calculateArea(measure,objs)
+    img=first(o for o in objs if isinstance(o,eidolon.ImageSceneObject))
+    if img:
+        area*=img.getVoxelSize().z()
+        
+    return area
+
+
 # List of metric calculation functions to apply to specific measurement types, values are (description, MeasureType, function)
 # The function should accept two arguments, a Measurement object and a list of objects representing the main image object followed 
 # by secondary objects. The Measurement object is expected to be on one of the planes of the main image, and the secondary
@@ -72,6 +87,7 @@ MetricFuncs=enum(
     ('disp','Displacement',MeasureType._point,calculateDisplacement),
     ('circum','Circumference',MeasureType._contour,calculateCircumference),
     ('area','Area',MeasureType._contour,calculateArea),
+    #('volume','Volume',MeasureType._contour,calculateImageVolume),
     doc='Types of metrics to apply to measurements over time'
 )
     
@@ -92,7 +108,7 @@ class Measurement(object):
         return Measurement(self.name,self.mtype,self.col,self.timesteps,self.values)
         
     def setHandlePoints(self,handle,timestep,margin=0):
-        curtimeind=minmaxIndices(abs(ts-timestep) for ts in self.timesteps)[0]
+        curtimeind=eidolon.minmaxIndices(abs(ts-timestep) for ts in self.timesteps)[0]
         assert 0<=curtimeind<len(self.values)
         
         for i,n in enumerate(self.values[curtimeind]):
@@ -104,7 +120,7 @@ class Measurement(object):
         handle.setVisible(handle.isVisible() and (not margin or min(abs(ts-timestep) for ts in self.timesteps)<=margin))
         
     def updateValue(self,handle,timestep):
-        curtimeind=minmaxIndices(abs(ts-timestep) for ts in self.timesteps)[0]
+        curtimeind=eidolon.minmaxIndices(abs(ts-timestep) for ts in self.timesteps)[0]
         assert 0<=curtimeind<len(self.values)
         nodes=handle.getNodes()
         
@@ -119,9 +135,9 @@ class Measurement(object):
         self.values.append(list(values))
         
         # resort timestep and values
-        sortinds=sortIndices(self.timesteps)
-        self.timesteps=indexList(sortinds,self.timesteps)
-        self.values=indexList(sortinds,self.values)
+        sortinds=eidolon.sortIndices(self.timesteps)
+        self.timesteps=eidolon.indexList(sortinds,self.timesteps)
+        self.values=eidolon.indexList(sortinds,self.values)
         
     def setTimesteps(self,timesteps,copyFirstValues=True):
         self.timesteps=timesteps
@@ -134,10 +150,10 @@ class Measurement(object):
         return repr((self.name,self.mtype,col,self.timesteps,values))
         
             
-class MeasureSceneObject(SceneObject):
+class MeasureSceneObject(eidolon.SceneObject):
     def __init__(self,name,filename,plugin,**kwargs):
-        SceneObject.__init__(self,name,plugin,**kwargs)
-        self.filename=ensureExt(filename,measureExt)
+        eidolon.SceneObject.__init__(self,name,plugin,**kwargs)
+        self.filename=eidolon.ensureExt(filename,measureExt)
         self.datamap={
             DatafileParams.name: name,
             DatafileParams.title: name,
@@ -173,9 +189,10 @@ class MeasureSceneObject(SceneObject):
         return [n for n in self.datamap if n not in DatafileParams]
         
     def addObject(self,sceneobj):
-        name=uniqueStr(sceneobj.name or sceneobj.mtype,[sceneobj.mtype]+self.getObjectNames())
-        self.datamap[name]=sceneobj
-        return name
+        basename=sceneobj.name or sceneobj.mtype
+        sceneobj.name=eidolon.uniqueStr(basename,[sceneobj.mtype]+self.getObjectNames())
+        self.datamap[sceneobj.name]=sceneobj
+        return sceneobj.name
         
     def enumObjects(self):
         for name,val in self.datamap.items():
@@ -189,7 +206,7 @@ class MeasureSceneObject(SceneObject):
 
     def load(self):
         if self.filename:
-            self.datamap=readBasicConfig(self.filename)
+            self.datamap=eidolon.readBasicConfig(self.filename)
             self._updatePropTuples()
             
             for name,val in self.datamap.items():
@@ -198,7 +215,7 @@ class MeasureSceneObject(SceneObject):
 
     def save(self):
         if self.filename:
-            storeBasicConfig(self.filename,self.datamap)
+            eidolon.storeBasicConfig(self.filename,self.datamap)
         
         
 class MeasurePropertyWidget(QtWidgets.QWidget,Ui_MeasureObjProp):
@@ -227,18 +244,18 @@ class LabelPolyHandle2D(PolyHandle2D):
         PolyHandle2D.updatePositions(self)
 
         if self.isVisible():
-            self.label.setPosition(self.widg2D.getOrthoPosition(avg(self.pts)))
+            self.label.setPosition(self.widg2D.getOrthoPosition(eidolon.avg(self.pts)))
             
             if len(self.pts)==2:
                 text='Len: %g'%self.pts[0].distTo(self.pts[1])
             else:
-                circ=sum(a.distTo(b) for a,b in successive(self.pts,cyclic=True))
+                circ=sum(a.distTo(b) for a,b in eidolon.successive(self.pts,cyclic=True))
                 triinds=triangulateContour(self.pts,True)
                 area=sum(self.pts[a].triArea(self.pts[b],self.pts[c]) for a,b,c in triinds)
                 
                 text='Circ: %g\nArea:%g'%(circ,area)
-                self.label.setHAlign(H_CENTER)
-                self.label.setVAlign(V_CENTER)
+                self.label.setHAlign(eidolon.H_CENTER)
+                self.label.setVAlign(eidolon.V_CENTER)
                 
             self.label.setText(text)
             
@@ -246,7 +263,7 @@ class LabelPolyHandle2D(PolyHandle2D):
         PolyHandle2D.updateRepr(self)
         
         if not self.label:
-            self.label=self.widg2D.createFigure('label',FT_TEXT)
+            self.label=self.widg2D.createFigure('label',eidolon.FT_TEXT)
             self.label.setTextHeight(20)
             self.label.setOverlay(True)
             self.label.setVisible(False)
@@ -261,12 +278,12 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
     def __init__(self,mgr,camera,parent=None):
         Camera2DView.__init__(self,mgr,camera,parent)
         DrawLineMixin.__init__(self)
-        DrawContourMixin.__init__(self,16)
+        DrawContourMixin.__init__(self,defaultNumNodes)
         
         self.plugin=self.mgr.getPlugin('Measure')
-        self.handlecol=color(1,0,0)
+        self.handlecol=defaultColor
         self.handleradius=5.0
-        self.planeMargin=Handle2D.defaultPlaneMargin
+        self.planeMargin=eidolon.Handle2D.defaultPlaneMargin
         
         self.lastUpdateTime=-1.0
         
@@ -299,7 +316,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
         
         self.measurementChanged.connect(lambda i:self.updateSceneObject())
         
-        setCollapsibleGroupbox(self.uiobj.measureBox,True)
+        eidolon.setCollapsibleGroupbox(self.uiobj.measureBox,True)
         
 #       self.uiobj.trackGroup.setVisible(False) # TODO: hide the track box until figured out how to track without close coupling
         
@@ -327,13 +344,13 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
             self.updateSceneObject() 
 
             if not os.path.isfile(self.sceneobj.filename):
-                self.sceneobj.filename=ensureExt(self.sceneobj.plugin.getFilename(False),measureExt)
+                self.sceneobj.filename=eidolon.ensureExt(self.sceneobj.plugin.getFilename(False),measureExt)
             self.sceneobj.save()
 
     def setNumNodes(self,n):
         if n>=4:
             self.numNodes=n
-            with signalBlocker(self.uiobj.numCtrlBox):
+            with eidolon.signalBlocker(self.uiobj.numCtrlBox):
                 self.uiobj.numCtrlBox.setValue(n)
 
         self._repaintDelay()
@@ -341,11 +358,11 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
     def addMeasurement(self,mobj):
         '''Add the Measurement object `mobj' to the list of measurements and create an appropriate handle.'''
         if mobj.mtype==MeasureType.point:
-            h=PointHandle2D(self,mobj.values[0][0],mobj.col)
+            h=eidolon.PointHandle2D(self,mobj.values[0][0],mobj.col)
         elif mobj.mtype==MeasureType.line:
-            h=LabelPolyHandle2D(self,mobj.values[0][:2],False,mobj.col,ElemType.Line1NL,self.handleradius)
+            h=LabelPolyHandle2D(self,mobj.values[0][:2],False,mobj.col,eidolon.ElemType.Line1NL,self.handleradius)
         elif mobj.mtype==MeasureType.contour:
-            h=LabelPolyHandle2D(self,mobj.values[0],True,mobj.col,ElemType.Line1PCR,self.handleradius)
+            h=LabelPolyHandle2D(self,mobj.values[0],True,mobj.col,eidolon.ElemType.Line1PCR,self.handleradius)
             
         i=len(self.handles)
         self.addHandle(h)
@@ -356,7 +373,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
         '''Create and add a new Measurement object of type `mtype', color `col', with points `values'.'''
         
         existingnames=map(first,MeasureType)+[n.name for n in self.handleNames.values()] # ensures names are unique and always numbered
-        name=uniqueStr(name or mtype,existingnames) 
+        name=eidolon.uniqueStr(name or mtype,existingnames) 
         timesteps=[self.mgr.timestep] if timesteps==None else timesteps
         col=col or self.handlecol
         if not isinstance(values[0],list):
@@ -386,7 +403,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 
         listitem=first(self.uiobj.objectList.findItems(name+' @ ',Qt.MatchStartsWith))
         if listitem:
-            with signalBlocker(self.uiobj.objectList):
+            with eidolon.signalBlocker(self.uiobj.objectList):
                 self.uiobj.objectList.setCurrentItem(listitem)
                 
         self._repaintDelay()
@@ -425,7 +442,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
         curtime=self.mgr.timestep
         rep=self.mgr.findObject(self.sourceName)
         tslist=rep.getTimestepList() if rep else []
-        tsmargin=avgspan(tslist)/2 if len(tslist)>=2 else 0
+        tsmargin=eidolon.avgspan(tslist)/2 if len(tslist)>=2 else 0
         #mintimeind=minmaxIndices(abs(ts-curtime) for ts in tslist)[0] if rep else -1
 
         # set the handle for each measurement object to the data for the current timestep
@@ -475,7 +492,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
         return self.uiobj.show3DBox.isChecked()
 
     def setVisible3D(self,isVisible):
-        setChecked(isVisible,self.uiobj.show3DBox)
+        eidolon.setChecked(isVisible,self.uiobj.show3DBox)
 
         for i in self.handleNames:
             self.handles[i].setVisible3D(isVisible)
@@ -660,7 +677,7 @@ class MeasureSplitView(QtWidgets.QSplitter):
                 if mf[2]==m.mtype:
                     _addAction(m,mf[0])
             
-    @taskmethod('Calculating Plot')
+    @eidolon.taskmethod('Calculating Plot')
     def setMeasurement(self,measure,metric,objs,task):
         linedata=MetricFuncs[metric][2](measure,objs)
         self.plot.setMeasurement(measure,metric,linedata)
@@ -687,21 +704,21 @@ class MeasureSplitView(QtWidgets.QSplitter):
                     self.setMeasurement(m,k[1],objs)
                 
 
-class MeasurePlugin(ScenePlugin):
+class MeasurePlugin(eidolon.ScenePlugin):
     def __init__(self):
-        ScenePlugin.__init__(self,'Measure')
+        eidolon.ScenePlugin.__init__(self,'Measure')
         self.dockmap={}
         # maps source name/directory to function accepting (name, points list) and returns mapping from timesteps to list of points tracked to that time
         self.trackSrcs={} 
         
     def init(self,plugid,win,mgr):
-        ScenePlugin.init(self,plugid,win,mgr)
+        eidolon.ScenePlugin.init(self,plugid,win,mgr)
         if win:
             win.addMenuItem('Create','NewMeasure'+str(plugid),'&Measurement Object',self._createMeasure)
             win.addMenuItem('Import','ImportMeasure'+str(plugid),'&Measurements',self._importMeasure)
 
         if mgr.conf.hasValue('args','--measure'):
-            @taskroutine('Loading Measurement File(s)')
+            @eidolon.taskroutine('Loading Measurement File(s)')
             def _loadTask(filenames,task=None):
                 for f in filenames:
                     obj=self.loadObject(f)
@@ -735,6 +752,7 @@ class MeasurePlugin(ScenePlugin):
     def createObjPropBox(self,obj):
         prop=MeasurePropertyWidget()
 
+        prop.createContButton.clicked.connect(lambda:self._createContoursButton(prop,obj))
         prop.showButton.clicked.connect(lambda:self.mgr.addFuncTask(lambda:obj.createRepr(None)))
         prop.srcBox.activated.connect(lambda i:obj.set(DatafileParams.srcimage,str(prop.srcBox.itemText(i))))
 
@@ -743,14 +761,18 @@ class MeasurePlugin(ScenePlugin):
     def updateObjPropBox(self,obj,prop):
         if not prop.isVisible():
             return
+        
+        prop.ctrlsBox.setValue(defaultNumNodes)
 
-        imgnames=[o.getName() for o in self.mgr.objs if isinstance(o,ImageSceneObject)]
+        imgnames=[o.getName() for o in self.mgr.objs if isinstance(o,eidolon.ImageSceneObject)]
 
-        fillTable(obj.getPropTuples(),prop.propTable)
-        fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
+        eidolon.fillTable(obj.getPropTuples(),prop.propTable)
+        eidolon.fillList(prop.srcBox,imgnames,obj.get(DatafileParams.srcimage))
+        
+        eidolon.fillList(prop.maskImgBox,imgnames)
         
     def acceptFile(self,filename):
-        return splitPathExt(filename)[2].lower() == measureExt
+        return eidolon.splitPathExt(filename)[2].lower() == measureExt
         
     def checkFileOverwrite(self,obj,dirpath,name=None):
         outfile=os.path.join(dirpath,name or obj.getName())+measureExt
@@ -760,9 +782,9 @@ class MeasurePlugin(ScenePlugin):
             return []
 
     def renameObjFiles(self,obj,oldname,overwrite=False):
-        assert isinstance(obj,SceneObject) and obj.plugin==self
+        assert isinstance(obj,eidolon.SceneObject) and obj.plugin==self
         if os.path.isfile(obj.filename):
-            obj.filename=renameFile(obj.filename,obj.getName(),overwriteFile=overwrite)
+            obj.filename=eidolon.renameFile(obj.filename,obj.getName(),overwriteFile=overwrite)
 
     def getObjFiles(self,obj):
         return [obj.filename] if obj.filename else []
@@ -788,31 +810,25 @@ class MeasurePlugin(ScenePlugin):
             args['filename']=convertpath(obj.filename)
             script+='%(varname)s = Measure.loadObject(%(filename)s,%(objname)r)\n'
 
-        return setStrIndent(script % args).strip()+'\n'
+        return eidolon.setStrIndent(script % args).strip()+'\n'
 
     def createMeasurementObject(self,filename,name):
         return MeasureSceneObject(name,filename,self)
 
-    def createRepr(self,obj,reprtype,refine=0,**kwargs):
-        f=Future()
-        @taskroutine('Creating Segmentation View')
-        def _create(task):
-            with f:
-                sobj=self.mgr.findObject(obj.get(DatafileParams.srcimage))
-                
-                # make a representation of the source object visible if one doesn't already exist
-                if isinstance(sobj,ImageSceneObject) and not len(sobj.reprs):
-                    isEmpty=first(self.mgr.enumSceneObjectReprs())==None
-                    r=sobj.createRepr(ReprType._imgtimestack if sobj.isTimeDependent else ReprType._imgstack)
-                    self.mgr.addSceneObjectRepr(r)
-                    if isEmpty:
-                        self.mgr.setCameraSeeAll()
-                        self.mgr.repaint()
-#                   self.win.sync() # need to do this to prevent crashing when the dock is created, why?
+    @eidolon.taskmethod('Creating Segmentation View')
+    def createRepr(self,obj,reprtype,refine=0,task=None,**kwargs):
+        sobj=self.mgr.findObject(obj.get(DatafileParams.srcimage))
+        
+        # make a representation of the source object visible if one doesn't already exist
+        if isinstance(sobj,eidolon.ImageSceneObject) and not len(sobj.reprs):
+            isEmpty=first(self.mgr.enumSceneObjectReprs())==None
+            r=sobj.createRepr(eidolon.ReprType._imgtimestack if sobj.isTimeDependent else eidolon.ReprType._imgstack)
+            self.mgr.addSceneObjectRepr(r)
+            if isEmpty:
+                self.mgr.setCameraSeeAll()
+                self.mgr.repaint()
 
-                f.setObject(self.getMeasurementDock(obj))
-
-        return self.mgr.runTasks(_create(),f)
+        return self.getMeasurementDock(obj)
 
     def getMeasurementDock(self,obj,w=400,h=400):
         @self.mgr.proxyThreadSafe
@@ -828,7 +844,7 @@ class MeasurePlugin(ScenePlugin):
             return widg or createWidget()
 
     def loadObject(self,filename,name=None,**kwargs):
-        obj=self.createMeasurementObject(filename,name or splitPathExt(filename)[1])
+        obj=self.createMeasurementObject(filename,name or eidolon.splitPathExt(filename)[1])
         obj.load()
         return obj
         
@@ -837,9 +853,9 @@ class MeasurePlugin(ScenePlugin):
             raise ValueError('Can only save measurement objects with MeasurePlugin')
             
         if os.path.isdir(path):
-            path=os.path.join(path,getValidFilename(obj.getName()))
+            path=os.path.join(path,eidolon.getValidFilename(obj.getName()))
             
-        path=ensureExt(path,measureExt)
+        path=eidolon.ensureExt(path,measureExt)
         oldpath=obj.filename
         obj.filename=path
         obj.save()
@@ -862,7 +878,29 @@ class MeasurePlugin(ScenePlugin):
         for n,f in list(self.trackSrcs.items()):
             if name_or_func in (n,f):
                 del self.trackSrcs[n]
+                
+    @eidolon.taskmethod('Add segmentations from mask image')
+    def addMaskSegmentations(self,obj,mask,numctrls,innerseg,minSegSize=100,refine=2,task=None):
+        contours=generateContoursFromMask(mask.images,numctrls,innerseg,minSegSize,2,task)
+        
+        for ts,nodes in contours:
+            mobj=Measurement('contour',MeasureType.contour,defaultColor,[ts],[nodes])
+            obj.addObject(mobj)
+            
+        widg=obj.getWidget()
+        if widg:
+            self.mgr.callThreadSafe(widg.setSceneObject,obj)
+        
+    
+    def _createContoursButton(self,prop,obj):
+        maskname=str(prop.maskImgBox.currentText())
+        numctrls=prop.ctrlsBox.value()
+        innerseg=prop.innerContBox.isChecked()
+        mask=self.findObject(maskname)
+        
+        f=self.addMaskSegmentations(obj,mask,numctrls,innerseg)
+        self.mgr.checkFutureResult(f)
         
         
-addPlugin(MeasurePlugin())
+eidolon.addPlugin(MeasurePlugin())
 

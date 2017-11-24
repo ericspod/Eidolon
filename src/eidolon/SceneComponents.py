@@ -601,6 +601,7 @@ class PolyHandle2D(Handle2D):
             
         self.figs+=[self.line2D,self.line3D] # add the extra figs to the end
         self.setVisible(self._isVisible)
+        
 
 class Handle3D(Handle):
     '''

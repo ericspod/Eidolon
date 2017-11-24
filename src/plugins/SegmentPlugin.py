@@ -333,7 +333,7 @@ def getHemisphereControls(contours,inner=True):
             if c2:
                 contours.insert(0,c2)
 
-    assert all(len(c)==len(ctrls[0]) for c in ctrls),'Contour lengths do not match, sorting failure?'
+    #assert all(len(c)==len(ctrls[0]) for c in ctrls),'Contour lengths do not match, sorting failure?'
     return ctrls
 
 
@@ -699,7 +699,8 @@ def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinter
 
     if reinterpolateVal: # reinterpolate contours starting from `startdir'
         elemtype=elemtype or ElemType.Line1PCR
-        ctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,len(cc)) for cc in ctrls]
+        maxlen=max(len(cc) for cc in ctrls)
+        ctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,maxlen) for cc in ctrls]
 
     # if this is for the inner surface, move the supplied apex up an amount proportionate to the average thickness
     if innerSurface and apex:
@@ -755,7 +756,8 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
     ctrls=getHemisphereControls(contours)
 
     if reinterpolateVal: # reinterpolate contours starting from `startdir'
-        ctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,len(cc)) for cc in ctrls]
+        maxlen=max(len(cc) for cc in ctrls)
+        ctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,maxlen) for cc in ctrls]
 
     # if present, move the supplied apex up an amount proportionate to the average thickness
     if apex:
@@ -779,7 +781,8 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
         outerctrls=getHemisphereControls(contours,False)
 
         if reinterpolateVal: # reinterpolate contours starting from `startdir'
-            outerctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,len(cc)) for cc in outerctrls]
+            maxlen=max(len(cc) for cc in outerctrls)
+            outerctrls=[reinterpolateCircularContour(cc,elemtype,startdir,reinterpolateVal,maxlen) for cc in outerctrls]
 
         assert all(len(c)==len(ctrls[0]) for c in outerctrls),'Contour lengths do not match, sorting failure?'
 
@@ -933,7 +936,8 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
             with eidolon.signalBlocker(self.uiobj.numCtrlBox):
                 self.uiobj.numCtrlBox.setValue(n)
 
-            for i in self.contourNames:
+            i=self.getActiveIndex()
+            if i is not None: # change only the active contour
                 self.handles[i].setNumNodes(n)
 
         self._repaintDelay()
@@ -974,6 +978,8 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
     def setActiveContour(self,name):
         for i,(n,ts) in self.contourNames.items():
             self.handles[i].setActive(n==name)
+            if n==name:
+                self.setNumNodes(self.handles[i].numNodes())
 
         listitem=first(self.uiobj.contourList.findItems(name+' @ ',Qt.MatchStartsWith))
         if listitem:
