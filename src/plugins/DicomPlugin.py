@@ -659,7 +659,10 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
                 for i,series in enumerate(self.serieslist):
                     simgs=self.plugin.loadSeriesImages(series,selection,False,crop)
                     images+=simgs
-                    if simgs[0].timestep==-1:
+                    tslist=set(s.timestep for s in simgs)
+                    
+                    if len(tslist)==1 and first(tslist)<=epsilon:
+                    #if simgs[0].timestep==-1:
                         for s in simgs:
                             s.timestep=i
 
