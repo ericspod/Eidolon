@@ -326,7 +326,7 @@ def currentIndexDataStr(obj):
     '''Returns the string form of the QVariant object at the current index in `obj', or the current text if that isn't valid.'''
     qvar=obj.itemData(obj.currentIndex())
     vstr=validQVariantStr(qvar)
-    return vstr or str(obj.currentText())
+    return str(vstr or obj.currentText())
 
 
 def fillEnumTable(vals,table,numsSelectable=False):

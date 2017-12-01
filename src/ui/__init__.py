@@ -37,7 +37,7 @@ import sys
 import os
 import glob
 import re
-from contextlib import closing
+import contextlib
 
 # attempt to import PyQt5 first then default to PyQt4
 try: 
@@ -87,8 +87,7 @@ else:
     # iterate over every file in the layout section of the resources and load them into this module
     it=QtCore.QDirIterator(':/layout')
     while it.hasNext():
-        with closing(QtCore.QFile(it.next())) as layout:
+        with contextlib.closing(QtCore.QFile(it.next())) as layout:
             if layout.open(QtCore.QFile.ReadOnly):
                 loadUI(layout.readAll())
                 
-        

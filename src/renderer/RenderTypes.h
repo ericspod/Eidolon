@@ -3355,8 +3355,9 @@ public:
 	}
 
 	/**
-	 * Returns a pair (n,m) indicating that `this' intersects `ray' at t=n and `ray' intersects `this' at t=m. If both values are 0 then the rays do 
-	 * not intersect, except for the special case where the origins of both are the same thus t is actually 0 for both.
+	 * Returns a pair (n,m) indicating that `this' intersects `ray' at t=n and `ray' intersects `this' at t=m. If both 
+	 * values are 0 then the rays do not intersect, except for the special case where the origins of both are the same 
+	 * thus t is actually 0 for both.
 	 */
 	realpair intersectsRay(const Ray& ray) const
 	{
@@ -3404,6 +3405,8 @@ public:
 	 * Returns a triple (t,u,v) where t>=0 indicating that the ray passes through the triangle at 
 	 * distance t. If t<0 then the ray does not pass through the triangle. The coord (u,v) is the 
 	 * relative xi coord such that a point p on the triangle is p=(1-u-v)*v0+u*v1+v*v2, u+v<=1.
+	 *
+	 * In python this method returns a tuple type containing float values (t,u,v), or an empty tuple if t<0.
 	 */
 	realtriple intersectsTri(const vec3& v0, const vec3& v1, const vec3& v2) const 
 	{
@@ -3445,6 +3448,8 @@ public:
 	 * sphere. If `numResults' is greater than 0 only that many results will be returned. if `excludeInd' is greater than
 	 * -1 the triangle at that index is skipped, this is useful for rays which begin at a triangle and are used to check
 	 * for intersection with other parts of the same mesh.
+	 *
+	 * In python this method returns a list of tuples containing values (i,t,u,v) for each intersected triangle.
 	 */
 	std::vector<indextriple> intersectsTriMesh(const Vec3Matrix* const nodes, const IndexMatrix* const inds,
 		const Vec3Matrix* const centers, const RealMatrix* const radii2, sval numResults=0,sval excludeInd=-1) const  throw(IndexException)
