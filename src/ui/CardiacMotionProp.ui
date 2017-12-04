@@ -2495,10 +2495,10 @@ background-color:rgba(255.0,255.0,255.0,200.0);
             <item>
              <widget class="QDoubleSpinBox" name="cropThresholdBox">
               <property name="toolTip">
-               <string>Sets the threshold percentage of observed motion values to include in the bounding area, larger values include more motion so larger area, 1.0 includes whole image</string>
+               <string>Sets the threshold percentage of observed motion values to include in the bounding area, smaller values include more motion so larger area, 0 includes whole image</string>
               </property>
               <property name="minimum">
-               <double>0.050000000000000</double>
+               <double>0.000000000000000</double>
               </property>
               <property name="maximum">
                <double>1.000000000000000</double>
@@ -2507,7 +2507,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
                <double>0.050000000000000</double>
               </property>
               <property name="value">
-               <double>0.750000000000000</double>
+               <double>0.500000000000000</double>
               </property>
              </widget>
             </item>

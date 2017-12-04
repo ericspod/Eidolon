@@ -395,7 +395,15 @@ def isCTImageSeries(imgs=None,minv=None,maxv=None,hist=None):
     return len(maximi)>3
 
 
-def calculateBinaryMaskBox(image,maxFilterSize=20,maskThreshold=0.75):
+def getLargestMaskObject(mask):
+    '''Given a numpy array `mask' containing a binary mask, returns an equivalent array with only the largest mask object.'''
+    labeled,numfeatures=scipy.ndimage.label(mask) # generate a feature label
+    sums=scipy.ndimage.sum(mask,labeled,range(numfeatures+1)) # sum the pixels under each label
+    maxfeature=np.where(sums==max(sums)) # choose the maximum sum whose index will be the label number
+    return mask*(labeled==maxfeature)
+    
+
+def calculateBinaryMaskBox(image,maxFilterSize=20,maskThreshold=0.5):
     '''
     Returns the extents of a box containing the pixels of a mask calculated from `maskmat'. The input 3D array `image'
     is filtered through a maxmimum filter with size `maxFilterSize', normalized, then thresholded by `maskThreshold'.
@@ -410,7 +418,7 @@ def calculateBinaryMaskBox(image,maxFilterSize=20,maskThreshold=0.75):
 
 
 @timing
-def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.75):
+def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.5):
     '''
     Calculate a region of interest to encompass the area of most of the motion present in the time-dependent image `obj'.
     This is done using fourier transforms to determine where motion is present. Masking is used to identify a square
@@ -525,9 +533,11 @@ def cropRefImage(obj,ref,name,marginx=0,marginy=0):
     return obj.plugin.cropXY(obj,name,int(minx),int(miny),int(maxx),int(maxy))
 
 
-def cropMotionImage(obj,name,maxFilterSize=20,maskThreshold=0.75):
+def cropMotionImage(obj,name,maxFilterSize=20,maskThreshold=0.25):
+    '''Returns a copy of `obj' cropped in XY using motion info from calculateMotionROI(obj,maxFilterSize,maskThreshold).'''
     _,minx,miny,maxx,maxy=calculateMotionROI(obj,maxFilterSize,maskThreshold)
     return obj.plugin.cropXY(obj,name,minx,miny,maxx,maxy)
+    
 
 def centerImagesLocalSpace(obj):
     '''Moves `obj' so that its boundbox center is at the origin.'''
