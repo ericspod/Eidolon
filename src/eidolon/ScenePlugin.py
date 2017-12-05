@@ -1279,7 +1279,7 @@ class ImageScenePlugin(ScenePlugin):
         '''
         shape=tuple(array.shape)+(1,1) # add extra dimensions to the shape to make a 4D shape
         shape=shape[:4] # clip extra dimensions off so that this is a 4D shape description
-        height,width,slices,timesteps=shape
+        width,height,slices,timesteps=shape
 
         obj=self.createImageStackObject(name,width,height,slices,timesteps,pos,rot,spacing)
 
@@ -1296,7 +1296,7 @@ class ImageScenePlugin(ScenePlugin):
                 task.setProgress(t+s*timesteps+1)
 
             i=obj.images[s+t*slices]
-            np.asarray(i.img)[:,:]=array[:,:,s,t] # fill the array for this image by slicing the volume
+            np.asarray(i.img)[:,:]=array[:,:,s,t].T # fill the array for this image by slicing the volume
             i.setMinMaxValues(*minmaxMatrixReal(i.img)) # set the min/max values for the array
             i.timestep=i.timestep*interval+toffset # set the timestep based off of the interval, offset, and default time number for this image
 

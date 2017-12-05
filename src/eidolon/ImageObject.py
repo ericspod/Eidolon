@@ -130,7 +130,7 @@ class SharedImage(object):
         changing either of these members.
         '''
         # dimension vector, represents far corner of unrotated plane
-        self.dimvec=vec3(self.dimensions[1]*self.spacing[0],-self.dimensions[0]*self.spacing[1])
+        self.dimvec=vec3(self.dimensions[0]*self.spacing[0],-self.dimensions[1]*self.spacing[1])
         self.orientinv=self.orientation.inverse() # inverse of the orientation
         self.norm=self.orientation*vec3(0,0,1) # normal of plane
         self.center=self.position+self.orientation*(self.dimvec*0.5) # center of plane
@@ -341,7 +341,7 @@ class ImageSceneObject(SceneObject):
     def getArrayDims(self):
         '''Get the 4 dimensions (rows, columns, height, time) for a 4D array containing the volume image data.'''
         inds=self.getTimestepIndices()
-        return (self.maxrows,self.maxcols,len(inds[0][1]),len(inds))
+        return (self.maxcols,self.maxrows,len(inds[0][1]),len(inds))
 
     def getVoxelSize(self):
         '''Get the size of each voxel in the volume in world space units.'''

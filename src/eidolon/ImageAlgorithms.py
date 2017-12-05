@@ -75,13 +75,6 @@ def checkNan(obj):
         for n,m in matIterate(img.img):
             v=img.img.getAt(n,m)
             assert not math.isnan(v), 'Found NaN in object %s, image %i at %i,%i'%(obj.getName(),i,n,m)
-
-
-def matrixToArray(mat,dtype=None):
-    '''Converts a RealMatrix or IndexMatrix `mat' to a Numpy array with type `dtype' or the matching type to `mat'.'''
-    assert isinstance(mat,(RealMatrix,IndexMatrix))
-    dtype=dtype or np.dtype(float if isinstance(mat,RealMatrix) else int)
-    return np.asarray(mat).astype(dtype)
     
 
 def rescaleArray(arr,minv=0.0,maxv=1.0):
@@ -104,7 +97,7 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float):
 
     for t,ts in enumerate(timeseqs):
         for d,dd in enumerate(ts):
-            arr=matrixToArray(imgobj.images[dd].img,dtype)
+            arr=np.asarray(imgobj.images[dd].img).astype(dtype).T
             assert arr.shape==shape[:2]
             im[:,:,d,t]=arr
     
@@ -117,7 +110,7 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float):
                 arr=im[:,:,d,t]
                 img=imgobj.images[dd]
                 img.setMinMaxValues(arr.min(),arr.max())
-                np.asarray(img.img)[:,:]=arr
+                np.asarray(img.img)[:,:]=arr.T
 
 
 def sampleImageRay(img,start,samplevec,numsamples):
@@ -322,7 +315,7 @@ def getHistogramExtremas(hist,thresholdFilter=True,thresholdfunc=None,sigma=3,or
     is first smoothed using a gaussian filter with the given `sigma' argument, and then argrelextrema() is applied to
     this with the given `order' argument
     '''
-    hist=matrixToArray(hist)
+    hist=np.asarray(hist)
 
     zeroind=first(i for i,v in enumerate(hist) if v>0)
     hist[zeroind]=0 # eliminate the empty space component
