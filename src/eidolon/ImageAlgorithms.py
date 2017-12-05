@@ -418,18 +418,11 @@ def calculateBinaryMaskBox(image,maxFilterSize=20,maskThreshold=0.5):
 
 
 @timing
-def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.5):
+def calculateMotionField(obj):
     '''
-    Calculate a region of interest to encompass the area of most of the motion present in the time-dependent image `obj'.
-    This is done using fourier transforms to determine where motion is present. Masking is used to identify a square
-    region of interest which includes the most significanat areas of motion. The parameter `maxFilterSize' determines the
-    size of maximum filter size of the mask, and `maskThreshold' the mimimum value to threshold the mask by. The return 
-    value is the fourier image, minimum x (column) index, minimum y (row) index, maximum x index, and maximum y index.
+    Calculate a motion field from time-dependent image `obj'. This is done using fourier transforms to determine where 
+    motion is present. The result is a static image with dimensions of `obj' with areas of motion having higher intensity.
     
-    For example, the following crops an image `obj' based on the motion ROI:
-        _,minx,miny,maxx,maxy=calculateMotionROI(obj)
-        cropped=obj.plugin.cropXY(obj,'cropped',minx,miny,maxx,maxy)
-        
     see: Lin et. al, "Automated Detection of Left Ventricle in 4D MR Images: Experience from a Large Study"
     '''
     if not obj.isTimeDependent:
@@ -444,10 +437,7 @@ def calculateMotionROI(obj,maxFilterSize=20,maskThreshold=0.5):
             
             out[:,:,i]=im
             
-        # reduce out to a mask of voxels at and above `maskThreshold' of the value range
-        box=calculateBinaryMaskBox(out,maxFilterSize,maskThreshold)
-    
-    return (out,)+box
+    return out
 
 
 def applySlopeIntercept(imgobj,slope=None,inter=None):
@@ -534,8 +524,9 @@ def cropRefImage(obj,ref,name,marginx=0,marginy=0):
 
 
 def cropMotionImage(obj,name,maxFilterSize=20,maskThreshold=0.25):
-    '''Returns a copy of `obj' cropped in XY using motion info from calculateMotionROI(obj,maxFilterSize,maskThreshold).'''
-    _,minx,miny,maxx,maxy=calculateMotionROI(obj,maxFilterSize,maskThreshold)
+    '''Returns a copy of `obj' cropped in XY using motion info from calculateMotionField(obj).'''
+    motion=calculateMotionField(obj)
+    minx,miny,maxx,maxy=calculateBinaryMaskBox(motion,maxFilterSize,maskThreshold)
     return obj.plugin.cropXY(obj,name,minx,miny,maxx,maxy)
     
 

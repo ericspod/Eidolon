@@ -438,6 +438,7 @@ class SceneManager(TaskQueue):
         self.addEventHandler(EventType._mousePress,self._mousePressHandleCheck) # transmit mouse presses to handles
         self.addEventHandler(EventType._mouseMove,self._mouseMoveHandleCheck) # transmit mouse moves to handles
         self.addEventHandler(EventType._mouseRelease,self._mouseReleaseHandleCheck) # transmit mouse release to handles
+        self.addEventHandler(EventType._keyPress,self._keyPressEvent)
 
         self.taskthread.start() # start taskthread here
 
@@ -594,6 +595,19 @@ class SceneManager(TaskQueue):
     def _mouseReleaseHandleCheck(self,e):
         for h in listSum(self.handlemap.values()):
             h.mouseRelease(e)
+            
+    def _keyPressEvent(self,e):
+        '''Keypress event handler for the render widget.'''
+        key=e.key()
+        
+        if key==Qt.Key_Left:
+            self.decTimestep()
+        elif key==Qt.Key_Right:
+            self.incTimestep()
+        elif key==Qt.Key_Home:
+            self.setTimestep(self.timestepMin)
+        elif key==Qt.Key_End:
+            self.setTimestep(self.timestepMax)
 
     def _processTasks(self):
         '''
@@ -900,7 +914,7 @@ class SceneManager(TaskQueue):
     def showExcept(self,ex,msg='',title='Exception Caught',format_exc=None):
         '''Shows the given exception and writes information to the log file.'''
         format_exc=format_exc or traceback.format_exc()
-        msg=str(msg or ex)
+        msg=str(msg or 'Throw Exception %s'%type(ex))
 
         if format_exc=='None\n':
             format_exc=str(ex)
@@ -1000,12 +1014,15 @@ class SceneManager(TaskQueue):
 
     def incTimestep(self):
         newts=self.timestep+self.timestepSpan
-        self.setTimestep(self.timestepMin if newts>self.timestepMax else newts)
+        if newts>self.timestepMax:
+            newts=self.timestepMin
+            
+        self.setTimestep(newts)
         
     def decTimestep(self):
         newts=self.timestep-self.timestepSpan
         if newts<self.timestepMin:
-            newts+=self.timestepMax-self.timestepMin
+            newts=self.timestepMax #+=self.timestepMax-self.timestepMin
             
         self.setTimestep(newts)
 
