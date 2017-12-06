@@ -1318,7 +1318,6 @@ class ImageScenePlugin(ScenePlugin):
         '''
         assert isinstance(obj,ImageSceneObject)
         assert len(obj.getOrientMap())==1, 'Cannot produce a array from non-stack image objects'
-        #assert isinstance(datatype,np.dtype) or datatype in 'fdbBhHiIlL'
 
         with ImageAlgorithms.processImageNp(obj,False,datatype) as array:
             timesteps=obj.getTimestepList()
