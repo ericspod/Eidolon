@@ -76,7 +76,7 @@ class NiftiPlugin(ImageScenePlugin):
             return []
 
     def getObjFiles(self,obj):
-        if obj.source and 'filename' in obj.source:
+        if obj.source and obj.source.get('filename',None):
             return [obj.source['filename']]
         else:
             return []
