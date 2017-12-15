@@ -28,6 +28,7 @@ import numpy as np
 import scipy.ndimage
 import scipy.signal
 import scipy.fftpack
+import scipy.spatial
 
 import renderer
 import Utils
@@ -394,20 +395,6 @@ def getLargestMaskObject(mask):
     sums=scipy.ndimage.sum(mask,labeled,range(numfeatures+1)) # sum the pixels under each label
     maxfeature=np.where(sums==max(sums)) # choose the maximum sum whose index will be the label number
     return mask*(labeled==maxfeature)
-    
-
-def calculateBinaryMaskBox(image,maxFilterSize=20,maskThreshold=0.5):
-    '''
-    Returns the extents of a box containing the pixels of a mask calculated from `maskmat'. The input 3D array `image'
-    is filtered through a maxmimum filter with size `maxFilterSize', normalized, then thresholded by `maskThreshold'.
-    Return value is minimum x (column) index, minimum y (row) index, maximum x index, and maximum y index of the box
-    in `image' containing these calculated pixels.
-    '''
-    mask=scipy.ndimage.maximum_filter(image, size=maxFilterSize)
-    mask=rescaleArray(mask)>maskThreshold
-    inds=scipy.ndimage.find_objects(mask)[0]
-    
-    return inds[1].start, inds[0].start, inds[1].stop, inds[0].stop
 
 
 @timing
@@ -426,11 +413,39 @@ def calculateMotionField(obj):
         
         for i in range(mat.shape[2]):
             ff=scipy.fftpack.fftn(np.transpose(mat[:,:,i,:],(2,0,1)))
-            im=np.sum(np.absolute(scipy.fftpack.ifftn(ff[1:])),axis=0)
+            iff=np.absolute(scipy.fftpack.ifftn(ff[1:]))
+            im=np.sum(iff,axis=0)
+#            im=np.max((iff-np.average(iff,axis=0))**2,axis=0)
             
             out[:,:,i]=im
             
     return out
+
+
+def generateMotionMask(motion,percentile=90,filterSize=10):
+    result=np.zeros_like(motion)
+
+    for i in range(motion.shape[-1]):
+        m=motion[...,i]>np.percentile(motion[...,i],percentile)
+        m=scipy.ndimage.binary_erosion(m,iterations=1)
+        m=getLargestMaskObject(m)
+        m=scipy.ndimage.maximum_filter(m, size=filterSize)
+        m=generateMaskConvexHull(m)
+        result[...,i]=m
+    
+    return result
+
+
+def generateMaskConvexHull(mask):
+    '''Returns a convex hull mask image covering the non-zero values in 2D/3D image `mask'.'''
+    origshape=mask.shape
+    mask=np.squeeze(mask) # if a 2D image is presented as a 3D image with depth 1 this must be compressed
+    region=np.argwhere(mask>0) # select non-zero points on the mask image
+    hull=scipy.spatial.ConvexHull(region) # define the convex hull
+    de=scipy.spatial.Delaunay(region[hull.vertices]) # define a triangulation of the hull
+    simplexpts=de.find_simplex(np.argwhere(mask==mask)) # do an inclusion test for every point of the mask
+    # reshape the points to the original's shape and mask by valid values
+    return (simplexpts.reshape(origshape)!=-1).astype(mask.dtype) 
 
 
 def applySlopeIntercept(imgobj,slope=None,inter=None):
@@ -516,11 +531,12 @@ def cropRefImage(obj,ref,name,marginx=0,marginy=0):
     return obj.plugin.cropXY(obj,name,int(minx),int(miny),int(maxx),int(maxy))
 
 
-def cropMotionImage(obj,name,maxFilterSize=20,maskThreshold=0.25):
+def cropMotionImage(obj,name,percentile=90,filterSize=10):
     '''Returns a copy of `obj' cropped in XY using motion info from calculateMotionField(obj).'''
     motion=calculateMotionField(obj)
-    minx,miny,maxx,maxy=calculateBinaryMaskBox(motion,maxFilterSize,maskThreshold)
-    return obj.plugin.cropXY(obj,name,minx,miny,maxx,maxy)
+    mask=generateMotionMask(motion,percentile,filterSize)
+    inds=scipy.ndimage.find_objects(mask)[0]
+    return obj.plugin.cropXY(obj,name,inds[0].start, inds[1].start, inds[0].stop, inds[1].stop)
     
 
 def centerImagesLocalSpace(obj):

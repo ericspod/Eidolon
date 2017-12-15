@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>881</width>
+    <width>783</width>
     <height>868</height>
    </rect>
   </property>
@@ -14,7 +14,16 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
-   <property name="margin">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
     <number>0</number>
    </property>
    <item>
@@ -45,7 +54,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>434</width>
+        <width>768</width>
         <height>224</height>
        </rect>
       </property>
@@ -59,7 +68,16 @@
        <string>1. Import</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_8">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
@@ -202,7 +220,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>351</width>
+        <width>768</width>
         <height>480</height>
        </rect>
       </property>
@@ -216,7 +234,16 @@
        <string>2. Alignment/Registration</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_9">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
@@ -444,8 +471,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>497</width>
-        <height>889</height>
+        <width>768</width>
+        <height>887</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -458,7 +485,16 @@
        <string>3. Motion Tracking</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_10">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
@@ -863,7 +899,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>485</width>
+        <width>768</width>
         <height>1389</height>
        </rect>
       </property>
@@ -1634,7 +1670,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <rect>
         <x>0</x>
         <y>-799</y>
-        <width>866</width>
+        <width>768</width>
         <height>1540</height>
        </rect>
       </property>
@@ -1648,7 +1684,16 @@ background-color:rgba(255.0,255.0,255.0,200.0);
        <string>5. Utilities</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_11">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
@@ -2480,34 +2525,34 @@ background-color:rgba(255.0,255.0,255.0,200.0);
               <property name="toolTip">
                <string>Sets the size of square filters to average motion values over, larger values create a larger &quot;margin&quot; around the motion areas of the image</string>
               </property>
+              <property name="minimum">
+               <number>1</number>
+              </property>
               <property name="value">
-               <number>20</number>
+               <number>10</number>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_19">
               <property name="text">
-               <string>Threshold</string>
+               <string>Threshold Percentile</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QDoubleSpinBox" name="cropThresholdBox">
+             <widget class="QSpinBox" name="cropThresholdBox">
               <property name="toolTip">
-               <string>Sets the threshold percentage of observed motion values to include in the bounding area, smaller values include more motion so larger area, 0 includes whole image</string>
+               <string>Set the percentile threshold to mask motion data by, larger values will include less motion and create a tighter crop</string>
               </property>
               <property name="minimum">
-               <double>0.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>1.000000000000000</double>
+               <number>10</number>
               </property>
               <property name="singleStep">
-               <double>0.050000000000000</double>
+               <number>5</number>
               </property>
               <property name="value">
-               <double>0.500000000000000</double>
+               <number>90</number>
               </property>
              </widget>
             </item>

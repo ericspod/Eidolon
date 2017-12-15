@@ -123,9 +123,6 @@ library_dir=libdir+'/lib/'+libsuffix
 # include file directories
 includedirs=['.',libdir+'/include/OgreOverlay',libdir+'/include/Ogre']
 
-#if isLinux:
-#    includedirs=['/usr/include/','/usr/include/OGRE','/usr/include/OGRE/Overlay']+includedirs
-
 # add numpy include directory, this will vary by platform
 includedirs.append(numpy.get_include())
 
@@ -156,9 +153,8 @@ with open('Renderer.cpp','w') as o:
             o.write(line)
 
 setup(ext_modules=ext)
-#setup(ext_modules = cythonize(extension))
 
-os.remove('./Renderer.cpp')
+os.remove('Renderer.cpp')
 shutil.rmtree('build')
 
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh

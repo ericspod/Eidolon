@@ -1037,7 +1037,7 @@ class CardiacMotionProject(Project):
         seriesname=str(self.alignprop.mCropSeriesBox.currentText())
         filtersize=self.alignprop.filterSizeBox.value()
         threshold=self.alignprop.cropThresholdBox.value()
-        f=self.CardiacMotion.cropMotionObject(seriesname,filtersize,threshold)
+        f=self.CardiacMotion.cropMotionObject(seriesname,threshold,filtersize)
         self.mgr.checkFutureResult(f)
 
     def _cropBoundBox(self):

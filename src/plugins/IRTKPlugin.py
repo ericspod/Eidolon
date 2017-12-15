@@ -905,10 +905,10 @@ class IRTKPluginMixin(object):
         return self.loadNiftiFiles(filename)
 
     @taskmethod('Cropping object')
-    def cropMotionObject(self,srcname,filtersize,threshold,task):
+    def cropMotionObject(self,srcname,threshold,filtersize,task):
         imgobj=self.findObject(srcname)
         name=self.getUniqueShortName(srcname,'Crop')
-        cobj=cropMotionImage(imgobj,name,filtersize,threshold)
+        cobj=cropMotionImage(imgobj,name,threshold,filtersize)
         filename=self.saveToNifti([cobj])
         return self.loadNiftiFiles(filename)
     
