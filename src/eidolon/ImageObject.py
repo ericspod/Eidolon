@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import Utils
+from . import Utils
 import renderer
 
 from renderer import vec3, transform, rotator, color, RealMatrix, ColorMatrix, TF_RGBA32, minmaxMatrixReal, getPlaneXi

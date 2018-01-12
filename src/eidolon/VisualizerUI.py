@@ -232,7 +232,7 @@ def validQVariantStr(qvar):
 def selectBoxIndex(val,box):
     '''Set the current index in `box' to be the first item whose text is `val', returning True if this was done.'''
     with signalBlocker(box):
-        for i in xrange(box.count()):
+        for i in range(box.count()):
             if str(box.itemText(i))==val:
                 box.setCurrentIndex(i)
                 return True
@@ -334,7 +334,7 @@ def fillEnumTable(vals,table,numsSelectable=False):
 
     if not numsSelectable: # remove the selectable flag for each number item
         with signalBlocker(table):
-            for n in xrange(table.rowCount()):
+            for n in range(table.rowCount()):
                 item=table.item(n,0)
                 item.setFlags(item.flags() & ~Qt.ItemIsSelectable)
 
@@ -1211,7 +1211,7 @@ class Draw2DView(Ui_Draw2DView):
             action.toggled.connect(lambda b:self.setSecondary(name,b))
 
         if seconds and not isinstance(seconds[0],str):
-            labels,names=zip(*seconds) # assume `seconds' is a list of label-name pairs and separate them out into lists of each
+            labels,names=list(zip(*seconds)) # assume `seconds' is a list of label-name pairs and separate them out into lists of each
         else:
             labels=seconds # use names as labels
             names=seconds
@@ -1589,7 +1589,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
             lastindent=0 # last line's indent distance
             for line in lines:
                 if line.strip(): # skip empty lines
-                    indent=Utils.first(i for i in xrange(len(line)) if not line[i].isspace()) # get line's indent
+                    indent=Utils.first(i for i in range(len(line)) if not line[i].isspace()) # get line's indent
                     # if this line is not indented but last one was, send an empty line to end a multi-line input block
                     if indent==0 and lastindent>0:
                         self.sendInputLine('\n')

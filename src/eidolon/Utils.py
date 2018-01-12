@@ -103,9 +103,10 @@ from threading import Thread, RLock, Event,currentThread,_MainThread
 
 if py3: # Python 2/3 fix
     import configparser
+    import queue
 else:
     import ConfigParser as configparser
-
+    import Queue as queue
 
 halfpi=math.pi/2.0
 
@@ -1142,11 +1143,11 @@ def addPathVariable(varname,path,append=True):
 def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
     '''
     Executes the file or file path `file_or_path' in the same manner as execfile() with `localvars' as the local variable
-    environment. If `storeExcepts' is True, whenever the code encounters an exception it is added to a list and this
+    environment. If `storeExcepts' is True, whenever the code encounters an exception it is added to a list and the
     routine will then attempt to continue interpreting the code. The list of raised exceptions is then returned by the
-    routine. If `storeExcepts' is False execution stops on the first exception which is raised. If `streams' is given,
-    it must be a triple of objects suitable to substitute for the streams (sys.stdin, sys.stdout, sys.stderr) which are
-    temporarily reassigned for the duration of execution.
+    routine. If `storeExcepts' is False execution stops on the first exception raised. If `streams' is given, it must be 
+    a triple of objects suitable to substitute for the streams (sys.stdin, sys.stdout, sys.stderr) which are temporarily 
+    reassigned for the duration of execution.
     '''
     exclist=[]
     linebuffer=[]
@@ -1183,9 +1184,8 @@ def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
                     lineadd=['']*(count-len(linebuffer)) # add blank lines before the code to ensure line numbers of stack traces are correct
                     c=compile_command('\n'.join(lineadd+linebuffer)+'\n',filename,'exec') # raises syntax exceptions
                     if c:
-                        linebuffer=[]
-                        # TODO: definitely not Py3 compatible
-                        exec c in localvars # raises execution exceptions (Note: exec tuple syntax encounters parser bug on python versions below 2.7.9)
+                        linebuffer=[] # clear the buffer since a complete command has now been compiled and does not needs its pieces buffered
+                        exec(c,localvars) # raises execution exceptions (Note: exec tuple syntax encounters parser bug on python versions below 2.7.9)
 
             except Exception as e:
                 linebuffer=[] # any exception means the stored code is possibly bogus so reject
@@ -1619,7 +1619,7 @@ def partitionSequence(maxval,part,numparts):
     if (maxval-end)<partsize:
         end=maxval
 
-    return long(start),long(end)
+    return int(start),int(end)
 
 
 def createShortName(*comps,**kwargs):
@@ -1785,12 +1785,12 @@ def parseSequenceSpec(spec,maxval):
             else:
                 rpart[1],rpart[2]=rpart[2],rpart[1]
 
-            rpart=map(int,rpart)
+            rpart=list(map(int,rpart))
 
             if rpart[0]>rpart[1]:
                 raise ValueError("Bad sequence specifier '"+part+"'")
 
-            selected.update(xrange(*rpart))
+            selected.update(range(*rpart))
 
     selected=sorted(list(selected))
 
@@ -1825,7 +1825,7 @@ def indexList(indices,lst):
 
 def rotateIndices(start,numinds):
     '''Produces the indices for a list `numinds' long rotated so that index `start' is the new first index.'''
-    return [(i+start)%numinds for i in xrange(numinds)]
+    return [(i+start)%numinds for i in range(numinds)]
 
 
 def sortIndices(lst):
@@ -1912,7 +1912,7 @@ def successive(iterable,width=2,cyclic=False):
     '''
     assert width>1
     it=iter(iterable)
-    val=tuple(next(it) for i in xrange(width)) # get the first `width' values
+    val=tuple(next(it) for i in range(width)) # get the first `width' values
 
     if cyclic: # if cyclic, make `it' into a chain that effectively sticks `val' (minus its last value) onto the end
         it=itertools.chain(it,iter(val[:-1]))
@@ -1929,7 +1929,7 @@ def group(iterable,width=2):
     '''
     assert width>0
     it=iter(iterable)
-    rng=range(width)
+    rng=list(range(width))
 
     p=tuple(next(it) for i in rng) # get `width' values
     while len(p)==width: # loops so long as `iterable' has enough values, needed since exception from next() is suppressed by tuple()
@@ -1949,7 +1949,7 @@ def matIndices(mat,start=0):
     result=[]
     count=start
     for m in mat:
-        result.append(range(count,count+len(m)))
+        result.append(list(range(count,count+len(m))))
         count+=len(m)
 
     return result
@@ -2055,13 +2055,13 @@ def trange(*vals):
             if any(isinstance(vv,float) for vv in v):
                 ranges.append(frange(*v))
             else:
-                ranges.append(xrange(*v))
+                ranges.append(range(*v))
         elif isIterable(v):
             ranges.append(v)
         elif isinstance(v,float):
             ranges.append(frange(v))
         else:
-            ranges.append(xrange(v))
+            ranges.append(range(v))
 
     return itertools.product(*ranges)
 
@@ -2073,7 +2073,7 @@ def binom(n,k):
     '''
     result=1
 
-    for i in xrange(1,k+1):
+    for i in range(1,k+1):
         result=(result*(n-(k-i)))/i
 
     return result
@@ -2445,7 +2445,7 @@ def wave2RGB(wavelength):
 
 def matZero(n,m):
     '''Return a list of lists with the given dimensions containing zeros.'''
-    return [[0]*m for i in xrange(n)]
+    return [[0]*m for i in range(n)]
 
 
 def matIdent(n):
@@ -2468,7 +2468,7 @@ def arrayV(val,*dims):
     if len(dims)==0:
         return val
 
-    return [arrayV(val,*dims[1:]) for i in xrange(dims[0])]
+    return [arrayV(val,*dims[1:]) for i in range(dims[0])]
 
 
 def transpose(mat):

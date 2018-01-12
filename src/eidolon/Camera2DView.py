@@ -18,18 +18,17 @@
 
 
 import renderer
-import Utils
-import SceneUtils
-import SceneComponents
-import VisualizerUI
-import ImageAlgorithms
-import MeshAlgorithms
+from . import Utils
+from . import SceneUtils
+from . import SceneComponents
+from . import ImageAlgorithms
+from . import MeshAlgorithms
 
 from renderer import vec3, transform, color, rotator, PyVertexBuffer, PyIndexBuffer, pointSearchLinTet, FT_TRILIST, FT_LINELIST
 from .Utils import epsilon, clamp, first, delayedcall, delayedMethodWeak, isMainThread, EventType, minmaxIndices
 from .SceneUtils import BoundBox
 from .MathDef import ElemType
-from .VisualizerUI import Qt, QtWidgets, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox
+from .VisualizerUI import Qt, QtWidgets, Base2DWidget, Draw2DView, fillList, setCollapsibleGroupbox, toQtColor
 from .SceneObject import MeshSceneObjectRepr, TDMeshSceneObjectRepr
 from .ImageObject import ImageSceneObject, ImageSceneObjectRepr, ImageSeriesRepr, ImageVolumeRepr
 
@@ -328,7 +327,7 @@ class BaseCamera2DWidget(Base2DWidget):
         trans,figs=self.objFigMap[name]
         lfigs=len(figs)
         if lfigs<numfigs:
-            for i in xrange(numfigs-lfigs):
+            for i in range(numfigs-lfigs):
                 figs.append(self.createFigure('%s_2DFig%i'%(name,i+lfigs),ftype))
 
         for i,f in enumerate(figs):
@@ -565,7 +564,7 @@ class BaseCamera2DWidget(Base2DWidget):
                 numslices=srep.getNumStackSlices() if isinstance(srep,ImageSeriesRepr) else 1
                 _,sfig=self.getObjFigures(s,numslices)
 
-                for sslice in xrange(numslices):
+                for sslice in range(numslices):
                     self.sceneBB+=self._updatePlaneFig(sfig[sslice],srep,self.viewplane,sslice)
                     sfig[sslice].setMaterial(srep.getCurrentTimestepMaterial(sslice))
                     sfig[sslice].setOverlay(True)
@@ -693,9 +692,9 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
             stackmax=(rep.getNumStackSlices()-1)*self.numVolSteps
 
         # construct namelabels as a list of pairs associating each object's label to its name
-        namelabels=zip([o.getLabel() for o in imgreprs],names)
+        namelabels=list(zip([o.getLabel() for o in imgreprs],names))
         # construct planelabels similarly as a list of label-name pairs
-        planelabels=zip(stdPlanes+[o.getLabel() for o in notsource],planes)
+        planelabels=list(zip(stdPlanes+[o.getLabel() for o in notsource],planes))
 
         # set the list, choosing the label associated with the object named in self.sourceName
         fillList(self.sourceBox,namelabels,first(l for l,n in namelabels if n==self.sourceName))
@@ -789,7 +788,7 @@ class PointChooseMixin(object):
         self.gridLayout.addWidget(button,len(self.pointMap),1)
         self.gridLayout.addWidget(edit,len(self.pointMap),2)
 
-        label.setStyleSheet('background-color: %s;'%str(VisualizerUI.toQtColor(col).name()))
+        label.setStyleSheet('background-color: %s;'%str(toQtColor(col).name()))
         edit.setReadOnly(True)
 
         def _setfunc():

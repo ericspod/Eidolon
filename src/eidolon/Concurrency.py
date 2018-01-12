@@ -37,13 +37,12 @@ import atexit
 import gc
 import time
 import errno
-import Queue
 import threading
 import traceback
 import functools
 from multiprocessing import Pipe, Process, cpu_count, Array, Value, Lock, Event
 
-from .Utils import lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
+from .Utils import queue, lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
 
 
 class MethodProxy(object):
@@ -256,7 +255,7 @@ class AlgorithmProcess(Process):
 
     def nrange(self):
         '''Yields each value from `startval' to `endval'-1.'''
-        return xrange(self.startval,self.endval)
+        return range(self.startval,self.endval)
 
     def prange(self):
         '''Same as nrange() except this updates the progress through setProgress() as it does so.'''
@@ -336,7 +335,7 @@ class ProcessServer(threading.Thread):
         self.syncEvent2=Event()
         self.syncCounter=Value('i',0)
         self.syncLock=Lock()
-        self.jobqueue=Queue.Queue()
+        self.jobqueue=queue.Queue()
         self.progress=Array('l',self.realnumprocs)
         self.objsrv=ObjectServer()
         self.stopEvent=Event()

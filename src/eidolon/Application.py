@@ -30,13 +30,17 @@ import sys
 import os
 import shutil
 import argparse
-import SceneManager
-import VisualizerUI
-import Utils
-import Concurrency
+from . import VisualizerUI
+from . import Utils
+from . import Concurrency  
 from .SceneUtils import cleanupMatrices
 from .ImageAlgorithms import hounsfieldToUnit
-from .Utils import ConfVars
+from .Utils import ConfVars,py3
+
+if py3:
+	from . import SceneManager
+else:
+	import SceneManager
 
 from .__init__ import __version__, APPDIRVAR, CONFIGFILE
 
@@ -75,7 +79,7 @@ def readConfig(configfile,conf):
     # for each section, set a value named for the section in lower case containing a comma-separated list of names in the section
     for sec in cparser.sections():
         oldnames=filter(bool,conf.get(sec,sec.lower()).split(','))
-        names=oldnames+[str(n) for n,_ in cparser.items(sec)]
+        names=list(oldnames)+[str(n) for n,_ in cparser.items(sec)]
         conf.set(sec,sec.lower(),','.join(set(names)))
 
 

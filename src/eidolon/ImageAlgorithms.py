@@ -117,7 +117,7 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float):
 def sampleImageRay(img,start,samplevec,numsamples):
     '''Sample `numsamples' values from `img' starting from `start' in direction of `samplevec' (both in matrix coords).'''
     samples=[]
-    for i in xrange(numsamples):
+    for i in range(numsamples):
         pos=start+samplevec*(float(i+1)/numsamples)
         n=int(0.5+pos.y())
         m=int(0.5+pos.x())
@@ -298,7 +298,7 @@ def calculateImageStackHistogram(imgs,minv=None,maxv=None,task=None):
 
     results=calculateImageStackHistogramRange(len(imgs),0,task,imgs,int(imgmin),int(imgmax),partitionArgs=(imgs,))
 
-    hists=results.values()
+    hists=list(results.values())
     hist=hists[0]
     for hh in hists[1:]:
         hist.add(hh)
@@ -392,7 +392,7 @@ def isCTImageSeries(imgs=None,minv=None,maxv=None,hist=None):
 def getLargestMaskObject(mask):
     '''Given a numpy array `mask' containing a binary mask, returns an equivalent array with only the largest mask object.'''
     labeled,numfeatures=scipy.ndimage.label(mask) # generate a feature label
-    sums=scipy.ndimage.sum(mask,labeled,range(numfeatures+1)) # sum the pixels under each label
+    sums=scipy.ndimage.sum(mask,labeled,list(range(numfeatures+1))) # sum the pixels under each label
     maxfeature=np.where(sums==max(sums)) # choose the maximum sum whose index will be the label number
     return mask*(labeled==maxfeature)
 
@@ -495,7 +495,7 @@ def cropObjectEmptySpace(obj,name,xymargins=0,zFilter=False):
     threshold=imgmin+(imgmax-imgmin)*0.001
 
     if zFilter:
-        images=filter(lambda i:i.imgmax>=threshold,images)
+        images=[i for i in images if i.imgmax>=threshold]
 
     clipsq=calculateStackClipSq(images,threshold)
     newobj=ImageSceneObject(name,obj.source,images,obj.plugin,obj.isTimeDependent)
@@ -653,7 +653,7 @@ def calculateReprIsoplaneMesh(rep,planetrans,stackpos,slicewidth):
         inters=rep.getPlaneIntersects(planept,planenorm,True) # get the (node,xi) pairs for the intersecting polygon
         if len(inters):
             nodes,xis=zip(*inters) # divide nodes and xis into separate lists
-            indices=[(0,i+1,i+2) for i in xrange(len(inters)-2)] # triangle fan indices
+            indices=[(0,i+1,i+2) for i in range(len(inters)-2)] # triangle fan indices
 
     return nodes,indices,xis
 
@@ -734,7 +734,7 @@ def mergeColinearImages(imgobjs,objout,mergefunc=None,task=None):
     checkResultMap(minmaxes)
     minmaxes=sumResultMap(minmaxes)
     
-    for n in xrange(len(minmaxes)):
+    for n in range(len(minmaxes)):
         imglist[n][-1].setMinMaxValues(*minmaxes[n])
 
 
