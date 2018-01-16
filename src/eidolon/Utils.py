@@ -1686,8 +1686,8 @@ def getStrCommonality(str1,str2):
 
 def getStrListCommonality(strs):
     '''Returns the index of the first character which is not common in all the strings of the list `strs'.'''
-    sets=itertools.imap(set,itertools.izip(*strs))
-    return first(i for i,s in enumerate(sets) if len(s)>1)
+    sets=itertools.izip(*strs)
+    return first(i for i,s in enumerate(sets) if len(set(s))>1)
 
 
 def findGlobMatch(globname,names):
@@ -1888,7 +1888,7 @@ def prod(i,initial=1):
 
 def listSum(lists):
     '''Sums the iterable of lists into one long list.'''
-    return sum(itertools.imap(list,lists),[])
+    return sum(map(list,lists),[])
 
 
 def zipWith(op,*vals):
