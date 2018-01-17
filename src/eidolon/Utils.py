@@ -591,7 +591,7 @@ class Task(object):
     '''
     @staticmethod
     def Null():
-        return Task('NullTask')
+        return Task('NullTask',lambda *args,**kwargs:None)
 
     def __init__(self,label,func=None,args=(),kwargs={},selfName=None,parentTask=None):
         self.curprogress=0

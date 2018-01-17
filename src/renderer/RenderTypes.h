@@ -1597,6 +1597,9 @@ template<> struct SwapEndian<color> { static color swap(color t) { return color(
  * vec3, color, indexval, and real. A number of methods are provided for doing arithmetic with all the elements of a
  * matrix and with whole matrices. A facility is provided for defining matrices as shared memory segments suitable for
  * communication between processes. 
+ *
+ * Matrix types are indexed in (row,column) or (Y,X) order since they are used to represent lists or entries, are thus
+ * expandable by adding rows but not columns, and are stored in row major order.
  */
 template<typename T> class Matrix : public MetaType
 {

@@ -27,7 +27,6 @@ import mmap
 import datetime
 import time
 import re
-import Queue
 import zipfile
 from collections import OrderedDict, namedtuple
 from StringIO import StringIO
@@ -146,7 +145,7 @@ def createDicomReadThread(rootpath,files,readPixels=True):
     Reads the Dicom files in `rootpath' listed by relative file names in the list  `files', and returns the reading
     thread object and the synchronized queue containing (relative-filenames,Dicom-object) pairs produced by the thread.
     '''
-    dcmqueue=Queue.Queue()
+    dcmqueue=queue.Queue()
 
     def readDicoms():
         for f in files:
@@ -383,11 +382,11 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
             rinter=0.0
             
         pixelarray=dcm.pixel_array*rslope+rinter
-        if pixelarray.ndim==3:
+        if pixelarray.ndim==3: # TODO: handle actual multichannel images?
             pixelarray=np.sum(pixelarray,axis=2)
 
         si.allocateImg(si.seriesID+str(si.index),isShared)
-        np.asarray(si.img)[:,:]=pixelarray
+        np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
         si.setMinMaxValues(*minmaxMatrixReal(si.img))
 
     return si

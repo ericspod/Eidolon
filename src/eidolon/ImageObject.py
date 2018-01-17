@@ -116,7 +116,7 @@ class SharedImage(object):
         self.dimensions=dimensions # (columns, rows) image dimensions, should match self.img dimensions
         self.spacing=spacing # (X,Y) pixel size in mm
         self.timestep=timestep # time in milliseconds
-        self.img=img
+        self.img=img # image data, stored in transposed row-column or YX index order so self.img[Y,X] is the pixel at (X,Y) in the image
         self.imgmin=imgmin
         self.imgmax=imgmax
         self.calculateDimensions()
@@ -192,6 +192,7 @@ class SharedImage(object):
             self.imgmax=0.0
             
     def setArrayImg(self,arr):
+        assert arr.shape==self.dimensions[::-1]
         self.setMinMaxValues(arr.min(),arr.max())
         self.img[:,:]=arr[:,:]
 
@@ -798,7 +799,7 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
     def prepareBuffers(self):
         assert not isMainThread()
 
-        pnodes,pindices,xis=generatePlane(0)
+        pnodes,pindices,xis=generatePlane(0) # quad centered on origin
 
         pindices+=[(i,k,j) for i,j,k in pindices] # backside triangles
         ib=renderer.PyIndexBuffer(pindices)
@@ -820,7 +821,7 @@ class ImageSeriesRepr(ImageSceneObjectRepr):
             mask=self.parent.alphamasks[i] if self.parent.alphamasks else None
 
             orient=img.orientation
-            dv=vec3(img.dimvec.x(),-img.dimvec.y(),1)
+            dv=vec3(img.dimvec.x(),-img.dimvec.y(),1)# scale by absolute dimensions so that quad isn't flipped
 
             snodes=[orient*(n*dv) for n in pnodes]
             norms=[orient*vec3(0,0,1)]*len(snodes)

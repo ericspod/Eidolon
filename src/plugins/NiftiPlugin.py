@@ -177,6 +177,8 @@ class NiftiPlugin(ImageScenePlugin):
                     # mmap the image data below the header in the file
                     dat=np.memmap(dobj.file_like,dobj._dtype,'r',dobj.offset,tuple(d or 1 for d in dobj.shape),dobj.order)
 
+                #dat=np.transpose(dat,[1,0]+list(range(2,dat.ndim)))
+
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
                 obj.source=hdr
 

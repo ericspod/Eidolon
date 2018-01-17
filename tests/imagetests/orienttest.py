@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import ReprType,vec3, rotator,generateArrow,halfpi, MeshSceneObject,TriDataSet
+from eidolon import ReprType,vec3, rotator,generateArrow,halfpi, MeshSceneObject,TriDataSet,AxesType
 
 pos=vec3(-10,20,-15)
 rot=rotator(0.1,-0.2,0.13)
@@ -25,12 +25,12 @@ w,h,d=51,52,53
 nodesz,indsz=generateArrow(5)
 nodesz=[(n+vec3.Z())*vec3(w,d,h)*vec3(0.1,0.1,0.5) for n in nodesz]
 nodesx=[rotator(vec3(0,1,0),halfpi)*n for n in nodesz]
-nodesy=[rotator(vec3(1,0,0),halfpi)*n for n in nodesz]
+nodesy=[rotator(vec3(1,0,0),-halfpi)*n for n in nodesz]
 
 nodes=[(rot*n)+pos for n in (nodesx+nodesy+nodesz)]
 nlen=len(nodesz)
 indices=indsz+[(i+nlen,j+nlen,k+nlen) for i,j,k in indsz]+[(i+nlen*2,j+nlen*2,k+nlen*2) for i,j,k in indsz]
-field=[0.0]*nlen+[1.0]*nlen+[2.0]*nlen
+field=[2.0]*nlen+[1.0]*nlen+[0.0]*nlen
 
 axes=MeshSceneObject('Axes',TriDataSet('tris',nodes,indices,[('col',field)]))
 mgr.addSceneObject(axes)
@@ -49,6 +49,7 @@ mgr.addSceneObjectRepr(rep)
 rep.useTexFiltering(False)
 
 mgr.setCameraSeeAll()
+mgr.setAxesType(AxesType._cornerTL)
 
 d=mgr.create2DView()
 

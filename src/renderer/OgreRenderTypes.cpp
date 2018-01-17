@@ -1348,8 +1348,8 @@ void OgreTexture::fillColor(color col)
 
 void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 {
-	sval w=getWidth();
-	sval h=getHeight();
+	sval w=_min(getWidth(),mat->m());
+	sval h=_min(getHeight(),mat->n());
 	Ogre::PixelBox pb=getPixelBuffer();
 
 	for(sval y=0;y<h;y++)
@@ -1361,8 +1361,8 @@ void OgreTexture::fillColor(const ColorMatrix *mat,indexval depth)
 
 void OgreTexture::fillColor(const RealMatrix *mat,indexval depth,real minval,real maxval, const Material* colormat,const RealMatrix *alphamat,bool mulAlpha)
 {
-	sval w=getWidth();
-	sval h=getHeight();
+	sval w=_min(getWidth(),mat->m());
+	sval h=_min(getHeight(),mat->n());
 	Ogre::PixelBox pb=getPixelBuffer();
 	Ogre::ColourValue col;
 
