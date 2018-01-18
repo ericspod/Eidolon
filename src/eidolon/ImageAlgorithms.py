@@ -89,8 +89,9 @@ def rescaleArray(arr,minv=0.0,maxv=1.0):
 def processImageNp(imgobj,writeBack=False,dtype=np.float):
     '''
     Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
-    image data in XYZT dimensional ordering. This allows the array to be modified which is then written back into the 
-    object once the context exits if `writeBack' is True. The array is fresh thus can be retained outside the context.
+    image data in XYZT (column/row/depth/time) dimensional ordering. This allows the array to be modified which is then 
+    written back into the object once the context exits if `writeBack' is True. The array is fresh thus can be retained 
+    outside the context.
     '''
     shape=imgobj.getArrayDims()
     im=np.ndarray(shape,dtype)

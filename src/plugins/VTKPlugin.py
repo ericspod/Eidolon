@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 import base64
 import StringIO
 import contextlib

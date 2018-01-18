@@ -272,6 +272,8 @@ def importImages(x4,plugin):
                 offset,interval=tstart,tstep
             else:
                 offset,interval=tstart+i*tstep,0
+                
+            arr=np.transpose(arr,list(reversed(range(arr.ndim)))) # array is stored in inverse index order
 
             pos=vec3(*imgtrans.position)
             rot=eidolon.rotator(*imgtrans.rmatrix.flatten())

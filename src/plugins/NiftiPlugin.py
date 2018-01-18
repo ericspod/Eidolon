@@ -177,7 +177,7 @@ class NiftiPlugin(ImageScenePlugin):
                     # mmap the image data below the header in the file
                     dat=np.memmap(dobj.file_like,dobj._dtype,'r',dobj.offset,tuple(d or 1 for d in dobj.shape),dobj.order)
 
-                #dat=np.transpose(dat,[1,0]+list(range(2,dat.ndim)))
+                dat=np.transpose(dat,[1,0]+list(range(2,dat.ndim))) # transpose from row-column to column-row
 
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
                 obj.source=hdr
@@ -253,6 +253,8 @@ class NiftiPlugin(ImageScenePlugin):
 
                 affine=np.array(rot.toMatrix())
                 affine[:,3]=-pos.x(),-pos.y(),pos.z(),1.0
+
+                dat=np.transpose(dat,[1,0]+list(range(2,dat.ndim))) # transpose from column-row to row-column
 
                 imgobj=nibabel.nifti1.Nifti1Image(dat,affine)
 
