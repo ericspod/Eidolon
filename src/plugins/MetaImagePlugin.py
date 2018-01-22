@@ -193,9 +193,8 @@ class MetaImagePlugin(ImageScenePlugin):
                 hdr['filename']=filename
 
                 dat=np.ndarray(dimsize,dtype=np.dtype(MetaImageTypes[elemtype]),buffer=raw,order='F')
-                dat=np.transpose(dat,(1,0,2,3)[:len(dat.shape)])  # transpose rows and columns
+                #dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
-                printFlush(spacing)
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
                 obj.source=hdr
                 f.setObject(obj)
@@ -245,7 +244,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 rot=mat['rot']
                 toffset=mat['toffset']
                 interval=mat['interval']
-                rows,cols,depth,numsteps=dat.shape
+                cols,rows,depth,numsteps=dat.shape
                 dims=4 if obj.isTimeDependent else 3
 
                 xdir=rot*vec3.X()
@@ -276,7 +275,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 hdrnames=list(self.HeaderNames)+[k for k in kwargs if k not in self.HeaderNames]
                 hdr.update(kwargs)
                 
-                dat=np.transpose(dat,(1,0,2,3)[:len(dat.shape)]) # transpose rows and columns
+                #dat=np.transpose(dat,(1,0,2,3)[:len(dat.shape)]) # transpose rows and columns
                 
                 dat=dat[:,:,::-1,...] # since the top corner is the origin, invert the Z axis in the matrix
                 dat=np.squeeze(dat)

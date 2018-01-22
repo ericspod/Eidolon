@@ -33,7 +33,7 @@ import itertools
 
 import numpy as np
 from scipy.spatial import ConvexHull, Delaunay
-from scipy.ndimage import binary_erosion,label,sum as ndsum
+from scipy.ndimage import binary_erosion,binary_fill_holes, label,sum as ndsum
 
 
 DatafileParams=enum('name','title','type','srcimage')
@@ -404,25 +404,29 @@ def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine
         mask=binary_erosion(mask)
         
         if np.sum(mask)>minSegSize: # if mask is too small this indicates a bad segmentation
-            _addContour(img,region,hull)
+            # isolate segmentation and fill in holes, this should be the same as the mask if the image was a contour but different if malformed
+            outer= binary_fill_holes(mask*(nparr==nparr.max())) 
             
-            if innerSeg: # if an inner segmentation is present, attempt to isolate it and add a contour
-                inner=mask*(nparr!=nparr.max()) # mask of inner portion of mask
-                labeled,numfeatures=label(inner) 
+            if ndsum(np.abs(mask-outer))<(minSegSize/10): # too much difference between mask and filled outer indicates a non-contour
+                _addContour(img,region,hull)
                 
-                # keep only the largest piece in the inner segmentation region
-                sums=ndsum(inner,labeled,np.arange(numfeatures+1))
-                maxfeature=np.where(sums==np.max(sums)) # choose the maximum sum whose index will be the label number
-                inner=inner*(labeled==maxfeature)
-                
-                if np.sum(inner)>0:
-                    try:
-                        iregion = np.argwhere(inner==inner.max()) 
-                        ihull = ConvexHull(iregion)
-                    except:
-                        continue # ignore errors with Qhull, there's nothing to be done to fix these anyway
+                if innerSeg: # if an inner segmentation is present, attempt to isolate it and add a contour
+                    inner=mask*(nparr!=nparr.max()) # mask of inner portion of mask
+                    labeled,numfeatures=label(inner) 
                     
-                    _addContour(img,iregion,ihull)
+                    # keep only the largest piece in the inner segmentation region
+                    sums=ndsum(inner,labeled,np.arange(numfeatures+1))
+                    maxfeature=np.where(sums==np.max(sums)) # choose the maximum sum whose index will be the label number
+                    inner=inner*(labeled==maxfeature)
+                    
+                    if np.sum(inner)>0:
+                        try:
+                            iregion = np.argwhere(inner==inner.max()) 
+                            ihull = ConvexHull(iregion)
+                        except:
+                            continue # ignore errors with Qhull, there's nothing to be done to fix these anyway
+                        
+                        _addContour(img,iregion,ihull)
 
     return result
 

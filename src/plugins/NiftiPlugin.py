@@ -27,6 +27,10 @@ from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes
 import os
 import gzip
 import math
+import unittest
+import tempfile
+import shutil
+import glob
 import numpy as np
 
 class NiftiPlugin(ImageScenePlugin):
@@ -177,7 +181,7 @@ class NiftiPlugin(ImageScenePlugin):
                     # mmap the image data below the header in the file
                     dat=np.memmap(dobj.file_like,dobj._dtype,'r',dobj.offset,tuple(d or 1 for d in dobj.shape),dobj.order)
 
-                dat=np.transpose(dat,[1,0]+list(range(2,dat.ndim))) # transpose from row-column to column-row
+                dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
                 obj.source=hdr
@@ -206,6 +210,7 @@ class NiftiPlugin(ImageScenePlugin):
                     interval=1.0
 
                 spacing=vec3(pixdim[1],pixdim[2],pixdim[3])
+                dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
                 obj=self.createObjectFromArray(name,dat,interval,0,vec3(),rotator(),spacing,task=task)
                 obj.source=hdr
@@ -254,7 +259,7 @@ class NiftiPlugin(ImageScenePlugin):
                 affine=np.array(rot.toMatrix())
                 affine[:,3]=-pos.x(),-pos.y(),pos.z(),1.0
 
-                dat=np.transpose(dat,[1,0]+list(range(2,dat.ndim))) # transpose from column-row to row-column
+                dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
                 imgobj=nibabel.nifti1.Nifti1Image(dat,affine)
 
@@ -341,4 +346,51 @@ class NiftiPlugin(ImageScenePlugin):
 
         return eidolon.setStrIndent(script % args).strip()+'\n'
 
+### Add plugin to environment
+
 eidolon.addPlugin(NiftiPlugin())
+
+### Unit tests
+
+class TestNiftiPlugin(unittest.TestCase):
+    def setUp(self):
+        self.tempdir=tempfile.mkdtemp()
+        self.plugin=eidolon.getSceneMgr().getPlugin('Nifti')
+        
+        self.vfunc=lambda x,y,z,t:(x+1)*1000+(y+1)*100+(z+1)*10+t+1
+        self.volarr=np.fromfunction(self.vfunc,(21,33,46,17))
+        self.vpos=vec3(-10,20,-15)
+        self.vrot=rotator(0.1,-0.2,0.13)
+
+        self.vol=self.plugin.createObjectFromArray('TestVolume',self.volarr,pos=self.vpos,rot=self.vrot)
+        
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+        
+    def rotatorsEqual(self,r1,r2):
+        r1=np.asarray(list(r1))
+        r2=np.asarray(list(r2))
+        
+        return np.sum(np.abs(r1-r2))
+        
+    def testSaveLoadVolume(self):
+        '''Test saving and loading a volume image.'''
+        self.plugin.saveObject(self.vol,self.tempdir)
+        filename=eidolon.first(glob.glob(self.tempdir+'/*.nii'))
+        
+        self.assertIsNotNone(filename)
+        
+        obj1=self.plugin.loadObject(filename)
+        trans=obj1.getVolumeTransform()
+        
+        self.assertEqual(self.vpos,trans.getTranslation())
+        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
+        
+        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
+        
+        with eidolon.processImageNp(obj1) as arr1:
+            self.assertEqual(self.volarr.shape,arr1.shape)
+            
+            diff=np.sum(np.abs(self.volarr-arr1))
+            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))
+            

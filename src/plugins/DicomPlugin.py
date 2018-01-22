@@ -29,6 +29,9 @@ import time
 import re
 import zipfile
 import unittest
+import tempfile
+import shutil
+import glob
 from collections import OrderedDict, namedtuple
 from StringIO import StringIO
 from random import randint
@@ -1061,6 +1064,7 @@ class DicomPlugin(ImageScenePlugin):
 
                 dat=np.ndarray(dimsize,dtype=np.uint8,buffer=pixeldata,order='C')
                 dat=np.transpose(dat,(3,2,1,0))
+                
 
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot*rotator(halfpi,0,0),spacing,task=task)
                 obj.source=convertToDict(dcm)
@@ -1303,35 +1307,70 @@ addPlugin(DicomPlugin())
 ### Unit tests
 
 class TestDicomPlugin(unittest.TestCase):
+    def setUp(self):
+        self.tempdir=tempfile.mkdtemp()
+        self.plugin=getSceneMgr().getPlugin('Dicom')
+        self.dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+        
+        self.vfunc=lambda x,y,z,t:(x+1)*1000+(y+1)*100+(z+1)*10+t+1
+        self.volarr=np.fromfunction(self.vfunc,(21,33,46,17))
+        self.vpos=vec3(-10,20,-15)
+        self.vrot=rotator(0.1,-0.2,0.13)
+
+        self.vol=self.plugin.createObjectFromArray('TestVolume',self.volarr,pos=self.vpos,rot=self.vrot)
+        
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+        
+    def rotatorsEqual(self,r1,r2):
+        r1=np.asarray(list(r1))
+        r2=np.asarray(list(r2))
+        
+        return np.sum(np.abs(r1-r2))
+        
     def testLoad(self):
         '''Test loading a dicom file from the tutorial directory.'''
-        dcmfile=os.path.join(getAppDir(),'tutorial','DicomData','SA_00000.dcm')
+        dcmfile=os.path.join(self.dcmdir,'SA_00000.dcm')
         dcm=DicomSharedImage(dcmfile)
         self.assertIsNotNone(dcm)
     
     def testLoadDigest(self):
         '''Test loading a digest file.'''
-        plugin=getSceneMgr().getPlugin('Dicom')
-        dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
-        digestfile=os.path.join(dcmdir,digestFilename)
+        digestfile=os.path.join(self.dcmdir,digestFilename)
         
-        ds=plugin.loadDigestFile(dcmdir,None)
+        ds=self.plugin.loadDigestFile(self.dcmdir,None)
         
         self.assertIsNotNone(ds)
         self.assertTrue(os.path.isfile(digestfile))
         os.remove(digestfile)
-        
     
     def testLoadDir(self):
-        plugin=getSceneMgr().getPlugin('Dicom')
-        dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
-        digestfile=os.path.join(dcmdir,digestFilename)
+        '''Test loading a directory containing Dicom files.'''
+        digestfile=os.path.join(self.dcmdir,digestFilename)
         
-        f=plugin.loadDirDataset(dcmdir)
+        f=self.plugin.loadDirDataset(self.dcmdir)
         result=Future.get(f)
         
         self.assertIsNotNone(result)
-        assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
+        assert self.dcmdir in self.plugin.dirobjs, '%r not in %r'%(self.dcmdir,self.plugin.dirobjs)
         self.assertTrue(os.path.isfile(digestfile))
         os.remove(digestfile)
+        
+    def testSaveLoadVolume(self):
+        '''Test saving and loading a volume image with Dicom files.'''
+        self.plugin.saveObject(self.vol,self.tempdir)
+        
+        obj1=self.plugin.loadObject(first(glob.glob(self.tempdir+'/*')))
+        trans=obj1.getVolumeTransform()
+        
+        self.assertEqual(self.vpos,trans.getTranslation())
+        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
+        
+        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
+        
+        with processImageNp(obj1) as arr1:
+            self.assertEqual(self.volarr.shape,arr1.shape)
+            
+            diff=np.sum(np.abs(self.volarr-arr1))
+            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))
     

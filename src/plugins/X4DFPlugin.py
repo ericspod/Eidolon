@@ -17,10 +17,14 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import eidolon
-from eidolon import vec3,timing, first, frange, splitPathExt, StdProps, CombinedScenePlugin, MeshSceneObject
+from eidolon import vec3,rotator,timing, first, frange, splitPathExt, StdProps, CombinedScenePlugin, MeshSceneObject
 
 import ast
 import os
+import unittest
+import tempfile
+import shutil
+import glob
 import numpy as np
 
 eidolon.addLibraryFile('x4df-0.1.0-py2-none-any')
@@ -273,10 +277,10 @@ def importImages(x4,plugin):
             else:
                 offset,interval=tstart+i*tstep,0
                 
-            arr=np.transpose(arr,list(reversed(range(arr.ndim)))) # array is stored in inverse index order
+            arr=np.transpose(arr,list(reversed(range(arr.ndim)))) # array is stored in inverse index order from what is expected
 
             pos=vec3(*imgtrans.position)
-            rot=eidolon.rotator(*imgtrans.rmatrix.flatten())
+            rot=rotator(*imgtrans.rmatrix.flatten())
             spacing=vec3(*imgtrans.scale)*vec3(arr.shape[1], arr.shape[0], arr.shape[2] if len(arr.shape)>2 else 0).inv()
 
             obj=plugin.createObjectFromArray('tmp',arr,interval,offset,pos,rot,spacing)
@@ -426,3 +430,48 @@ class X4DFPlugin(CombinedScenePlugin):
 
 
 eidolon.addPlugin(X4DFPlugin())
+
+### Unit tests
+
+class TestX4DFPlugin(unittest.TestCase):
+    def setUp(self):
+        self.tempdir=tempfile.mkdtemp()
+        self.plugin=eidolon.getSceneMgr().getPlugin('X4DF')
+        
+        self.vfunc=lambda x,y,z,t:(x+1)*1000+(y+1)*100+(z+1)*10+t+1
+        self.volarr=np.fromfunction(self.vfunc,(21,33,46,17))
+        self.vpos=vec3(-10,20,-15)
+        self.vrot=rotator(0.1,-0.2,0.13)
+
+        self.vol=self.plugin.createObjectFromArray('TestVolume',self.volarr,pos=self.vpos,rot=self.vrot)
+        
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+        
+    def rotatorsEqual(self,r1,r2):
+        r1=np.asarray(list(r1))
+        r2=np.asarray(list(r2))
+        
+        return np.sum(np.abs(r1-r2))
+        
+    def testSaveLoadVolume(self):
+        '''Test saving and loading a volume image.'''
+        f=self.plugin.saveObject(self.vol,self.tempdir)
+        eidolon.getSceneMgr().checkFutureResult(f)
+        
+        filename=eidolon.first(glob.glob(self.tempdir+'/*'))
+        
+        self.assertIsNotNone(filename)
+        
+#        obj1=self.plugin.loadObject(eidolon.first(glob.glob(self.tempdir+'/*')))
+#        trans=obj1.getVolumeTransform()
+#        
+#        self.assertEqual(self.vpos,trans.getTranslation())
+#        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
+#        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
+#        
+#        with eidolon.processImageNp(obj1) as arr1:
+#            self.assertEqual(self.volarr.shape,arr1.shape)
+#            
+#            diff=np.sum(np.abs(self.volarr-arr1))
+#            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))

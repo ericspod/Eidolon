@@ -43,4 +43,8 @@ finally:
     sys.stdout=sys.__stdout__
     sys.stderr=sys.__stderr__
 
-mgr.showTextBox('Unittest results: %i tests run, %i failures, %i errors'%(totalruns,failures,errors),'Results',out.getvalue(),height=600,width=800)
+resultstr='Unittest results: %i tests run, %i failures, %i errors'%(totalruns,failures,errors)
+output=out.getvalue()
+print('%s:\n%s'%(resultstr,output))
+
+mgr.showTextBox(resultstr,'Results',output,height=600,width=800)
