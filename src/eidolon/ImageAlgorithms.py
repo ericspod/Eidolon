@@ -115,6 +115,12 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float):
                 np.asarray(img.img)[:,:]=arr.T
 
 
+def transposeRowsColsNP(img):
+	'''Return `img' with indices 0 and 1 transposed, sued for converting between row- or column-majored image volumes.'''
+	neworder=[1,0]+list(range(2,img.ndim))
+	return np.transpose(img,neworder)
+	
+
 def sampleImageRay(img,start,samplevec,numsamples):
     '''Sample `numsamples' values from `img' starting from `start' in direction of `samplevec' (both in matrix coords).'''
     samples=[]

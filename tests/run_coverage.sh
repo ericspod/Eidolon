@@ -45,9 +45,9 @@ fi
 
 if [ ! -f .coverage ]
 then
-    coverage run --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py --help
+    coverage run --branch $APPDIR/main.py --help
 fi
 
-coverage run -a --branch --source=$APPDIR/src/eidolon --omit=$APPDIR/src/*/setup.py $APPDIR/main.py "$@"
+coverage run -a --branch $APPDIR/main.py "$@"
 coverage report
 

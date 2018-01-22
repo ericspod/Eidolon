@@ -28,6 +28,7 @@ import datetime
 import time
 import re
 import zipfile
+import unittest
 from collections import OrderedDict, namedtuple
 from StringIO import StringIO
 from random import randint
@@ -1301,36 +1302,36 @@ addPlugin(DicomPlugin())
 
 ### Unit tests
 
-def testLoad():
-    '''Test loading a dicom file from the tutorial directory.'''
-    dcmfile=os.path.join(getAppDir(),'tutorial','DicomData','SA_00000.dcm')
-    dcm=DicomSharedImage(dcmfile)
-    assert dcm
-
-
-def testLoadDigest():
-    '''Test loading a digest file.'''
-    plugin=getSceneMgr().getPlugin('Dicom')
-    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
-    digestfile=os.path.join(dcmdir,digestFilename)
+class TestDicomPlugin(unittest.TestCase):
+    def testLoad(self):
+        '''Test loading a dicom file from the tutorial directory.'''
+        dcmfile=os.path.join(getAppDir(),'tutorial','DicomData','SA_00000.dcm')
+        dcm=DicomSharedImage(dcmfile)
+        self.assertIsNotNone(dcm)
     
-    ds=plugin.loadDigestFile(dcmdir,None)
+    def testLoadDigest(self):
+        '''Test loading a digest file.'''
+        plugin=getSceneMgr().getPlugin('Dicom')
+        dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+        digestfile=os.path.join(dcmdir,digestFilename)
+        
+        ds=plugin.loadDigestFile(dcmdir,None)
+        
+        self.assertIsNotNone(ds)
+        self.assertTrue(os.path.isfile(digestfile))
+        os.remove(digestfile)
+        
     
-    assert ds is not None
-    assert os.path.isfile(digestfile)
-    os.remove(digestfile)
-    
-
-def testLoadDir():
-    plugin=getSceneMgr().getPlugin('Dicom')
-    dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
-    digestfile=os.path.join(dcmdir,digestFilename)
-    
-    f=plugin.loadDirDataset(dcmdir)
-    result=Future.get(f)
-    
-    assert result is not None,'%r is None'%result
-    assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
-    assert os.path.isfile(digestfile)
-    os.remove(digestfile)
+    def testLoadDir(self):
+        plugin=getSceneMgr().getPlugin('Dicom')
+        dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+        digestfile=os.path.join(dcmdir,digestFilename)
+        
+        f=plugin.loadDirDataset(dcmdir)
+        result=Future.get(f)
+        
+        self.assertIsNotNone(result)
+        assert dcmdir in plugin.dirobjs, '%r not in %r'%(dcmdir,plugin.dirobjs)
+        self.assertTrue(os.path.isfile(digestfile))
+        os.remove(digestfile)
     

@@ -20,7 +20,7 @@ from eidolon import ReprType,vec3, rotator,generateArrow,halfpi, MeshSceneObject
 
 pos=vec3(-10,20,-15)
 rot=rotator(0.1,-0.2,0.13)
-w,h,d=51,52,53
+w,h,d=31,42,53
 
 nodesz,indsz=generateArrow(5)
 nodesz=[(n+vec3.Z())*vec3(w,d,h)*vec3(0.1,0.1,0.5) for n in nodesz]
