@@ -116,9 +116,14 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float):
 
 
 def transposeRowsColsNP(img):
-	'''Return `img' with indices 0 and 1 transposed, sued for converting between row- or column-majored image volumes.'''
-	neworder=[1,0]+list(range(2,img.ndim))
-	return np.transpose(img,neworder)
+    '''Return `img' with indices 0 and 1 transposed, sued for converting between row- or column-majored image volumes.'''
+    #neworder=[1,0]+list(range(2,img.ndim))
+    #return np.transpose(img,neworder)
+    return np.swapaxes(img,0,1)
+
+
+def reverseDimensions(img):
+    return np.transpose(img,list(reversed(range(img.ndim))))
 	
 
 def sampleImageRay(img,start,samplevec,numsamples):

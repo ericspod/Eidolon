@@ -214,7 +214,7 @@ class ScenePlugin(object):
         '''
         Save a SceneObject `obj' to the file or directory `path'. The plugin for `obj' need not necessarily be `self' if
         a plugin wants to handle saving arbitrary objects of the right type. If the plugin must be `self' then raise a
-        ValueError if its not. Files are written into the directory component of `path' which must exist, the name of
+        ValueError if it's not. Files are written into the directory component of `path' which must exist, the name of
         the files will be derived from that of `obj' if `path' is a directory and not a full filename. An IOError is
         raised if files would be overwritten and `overwrite' is False, in which case no files must be created or altered.
         The internal representation of `obj' should be changed to record what the saved filenames are if `setFilenames'

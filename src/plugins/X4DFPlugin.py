@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import eidolon
-from eidolon import vec3,rotator,timing, first, frange, splitPathExt, StdProps, CombinedScenePlugin, MeshSceneObject
+from eidolon import vec3,rotator,timing, first, frange, splitPathExt, reverseDimensions, StdProps, CombinedScenePlugin, MeshSceneObject
 
 import ast
 import os
@@ -142,7 +142,7 @@ def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=Non
     filename='%s.dat'%filenamePrefix if filenamePrefix else None
 
     imgarrmap=plugin.getImageObjectArray(obj)
-    imgarr=imgarrmap['array']
+    imgarr=reverseDimensions(imgarrmap['array'])
     pos=imgarrmap['pos']
     shape=imgarr.shape
     spacing=imgarrmap['spacing']*vec3(shape[1],shape[0],shape[2])
@@ -277,7 +277,7 @@ def importImages(x4,plugin):
             else:
                 offset,interval=tstart+i*tstep,0
                 
-            arr=np.transpose(arr,list(reversed(range(arr.ndim)))) # array is stored in inverse index order from what is expected
+            arr=reverseDimensions(arr) # array is stored in inverse index order from what is expected
 
             pos=vec3(*imgtrans.position)
             rot=rotator(*imgtrans.rmatrix.flatten())
@@ -373,6 +373,9 @@ class X4DFPlugin(CombinedScenePlugin):
 
     @eidolon.taskmethod('Saving X4DF Object')
     def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64_GZ,dataFormat='f4',separateFiles=False,**kwargs):
+        if os.path.isdir(path):
+            path=os.path.join(path,eidolon.getValidFilename(obj.getName()))
+        
         path=eidolon.ensureExt(path,'.x4df')
         fileprefix=os.path.splitext(path) if separateFiles else None
 
@@ -463,15 +466,16 @@ class TestX4DFPlugin(unittest.TestCase):
         
         self.assertIsNotNone(filename)
         
-#        obj1=self.plugin.loadObject(eidolon.first(glob.glob(self.tempdir+'/*')))
-#        trans=obj1.getVolumeTransform()
-#        
-#        self.assertEqual(self.vpos,trans.getTranslation())
-#        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
-#        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
-#        
-#        with eidolon.processImageNp(obj1) as arr1:
-#            self.assertEqual(self.volarr.shape,arr1.shape)
-#            
-#            diff=np.sum(np.abs(self.volarr-arr1))
-#            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))
+        obj1=self.plugin.loadObject(eidolon.first(glob.glob(self.tempdir+'/*')))[0]
+        trans=obj1.getVolumeTransform()
+        
+        self.assertEqual(self.vpos,trans.getTranslation())
+        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
+        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
+        
+        with eidolon.processImageNp(obj1) as arr1:
+            self.assertEqual(self.volarr.shape,arr1.shape)
+            
+            diff=np.sum(np.abs(self.volarr-arr1))
+            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))
+            
