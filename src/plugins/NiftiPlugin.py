@@ -70,7 +70,7 @@ class NiftiPlugin(ImageScenePlugin):
         return '\nUsage: --nifti=NIfTI-file-path[,representation-type][,...]'
 
     def acceptFile(self,filename):
-        return splitPathExt(filename,True)[2].lower() in ('.nii','.nii.gz','.hdr')
+        return splitPathExt(filename,False)[2].lower() in ('.nii','.nii.gz','.hdr')
 
     def checkFileOverwrite(self,obj,dirpath,name=None):
         outfile=os.path.join(dirpath,name or obj.getName())+'.nii'

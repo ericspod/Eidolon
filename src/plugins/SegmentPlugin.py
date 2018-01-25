@@ -121,12 +121,13 @@ def pointInContour(pt,contour,plane=None,bb=None,center=None):
         return False
 
     center=center or avg(contour,vec3())
+    
     if center==pt:
         return True
-
-    ray=Ray(pt,center-pt) # project a ray from `pt' to the first contour point, it doesn't matter which contour point is chosen
-    intersects=list(yieldContourIntersects(ray,contour)) # list the intersection points with the contour
-    return len(intersects)%2==1 # `pt' is in the contour if the ray intersects the contour an odd number of times
+    else:
+        ray=Ray(pt,center-pt) # project a ray from `pt' to the first contour point, it doesn't matter which contour point is chosen
+        intersects=list(yieldContourIntersects(ray,contour)) # list the intersection points with the contour
+        return len(intersects)%2==1 # `pt' is in the contour if the ray intersects the contour an odd number of times
 
 
 def reinterpolateContour(contour,elemtype,refine,numnodes):

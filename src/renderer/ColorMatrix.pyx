@@ -90,7 +90,7 @@ cdef class ColorMatrix:
 
     cdef checkViewCount(self):
         if self.viewCount>0:
-            raise MemoryError,'Cannot perform operation, external views of matrix exist'
+            raise MemoryError('Cannot perform operation, external views of matrix exist')
 
     def subMatrix(self,str name,sval n, sval m=1,sval noff=0,sval moff=0,bint isShared=False):
         return ColorMatrix._new(self.mat.subMatrix(name,n,m,noff,moff,isShared))
@@ -140,7 +140,7 @@ cdef class ColorMatrix:
 
     def __reduce__(self):
         if not self.isShared():
-            raise MemoryError,'Only shared memory matrices can be pickled'
+            raise MemoryError('Only shared memory matrices can be pickled')
 
         return ColorMatrix,(self.getName(),self.getType(),self.mat.getSharedName(),self.mat.serializeMeta(),self.n(),self.m())
 
@@ -214,10 +214,10 @@ cdef class ColorMatrix:
         self.checkViewCount()
 
         if minlen==0:
-            raise MemoryError,'Cannot append empty row'
+            raise MemoryError('Cannot append empty row')
 
         #elif len(args) not in (1,self.mat.m()): # args is not a single value or a correct-width row of values
-        #   raise MemoryError,'Can only append matrix or row of correct width (m()=%i, len(args)=%i)'%(self.mat.m(),len(args))
+        #   raise MemoryError('Can only append matrix or row of correct width (m()=%i, len(args)=%i)'%(self.mat.m(),len(args)))
 
         if isinstance(args[0],ColorMatrix):
             self.mat.append(deref((<ColorMatrix>args[0]).mat))
@@ -234,7 +234,7 @@ cdef class ColorMatrix:
     def getRow(self,sval n):
         cdef sval i
         if n>=self.mat.n():
-            raise IndexError,"Bad value %i for index 'n' (0<=n<%i)"%(n,self.mat.n())
+            raise IndexError("Bad value %i for index 'n' (0<=n<%i)"%(n,self.mat.n()))
             
         return tuple(color._new(self.mat.at(n,i)) for i in range(self.mat.m()))
 
@@ -242,14 +242,14 @@ cdef class ColorMatrix:
         cdef sval i,minlen=RenderTypes._min[sval](self.mat.m(),len(vals))
         
         if n>=self.mat.n():
-            raise IndexError,"Bad value %i for index 'n' (0<=n<%i"%(n,self.n())
+            raise IndexError("Bad value %i for index 'n' (0<=n<%i"%(n,self.n()))
             
         for i in range(minlen):
             self.mat.ats(n,i,color._get(vals[i]))
 
     def mapIndexRow(self,IndexMatrix inds, sval row,int offset=0):
         if row>=inds.mat.n():
-            raise IndexError,'Parameter "row" not a valid row index for inds (%i>=%i)'%(row,inds.n())
+            raise IndexError('Parameter "row" not a valid row index for inds (%i>=%i)'%(row,inds.n()))
 
         return tuple(self.getAt(inds.mat.at(row,i)+offset) for i in range(inds.mat.m()))
 
@@ -337,21 +337,21 @@ cdef class ColorMatrix:
                 if i<0:
                     i+=len(self)
                 if not (0<=i<len(self)):
-                    raise IndexError,'Row index value %r out of range'%(index[0],)
+                    raise IndexError('Row index value %r out of range'%(index[0],))
 
                 return [color._new(self.mat.at(i,jj)) for jj in xrange(*j.indices(self.m()))]
             elif isinstance(i,slice) and isinstance(j,(int,long)):
                 if j<0:
                     i+=len(self)
                 if not (0<=j<len(self)):
-                    raise IndexError,'Column index value %r out of range'%(index[1],)
+                    raise IndexError('Column index value %r out of range'%(index[1],))
 
                 return [color._new(self.mat.at(ii,j)) for ii in xrange(*i.indices(len(self)))]
             elif isinstance(i,slice) and isinstance(j,slice):
                 minds=range(*j.indices(self.m()))
                 return [tuple(color._new(self.mat.at(ii,jj)) for jj in minds) for ii in xrange(*i.indices(len(self)))]
 
-        raise TypeError,'Index %r is not supported'%(origindex,)
+        raise TypeError('Index %r is not supported'%(origindex,))
 
     def __setitem__(self,index,value):
         origindex=index
@@ -384,7 +384,7 @@ cdef class ColorMatrix:
                 if i<0:
                     i+=len(self)
                 if not (0<=i<len(self)):
-                    raise IndexError,'Row index value %r out of range'%(index[0],)
+                    raise IndexError('Row index value %r out of range'%(index[0],))
 
                 minds=range(*j.indices(self.m()))
                 row=value[i]
@@ -394,7 +394,7 @@ cdef class ColorMatrix:
                 if j<0:
                     i+=len(self)
                 if not (0<=j<len(self)):
-                    raise IndexError,'Column index value %r out of range'%(index[1],)
+                    raise IndexError('Column index value %r out of range'%(index[1],))
 
 
                 ninds=range(*i.indices(len(self)))
@@ -408,9 +408,9 @@ cdef class ColorMatrix:
                     for jj in minds:
                         self.mat.ats(ii,jj,color._get(row[jj-minds[0]]))
             else:
-                raise TypeError,'Index %r is not supported'%(origindex,)
+                raise TypeError('Index %r is not supported'%(origindex,))
         else:
-            raise TypeError,'Index %r is not supported'%(origindex,)
+            raise TypeError('Index %r is not supported'%(origindex,))
 
 
 ##Extras Color

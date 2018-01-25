@@ -695,7 +695,7 @@ public:
 	vec3 fromCylindrical() const { return vec3(cos(_x)*_z,sin(_x)*_z,_y); }
 
 	/// Returns true if the length of the vector is within dEPSILON of 0
-	bool isZero() const { return equalsEpsilon(lenSq(),0.0); }
+	bool isZero() const { return equalsEpsilon(_x,0) && equalsEpsilon(_y,0) && equalsEpsilon(_z,0); }
 
 	/// Returns true if the vector is within the axis-aligned bounding box defined by the given min and max corners with a 'dEPSILON' margin of error 
 	bool inAABB(const vec3& minv, const vec3& maxv) const
@@ -733,7 +733,7 @@ public:
 	bool operator == (const vec3 & v) const { return equalsEpsilon(_x,v.x()) && equalsEpsilon(_y,v.y()) && equalsEpsilon(_z,v.z()); }
 	
 	/// Equals the inverse of ==
-	bool operator != (const vec3 &v) const { return !((*this)==v); }
+	bool operator != (const vec3 &v) const { return !equalsEpsilon(_x,v.x()) || !equalsEpsilon(_y,v.y()) || !equalsEpsilon(_z,v.z()); }
 	
 	bool operator < (const vec3 &v) const { return (_x-dEPSILON)<v.x() && (_y-dEPSILON)<v.y() && (_z-dEPSILON)<v.z(); }
 	bool operator > (const vec3 &v) const { return (_x+dEPSILON)>v.x() && (_y+dEPSILON)>v.y() && (_z+dEPSILON)>v.z(); }
