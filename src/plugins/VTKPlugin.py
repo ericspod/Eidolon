@@ -263,7 +263,7 @@ class VTKPlugin(MeshScenePlugin):
                 
                 # map cell types to the indices of members of `cells' of that type
                 typeindices={}
-                for i in xrange(celltypes.n()):
+                for i in range(celltypes.n()):
                     typeindices.setdefault(celltypes.getAt(i),[]).append(i) 
                 
                 for ctype,inds in typeindices.items():
@@ -425,7 +425,7 @@ class VTKPlugin(MeshScenePlugin):
                     
                     # write out points
                     o.write('POINTS %i double\n'%nodes.n())
-                    for n in xrange(nodes.n()):
+                    for n in range(nodes.n()):
                         o.write('%f %f %f\n'%vecfunc(nodes.getAt(n)))
                     
                     # write out the extra components for unstructured grids
@@ -439,7 +439,7 @@ class VTKPlugin(MeshScenePlugin):
                                 polyinds=ds.getIndexSet(inds.meta(VTKProps._polyinds))
                                 celltypes+=[cid]*polyinds.n()
                                 
-                                for p in xrange(polyinds.n()):
+                                for p in range(polyinds.n()):
                                     start,end=polyinds.getRow(p)
                                     poly=tuple(inds.getAt(i) for i in range(start,end))
                                     cells.append(poly)
@@ -448,7 +448,7 @@ class VTKPlugin(MeshScenePlugin):
                                 unsortinds=eidolon.indexList(sortinds,range(len(sortinds)))
                             
                                 celltypes+=[cid]*inds.n()
-                                for ind in xrange(inds.n()):
+                                for ind in range(inds.n()):
                                     cells.append(eidolon.indexList(unsortinds,inds.getRow(ind)))
                                 
                         if len(cells)>0:
@@ -478,7 +478,7 @@ class VTKPlugin(MeshScenePlugin):
                         else:
                             continue # skips field matrices if these get stored
                         
-                        for n in xrange(dat.n()):
+                        for n in range(dat.n()):
                             o.write(' '.join(map(str,dat.getRow(n)))+'\n')
                             
                 f.setObject(filename)
@@ -712,7 +712,7 @@ class VTKPlugin(MeshScenePlugin):
             with xmltag(xo,'DataArray',**kwargs) as xo1:
                 o=xo1[1]
                 o.write(' '*xo1[0])
-                for n in xrange(mat.n()):
+                for n in range(mat.n()):
                     for r in mat.getRow(n):
                         o.write(' '+str(r))
                 o.write('\n')
@@ -722,7 +722,7 @@ class VTKPlugin(MeshScenePlugin):
                 with xmltag(xo1,'DataArray',type="Float32",NumberOfComponents="3",Format="ascii") as xo2:
                     indents=' '*xo2[0]
                     o=xo2[1]
-                    for n in xrange(nodes.n()):
+                    for n in range(nodes.n()):
                         nn=nodes.getAt(n)
                         o.write('%s%s %s %s\n'%(indents,nn.x(),nn.y(),nn.z()))
                         
@@ -786,7 +786,7 @@ class VTKPlugin(MeshScenePlugin):
                                             for ind in inds:
                                                 typenum=knowncelltypes[ind.getType()]
                                                 order=cellorders[ind.getType()]
-                                                for n in xrange(ind.n()):
+                                                for n in range(ind.n()):
                                                     count+=ind.m()
                                                     offsets.setAt(count,pos) # add element offset
                                                     types.setAt(typenum,pos) # add element type

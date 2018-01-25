@@ -313,7 +313,7 @@ class TimePlotWidget(BasePlotWidget):
     def setData(self,dataseries,timesteps,labels,timeMin=0,timeMax=0):
         #assert all(len(ds)==len(timesteps) for ds in dataseries),'%s != %s'%(dataseries[0],timesteps)
         if not isIterable(first(timesteps)):
-            timesteps=[list(timesteps) for t in xrange(len(dataseries))]
+            timesteps=[list(timesteps) for t in range(len(dataseries))]
 
         if any(len(ds)!=len(ts) for ds,ts in zip(dataseries,timesteps)):
             raise ValueError('Dataseries lengths do not match associated timesteps: %r != %r'%(map(len,dataseries),map(len,timesteps)))

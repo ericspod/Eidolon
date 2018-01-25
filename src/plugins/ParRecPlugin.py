@@ -131,20 +131,20 @@ def parseParFile(filename):
         lines=[l.strip() for l in o.readlines() if l.strip() and l.strip()[0]!='#']
 
     # parse the header values, this assumes the header values are always in the same order and does not check names
-    for i in xrange(len(genInfoFields)):
+    for i in range(len(genInfoFields)):
         name,value=lines.pop(0).split(':',1)
         assert name[0]=='.'
 
         if genInfoFields[i][2]==str:
             value=value.strip()
         else:
-            value=map(genInfoFields[i][2],value.split())
+            value=list(map(genInfoFields[i][2],value.split()))
 
         geninfo[i]=value
 
     # parse the image info lines, this assumes the columns are always in the same order and does not check names as specified
     for line in lines:
-        vals=map(float,line.split()) # convert to float now so that a column that's supposed to be int but is given as float will convert correctly
+        vals=list(map(float,line.split())) # convert to float now so that a column that's supposed to be int but is given as float will convert correctly
         assert len(vals)==numinfocols
         imgdef=[]
 
@@ -367,10 +367,10 @@ class ParRecPlugin(ImageScenePlugin):
                         obj=ImageSceneObject(vname,source,images,self)
                         objs.append(obj)
 
-#               for numo in xrange(numorients):
+#               for numo in range(numorients):
 #                   orientimgs=imginfo[numo*orientsize:(numo+1)*orientsize]
 #
-#                   for numv in xrange(numvols):
+#                   for numv in range(numvols):
 #                       volsimgs=[img for i,img in enumerate(orientimgs) if i%numvols==numv]
 #                       images=[]
 #                       for imgi in volsimgs:
@@ -414,7 +414,11 @@ class ParRecPlugin(ImageScenePlugin):
     def _openFileDialog(self):
         filename=self.mgr.win.chooseFileDialog('Choose Par filename',filterstr='Par Files (*.par *.PAR)')
         if filename!='':
-            self.mgr.addFuncTask(lambda:map(self.mgr.addSceneObject,self.loadObject(filename)),'Importing ParRec files')
+            def _loadAll():
+                for o in self.loadObject(filename):
+                    self.mgr.addSceneObject(o)
+                    
+            self.mgr.addFuncTask(_loadAll,'Importing ParRec files')
 
     def getScriptCode(self,obj,**kwargs):
         configSection=kwargs.get('configSection',False)

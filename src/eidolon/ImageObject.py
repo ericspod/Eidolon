@@ -424,7 +424,7 @@ class ImageSceneObject(SceneObject):
 
     def setTimestepList(self,timesteps):
         '''Set the timestep values for the frames of this image, `timesteps' must be as long as there are frames.'''
-        orientlists=self.getTimeOrientMap().values()
+        orientlists=list(self.getTimeOrientMap().values())
         #if not self.isTimeDependent or len(orientlists)==0:
         #   return
 
@@ -487,11 +487,11 @@ class ImageSceneObject(SceneObject):
                 sortorder=sortImageStack(indexList(inds,self.images))
                 timesteps.append((ts,indexList(sortorder,inds)))
         else:
-            orientlists=self.getTimeOrientMap().values()
+            orientlists=list(self.getTimeOrientMap().values())
 
             if len(orientlists)>0:
-                for ts in xrange(len(orientlists[0])): # ts is the index of a timestep,
-                #TODO: is this really needed? Can `inds' get by with differing lengths
+                for ts in range(len(orientlists[0])): # ts is the index of a timestep,
+                    #TODO: is this really needed? Can `inds' get by with differing lengths
                     # this ensures that all timesteps have the same number of images
                     #assert all(ts<len(olist) for olist in orientlists),'Not all orient lists have value for timestep %s\norient list lengths are: %r'%(ts,map(len,orientlists))
 
@@ -1048,7 +1048,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
 
         imgmin,imgmax=self.parent.getImageRange()
 
-        for i in xrange(len(self.figs)):
+        for i in range(len(self.figs)):
             tex=self.figtextures[i]
             mat=self.figmats[i]
             

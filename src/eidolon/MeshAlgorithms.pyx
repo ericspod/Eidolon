@@ -571,7 +571,7 @@ def generateTriDataSet(dataset,str name,int refine,bint externalOnly=False,task=
         collectResults(outnodes,nodeprops,indices,extindices,result)
 
 #    if indices.n()==0:
-#        raise ValueError,'Dataset contains no data suitable for triangle generation'
+#        raise ValueError('Dataset contains no data suitable for triangle generation')
 
     ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
     ds.validateDataSet()
@@ -1499,7 +1499,7 @@ def generateCylinderDataSet(dataset,str name,int refine,bint externalOnly=False,
         collectResults(outnodes,nodeprops,indices,extindices,result)
 
     if indices.n()==0:
-        raise ValueError,'Dataset contains no data suitable for line generation'
+        raise ValueError('Dataset contains no data suitable for line generation')
 
     ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
     return ds,indlist
@@ -1927,7 +1927,7 @@ def generateIsoplaneDataSet(dataset,name,refine,pt,norm,indexAcceptFunc=None,tas
             extindices.setAt(n,n)
 
     if indices.n()==0:
-        raise ValueError,'Dataset contains no data suitable for triangle generation'
+        raise ValueError('Dataset contains no data suitable for triangle generation')
 
     ds=PyDataSet(name,nodes,[nodeprops,extindices,indices])
     return ds,selindices
@@ -2203,7 +2203,7 @@ def generateIsoObjectDataSet(dataset,name,refine,externalOnly=False,task=None,**
         extindices.setAt(i,i)
 
     #if indices.n()==0:
-    #    raise ValueError,'Dataset contains no data suitable for triangle generation'
+    #    raise ValueError('Dataset contains no data suitable for triangle generation')
 
     ds=PyDataSet(name,outnodes,[nodeprops,extindices,indices],dataset.fields)
 

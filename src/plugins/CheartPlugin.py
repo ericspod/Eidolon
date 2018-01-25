@@ -99,7 +99,7 @@ def readCheartBuffer(data, pydatatype, dim,numHeaders,isBinary=False,buff=None,b
         if isBinary:
             header=[unpack('i',data.read(4))[0] for i in range(numHeaders)]
         else:
-            header=map(int,data.readline().replace(',',' ').split())
+            header=list(map(int,data.readline().replace(',',' ').split()))
 
         buff.meta(StdProps._header,' '.join(map(str,header)))
         buff.addRows(header[0]-buff.n())
@@ -150,7 +150,7 @@ def readCheartBuffer(data, pydatatype, dim,numHeaders,isBinary=False,buff=None,b
                     if i==buff.n():
                         buff.addRows(1)
 
-                    comps=map(mapfunc, line.replace(',',' ').split())
+                    comps=list(map(mapfunc, line.replace(',',' ').split()))
 
                     if task:
                         task.setProgress(i)
@@ -179,7 +179,7 @@ def writeCheartBuffer(outfile,header,data,addVal=None):
 
     with open(outfile,'w') as o:
         o.write(' '.join(map(str,header))+'\n')
-        for n in xrange(data.n()):
+        for n in range(data.n()):
             line=getRow(n)
             o.write(' '.join(map(str,line))+'\n')
 
@@ -246,7 +246,7 @@ def loadFileSequenceRange(process,files,typename,dim):
 
 
 def loadFileSequence(files,typename=None,dim=None,task=None):
-    files=map(os.path.abspath,files)
+    files=list(map(os.path.abspath,files))
 
     for f in files:
         assert os.path.isfile(f),'File not found:'+f
@@ -286,7 +286,7 @@ class BaseLoadDialog(QtWidgets.QDialog):
 
     def _updateTable(self,table,newitems=[]):
         itemlist=[str(table.item(n,1).text()) for n in range(table.rowCount())]+newitems
-        itemlist=filter(lambda i:i.strip()!='',itemlist)
+        itemlist=[i for i in itemlist if i.strip()!='']
         fillEnumTable(itemlist,table)
         return itemlist
 
@@ -519,7 +519,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
             if tfile:
                 files.append(tfile)
 
-        return map(os.path.abspath,files)
+        return list(map(os.path.abspath,files))
         
     def checkFileOverwrite(self,obj,dirpath,name=None):
         oldname=obj.getName()
@@ -534,7 +534,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
         if len(obj.datasets)==1:
             result.append(prefixpath+'.X')
         else:
-            result+=['%s%.4i.X'%(prefixpath,i) for i in xrange(len(obj.datasets))]
+            result+=['%s%.4i.X'%(prefixpath,i) for i in range(len(obj.datasets))]
             
         for fieldname in obj.getFieldNames():
             dfs=toIterable(obj.getDataField(fieldname))
@@ -563,7 +563,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
 
                 result.append(dfprefix+'.D')
                 
-        return filter(os.path.exists,result)
+        return list(filter(os.path.exists,result))
 
     def renameObjFiles(self,obj,oldname,overwrite=False):
         if not isinstance(obj,SceneObject) or obj.getName()==oldname:
@@ -601,7 +601,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
         if isinstance(xfiles,str):
             xfiles=_moveFile(xfiles) # single file for static mesh
         else:
-            xfiles=map(_moveFile,xfiles) # multiple files for time-dependent mesh
+            xfiles=list(map(_moveFile,xfiles)) # multiple files for time-dependent mesh
 
         # rename .T file, initial .X file (for displacement series), and change the kwargs for the object
         tfile=_moveFile(tfile)
@@ -609,13 +609,13 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
         obj.kwargs[CheartKeywords._loadargs]=(xfiles,tfile,typename,loadSeq,loadTS,initXfile)
 
         # rename fields and their topologies as necessary
-        for i in xrange(len(fields)):
+        for i in range(len(fields)):
             dfiles,tfile,dim,typename,spatialName,loadSeq=fields[i]
 
             if isinstance(dfiles,str):
                 dfiles=_moveFile(dfiles)
             else:
-                dfiles=map(_moveFile,dfiles)
+                dfiles=list(map(_moveFile,dfiles))
 
             spatialName=indexnames.get(spatialName,spatialName) # associate this field with the changed spatial name
 
@@ -843,7 +843,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                     xfiles=[initialXFile]+xfiles
 
                 if not objname:
-                    basenames=map(os.path.basename,xfiles)
+                    basenames=list(map(os.path.basename,xfiles))
                     if tfile:
                         basenames.append(os.path.basename(tfile))
                     common=getStrListCommonality(basenames)

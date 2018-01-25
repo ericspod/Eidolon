@@ -112,7 +112,7 @@ class ElemTypeDef(object):
         self.edges=[]
         
         if self.dim==1:
-            self.edges=[range(len(xis))]
+            self.edges=[list(range(len(xis)))]
         elif self.dim==2:
             found=[]
             for v1,v2 in itertools.product(self.vertices,repeat=2):
@@ -454,13 +454,13 @@ def nodalLagrangeType(geom,desc,order):
     if dim==3:
         faces,internalxis=findFaces(xis,numVertices,isSimplex)
     elif dim==2:
-        faces=[range(len(xis))]
+        faces=[list(range(len(xis)))]
 
     facetype=None
     if dim==3: # TODO: this assumes all faces the same shape, change if this isn't true anymore (eg. prisms)
         facetype=nodalLagrangeType(GeomType._Tri if isSimplex else GeomType._Quad,'Face type',order)
 
-    return ElemTypeDef(geom,'NL',desc,order,xis,range(numVertices),faces,internalxis,basis,pointSearchElem,facetype)
+    return ElemTypeDef(geom,'NL',desc,order,xis,list(range(numVertices)),faces,internalxis,basis,pointSearchElem,facetype)
 
 
 def jacobiPoly(n,a,b,x):
@@ -469,7 +469,7 @@ def jacobiPoly(n,a,b,x):
     Ax=0.5*(x-1)
     Bx=0.5*(x+1)
 
-    for s in xrange(n+1):
+    for s in range(n+1):
         Co=binom(n+a,s)*binom(n+b,n-s)
         result+=Co*(Ax**(n-s))*(Bx**s)
 
@@ -556,7 +556,7 @@ def get1DSpectralCoords(order):
             if k>0:
                 r = (r+x[k-1])/2.0
 
-            for it in xrange(maxIters+1):
+            for it in range(maxIters+1):
                 s = sum(1.0/(r-x[i]) for i in range(k))
 
                 P, Pprime = jacobiEvaluate(r,order,a,b)
@@ -631,8 +631,7 @@ def spectralBasisType(geom,desc,order):
     numnodes=(order+1)**dim
     isSimplex=geom in (GeomType._Tri,GeomType._Tet)
 
-    powers=range(order+1)
-    powers.reverse()
+    powers=list(reversed(range(order+1)))
 
     if isSimplex:
         coeffs=matIdent(dim+1)
@@ -656,10 +655,10 @@ def bezierLineType(geom,desc,order):
     '''
     assert geom==GeomType._Line,'Only 1D lines supported for now'
 
-    basis=lambda xi0,xi1,xi2: tuple(bern(order,i,xi0) for i in xrange(order+1))
+    basis=lambda xi0,xi1,xi2: tuple(bern(order,i,xi0) for i in range(order+1))
 
     xis=[(float(i)/order,) for i in range(order+1)]
-    nodeinds=range(order+1)
+    nodeinds=list(range(order+1))
 
     return ElemTypeDef(geom,'BL',desc,order,xis,nodeinds,[],[],basis,None,None)
     
@@ -706,7 +705,7 @@ def cubicHermiteType(geom,desc,order):
         order=2
         basis=cubicHermiteCoeffs2D
         vertices=[5,6,9,10]
-        faces=[range(16)]
+        faces=[list(range(16))]
     elif geom==GeomType._Hex:
         order=3
         basis=cubicHermiteCoeffs3D
@@ -858,7 +857,7 @@ def catmullRomType(geom,desc,order):
         order=2
         basis=catmullRomCoeffs2D
         vertices=[5,6,9,10]
-        faces=[range(16)]
+        faces=[list(range(16))]
     elif geom==GeomType._Hex:
         order=3
         basis=catmullRomCoeffs3D
@@ -905,7 +904,7 @@ def piecewiseCatmullRomType(geom,desc,order):
         # calculate the indices in the coeffs grid by adding the xi coordinates of the local element to the base index
         ctrlinds=[arrayIndex(_addInds(indices,xis),dims,circular) for xis in basetype.xis]
         # for each control point for the local element in the grid, add the coefficient value
-        for ind,c in itertools.izip(ctrlinds,basecoeffs):
+        for ind,c in zip(ctrlinds,basecoeffs):
             coeffs[ind]+=c
             
         return coeffs

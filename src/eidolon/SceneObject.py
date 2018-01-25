@@ -371,7 +371,7 @@ class SceneObjectRepr(object):
             paramfunc=lambda m,p,n,v:m.setGPUParamVec3(p,n,v)
         elif isinstance(val,color):
             paramfunc=lambda m,p,n,v:m.setGPUParamColor(p,n,v)
-        elif isinstance(val,(int,long)):
+        elif isinstance(val,int):
             paramfunc=lambda m,p,n,v:m.setGPUParamInt(p,n,int(v))
         elif isinstance(val,float):
             paramfunc=lambda m,p,n,v:m.setGPUParamReal(p,n,v)
@@ -503,7 +503,7 @@ class MeshSceneObject(SceneObject):
         SceneObject.__init__(self,name,plugin,**kwargs)
         assert datasets!=None
         self.datasets=list(toIterable(datasets)) # initial dataset or list of datasets
-        self.timestepList=range(len(self.datasets)) # list of timestep values
+        self.timestepList=list(range(len(self.datasets))) # list of timestep values
 
     def getPropTuples(self):
         if not self.proptuples:
@@ -635,7 +635,7 @@ class ModifierBufferGenerator(object):
                     mat.meta(StdProps._origlen,str(mat.n()))
                     origlen=mat.n()
                 else:
-                    origlen=long(origlen)
+                    origlen=int(origlen)
 
                 mat.setN(origlen) # reset to the original length
 
@@ -1009,9 +1009,12 @@ class TDMeshSceneObjectRepr(SceneObjectRepr):
         self.timestepIndex=0
         self.datafieldname=None
         self.drawInternal=self.isDrawInternal()
-
-        self.timestepList=parent.timestepList if len(parent.timestepList)==len(subreprs) else range(len(subreprs))
         self.proptuples=[]
+
+        if len(parent.timestepList)==len(subreprs):
+            self.timestepList=parent.timestepList  
+        else: 
+            self.timestepList=list(range(len(subreprs)))
 
         SceneObjectRepr.__init__(self,parent,reprtype,reprcount,matname)
         self.calculateAABB()

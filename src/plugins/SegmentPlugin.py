@@ -457,7 +457,7 @@ def generateApexContours(contours,scale=0.5,givenapex=None):
     # define a middle ring of control points as the median between the initial apex point and the last contour
     midring=[eidolon.lerp(0.5,i,initialapex)+planeshift for i in c1]
     # define an inverted or crossed-over ring segment to allow interpolation to cross over the xi_2=1 boundary
-    invertring=[midring[(clen/2+i)%clen] for i in xrange(clen)]
+    invertring=[midring[(clen/2+i)%clen] for i in range(clen)]
 
     return finalapex,[midring,[finalapex]*clen,invertring]
 
@@ -480,7 +480,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
     aha=eidolon.RealMatrix('AHA',len(inds))
     aha.meta(eidolon.StdProps._elemdata,'True')
 
-    nodeheights=[nodes[n].planeDist(topcenter,norm) for n in xrange(len(nodes))] # heights of each node from the top plane
+    nodeheights=[nodes[n].planeDist(topcenter,norm) for n in range(len(nodes))] # heights of each node from the top plane
     maxheight=max(nodeheights) # node farthest from top plane, should be in apex
     minheight=max(0,startpos.planeDist(topcenter,norm)) # starting position for assign regions, everything between here and the top plane becomes region 18
 
@@ -491,7 +491,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
     # choose X and Y values to determine which region an element belongs to
     xvals=[]
     yvals=[]
-    for i in xrange(len(inds)):
+    for i in range(len(inds)):
         ind=inds[i]
         theights=indexList(ind,nodeheights)
         txis=indexList(ind,xis)
@@ -499,7 +499,7 @@ def calculateAHAField(nodes,xis,inds,topcenter,norm,apex,startpos,include17):
         yvals.append(eidolon.lerpXi(max(theights),minheight,maxheight)) # calculate height relative to the (minheight,maxheight) range
 
     # fill in the field aha to assign a region to each element
-    for i in xrange(len(inds)):
+    for i in range(len(inds)):
         ind=inds[i]
         avgy=yvals[i]
         minx=xvals[i]
@@ -538,7 +538,7 @@ def calculateCavityField(xis,inds):
     aha.meta(eidolon.StdProps._elemdata,'True')
 
     # fill in the field aha to assign a region to each element
-    for i in xrange(len(inds)):
+    for i in range(len(inds)):
         ind=inds[i]
         txis=indexList(ind,xis)
         minx=min(n.x() for n in txis if n.z() in (0.0,1.0)) # use the minimal x values since triangles straddling the seam won't have adjacent xi values
@@ -623,7 +623,7 @@ def generatePCRTetHemisphere(ctrls,refine,task=None):
         nodes+=[n+vec3(0,0,0.5) for n in (m1,m2,m3)] # mid triangle
 
     # reduce the mesh to remove duplicate xi nodes and join up the prism topology which will produce a joined tet topology
-    prisms=list(group(xrange(len(nodes)),15)) # prisms have 15 elements: 6*2 for triangle faces plus 3 for median nodes
+    prisms=list(group(range(len(nodes)),15)) # prisms have 15 elements: 6*2 for triangle faces plus 3 for median nodes
     nodes,indlist,_=eidolon.reduceMesh(eidolon.listToMatrix(nodes,'nodes'),[eidolon.listToMatrix(prisms,'prisms','')])
     xis=nodes.clone()
 
@@ -634,7 +634,7 @@ def generatePCRTetHemisphere(ctrls,refine,task=None):
 
     inds=eidolon.IndexMatrix('tets',ElemType._Tet1NL,0,4)
     # fill inds with indices for tets which divide the prisms into symmetric shapes
-    for i in xrange(len(indlist[0])):
+    for i in range(len(indlist[0])):
         prism=indlist[0].getRow(i)
         for tet in tetinds:
             inds.append(*indexList(tet,prism))
@@ -1069,7 +1069,7 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
         if i!=None:
             h=self.handles[i]
             nodes=h.getNodes()
-            for n in xrange(len(nodes)):
+            for n in range(len(nodes)):
                 x,y,_=self.getScreenPosition(nodes[n])
                 h.setNode(n,self.getWorldPosition(x,y))
 
@@ -1086,7 +1086,7 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
         if i!=None:
             h=self.handles[i]
             nodes=h.getNodes()
-            for n in xrange(len(nodes)):
+            for n in range(len(nodes)):
                 x,y,_=self.getScreenPosition(nodes[n])
                 nodes[n]=self.getWorldPosition(x,y)
 

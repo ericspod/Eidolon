@@ -262,7 +262,7 @@ class PyDataSet(object):
         cdef list names=[n for n in self.getIndexNames() if n.startswith(oldname)]
 
         #if not names:
-        #   raise ValueError,'Unknown name/prefix %r in %r'%(oldname,self)
+        #   raise ValueError('Unknown name/prefix %r in %r'%(oldname,self))
 
         for n in names:
             # rename each index set that began with `oldname'
@@ -283,7 +283,7 @@ class PyDataSet(object):
         cdef list names=[n for n in self.getFieldNames() if n.startswith(oldname)]
 
         #if not names:
-        #   raise ValueError,'Unknown name/prefix %r in %r'%(oldname,self)
+        #   raise ValueError('Unknown name/prefix %r in %r'%(oldname,self))
 
         for n in names: # rename all fields
             field=self.getDataField(n)
@@ -1002,7 +1002,7 @@ def listToMatrix(mat,name='mat',mtype='',isShared=False,objtype=None):
         elif isinstance(firstitem,color):
             objtype=ColorMatrix
         else:
-            raise TypeError,'Cannot determine matrix type for lists of %s objects of max width %i'%(type(firstitem),width)
+            raise TypeError('Cannot determine matrix type for lists of %s objects of max width %i'%(type(firstitem),width))
 
     m=objtype(name,mtype,len(mat),width,isShared)
     m.fromList(mat)
@@ -1922,7 +1922,7 @@ def isPerNodeField(RealMatrix field,int numnodes):
     isPerNode=bool(field.meta(StdProps._nodedata)) or (field.n()==numnodes and not topo)
 
     if isPerNode and field.n()!=numnodes:
-        raise ValueError,'Field %r is designated to be per node for a node set of length %i, but has length %i'%(field.getName(),numnodes,field.n())
+        raise ValueError('Field %r is designated to be per node for a node set of length %i, but has length %i'%(field.getName(),numnodes,field.n()))
 
     return isPerNode
 
@@ -2378,25 +2378,25 @@ def collectFieldTopos(dataset,fields,indlist=[]):
             ftopo=dataset.getIndexSet(tname)
 
             if fspatial and fspatial not in indlist:
-                raise ValueError,'Spatial topology %r is associated with field %r but not in use'%(sname,fname)
+                raise ValueError('Spatial topology %r is associated with field %r but not in use'%(sname,fname))
 
 #           if ftopo and ftopo not in indlist:
 #               raise ValueError,'Field topology %r is associated with field %r but not in use'%(tname,fname)
 
             if bool(field.meta(StdProps._nodedata)):
-                raise ValueError,'Field %r is a per-node field and so has no topology'%fname
+                raise ValueError('Field %r is a per-node field and so has no topology'%fname)
 
             if fspatial==None:
-                raise ValueError, 'No spatial topology found for %r, name is given as %r'%(fname,sname)
+                raise ValueError('No spatial topology found for %r, name is given as %r'%(fname,sname))
 
             if ftopo==None and field.meta(StdProps._topology):
-                raise ValueError, 'No field topology found for %r, name is given as %r'%(fname,tname)
+                raise ValueError('No field topology found for %r, name is given as %r'%(fname,tname))
 
     #       if field.n()!=fspatial.n() or field.m()!=fspatial.m():
-    #           raise ValueError,'Field %r has dims (%i,%i), but associated spatial topology %r has dims (%i,%i)'%(fname,field.n(),field.m(),sname,fspatial.n(),fspatial.m())
+    #           raise ValueError('Field %r has dims (%i,%i), but associated spatial topology %r has dims (%i,%i)'%(fname,field.n(),field.m(),sname,fspatial.n(),fspatial.m()))
     #
     #       if field.n()!=ftopo.n() or field.m()!=ftopo.m():
-    #           raise ValueError,'Field %r has dims (%i,%i), but associated field topology %r has dims (%i,%i)'%(fname,field.n(),field.m(),fname,ftopo.n(),ftopo.m())
+    #           raise ValueError('Field %r has dims (%i,%i), but associated field topology %r has dims (%i,%i)'%(fname,field.n(),field.m(),fname,ftopo.n(),ftopo.m()))
 
             ftopo=ftopo or fspatial # if no topology given but also no topology name given, use the spatial topology instead
 

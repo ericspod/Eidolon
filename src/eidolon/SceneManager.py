@@ -195,9 +195,13 @@ class Project(object):
                 self.removeObject(r)
                 
             files=obj.plugin.getObjFiles(obj)
+            def _remove():
+                for f in files:
+                    os.remove(f)
+                    
             if files and self.mgr.win and obj in self.memberObjs and all(self.hasFile(f) for f in files):
                 prompt='\n '.join(['Delete the following files?']+files)
-                self.mgr.win.chooseYesNoDialog(prompt,'Confirm File Delete',lambda:map(os.remove,files))
+                self.mgr.win.chooseYesNoDialog(prompt,'Confirm File Delete',_remove)
                 
         if obj in self.memberObjs:
             self.memberObjs.pop(obj)
@@ -299,7 +303,7 @@ class Project(object):
 
         objs=list(self.mgr.enumSceneObjects())+list(self.mgr.enumSceneObjectReprs()) #listSum([o]+list(o.reprs) for o in self.mgr.enumSceneObjects())
 
-        for i in xrange(table.rowCount()):
+        for i in range(table.rowCount()):
             item=table.item(i,0)
             if item in self.checkboxMap:
                 self.checkboxMap.pop(item)
@@ -584,7 +588,7 @@ class SceneManager(TaskQueue):
         Checks if a handle has been clicked on, sending it the event and returning true if so. This assumes this
         function is the first event handler for moves.
         '''
-        handle=first(h for h in listSum(self.handlemap.values()) if h.isSelected())
+        handle=first(h for h in listSum(list(self.handlemap.values())) if h.isSelected())
 
         if handle!=None:
             handle.mouseMove(e)
@@ -593,7 +597,7 @@ class SceneManager(TaskQueue):
         return False
 
     def _mouseReleaseHandleCheck(self,e):
-        for h in listSum(self.handlemap.values()):
+        for h in listSum(list(self.handlemap.values())):
             h.mouseRelease(e)
             
     def _keyPressEvent(self,e):
@@ -839,7 +843,8 @@ class SceneManager(TaskQueue):
             for e,format_exc in excs:
                 self.showExcept(e,'Exception in script file %r'%filename,format_exc=format_exc)
         else:
-            execfile(filename,scriptlocals,None)
+            #execfile(filename,scriptlocals,None)
+            exec(compile(open(filename).read(), filename, 'exec'),scriptlocals,None)
 
         if self.win and updateLocals:
             self.win.console.updateLocals(self.scriptlocals)
@@ -952,7 +957,7 @@ class SceneManager(TaskQueue):
         time-dependent representations. If 'doShow' is a boolean value, then visibility is set to that value. This
         also sets the `timestepMin' and `timestepMax' member.
         '''
-        allreprs=filter(lambda r:len(r.getTimestepList())>1, self.enumSceneObjectReprs())
+        allreprs=[r for r in self.enumSceneObjectReprs() if len(r.getTimestepList())>1]
         doShow=doShow if doShow!=None else len(allreprs)>0
 
         if timestepMin!=None or timestepMax!=None or timestepSpan!=None:

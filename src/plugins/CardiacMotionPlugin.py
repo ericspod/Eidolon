@@ -45,7 +45,7 @@ def avgDevRange(vals,stddevDist=1.0):
 @timing
 def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 
-    spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
+    spatialmats=list(filter(isSpatialIndex,ds.enumIndexSets()))
     indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
     indname=indmat.getName()
 
@@ -73,7 +73,7 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 
     apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
 
-    for n in xrange(length):
+    for n in range(length):
         node=nodes[n]
         d=apexray.distTo(node) #*0.9 # scale the distance along the ray so that apex directions are more rounded
         rad=orient/((node-apexray.getPosition(d))*vec3(1,1,0)).norm()
@@ -111,7 +111,7 @@ def createStrainGrid(nodes,toRefSpace,toImgSpace,h):
     dy=rot*vec3(0,h,0)
     dz=rot*vec3(0,0,h)
 
-    for n in xrange(len(nodes)):
+    for n in range(len(nodes)):
         p=toImgSpace*(toRefSpace*nodes[n])
         result.append(p,p+dx,p-dx,p+dy,p-dy,p+dz,p-dz)
 
@@ -128,7 +128,7 @@ def createStrainField(nodes,radialfield,longfield,circumfield,h):
     result=Vec3Matrix('strainfield',0,7)
     result.reserveRows(numnodes)
 
-    for n in xrange(numnodes):
+    for n in range(numnodes):
         p=nodes.getAt(n)
         rad=vec3(*radialfield.getRow(n)).norm()*h
         cir=vec3(*circumfield.getRow(n)).norm()*h
@@ -173,7 +173,7 @@ def calculateStrainTensors(nodes_t,h):
     result=RealMatrix('straintensors',0,9)
     result.reserveRows(nodes_t.n())
 
-    for n in xrange(nodes_t.n()):
+    for n in range(nodes_t.n()):
         _,px,mx,py,my,pz,mz=nodes_t.getRow(n)
         result.append(*strainTensor(px,mx,py,my,pz,mz,h))
 
@@ -188,7 +188,7 @@ def calculateTensorIndicatorEigen(tensors):
     mineig=RealMatrix('maxstrain',0)
     mineig.reserveRows(tensors.n())
 
-    for n in xrange(tensors.n()):
+    for n in range(tensors.n()):
         E=np.matrix(tensors.getRow(n)).reshape(3,3)
         eigvals,reigvals=np.linalg.eig(E)
         maxeig.append(np.max(eigvals))
@@ -202,7 +202,7 @@ def calculateTensorMul(tensors,vecmat,name):
     assert tensors.n()==vecmat.n(),'%i != %i'%(tensors.n(),vecmat.n())
     result=RealMatrix(name,tensors.n())
 
-    for n in xrange(tensors.n()):
+    for n in range(tensors.n()):
         E=tensors.getRow(n)
         v=vecmat.getRow(n)
         result.setRow(n,tensorMul(E,v))
@@ -223,7 +223,7 @@ def divideTrisByRegionRange(process,tris,nodeprops,regionfield,choosevals):
 
     # For each triangle, determine what region the original element it was derived from was part of
     # and store the triangle's indices in the appropriate region matrix.
-    for n in xrange(tris.n()):
+    for n in range(tris.n()):
         process.setProgress((n+1)/process.total)
         nodeinds=tris.getRow(n) # node indices for this triangle
         origind=nodeprops.getAt(nodeinds[0]) # original element index
@@ -279,7 +279,7 @@ def calculateRegionThicknessesRange(process,trinodes,stddevRange,triindlist):
 
     for triind in triindlist:
         # for each triangle, store the center, norm, and radius in the above matrices
-        for n in xrange(triind.n()):
+        for n in range(triind.n()):
             nodes=trinodes.mapIndexRow(triind,n) # triangle nodes
             center=(nodes[0]+nodes[1]+nodes[2])/3.0 # triangle center
             centers.setAt(center,n) # store center
@@ -288,7 +288,7 @@ def calculateRegionThicknessesRange(process,trinodes,stddevRange,triindlist):
 
         # for each triangle, project a ray inward and store in `lengths' the distance of the first intersection with the mesh
         lengths=[]
-        for n in xrange(triind.n()):
+        for n in range(triind.n()):
             center=centers.getAt(n)
             norm=norms.getAt(n)
             ray=Ray(center,-norm)
@@ -342,7 +342,7 @@ def calculateRegionThicknesses(datasetlist,regionfield,choosevals,stddevRange=1.
         thicknessfield.meta(StdProps._elemdata,'True')
         thicknessfield.fill(0)
 
-        for n in xrange(regionfield.n()):
+        for n in range(regionfield.n()):
             region=regionmap.get(int(regionfield.getAt(n)),-1)
             if region>=0:
                 thicknessfield.setAt(thicknesslist[region],n)
@@ -360,7 +360,7 @@ def calculateAvgDisplacementRange(process,orignodes,trinodes,stddevRange,triindl
     for triind in triindlist:
         allinds=set()
 
-        for n in xrange(triind.n()):
+        for n in range(triind.n()):
             allinds.update(triind.getRow(n))
 
         lengths=[orignodes.getAt(i).distTo(trinodes.getAt(i)) for i in allinds]
@@ -401,7 +401,7 @@ def calculateAvgDisplacement(datasetlist,regionfield,choosevals,stddevRange=1.0,
         dispfield.meta(StdProps._elemdata,'True')
         dispfield.fill(0)
 
-        for n in xrange(regionfield.n()):
+        for n in range(regionfield.n()):
             region=regionmap.get(int(regionfield.getAt(n)),-1)
             if region>=0:
                 dispfield.setAt(displist[region],n)
@@ -423,7 +423,7 @@ def calculateLinTetVolumeRange(process,nodelist,fieldlist,inds,regionfield,choos
         counter+=1
 
         nodevols=dict((cv,0) for cv in choosevals)
-        for n in xrange(inds.n()):
+        for n in range(inds.n()):
             val=regionfield.getAt(n)
             if val in nodevols:
                 elemnodes=nodes.mapIndexRow(inds,n)
@@ -433,7 +433,7 @@ def calculateLinTetVolumeRange(process,nodelist,fieldlist,inds,regionfield,choos
 
         results.append([nodevols[cv] for cv in choosevals])
 
-        for n in xrange(inds.n()):
+        for n in range(inds.n()):
             volfield.setAt(nodevols.get(regionfield.getAt(n),0),n)
 
     return results
@@ -449,7 +449,7 @@ def calculateLinTetVolume(datasetlist,regionfield,choosevals,task=None):
     shareMatrices(inds,regionfield)
     shareMatrices(*nodelist)
 
-    fieldlist=[RealMatrix('volumes',inds.n(),1,True) for i in xrange(len(nodelist))]
+    fieldlist=[RealMatrix('volumes',inds.n(),1,True) for i in range(len(nodelist))]
 
     for ds,f in zip(datasetlist,fieldlist):
         ds.setDataField(f)
@@ -481,7 +481,7 @@ def calculateTorsion(datasetlist,aha,choosevals):
     baseinds=set()
     apexinds=set()
 
-    for i in xrange(len(inds)):
+    for i in range(len(inds)):
         region=aha[i]
         if region in range(1,7):
             for ind in inds[i]:
@@ -508,7 +508,7 @@ def calculateTorsion(datasetlist,aha,choosevals):
         ds.setDataField(twist)
         results.append(twist)
 
-        for i in xrange(length):
+        for i in range(length):
             startnode=nodes0[i]
             stepnode=n[i]
             crossz=startnode.cross(stepnode).z()
@@ -545,13 +545,13 @@ def calculateRegionSumField(field,regionfield,choosevals):
 
     summap={r:0 for r in choosevals}
 
-    for n in xrange(field.n()): # sum per-region values
+    for n in range(field.n()): # sum per-region values
         v=field.getAt(n)
         r=int(regionfield.getAt(n))
         if r in summap:
             summap[r]=summap[r]+v
 
-    for n in xrange(field.n()): # fill sumfield with region summations
+    for n in range(field.n()): # fill sumfield with region summations
         r=int(regionfield.getAt(n))
         if r in summap:
             sumfield.setAt(summap[r],n)
@@ -1637,7 +1637,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
                 mintimes=[]
                 for region in range(len(results[0])):
-                    regionvals=[results[i][region] for i in xrange(len(results))]
+                    regionvals=[results[i][region] for i in range(len(results))]
                     mintimes.append(min(zip(regionvals,timesteps))[1])
 
                 mintimestddev=stddev(mintimes)
@@ -1738,7 +1738,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 # create a matrix assigning an AHA region to each node
                 nodeaha=IndexMatrix('nodeaha',nodes.n(),1)
                 nodeaha.fill(0) # assumes 0 is never used for a region number
-                for n in xrange(indmat.n()):
+                for n in range(indmat.n()):
                     elemaha=int(aha.getAt(n)) # AHA region for element n
                     # for each node of element n, assign it to region elemaha if it hasn't been already assigned
                     for ind in indmat.getRow(n):
@@ -1801,15 +1801,15 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                         ods.setDataField(df)
 
                     # create lists with one empty list for each region
-                    mavgstrain=[list() for x in xrange(len(aharegions))]
-                    minavgstrain=[list() for x in xrange(len(aharegions))]
-                    lavgstrain=[list() for x in xrange(len(aharegions))]
-                    ravgstrain=[list() for x in xrange(len(aharegions))]
-                    cavgstrain=[list() for x in xrange(len(aharegions))]
+                    mavgstrain=[list() for x in range(len(aharegions))]
+                    minavgstrain=[list() for x in range(len(aharegions))]
+                    lavgstrain=[list() for x in range(len(aharegions))]
+                    ravgstrain=[list() for x in range(len(aharegions))]
+                    cavgstrain=[list() for x in range(len(aharegions))]
 
                     # Go through each value in the strain fields, if their associated nodes are in a region of interest
                     # add the value to the appropriate sublist in the one the above list, otherwise zero the value out
-                    for n in xrange(maxeig.n()):
+                    for n in range(maxeig.n()):
                         region=nodeaha.getAt(n)-1
                         if (region+1) in aharegions: # if the node is in a region of interest, add its strain values to the lists
                             mavgstrain[region].append(maxeig.getAt(n))

@@ -526,7 +526,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
         if i!=None:
 #           h=self.handles[i]
 #           nodes=h.getNodes()
-#           for n in xrange(len(nodes)):
+#           for n in range(len(nodes)):
 #               x,y,_=self.getScreenPosition(nodes[n])
 #               h.setNode(n,self.getWorldPosition(x,y))
 #

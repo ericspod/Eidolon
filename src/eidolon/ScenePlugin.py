@@ -107,7 +107,11 @@ class ScenePlugin(object):
 
     def removeFilesTask(self,fileglob):
         '''Deletes the files matching the regular expression string `fileglob' in a task.'''
-        self.mgr.addFuncTask(lambda:map(os.remove,glob.glob(fileglob)),'Removing Files')
+        def _remove():
+            for f in glob.glob(fileglob):
+                os.remove(f)
+                
+        self.mgr.addFuncTask(_remove,'Removing Files')
 
     def getScriptCode(self,obj,**kwargs):
         '''
@@ -896,7 +900,7 @@ class MeshScenePlugin(ScenePlugin):
                 #defaultcol.a(mat.getAlpha())
 
             # collect only mesh repr objects which have nodes
-            reprs=filter(lambda r:isinstance(r,MeshSceneObjectRepr) and r.nodes.n()>0,rep.enumSubreprs())
+            reprs=[r for r in rep.enumSubreprs() if isinstance(r,MeshSceneObjectRepr) and r.nodes.n()>0]
 
             fields=toIterable(rep.getDataField())
             minv,maxv=rep.getSelectedFieldRange()

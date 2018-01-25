@@ -303,7 +303,7 @@ def addDicomTagsToMap(dcm,tagmap):
 def getSeriesTagMap(series):
     tags={}
 
-    for i in xrange(len(series.filenames)):
+    for i in range(len(series.filenames)):
         addDicomTagsToMap(series.loadDicomFile(i),tags)
 
     for k,v in tags.items():
@@ -921,7 +921,7 @@ class DicomPlugin(ImageScenePlugin):
         @taskroutine('Creating Scene Object')
         def createDicomObject(task):
             with f:
-                sel=selection or xrange(len(series.filenames))
+                sel=selection or list(range(len(series.filenames)))
                 imgs=[series.getSharedImage(series.filenames[i]) for i in sel]
                 assert len(imgs)>0
                 assert any(i!=None for i in imgs)

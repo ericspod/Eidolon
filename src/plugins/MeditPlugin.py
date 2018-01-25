@@ -99,8 +99,8 @@ class MeditPlugin(MeshScenePlugin):
                         vertexrefs.meta(StdProps._nodedata,'True')
                         fields.append(vertexrefs)
                         
-                        for n in xrange(numlines):
-                            line=map(float,o.readline().split())
+                        for n in range(numlines):
+                            line=list(map(float,o.readline().split()))
                             nodes.setAt(vec3(*line[:-1]),n)
                             vertexrefs.setAt(line[-1],n)
                     else: # read the index sets
@@ -109,8 +109,8 @@ class MeditPlugin(MeshScenePlugin):
                         refs.meta(StdProps._spatial,section)
                         refs.meta(StdProps._topology,section)
                         
-                        for n in xrange(numlines):
-                            line=map(int,o.readline().split())
+                        for n in range(numlines):
+                            line=list(map(int,o.readline().split()))
                             inds.setRow(n,*line[:-1])
                             refs.setAt(float(line[-1]),n)
                             
@@ -141,7 +141,7 @@ class MeditPlugin(MeshScenePlugin):
                 sol.meta(StdProps._spatial,firstspatial.getName())
                 sol.meta(StdProps._filename,filename)
                 
-                for n in xrange(numlines):
+                for n in range(numlines):
                     sol.setRow(n,*map(float,o.readline().split()))
                     
                 for ds in dds:

@@ -22,6 +22,11 @@ import os
 import math
 import operator
 
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
+
 import renderer
 import SceneUtils
 import Utils
@@ -434,7 +439,7 @@ class RectHandle2D(Handle2D):
         self.pts=[p1,p2,p3,p4]
 
     def updatePositions(self):
-        pts2d=map(self.widg2D.getOrthoPosition,self.pts)
+        pts2d=list(map(self.widg2D.getOrthoPosition,self.pts))
 
         fillPolyFigure(self.figs[-1],[pts2d[0],pts2d[1],pts2d[3],pts2d[2]],self.boxcol)
 
@@ -502,7 +507,7 @@ class PolyHandle2D(Handle2D):
             
         if self.isVisible():# and self.isActive():
             isLinear=(self.etype==ElemType.Line1NL)
-            pts2d=map(self.widg2D.getScreenPosition,self.pts)
+            pts2d=list(map(self.widg2D.getScreenPosition,self.pts))
             linepts=pts2d if isLinear else [self.etype.applyCoeffs(pts2d,c) for c in self.coeffs]
             lines=Utils.successive(linepts,cyclic=True)
             ind= first(i for i,pp in enumerate(lines) if 0<=screenpos.lineDist(*pp)<=self.selectRadius)
@@ -547,7 +552,7 @@ class PolyHandle2D(Handle2D):
         n=self.numNodes()
         assert n>1
 
-        pts2d=map(self.widg2D.getOrthoPosition,self.pts)
+        pts2d=list(map(self.widg2D.getOrthoPosition,self.pts))
         for f,p in zip(self.figs,pts2d): # set the positions of the node figs, which should be before any others so that zip works
             f.setPosition(p)
 
@@ -1075,10 +1080,10 @@ class MaterialController(object):
         if len(geom)>0:
             code+='%s.setGPUProgram(%r,PT_GEOMETRY)\n'%(varname,geom)
 
-        for i in xrange(mat.numSpectrumValues()):
+        for i in range(mat.numSpectrumValues()):
             code+='%s.addSpectrumValue(%r,%r)\n' %(varname,mat.getSpectrumPos(i),mat.getSpectrumValue(i))
 
-        for i in xrange(mat.numAlphaCtrls()):
+        for i in range(mat.numAlphaCtrls()):
             code+='%s.addAlphaCtrl(%r)\n' %(varname,mat.getAlphaCtrl(i))
 
         return code
@@ -1726,7 +1731,7 @@ class ScriptWriter(object):
         self.namemap={}
         self.includedObjs=None
         self.scriptdir=os.path.abspath(scriptdir) if scriptdir else None 
-        self.target=target or StringIO.StringIO()
+        self.target=target or StringIO()
 
     def addVar(self,name,val):
         self.namemap[val]=name

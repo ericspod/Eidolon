@@ -1635,6 +1635,7 @@ def uniqueStr(name,namelist,spacer='_'):
     '''
     count=1
     newname=name
+    namelist=set(namelist)
 
     while newname in namelist:
         newname='%s%s%.2i'%(name,spacer,count)
@@ -1677,7 +1678,7 @@ def getStrCommonality(str1,str2):
     represent 2/3rds of its length.
     '''
     minlen=min(len(str1),len(str2))
-    index=first(i for i in xrange(minlen) if str1[i]!=str2[i])
+    index=first(i for i in range(minlen) if str1[i]!=str2[i])
     if index==None:
         index=minlen
 
@@ -1686,7 +1687,7 @@ def getStrCommonality(str1,str2):
 
 def getStrListCommonality(strs):
     '''Returns the index of the first character which is not common in all the strings of the list `strs'.'''
-    sets=itertools.izip(*strs)
+    sets=zip(*strs)
     return first(i for i,s in enumerate(sets) if len(set(s))>1)
 
 
@@ -1892,8 +1893,8 @@ def listSum(lists):
 
 
 def zipWith(op,*vals):
-    '''Starmap `op' to each tuple derived from zipping (izip) the iterables in `vals'.'''
-    return itertools.starmap(op,itertools.izip(*vals))
+    '''Starmap `op' to each tuple derived from zipping the iterables in `vals'.'''
+    return itertools.starmap(op,zip(*vals))
 
 
 def mulsum(ls,rs):
@@ -2002,7 +2003,7 @@ def xisToPiecewiseXis(xis,dims,limits=None):
 
 
 def frange(start,stop=None,step=None):
-    '''Same as 'xrange', just with floats.'''
+    '''Same as 'range', just with floats.'''
     if not stop:
         stop=start
         start=0.0
@@ -2042,8 +2043,8 @@ def frange(start,stop=None,step=None):
 def trange(*vals):
     '''
     Produces a sequence of cartesian product tuples derived from multiple sequences as defined by the given arguments.
-    An integer argument 'a' corresponds to  'xrange(a)', a float argument corresponds to 'frange(a)'. Tuple arguments
-    are either pairs or triples of ints or floats which correspond to the start,stop,step set of values for xrange or
+    An integer argument 'a' corresponds to  'range(a)', a float argument corresponds to 'frange(a)'. Tuple arguments
+    are either pairs or triples of ints or floats which correspond to the start,stop,step set of values for range or
     frange. If 'a' is otherwise iterable it is used directly to derive values.
 
     Eg. list(trange((0,6,2),(0.0,0.6,0.2))) yields

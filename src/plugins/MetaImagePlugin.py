@@ -145,10 +145,10 @@ class MetaImagePlugin(ImageScenePlugin):
 
                 elemtype=hdr['ElementType']
                 dim=int(hdr['NDims']) # 3 for static image, 4 for time-dependent
-                dimsize=map(int,hdr['DimSize'].split()) # XYZ or XYZT if dim==4
-                offset=map(float,hdr['Offset'].split())
-                trans=map(float,hdr['TransformMatrix'].split())
-                espacing=map(float,hdr['ElementSpacing'].split())
+                dimsize=list(map(int,hdr['DimSize'].split())) # XYZ or XYZT if dim==4
+                offset=list(map(float,hdr['Offset'].split()))
+                trans=list(map(float,hdr['TransformMatrix'].split()))
+                espacing=list(map(float,hdr['ElementSpacing'].split()))
                 datfile=hdr['ElementDataFile']
                 toffset=(0 if len(offset)==3 else offset[-1])*1000.0
                 interval=(1.0 if len(espacing)==3 else espacing[-1])*1000.0

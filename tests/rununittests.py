@@ -31,7 +31,7 @@ try:
         suites=unittest.defaultTestLoader.loadTestsFromName('%s.%s'%(pdir,name))
         
         if suites.countTestCases()>0:
-            out.write('====================\n'+name+'\n====================\n')
+            out.write('==================== '+name+' ====================\n\n')
             result=unittest.TextTestRunner(stream=out,verbosity=2).run(suites)
             totalruns+=result.testsRun
             failures+=len(result.failures)

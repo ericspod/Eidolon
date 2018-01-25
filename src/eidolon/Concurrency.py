@@ -254,11 +254,11 @@ class AlgorithmProcess(Process):
                 raise Exception('Parent exited before child completed processing')
 
     def nrange(self):
-        '''Yields each value from `startval' to `endval'-1.'''
+        '''Returns an iterator from `self.startval' to `self.endval'-1.'''
         return range(self.startval,self.endval)
 
     def prange(self):
-        '''Same as nrange() except this updates the progress through setProgress() as it does so.'''
+        '''Yield each number from self.startval to self.endval-1 and update progress by calling setProgress().'''
         count=0
         for i in self.nrange():
             count+=1

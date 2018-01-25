@@ -659,7 +659,7 @@ def calculateReprIsoplaneMesh(rep,planetrans,stackpos,slicewidth):
     elif isinstance(rep,ImageVolumeRepr):
         inters=rep.getPlaneIntersects(planept,planenorm,True) # get the (node,xi) pairs for the intersecting polygon
         if len(inters):
-            nodes,xis=zip(*inters) # divide nodes and xis into separate lists
+            nodes,xis=list(zip(*inters)) # divide nodes and xis into separate lists
             indices=[(0,i+1,i+2) for i in range(len(inters)-2)] # triangle fan indices
 
     return nodes,indices,xis

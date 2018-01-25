@@ -181,7 +181,7 @@ cdef class color:
         if op==3: # objects are unequal to objects of other types
             return True
 
-        raise ValueError,'Cannot compare color to %r'%type(v)
+        raise ValueError('Cannot compare color to %r'%type(v))
 
     def interpolate(self,real val, color col):
         return color._new(self.val.interpolate(val,col.val))
@@ -214,9 +214,9 @@ cdef class vec3:
             elif largs==3:
                 self.val=ivec3(args[0],args[1],args[2])
             else:
-                raise TypeError
+                raise TypeError()
         except TypeError:
-            raise ValueError,'vec3() expects 0 to 3 arguments of type real, or 1 of type vec3'
+            raise ValueError('vec3() expects 0 to 3 arguments of type real, or 1 of type vec3')
 
     @staticmethod
     cdef vec3 _new(ivec3 val):
@@ -263,7 +263,7 @@ cdef class vec3:
 
     def __div__(vec3 self,v):
         if v in (0,0.0) or (isinstance(v,vec3) and v.isZero()):
-            raise ValueError,'Divide by zero'
+            raise ValueError('Divide by zero')
 
         return vec3._new(self.val/(<vec3>v).val if isinstance(v,vec3) else self.val/<real>v)
 
@@ -360,7 +360,7 @@ cdef class vec3:
         if op==3: # objects are unequal to objects of other types
             return True
 
-        raise ValueError,'Cannot compare vec3 to %r'%type(v)
+        raise ValueError('Cannot compare vec3 to %r'%type(v))
 
     def inAABB(self,vec3 minv,vec3 maxv):
         return self.val.inAABB(minv.val,maxv.val)
@@ -428,7 +428,7 @@ cdef class rotator:
                 if isinstance(args[0],rotator):
                     self.val=irotator((<rotator?>args[0]).val)
                 else:
-                    raise TypeError
+                    raise TypeError()
             elif largs==2:
                 if isinstance(args[1],vec3):
                     self.val=irotator((<vec3?>args[0]).val,(<vec3?>args[1]).val)
@@ -445,9 +445,9 @@ cdef class rotator:
                 a,b,c,d,e,f,g,h,i=args
                 self.val=irotator(a,b,c,d,e,f,g,h,i)
             else:
-                raise TypeError
+                raise TypeError()
         except TypeError as e:
-            raise TypeError,'Unexpected arguments for rotator constructor'
+            raise TypeError('Unexpected arguments for rotator constructor')
 
     @staticmethod
     cdef rotator _new(irotator val):
@@ -500,7 +500,7 @@ cdef class rotator:
         elif isinstance(v,rotator):
             return rotator._new(self.val*(<rotator>v).val)
         else:
-            raise TypeError,'A rotator can be multiplied with vec3 or rotator instance only'
+            raise TypeError('A rotator can be multiplied with vec3 or rotator instance only')
 
     def __div__(rotator self,v):
         return vec3._new(self.val/(<vec3>v).val)
@@ -530,7 +530,7 @@ cdef class rotator:
             elif op==3:
                 return self.val!=vv
             else:
-                raise ValueError,'Unsupported operator'
+                raise ValueError('Unsupported operator')
 
         if op==2: # objects are not equal to objects of other types
             return False
@@ -538,7 +538,7 @@ cdef class rotator:
         if op==3: # objects are unequal to objects of other types
             return True
 
-        raise ValueError,'Cannot compare rotator to %r'%type(v)
+        raise ValueError('Cannot compare rotator to %r'%type(v))
 
     def toMatrix(self):
         cdef real m[16]
@@ -631,9 +631,9 @@ cdef class transform:
             elif largs in (9,10):
                 self.val=itransform(<real>args[0],<real>args[1],<real>args[2],<real>args[3],<real>args[4],<real>args[5],<real>args[6],<real>args[7],<real>args[8],largs==10 and bool(args[9]))
             else:
-                raise TypeError
+                raise TypeError()
         except TypeError as e:
-            raise TypeError,'Unexpected arguments for transform constructor'
+            raise TypeError('Unexpected arguments for transform constructor')
 
     @staticmethod
     cdef transform _new(itransform val):
@@ -672,7 +672,7 @@ cdef class transform:
             elif op==3:
                 return not(self.val==vv)
             else:
-                raise ValueError,'Unsupported operator'
+                raise ValueError('Unsupported operator')
 
         if op==2: # objects are not equal to objects of other types
             return False
@@ -680,7 +680,7 @@ cdef class transform:
         if op==3: # objects are unequal to objects of other types
             return True
 
-        raise ValueError,'Cannot compare transform to %r'%type(v)
+        raise ValueError('Cannot compare transform to %r'%type(v))
 
     def __mul__(transform self, v):
         if isinstance(v,transform):
@@ -1498,7 +1498,7 @@ cdef class Camera:
 
     def _checkObjectNull(self):
         if self.val==NULL:
-            raise RuntimeError,'Internal C++ object deleted'
+            raise RuntimeError('Internal C++ object deleted')
 
     def getName(self):
         self._checkObjectNull()
@@ -2207,7 +2207,7 @@ def calculateBoundSquare(object mat, real threshold):
     elif isinstance(mat,IndexMatrix):
         result=RenderTypes.calculateBoundSquare((<IndexMatrix>mat).mat,<indexval>threshold)
     else:
-        raise ValueError,"Argument `mat' must be RealMatrix or IndexMatrix"
+        raise ValueError("Argument `mat' must be RealMatrix or IndexMatrix")
 
     if result.first<0:
         return None

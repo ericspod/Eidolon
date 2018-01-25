@@ -81,10 +81,10 @@ def planeSliceFilterRange(process,origtrans,planept,planenorm, nodes,nodeprops, 
 
     def iterateElemsExt(values,indextable):
         if indextable!=None:
-            for i in xrange(process.index,indextable.n(),process.total):
+            for i in range(process.index,indextable.n(),process.total):
                 yield indextable.getAt(i)
         else:
-            for i in xrange(process.index,values.n(),process.total):
+            for i in range(process.index,values.n(),process.total):
                 yield i
 
     selectedindices=IndexMatrix(nodes.getName()+'selectedindices'+str(process.index),0,1)
@@ -282,7 +282,7 @@ class PlaneSliceFilter(ModifierBase):
 
             if newnodes!=None:
                 if newtriindices!=None:
-                    for n in xrange(newtriindices.n()):
+                    for n in range(newtriindices.n()):
                         modinds.append(n+indlen)
 
                         a,b,c=newtriindices.getRow(n)
@@ -297,7 +297,7 @@ class PlaneSliceFilter(ModifierBase):
                             indices.append(a,b,c)
 
                 elif newlineindices!=None:
-                    for n in xrange(newlineindices.n()):
+                    for n in range(newlineindices.n()):
                         modinds.append(n+indlen)
 
                         a,b=newlineindices.getRow(n)
@@ -347,7 +347,7 @@ class IsoplaneModifier(ModifierBase):
             nodeprops=dataset.getIndexSet(dataset.getName()+MatrixType.props[1])
             unshareMatrices(nodes,nodeprops,indices,nodecolors)
 
-            for n in xrange(inds.n()):
+            for n in range(inds.n()):
                 modinds.append(indices.n()+n)
 
             newnodeprops=planeds.getIndexSet(planeds.getName()+MatrixType.props[1])
@@ -951,7 +951,7 @@ class SlicePlugin(ScenePlugin):
 
         table=prop.selTable
 
-        for i in xrange(table.rowCount()):
+        for i in range(table.rowCount()):
             item=table.item(i,0)
             if item in self.checkboxMap:
                 self.checkboxMap.pop(item)
@@ -1068,7 +1068,7 @@ class SlicePlugin(ScenePlugin):
 
                 nodecolors.fill(col)
 
-            rep.setTransparent(mat.isTransparentColor() or any(nodecolors.getAt(i).a()<1.0 for i in xrange(nodecolors.n())))
+            rep.setTransparent(mat.isTransparentColor() or any(nodecolors.getAt(i).a()<1.0 for i in range(nodecolors.n())))
 
         if slicedrepr!=None and rep.nodes!=None:
             self.mgr.runTasks([applyMaterialTask()])

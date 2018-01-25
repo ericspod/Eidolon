@@ -104,14 +104,14 @@ class STLPlugin(MeshScenePlugin):
                         triformat='fff fff fff fff H'
                         trisize=calcsize(triformat)
                         
-                        for i in xrange(numtris):
+                        for i in range(numtris):
                             triangle=unpack(triformat,o.read(trisize))
                             normals.append(*triangle[0:3])
                             nodes.append(vec3(*triangle[3:6]))
                             nodes.append(vec3(*triangle[6:9]))
                             nodes.append(vec3(*triangle[9:12]))
                             
-                for i in xrange(0,len(nodes),3):
+                for i in range(0,len(nodes),3):
                     indices.append(i,i+1,i+2)
                     
                 f.setObject(MeshSceneObject(name,PyDataSet('STLDS',nodes,[indices],[normals]),self,filename=filename,header=header))
