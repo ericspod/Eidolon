@@ -45,7 +45,7 @@ def eqas_(a,b,msg=None):
 
 
 def randnums(num,minv,maxv):
-    return tuple(random.triangular(minv,maxv) for _ in xrange(num))
+    return tuple(random.triangular(minv,maxv) for _ in range(num))
     
     
 def randangle():
@@ -59,11 +59,11 @@ def generateTestMeshDS(etname,refine,pt=vec3(0.25)):
     if et.geom in (GeomType._Hex, GeomType._Tet):
         dividefunc=eidolon.divideHextoTet if et.geom==GeomType._Tet else eidolon.divideHextoHex
         nodes=eidolon.listSum(dividefunc(et.order,refine))
-        inds=list(eidolon.group(range(len(nodes)),len(et.xis)))
+        inds=list(eidolon.group(list(range(len(nodes))),len(et.xis)))
 
         nodes,ninds,_=eidolon.reduceMesh(listToMatrix([vec3(*n) for n in nodes],'nodes'),[listToMatrix(inds,'inds',etname)])
-        dist=[nodes.getAt(n).distTo(pt) for n in xrange(len(nodes))]
-        diff=[tuple(nodes.getAt(n)-pt) for n in xrange(len(nodes))]
+        dist=[nodes.getAt(n).distTo(pt) for n in range(len(nodes))]
+        diff=[tuple(nodes.getAt(n)-pt) for n in range(len(nodes))]
 
     elif et.geom == GeomType._Tri:
         nodes,inds=eidolon.generateSphere(refine)
@@ -102,7 +102,7 @@ def generateTimeSphereMeshes(step,dim=50):
         nodes.add(vec3(dim+1)*vec3(0.5,-0.5,0.5))
 
         dist=ds.getDataField('dist')
-        for n in xrange(dist.n()):
+        for n in range(dist.n()):
             dist.setAt(nodes.getAt(n).distTo(vec3(0.25)*dim),n)
 
         dds.append(ds)

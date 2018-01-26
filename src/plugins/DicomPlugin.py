@@ -349,7 +349,7 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
 
     position=vec3(*roundHeaderVals(*dcm.get(positionTag,[0,0,0]))) # top-left corner
     dimensions=(dcm.get(colsTag,0),dcm.get(rowsTag,0))
-    spacing=map(float,dcm.get(spacingTag,[1,1]))
+    spacing=list(map(float,dcm.get(spacingTag,[1,1])))
 
     a,b,c,d,e,f=roundHeaderVals(*dcm.get(orientationTag,[1,0,0,0,-1,0]))
     orientation=rotator(vec3(a,b,c).norm(),vec3(d,e,f).norm(),vec3(1,0,0),vec3(0,-1,0))
@@ -457,7 +457,7 @@ class ChooseSeriesDialog(QtWidgets.QDialog,Ui_ChooseSeriesDialog):
         curitem=None
 
         if self.dds is not None and len(self.dds.series)>0:
-            series=map(str,self.dds.series)
+            series=list(map(str,self.dds.series))
             if self.allowMultiple:
                 curitem=0
 
@@ -656,7 +656,7 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
                 name=self.mgr.getUniqueObjName(getValidFilename(name))
                 images=[]
                 start,end,minx,miny,maxx,maxy=self.state
-                selection=range(start,end+1)
+                selection=list(range(start,end+1))
                 crop=(minx,miny,maxx,maxy)
 
                 for i,series in enumerate(self.serieslist):
@@ -886,7 +886,7 @@ class DicomPlugin(ImageScenePlugin):
                     # get the series filenames or a selected range thereof if `selection' is given
                     filenames=[series.filenames[i] for i in selection] if selection else series.filenames
                     # remove already-loaded images
-                    filenames=filter(lambda i:series.getSharedImage(i)==None,filenames)
+                    filenames=[i for i in filenames if series.getSharedImage(i)==None]
 
                     if len(filenames)>0:
                         simgs=loadSharedImages(len(filenames),proccount,task,rootdir,filenames,crop,partitionArgs=(filenames,))
@@ -1183,7 +1183,7 @@ class DicomPlugin(ImageScenePlugin):
             if isinstance(obj.source,DicomSeries):
                 indices=[i.index for i in obj.images]
                 indices.sort()
-                if indices==range(len(obj.images)):
+                if indices==list(range(len(obj.images))):
                     indices=None
 
                 args['indices']=indices
@@ -1279,7 +1279,7 @@ class DicomPlugin(ImageScenePlugin):
         stepind=int(prop.stepBox.value())
 
         if prop.selectedButton.isChecked():
-            selectlist=range(len(series.filenames))[firstind:lastind:stepind]
+            selectlist=list(range(len(series.filenames)))[firstind:lastind:stepind]
         else:
             selectlist=None
 

@@ -22,12 +22,16 @@ import sys
 import glob
 import subprocess
 import socket
-import SocketServer
 import pickle
 import traceback
 import shutil
 import itertools
 import threading
+
+try:
+    import SocketServer as socketserver
+except:
+    import socketserver
 
 from contextlib import closing
 import numpy as np
@@ -414,7 +418,7 @@ class IRTKPluginMixin(object):
                 ts=[t[0] for t in tsinds]
 
                 if len(tso)!=3:
-                    raise IOError('Should have 3 orientations: %r'%tso.keys())
+                    raise IOError('Should have 3 orientations: %r'%list(tso.keys()))
 
                 #isorthos=[o1.isOrthogonalTo(o2) or o1.isOrthogonalTo(o3) for o1,o2,o3 in successive(tso,3,True)]
 
@@ -1007,7 +1011,7 @@ class IRTKPluginMixin(object):
             # read the times data so that ptransformation can be set to the right timestep
             if os.path.isfile(os.path.join(trackdir,'times.txt')):
                 with open(os.path.join(trackdir,'times.txt')) as o:
-                    times=map(float,o.readlines())
+                    times=list(map(float,o.readlines()))
             elif isSingleDof:
                 times=timesteps
             else:
@@ -1491,11 +1495,11 @@ class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
         if not os.path.exists(self.jidfile):
             self.setJID(1)
 
-        class MotionTrackHandler(SocketServer.StreamRequestHandler):
+        class MotionTrackHandler(socketserver.StreamRequestHandler):
             def handle(hself):
                 self.handleRequest(hself.rfile,hself.wfile)
 
-        self.server = SocketServer.TCPServer(('localhost', self.serverport), MotionTrackHandler)
+        self.server = socketserver.TCPServer(('localhost', self.serverport), MotionTrackHandler)
         self.serverThread=threading.Thread(target=self.server.serve_forever)
         self.serverThread.start()
 

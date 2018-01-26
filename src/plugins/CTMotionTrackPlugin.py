@@ -41,7 +41,7 @@ class CTMotionTrackProject(Project):
 
         def _copy():
             pdir=self.getProjectDir()
-            files=map(os.path.abspath,obj.plugin.getObjFiles(obj) or [])
+            files=list(map(os.path.abspath,obj.plugin.getObjFiles(obj) or []))
 
             if not files or any(not f.startswith(pdir) for f in files):
                 newname=self.CTMotion.getUniqueObjName(obj.getName())
@@ -100,8 +100,8 @@ class CTMotionTrackProject(Project):
 
         self.ctprop.paramEdit.setText(self.configMap[ConfigNames._paramfile])
 
-        sceneimgs=filter(lambda o:isinstance(o,ImageSceneObject),self.memberObjs)
-        scenemeshes=filter(lambda o:isinstance(o,MeshSceneObject),self.memberObjs)
+        sceneimgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
+        scenemeshes=[o for o in self.memberObjs if isinstance(o,MeshSceneObject)] 
 
         names=sorted(o.getName() for o in sceneimgs)
         fillList(self.ctprop.isoCreateBox,names)
@@ -111,7 +111,7 @@ class CTMotionTrackProject(Project):
         names=sorted(o.getName() for o in scenemeshes)
         fillList(self.ctprop.trackObjBox,names)
 
-        trackdirs=map(os.path.basename,self.CTMotion.getTrackingDirs())
+        trackdirs=list(map(os.path.basename,self.CTMotion.getTrackingDirs()))
         fillList(self.ctprop.trackDataBox,sorted(trackdirs))
 
         # refill the measurement plugin's known tracking sources

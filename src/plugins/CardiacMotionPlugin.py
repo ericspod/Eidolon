@@ -257,7 +257,7 @@ def divideMeshSurfaceByRegion(dataset,regionfield,choosevals,task=None):
     proccount=chooseProcCount(tris.n(),0,2000)
     shareMatrices(tris,nodeprops,regionfield)
     results= divideTrisByRegionRange(tris.n(),proccount,task,tris,nodeprops,regionfield,choosevals,partitionArgs=(choosevals,))
-    matrices=listSum(map(list,results.values()))
+    matrices=listSum(list(map(list,results.values())))
 
     return trids,indlist,matrices
 
@@ -333,7 +333,7 @@ def calculateRegionThicknesses(datasetlist,regionfield,choosevals,stddevRange=1.
         shareMatrices(*(triindlist+[nodes]))
         thicknesses=calculateRegionThicknessesRange(sumlens,proccount,None,nodes,stddevRange,triindlist,partitionArgs=(triindlist,))
 
-        thicknesslist=[v for i,v in sorted(listSum(thicknesses.values()))] # in same order as `choosevals'
+        thicknesslist=[v for i,v in sorted(listSum(list(thicknesses.values())))] # in same order as `choosevals'
 
         # calculate the per-region thickness field
         thicknessfield=RealMatrix('RegionThickness',regionfield.n())
@@ -393,7 +393,7 @@ def calculateAvgDisplacement(datasetlist,regionfield,choosevals,stddevRange=1.0,
         shareMatrices(*(triindlist+[nodes]))
         dists=calculateAvgDisplacementRange(sumlens,proccount,None,orignodes,nodes,stddevRange,triindlist,partitionArgs=(triindlist,))
 
-        displist=[v for i,v in sorted(listSum(dists.values()))]
+        displist=[v for i,v in sorted(listSum(list(dists.values())))]
 
         dispfield=RealMatrix('RegionDisplacement',regionfield.n())
         dispfield.meta(StdProps._spatial,regionfield.meta(StdProps._spatial))
@@ -732,8 +732,8 @@ class CardiacMotionProject(Project):
 
         setChecked(self.configMap[ConfigNames._savecheart].lower()=='true',self.alignprop.saveCHeartCheck)
 
-        sceneimgs=filter(lambda o:isinstance(o,ImageSceneObject),self.memberObjs)
-        scenemeshes=filter(lambda o:isinstance(o,MeshSceneObject),self.memberObjs)
+        sceneimgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
+        scenemeshes=[o for o in self.memberObjs if isinstance(o,MeshSceneObject)]
 
         names=sorted(o.getName() for o in sceneimgs)
         fillList(self.alignprop.regList,names)
@@ -797,7 +797,7 @@ class CardiacMotionProject(Project):
         self.alignprop.squeezeMeshBox.currentIndexChanged.emit(self.alignprop.squeezeMeshBox.currentIndex())
 
         # fill tracking dirs boxes with directory names
-        trackdirs=map(os.path.basename,self.CardiacMotion.getTrackingDirs())
+        trackdirs=list(map(os.path.basename,self.CardiacMotion.getTrackingDirs()))
         fillList(self.alignprop.trackDataBox,trackdirs)
         fillList(self.alignprop.strainTrackBox,trackdirs)
         fillList(self.alignprop.strainMeshTrackBox,trackdirs)
@@ -912,7 +912,7 @@ class CardiacMotionProject(Project):
             self.save()
 
         pdir=self.getProjectDir()
-        files=map(os.path.abspath,obj.plugin.getObjFiles(obj) or [])
+        files=list(map(os.path.abspath,obj.plugin.getObjFiles(obj) or []))
 
         if not files or any(not f.startswith(pdir) for f in files):
             msg="Do you want to add %r to the project? This requires saving/copying the object's file data into the project directory."%(obj.getName())
@@ -938,7 +938,7 @@ class CardiacMotionProject(Project):
                 vox=tuple(imgobj.getVoxelSize())
             else:
                 name='UNKNOWN'
-                timesteps=range(len(glob(os.path.join(trackdir,'*.dof.gz')))+1)
+                timesteps=list(range(len(glob(os.path.join(trackdir,'*.dof.gz')))+1))
                 trans=(0,0,0,1,1,1,0,0,0,False)
                 vox=(1,1,1)
 
@@ -1542,7 +1542,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 #assert len(obj.getTimestepList())>1
                 assert regionfield!=None
 
-                results=calculateRegionThicknesses(obj.datasets,regionfield,range(1,18),stddevRange,task)
+                results=calculateRegionThicknesses(obj.datasets,regionfield,list(range(1,18)),stddevRange,task)
 
                 obj.plugin.saveObject(obj,self.project.getProjectFile(obj.getName()),setFilenames=True)
 
@@ -1586,7 +1586,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 assert len(obj.getTimestepList())>1
                 assert regionfield!=None
 
-                results=calculateAvgDisplacement(obj.datasets,regionfield,range(1,18),stddevRange,task)
+                results=calculateAvgDisplacement(obj.datasets,regionfield,list(range(1,18)),stddevRange,task)
 
                 obj.plugin.saveObject(obj,self.project.getProjectFile(obj.getName()),setFilenames=True)
 
@@ -1611,7 +1611,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
 
         return self.mgr.runTasks(_calcDisp(objname,regionfieldname),f)
 
-    def calculateMeshRegionVolume(self,objname,regionfieldname,heartrate,regionrange=range(1,17)): #regionrange=range(18,24)
+    def calculateMeshRegionVolume(self,objname,regionfieldname,heartrate,regionrange=list(range(1,17))): #regionrange=range(18,24)
         f=Future()
         @taskroutine('Calculating Average Volume')
         def _calcVolume(objname,regionfieldname,heartrate,regionrange,task):
@@ -1638,7 +1638,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 mintimes=[]
                 for region in range(len(results[0])):
                     regionvals=[results[i][region] for i in range(len(results))]
-                    mintimes.append(min(zip(regionvals,timesteps))[1])
+                    mintimes.append(min(list(zip(regionvals,timesteps)))[1])
 
                 mintimestddev=stddev(mintimes)
                 sdiperc=mintimestddev*(100.0/duration)
@@ -1723,7 +1723,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 ds=obj.datasets[0]
                 nodes=ds.getNodes()
                 aha=ds.getDataField(ahafieldname)
-                aharegions=range(1,18)
+                aharegions=list(range(1,18))
                 imgtrans=transform(*conf[JobMetaValues._transform])
 
                 task.setMaxProgress(len(timesteps))
@@ -1732,7 +1732,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 if ds.hasIndexSet(aha.meta(StdProps._spatial)):
                     indmat=ds.getIndexSet(aha.meta(StdProps._spatial))
                 else:
-                    spatialmats=filter(isSpatialIndex,ds.enumIndexSets())
+                    spatialmats=list(filter(isSpatialIndex,ds.enumIndexSets()))
                     indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
 
                 # create a matrix assigning an AHA region to each node
@@ -1825,11 +1825,11 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                             circstrain.setRow(n,0,0,0)
 
                     # store the averages of the per-region lists in the total average lists
-                    mavgstrains.append(map(avg,mavgstrain))
-                    minavgstrains.append(map(avg,minavgstrain))
-                    lavgstrains.append(map(avg,lavgstrain))
-                    ravgstrains.append(map(avg,ravgstrain))
-                    cavgstrains.append(map(avg,cavgstrain))
+                    mavgstrains.append(list(map(avg,mavgstrain)))
+                    minavgstrains.append(list(map(avg,minavgstrain)))
+                    lavgstrains.append(list(map(avg,lavgstrain)))
+                    ravgstrains.append(list(map(avg,ravgstrain)))
+                    cavgstrains.append(list(map(avg,cavgstrain)))     
 
                     # global average strains minus last region (17)
                     globalmavgstrains.append(avg(matIter(mavgstrain[:-1])))
@@ -1941,7 +1941,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 sectimesteps=[t/1000.0 for t in timesteps]
                 field=obj.datasets[0].getDataField(fieldname)
 
-                nodetwists,apextwists,basetwists,axislen=calculateTorsion(obj.datasets,field,range(1,18))
+                nodetwists,apextwists,basetwists,axislen=calculateTorsion(obj.datasets,field,list(range(1,18)))
 
                 twists=[a-b for a,b in zip(apextwists,basetwists)]
                 torsions=[t/axislen for t in twists]
@@ -1978,7 +1978,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
     def calculateSqueeze(self,objname,regionfieldname=None,regionvals=None,task=None):
         obj=self.findObject(objname)
         regionfield=obj.datasets[0].getDataField(regionfieldname or 'AHA')
-        regionvals=regionvals or range(1,18) # AHA regions
+        regionvals=regionvals or list(range(1,18)) # AHA regions
         initareas=None
         initsums=None
         initsumlist=None

@@ -30,7 +30,7 @@ for i in frange(0,1,0.05):
     nodes.mul(vec3(2.0+i,1.0,2.0-i))
 
     dist=ds.getDataField('dist')
-    for n in xrange(dist.n()):
+    for n in range(dist.n()):
         dist.setAt(nodes.getAt(n).distTo(vec3(0.25)),n)
 
     dds.append(ds)

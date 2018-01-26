@@ -19,8 +19,12 @@
 import os
 import xml.etree.cElementTree as ET
 import base64
-import StringIO
 import contextlib
+
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
 
 import numpy as np
 
@@ -66,7 +70,7 @@ def toMatrix(mtype):
             if mtype==vec3:
                 mat=[vec3(float(a),float(b),float(c)) for a,b,c in eidolon.group(tokens,3)]
             else:
-                mat=map(mtype,tokens)
+                mat=list(map(mtype,tokens))
         else: # otherwise assume the elements in t are converted already and just make a list of these
             mat=list(t)
             
@@ -172,7 +176,7 @@ class VTKPlugin(MeshScenePlugin):
             win.addMenuItem('Import','VTKLoad'+str(plugid),'&VTK Legacy/XML Sequence',lambda:self._openFileDialog(True))
             win.addMenuItem('Export','VTKSave'+str(plugid),'&VTK XML File(s)',self._saveFileDialog)
             
-        vtkload=filter(bool,mgr.conf.get('args','--vtk').split(','))
+        vtkload=list(filter(bool,mgr.conf.get('args','--vtk').split(',')))
         
         if len(vtkload)>0:
             if len(vtkload)==1:
@@ -250,8 +254,8 @@ class VTKPlugin(MeshScenePlugin):
             name=uniqueStr(basename,[o.getName() for o in self.mgr.enumSceneObjects()])
     
             version,desc,data=result[:3]
-            pointattrs=filter(lambda a:a[0]=='POINT_DATA',result[3:])
-            cellattrs=filter(lambda a:a[0]=='CELL_DATA',result[3:])
+            pointattrs=[a for a in result[3:] if a[0]=='POINT_DATA']
+            cellattrs=[a for a in result[3:] if a[0]=='CELL_DATA']
             
             ds=None
             indmats=[]
@@ -445,7 +449,7 @@ class VTKPlugin(MeshScenePlugin):
                                     cells.append(poly)
                             elif tname!=None:
                                 #unsortinds=list(reversed(indexList(sortinds,list(reversed(range(len(sortinds)))))))
-                                unsortinds=eidolon.indexList(sortinds,range(len(sortinds)))
+                                unsortinds=eidolon.indexList(sortinds,list(range(len(sortinds))))
                             
                                 celltypes+=[cid]*inds.n()
                                 for ind in range(inds.n()):
@@ -460,7 +464,7 @@ class VTKPlugin(MeshScenePlugin):
                             o.write('\n'.join(map(str,celltypes))+'\n')
                             
                     # write out fields as POINT_DATA, CELL_DATA is not supported
-                    fields=ds.fields.values() if writeFields else []
+                    fields=list(ds.fields.values()) if writeFields else []
                     if len(fields)>0:
                         o.write('POINT_DATA %i\n'%nodes.n())
                         
@@ -500,7 +504,7 @@ class VTKPlugin(MeshScenePlugin):
                     
                 return np.frombuffer(text,dtype=dtype)
             else:
-                return np.loadtxt(StringIO.StringIO(node.text.replace('\n',' ')),dtype).flatten()
+                return np.loadtxt(StringIO(node.text.replace('\n',' ')),dtype).flatten()
             
         def readNodes(nodearray,byteorder,compressor):
             assert _get(nodearray,'NumberOfComponents')=='3'                    
@@ -673,7 +677,7 @@ class VTKPlugin(MeshScenePlugin):
         @taskroutine('Loading VTK File Sequence')
         def _loadSeq(filenames,fileobjs,name,task):
             with f:
-                fileobjs=map(Future.get,fileobjs)
+                fileobjs=list(map(Future.get,fileobjs))
                 name=name or fileobjs[0].getName()
                 obj=MeshSceneObject(name,[o.datasets[0] for o in fileobjs],self,filenames=filenames)
                 
@@ -758,7 +762,7 @@ class VTKPlugin(MeshScenePlugin):
                 
                 for fn,ds in zip(filenames,dds):
                     nodes=ds.getNodes()
-                    inds=filter(lambda i: i.getType() in knowncelltypes,ds.enumIndexSets())
+                    inds=[i for i in ds.enumIndexSets() if i.getType() in knowncelltypes]
                     numcells=sum(i.n() for i in inds)
                     numindices=sum(i.n()*i.m() for i in inds)
                     

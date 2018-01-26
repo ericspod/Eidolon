@@ -219,7 +219,7 @@ class SimpleGraphWidget(BasePlotWidget):
             if len(values)==2 and isIterable(values[0]) and isIterable(values[1]) and len(values[0])==len(values[1]):
                 xdata,ydata=values
             else:
-                xdata=range(len(values))
+                xdata=list(range(len(values)))
                 ydata=values
 
             plot=self.plot(xdata,ydata,name=name,pen=(i,len(self.graphmap)))
@@ -306,7 +306,7 @@ class TimePlotWidget(BasePlotWidget):
             labels,dataseries=zip(*[(k,list(v)) for k,v in mat.items()])
         else:
             dataseries=list(toIterable(obj.get(DatafileParams._matrix)))
-            labels=obj.get(DatafileParams._labels) or map(str,range(1,len(dataseries)+1))
+            labels=obj.get(DatafileParams._labels) or list(map(str,range(1,len(dataseries)+1)))
 
         self.setData(dataseries,obj.get(DatafileParams._timesteps),labels)
 
@@ -315,8 +315,10 @@ class TimePlotWidget(BasePlotWidget):
         if not isIterable(first(timesteps)):
             timesteps=[list(timesteps) for t in range(len(dataseries))]
 
-        if any(len(ds)!=len(ts) for ds,ts in zip(dataseries,timesteps)):
-            raise ValueError('Dataseries lengths do not match associated timesteps: %r != %r'%(map(len,dataseries),map(len,timesteps)))
+        lens=[(len(ds),len(ts) for ds,ts in zip(dataseries,timesteps)]
+            
+        if any(ds!=ts for ds,ts in lens):
+            raise ValueError('Dataseries lengths do not match associated timesteps: %r != %r'%tuple(zip(*lens)))
 
         self.updatedData=True
         self.updatedTime=True
@@ -490,7 +492,7 @@ class RegionGraphDockWidget(QtWidgets.QWidget,Ui_RegionGraphWidget):
         self.plot.setObjectName('Region Graph')
         self.verticalLayout.addWidget(self.plot)
 
-        self.setDataMatrix([range(numRegions)],[0])
+        self.setDataMatrix([list(range(numRegions))],[0])
 
         self.mgr.addEventHandler(EventType._widgetPreDraw,self._updateTime)
 
@@ -738,10 +740,10 @@ class PlotPlugin(ScenePlugin):
         minx=mat.meta('minx')
         maxx=mat.meta('maxx')
         if minx and maxx:
-            xvals=range(int(minx),int(maxx))
+            xvals=list(range(int(minx),int(maxx)))
             assert len(xvals)==mat.n()
         else:
-            xvals=range(mat.n())
+            xvals=len(range(mat.n()))
 
         return self.plotSimpleGraph(mat.getName(),(xvals,eidolon.matrixToList(mat)))
 

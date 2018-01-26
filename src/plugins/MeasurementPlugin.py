@@ -146,7 +146,7 @@ class Measurement(object):
         
     def __repr__(self):
         col=tuple(self.col)
-        values=[map(tuple,v) for v in self.values]
+        values=[list(map(tuple,v)) for v in self.values]
         return repr((self.name,self.mtype,col,self.timesteps,values))
         
             
@@ -372,7 +372,7 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
     def createMeasurement(self,mtype,col,values,name=None,timesteps=None):
         '''Create and add a new Measurement object of type `mtype', color `col', with points `values'.'''
         
-        existingnames=map(first,MeasureType)+[n.name for n in self.handleNames.values()] # ensures names are unique and always numbered
+        existingnames=list(map(first,MeasureType))+[n.name for n in self.handleNames.values()] # ensures names are unique and always numbered
         name=eidolon.uniqueStr(name or mtype,existingnames) 
         timesteps=[self.mgr.timestep] if timesteps==None else timesteps
         col=col or self.handlecol

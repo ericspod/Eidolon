@@ -70,7 +70,8 @@ class NiftiPlugin(ImageScenePlugin):
         return '\nUsage: --nifti=NIfTI-file-path[,representation-type][,...]'
 
     def acceptFile(self,filename):
-        return splitPathExt(filename,False)[2].lower() in ('.nii','.nii.gz','.hdr')
+        #return splitPathExt(filename,True)[2].lower() in ('.nii','.nii.gz','.hdr')
+        return eidolon.hasExtension(filename,'nii','nii.gz','hdr')
 
     def checkFileOverwrite(self,obj,dirpath,name=None):
         outfile=os.path.join(dirpath,name or obj.getName())+'.nii'
@@ -238,7 +239,7 @@ class NiftiPlugin(ImageScenePlugin):
                 if not overwrite and os.path.exists(path):
                     raise IOError('File already exists: %r'%path)
 
-                if not path.endswith('.nii') and not path.endswith('.nii.gz'):
+                if not eidolon.hasExtension(path,'nii','nii.gz'):
                     path+='.nii'
 
                 if 'datatype' in kwargs:

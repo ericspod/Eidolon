@@ -239,11 +239,11 @@ def importMeshes(x4):
 
             dss.append(eidolon.PyDataSet('%s%i'%(name,i),nmat,topomats,fields))
 
-        obj=MeshSceneObject(name,dss,filenames=filter(bool,filenames))
+        obj=MeshSceneObject(name,dss,filenames=list(filter(bool,filenames)))
 
         # set timestep list if needed
         if len(timesteps)>1:
-            obj.setTimestepList(map(ast.literal_eval,timesteps))
+            obj.setTimestepList(list(map(ast.literal_eval,timesteps)))
 
         results.append(obj)
 
@@ -286,7 +286,7 @@ def importImages(x4,plugin):
             obj=plugin.createObjectFromArray('tmp',arr,interval,offset,pos,rot,spacing)
             images+=obj.images
 
-        results.append(eidolon.ImageSceneObject(name,None,images,filenames=filter(bool,filenames)))
+        results.append(eidolon.ImageSceneObject(name,None,images,filenames=list(filter(bool,filenames))))
 
     return results
 
@@ -312,7 +312,7 @@ class X4DFPlugin(CombinedScenePlugin):
         oldbasename=splitPathExt(oldfiles[0])[1] # old basename of the x4df file
         newfiles=[os.path.join(dirpath,os.path.basename(f).replace(oldbasename,newname)) for f in oldfiles]
 
-        return filter(os.path.exists,newfiles)
+        return list(filter(os.path.exists,newfiles))
 
     def getObjFiles(self,obj):
         return [obj.kwargs['filename']]+obj.kwargs['filenames']
@@ -403,7 +403,11 @@ class X4DFPlugin(CombinedScenePlugin):
     def _openFileDialog(self):
         filename=self.mgr.win.chooseFileDialog('Choose X4DF filename',filterstr='X4DF Files (*.x4df)')
         if filename:
-            self.mgr.addFuncTask(lambda:map(self.mgr.addSceneObject,self.loadObject(filename)),'Importing X4DF file')
+            def _loadAll():
+                for o in self.loadObject(filename):
+                    self.mgr.addSceneObject(o)
+                    
+            self.mgr.addFuncTask(_loadAll,'Importing X4DF file')
 
     def _saveFileDialog(self):
         obj=self.win.getSelectedObject()

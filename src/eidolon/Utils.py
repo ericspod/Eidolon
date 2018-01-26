@@ -1308,6 +1308,11 @@ def getValidFilename(name):
     return re.sub('[\.\s\<\>?:;!*/\|%\'\"]', '_', name)
 
 
+def hasExtension(path,*exts):
+    '''Returns True if the filename `path' has any of the extensions in `exts', which can start with a period or not.'''
+    return any(path.endswith(('' if e[0]=='.' else '.')+e) for e in exts)
+
+
 def ensureExt(path,ext,replaceExt=False):
     '''
     Ensures the returned path ends with extension `ext'. If the path doesn't have `ext' as its extension, this returns

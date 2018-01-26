@@ -35,7 +35,7 @@ class STLPlugin(MeshScenePlugin):
         if win:
             win.addMenuItem('Import','STLLoad'+str(plugid),'&STL .stl File',self._openFileDialog)
             
-        stlfiles=filter(bool,mgr.conf.get('args','--stl').split(','))
+        stlfiles=list(filter(bool,mgr.conf.get('args','--stl').split(',')))
         for f in stlfiles:
             obj=self.loadObject(f)
             self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(obj()))
@@ -89,7 +89,7 @@ class STLPlugin(MeshScenePlugin):
                         line=o.readline().lower()
                         while line and not line.startswith(keywords.endsolid):
                             assert ('%s %s'%tuple(line.split()[:2]))==keywords.facet_normal
-                            normal=map(float,line.split()[2:])
+                            normal=list(map(float,line.split()[2:]))
                             normals.append(*normal)
                             _assertline(o,keywords.outer_loop)
                             _readvertex(o,nodes)

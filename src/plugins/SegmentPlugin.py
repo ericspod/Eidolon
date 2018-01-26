@@ -570,7 +570,7 @@ def generatePCRTriHemisphere(ctrls,refine,task=None):
     assert all(len(c)==len(ctrls[0]) for c in ctrls)
 
     hnodes,inds=eidolon.generateHemisphere(refine+1) # get the nodes for a hemisphere
-    nodes=eidolon.listToMatrix(map(cartToPolarXi,hnodes),'nodes') # convert to xi coordinates
+    nodes=eidolon.listToMatrix(list(map(cartToPolarXi,hnodes)),'nodes') # convert to xi coordinates
     xis=nodes.clone() # clone the xi values since entries in nodes are going to be overridden
 
     # apply the basis function to the list of xi values, this will convert each xi coordinate to a world coordinate
@@ -666,7 +666,7 @@ def generateDefaultHemisphereMesh(refine,center,scale,outerrad,innerrad,numctrls
 
         ctrls+=[[inner,outer]]
 
-    ctrls=map(list,zip(*ctrls))
+    ctrls=list(map(list,zip(*ctrls)))
 
     _,apexctrls1=generateApexContours(ctrls[0],0.25)
     _,apexctrls2=generateApexContours(ctrls[1],0.5)
@@ -858,7 +858,7 @@ def generateImageMask(name,contours,contourtimes,template,labelfunc='1',task=Non
     contour to align each correctly in time. 
     '''
     #contours=sortContours(contours)
-    planes=map(getContourPlane,contours)
+    planes=list(map(getContourPlane,contours))
 
     if len(set(contourtimes))==1:
         mask=template.plugin.extractTimesteps(template,name,indices=[0]) # static mask
@@ -1015,7 +1015,7 @@ class LVSeg2DMixin(eidolon.DrawContourMixin):
 
     def updateView(self):
         # fill the handles list, selecting the active handle
-        handles=self.contourNames.items()
+        handles=list(self.contourNames.items())
         contours=['%s @ %.3f'%hn for i,hn in handles]
         selected=self.getActiveIndex()
         eidolon.fillList(self.uiobj.contourList,contours,selected if selected!=None else -1,None,True)
@@ -1183,7 +1183,7 @@ class SegSceneObject(SceneObject):
 
         name=eidolon.uniqueStr(name,['contour']+self.getContourNames())
 
-        self.datamap[name]=(timestep,map(tuple,nodes))
+        self.datamap[name]=(timestep,list(map(tuple,nodes)))
         return name
 
     def setContour(self,name,timestep,nodes):
@@ -1523,7 +1523,7 @@ class SegmentPlugin(ScenePlugin):
 
     def _generateMeshButton(self,prop,obj):
         conmap=mapContoursToPlanes(obj.enumContours())
-        lens=map(len,conmap.values())
+        lens=list(map(len,conmap.values()))
         msg=None
 
         if len(conmap)==0:
@@ -1558,7 +1558,7 @@ class SegmentPlugin(ScenePlugin):
         for k,v in conmap.items(): # keep only the contours for the first timestep stored for each plane
             conmap[k]=[vv for vv in v if vv[2]==v[0][2]]
         
-        lens=map(len,conmap.values())
+        lens=list(map(len,conmap.values()))
         msg=None
         imgobj=self.mgr.findObject(obj.get(DatafileParams.srcimage))
         

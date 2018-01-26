@@ -33,7 +33,7 @@ class TestVec3(unittest.TestCase):
 		assert serv is not None
 		assert serv.realnumprocs>0
 	
-	def testConcurrency(self,values=range(100),numprocs=0,task=None):
+	def testConcurrency(self,values=list(range(100)),numprocs=0,task=None):
 		'''Test concurrent processing on input and returning values.'''
 		result=eidolon.concurrencyTestRange(len(values),numprocs,task,values)
 		checkResultMap(result)
@@ -44,7 +44,7 @@ class TestVec3(unittest.TestCase):
 		result=ProcessServer.globalServer.callProcessFunc(numvals,numprocs,task,eidolon.concurrencyTestProcessValues)
 		checkResultMap(result())
 	
-	def testReturnArg(self,values=range(20),numprocs=0,task=None):
+	def testReturnArg(self,values=list(range(20)),numprocs=0,task=None):
 		'''Test returned values from processes.'''
 		result=eidolon.concurrencyTestReturnArg(len(values),numprocs,task,values,partitionArgs=(values,))
 		checkResultMap(result)

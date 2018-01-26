@@ -24,7 +24,7 @@ from TestUtils import generateTestMeshDS
 
 ds=generateTestMeshDS(ElemType._Tri1NL,4)
 nodes=ds.getNodes()
-dirs=listToMatrix([tuple(nodes.getAt(i)) for i in xrange(nodes.n())],'dirs' )
+dirs=listToMatrix([tuple(nodes.getAt(i)) for i in range(nodes.n())],'dirs' )
 ds.setDataField(dirs)
 
 obj=MeshSceneObject('Sphere',ds)

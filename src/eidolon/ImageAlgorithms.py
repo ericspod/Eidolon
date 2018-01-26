@@ -411,30 +411,43 @@ def getLargestMaskObject(mask):
 
 @timing
 def calculateMotionField(obj):
-    '''
-    Calculate a motion field from time-dependent image `obj'. This is done using fourier transforms to determine where 
-    motion is present. The result is a static image with dimensions of `obj' with areas of motion having higher intensity.
-    
-    see: Lin et. al, "Automated Detection of Left Ventricle in 4D MR Images: Experience from a Large Study"
-    '''
+    '''Returns a motion field array from time-dependent image `obj'.'''
     if not obj.isTimeDependent:
         raise ValueError('Image object %r must be time-dependent for calculating motion ROI.'%obj.getName())
         
     with processImageNp(obj,False) as mat:
-        out=np.zeros(mat.shape[:3],np.float32)
+        return calculateMotionFFT(mat)
+
+
+def calculateMotionFFT(imgmat):
+    '''
+    Given a 4D image array `imgmat', calculate the motion representation using fourier transforms to determine where 
+    motion is present. The result is a 3D image with dimensions of `obj' with areas of motion having higher intensity.
+    
+    see: Lin et. al, "Automated Detection of Left Ventricle in 4D MR Images: Experience from a Large Study"
+    '''
+    assert imgmat.ndim==4
+    assert imgmat.shape[3]>1
+    out=np.zeros(imgmat.shape[:3],np.float32)
         
-        for i in range(mat.shape[2]):
-            ff=scipy.fftpack.fftn(np.transpose(mat[:,:,i,:],(2,0,1)))
-            iff=np.absolute(scipy.fftpack.ifftn(ff[1:]))
-            im=np.sum(iff,axis=0)
-#            im=np.max((iff-np.average(iff,axis=0))**2,axis=0)
-            
-            out[:,:,i]=im
-            
+    for i in range(imgmat.shape[2]):
+        ff=scipy.fftpack.fftn(np.transpose(imgmat[:,:,i,:],(2,0,1)))
+        iff=np.absolute(scipy.fftpack.ifftn(ff[1:]))
+        im=np.sum(iff,axis=0)
+#       im=np.max((iff-np.average(iff,axis=0))**2,axis=0)
+        
+        out[:,:,i]=im
+        
     return out
 
 
 def generateMotionMask(motion,percentile=90,filterSize=10):
+    '''
+    Given a 3D image `motion' representing the FFT motion representation, generate a mask image of the same dimensions
+    containing the area of motion greater than the given percentile which is then filtered with maximum filter of size
+    `filterSize'. A larger `percentile' keeps less motion while a larger `filterSize' increases the bounds around the 
+    selected motion area of interest.
+    '''
     result=np.zeros_like(motion)
 
     for i in range(motion.shape[-1]):
