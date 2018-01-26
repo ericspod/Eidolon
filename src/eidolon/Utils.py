@@ -292,7 +292,8 @@ class Future(object):
             if py3: # Python3 compatibility
                 raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
             else:
-                raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
+                #raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
+                exec(compile('raise self.obj.exc_type,self.obj.exc_value,self.obj.tb'),locals())
 
         elif isinstance(self.obj,Exception):
             raise self.obj

@@ -32,14 +32,19 @@ import unittest
 import tempfile
 import shutil
 import glob
+import itertools
 from collections import OrderedDict, namedtuple
 from StringIO import StringIO
 from random import randint
 import numpy as np
 
-from eidolon import *
+from eidolon import (
+    vec3, rotator, color, enum, concurrent, timing, queue, first, taskroutine, clamp, taskmethod, fillList,
+    ImageScenePlugin, ImageSceneObject, ImageSceneObjectRepr, BaseCamera2DWidget, SharedImage, Qt, QtWidgets, Future
+)
+import eidolon
 
-addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
+eidolon.addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
 
 from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary
@@ -49,7 +54,7 @@ from pydicom.dataset import Dataset,FileDataset
 from ui import Ui_SeriesProp, Ui_ChooseSeriesDialog, Ui_Dicom2DView
 
 
-AssetType.append('dcm','Dicom Sources','Dicom Datasets (Directory References)') # adds the DICOM directory asset type to the asset panel
+eidolon.AssetType.append('dcm','Dicom Sources','Dicom Datasets (Directory References)') # adds the DICOM directory asset type to the asset panel
 digestFilename='dicomdataset.ini' # name of digest file
 headerPrecision=4 # precision of float values in DICOM headers, values are only correct to this number plus one of significant figures
 keywordToTag={v[4]:Tag(k) for k,v in DicomDictionary.items()} # maps tag keywords to 2 part tag numbers
@@ -283,7 +288,7 @@ def addDicomTagsToMap(dcm,tagmap):
                 value['item_%i'%i]=_datasetToDict(item)
         elif elem.name!='Pixel Data':
             value=elem.value
-            if not isPicklable(value):
+            if not eidolon.isPicklable(value):
                 value=str(value)
 
         return value
@@ -391,7 +396,7 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
 
         si.allocateImg(si.seriesID+str(si.index),isShared)
         np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
-        si.setMinMaxValues(*minmaxMatrixReal(si.img))
+        si.setMinMaxValues(*eidolon.minmaxMatrixReal(si.img))
 
     return si
 
@@ -427,7 +432,7 @@ class ChooseSeriesDialog(QtWidgets.QDialog,Ui_ChooseSeriesDialog):
         self.seriesList.setSelectionMode(selmode)
 
         if params!=None: # create the parameters panel and put it in the group box
-            panel=ParamPanel(params[0])
+            panel=eidolon.ParamPanel(params[0])
             panel.setParamChangeFunc(params[1])
             self.paramGroup.layout().addWidget(panel)
         else:
@@ -482,7 +487,7 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
     PreviewState=namedtuple('PreviewState','stackStart stackEnd minx miny maxx maxy')
 
     def __init__(self,serieslist,resultf,mgr,plugin,parent=None):
-        assert isMainThread()
+        assert eidolon.isMainThread()
         assert len(serieslist)>0
         QtWidgets.QDialog.__init__(self,parent)
         BaseCamera2DWidget.__init__(self,mgr,mgr.createCamera(isSecondary=True))
@@ -504,7 +509,7 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
 
         self._setTexture() # initializes self.simg and self.tex
 
-        self.recthandle=RectHandle2D(self,[vec3(),vec3(1,0),vec3(0,1),vec3(1,1)],color(1,1,0))
+        self.recthandle=eidolon.RectHandle2D(self,[vec3(),vec3(1,0),vec3(0,1),vec3(1,1)],color(1,1,0))
         self.addHandle(self.recthandle)
         self._setHandle(10,10,self.imgwidth-10,self.imgheight-10)
 
@@ -586,17 +591,17 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
         self.simg=self._loadImage()
         w,h=self.simg.dimensions
         if self.tex==None: # if texture is None, create it and fill the figure with mesh data to represent the image
-            self.tex=self.createTexture('imgtex',w,h,TF_ALPHALUM8)
+            self.tex=self.createTexture('imgtex',w,h,eidolon.TF_ALPHALUM8)
             self.texmat.setTexture(self.tex)
             self.imgwidth=w
             self.imgheight=h
 
             nodes,inds,xis=BaseCamera2DWidget.defaultQuad
             nodes=[vec3(w,h)*n for n in nodes]
-            vb=PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),None,xis)
-            ib=PyIndexBuffer(inds)
+            vb=eidolon.PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),None,xis)
+            ib=eidolon.PyIndexBuffer(inds)
             self.imgfig.fillData(vb,ib)
-            self.sceneBB=BoundBox(nodes)
+            self.sceneBB=eidolon.BoundBox(nodes)
 
         if w>0 and h>0 and self.simg.img:
             assert (w,h)==(self.imgwidth,self.imgheight),'(%r,%r)!=(%r,%r)'%(w,h,self.imgwidth,self.imgheight)
@@ -613,7 +618,7 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
         if val==None: # val is not None when the signal is from the slider, use the value in that case
             val=self.imgNumBox.value()
 
-        with signalBlocker(self.imgSlider,self.imgNumBox):
+        with eidolon.signalBlocker(self.imgSlider,self.imgNumBox):
             self.imgSlider.setValue(val)
             self.imgNumBox.setValue(val)
 
@@ -653,7 +658,7 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
                 firstname=self.serieslist[0].desc
                 lastname=self.serieslist[-1].desc
                 name='%sto%s'%(firstname,lastname) if firstname!=lastname else firstname
-                name=self.mgr.getUniqueObjName(getValidFilename(name))
+                name=self.mgr.getUniqueObjName(eidolon.getValidFilename(name))
                 images=[]
                 start,end,minx,miny,maxx,maxy=self.state
                 selection=list(range(start,end+1))
@@ -664,7 +669,7 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
                     images+=simgs
                     tslist=set(s.timestep for s in simgs)
                     
-                    if len(tslist)==1 and first(tslist)<=epsilon:
+                    if len(tslist)==1 and first(tslist)<=eidolon.epsilon:
                     #if simgs[0].timestep==-1:
                         for s in simgs:
                             s.timestep=i
@@ -795,11 +800,11 @@ class DicomDataset(object):
 
     def storeDataset(self,filename):
         '''Store the dataset dictionary to the basic config file `filename'.'''
-        storeBasicConfig(filename,self.getDatasetMap())
+        eidolon.storeBasicConfig(filename,self.getDatasetMap())
 
     def loadDataset(self,filename):
         '''Load data into the dataset from the basic config file `filename' which was created with storeDataset().'''
-        dsmap=readBasicConfig(filename)
+        dsmap=eidolon.readBasicConfig(filename)
 
         # check that the root directory makes sense
         # TODO: not actually needed? If the whole directory is moved the root will be different but file paths relative to the digest file will be correct
@@ -851,8 +856,8 @@ class DicomPlugin(ImageScenePlugin):
                 if dicomdir=='--dicomdir':
                     dicomdir='.'
 
-                # add a task which will call loadDicomDir() asynchronous so that the task queue is freed for dicom loading
-                mgr.addFuncTask(lambda:asyncfunc(self.loadDicomDir)(dicomdir))
+                # add a task which will call loadDicomDir() asynchronously so that the task queue is freed for dicom loading
+                mgr.addFuncTask(lambda:eidolon.asyncfunc(self.loadDicomDir)(dicomdir))
 
     def getHelp(self):
         return '\nUsage: --dicomdir[=scan-dir-path]'
@@ -875,7 +880,7 @@ class DicomPlugin(ImageScenePlugin):
         def loadSITask(task=None):
             with f:
                 if len(series.filenames)>0:
-                    proccount=chooseProcCount(len(series.filenames),0,10)
+                    proccount=eidolon.chooseProcCount(len(series.filenames),0,10)
                     rootdir=series.parent.rootdir
 
                     if self.selectCropMap.get(series,None)!=(selection,crop):
@@ -890,8 +895,8 @@ class DicomPlugin(ImageScenePlugin):
 
                     if len(filenames)>0:
                         simgs=loadSharedImages(len(filenames),proccount,task,rootdir,filenames,crop,partitionArgs=(filenames,))
-                        checkResultMap(simgs)
-                        series.addSharedImages(sumResultMap(simgs)) # add new images, there isn't necessarily any order to this list
+                        eidolon.checkResultMap(simgs)
+                        series.addSharedImages(eidolon.sumResultMap(simgs)) # add new images, there isn't necessarily any order to this list
 
                 f.setObject(series.simgs)
 
@@ -901,7 +906,7 @@ class DicomPlugin(ImageScenePlugin):
         '''Loads the Dicom files for the given series object into a SceneObject subtype.'''
 
         if isinstance(series,str):
-            allseries=listSum(dds.series for dds in self.dirobjs.values())
+            allseries=eidolon.listSum(dds.series for dds in self.dirobjs.values())
             series1=first(s for s in allseries if s.seriesID==series)
             assert series1!=None,'Cannot find series %r'%series
             series=series1
@@ -912,7 +917,7 @@ class DicomPlugin(ImageScenePlugin):
         f=Future()
 
         # choose a unique name, based on the given name or the series description
-        name=uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
+        name=eidolon.uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
         self.loadedNames.append(name)
 
         ff=self.loadSeriesImages(series,selection,loadSequential,crop)
@@ -946,7 +951,7 @@ class DicomPlugin(ImageScenePlugin):
         or created DicomDataset object.
         '''
         dirpath=os.path.abspath(dirpath)
-        dirfiles=list(enumAllFiles(dirpath))
+        dirfiles=list(eidolon.enumAllFiles(dirpath))
         picklefile=os.path.join(dirpath,'dicomdataset.pickle')
         digestfile=os.path.join(dirpath,digestFilename)
         useDigestFile=False
@@ -972,7 +977,7 @@ class DicomPlugin(ImageScenePlugin):
         if not useDigestFile:
             ds=DicomDataset(dirpath)
 
-            proccount=chooseProcCount(len(dirfiles),0,500)
+            proccount=eidolon.chooseProcCount(len(dirfiles),0,500)
             ddsmap=createDicomDatasets(len(dirfiles),proccount,task,dirpath,dirfiles,partitionArgs=(dirfiles,))
 
             for dds in ddsmap.values():
@@ -998,14 +1003,14 @@ class DicomPlugin(ImageScenePlugin):
                 self.dirobjs[dirpath]=dds
 
                 # add the dataset as an asset to the UI
-                self.win.addAsset(dds,dirpath,AssetType._dcm)
+                self.win.addAsset(dds,dirpath,eidolon.AssetType._dcm)
                 self.win.sync()
                 listitem=self.win.findWidgetItem(dds)
 
                 # add each series as a child of the dataset asset item
                 for s in dds.series:
                     prop=self.win.callFuncUIThread(SeriesPropertyWidget)
-                    self.win.addAsset(s,str(s),AssetType._dcm,prop,self._updateSeriesPropBox)
+                    self.win.addAsset(s,str(s),eidolon.AssetType._dcm,prop,self._updateSeriesPropBox)
                     self.win.sync()
                     slistitem=self.win.findWidgetItem(s)
                     # reset the list item's parent by removing it and adding it to the new paren't child list
@@ -1053,20 +1058,20 @@ class DicomPlugin(ImageScenePlugin):
         def _loadFile(filename,name,interval,toffset,position,rot,task):
             with f:
                 dcm=read_file(filename)
-                name=name or splitPathExt(filename)[1]
+                name=name or eidolon.splitPathExt(filename)[1]
 
                 NT=NonstandardTags
                 spacing=vec3(dcm[NT.USpixdimx].value,dcm[NT.USpixdimy].value,dcm[NT.USpixdimz].value)*10
                 dimsize=(dcm[NT.USnumframes].value,dcm[NT.USdepth].value,dcm[NT.USheight].value,dcm[NT.USwidth].value)
                 pixeldata=dcm[NT.USpixeldata].value
 
-                assert len(pixeldata)==prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),prod(dimsize))
+                assert len(pixeldata)==eidolon.prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),prod(dimsize))
 
                 dat=np.ndarray(dimsize,dtype=np.uint8,buffer=pixeldata,order='C')
                 dat=np.transpose(dat,(3,2,1,0))
                 
 
-                obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot*rotator(halfpi,0,0),spacing,task=task)
+                obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot*rotator(eidolon.halfpi,0,0),spacing,task=task)
                 obj.source=convertToDict(dcm)
                 f.setObject(obj)
 
@@ -1114,7 +1119,7 @@ class DicomPlugin(ImageScenePlugin):
             files=obj.plugin.getObjFiles(obj)
             path=os.path.dirname(files[0]) if files else os.getcwd()
 
-        rootpath=os.path.join(path,getValidFilename(obj.getName()))
+        rootpath=os.path.join(path,eidolon.getValidFilename(obj.getName()))
         dtype=np.uint16
         maxrange=np.iinfo(dtype).max-np.iinfo(dtype).min
 
@@ -1158,6 +1163,7 @@ class DicomPlugin(ImageScenePlugin):
             ds.SliceLocation=0#s*ds.SliceThickness
             ds.SeriesDescription=obj.getName()
             ds.PixelData = pixel_array.tostring()
+            ds.SmallestImagePixelValue=pixel_array.min()
             ds.LargestImagePixelValue=pixel_array.max()
 
             ds.save_as(filename)
@@ -1201,13 +1207,13 @@ class DicomPlugin(ImageScenePlugin):
             if configSection:
                 script= ImageScenePlugin.getScriptCode(self,obj,setMaterial=False,**kwargs)
 
-                if isinstance(obj,ImageVolumeRepr):
+                if isinstance(obj,eidolon.ImageVolumeRepr):
                     args['numplanes']=obj.getNumPlanes()
                     script+="%(varname)s.setNumPlanes(%(numplanes)r)\n"
             else:
                 script= "%(varname)s=%(pname)s.createRepr(ReprType._%(reprtype)s,imgmat=%(matname)s)\n"
 
-        return setStrIndent(script % args).strip()+'\n'
+        return eidolon.setStrIndent(script % args).strip()+'\n'
 
     def showChooseSeriesDialog(self,dirpath=None,allowMultiple=True,params=None,subject=None):
         '''
@@ -1238,7 +1244,7 @@ class DicomPlugin(ImageScenePlugin):
         @self.mgr.callThreadSafe
         def showDialog():
             with f:
-                d=TimeMultiSeriesDialog(toIterable(series),f,self.mgr,self,self.mgr.win)
+                d=TimeMultiSeriesDialog(eidolon.toIterable(series),f,self.mgr,self,self.mgr.win)
                 d.exec_()
 
         return f # do not block on f since data is loaded in a task and stored in f
@@ -1264,7 +1270,7 @@ class DicomPlugin(ImageScenePlugin):
 
     def _updateSeriesPropBox(self,series,prop):
         if prop.propTable.rowCount()==0:
-            fillTable(series.getPropTuples(),prop.propTable)
+            eidolon.fillTable(series.getPropTuples(),prop.propTable)
 
         if prop.lastBox.value()==0:
             prop.lastBox.setValue(len(series.filenames))
@@ -1302,22 +1308,27 @@ class DicomPlugin(ImageScenePlugin):
 
 ### Add plugin to environment
 
-addPlugin(DicomPlugin())
+eidolon.addPlugin(DicomPlugin())
 
 ### Unit tests
 
 class TestDicomPlugin(unittest.TestCase):
     def setUp(self):
         self.tempdir=tempfile.mkdtemp()
-        self.plugin=getSceneMgr().getPlugin('Dicom')
-        self.dcmdir=os.path.join(getAppDir(),'tutorial','DicomData')
+        self.plugin=eidolon.getSceneMgr().getPlugin('Dicom')
+        self.dcmdir=os.path.join(eidolon.getAppDir(),'tutorial','DicomData')
         
         self.vfunc=lambda x,y,z,t:(x+1)*1000+(y+1)*100+(z+1)*10+t+1
-        self.volarr=np.fromfunction(self.vfunc,(21,33,46,17))
+        self.volarr=np.fromfunction(np.vectorize(self.vfunc),(21,33,46,17))
         self.vpos=vec3(-10,20,-15)
         self.vrot=rotator(0.1,-0.2,0.13)
 
         self.vol=self.plugin.createObjectFromArray('TestVolume',self.volarr,pos=self.vpos,rot=self.vrot)
+        
+        self.pfunc= lambda x,y: 1 if np.prod((x,y))==0 else 0
+        self.planearr=np.fromfunction(np.vectorize(self.pfunc),(12,13))
+        self.plane=self.plugin.createObjectFromArray('TestPlane',self.planearr,pos=self.vpos,rot=self.vrot)
+        
         
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -1356,21 +1367,32 @@ class TestDicomPlugin(unittest.TestCase):
         self.assertTrue(os.path.isfile(digestfile))
         os.remove(digestfile)
         
-    def testSaveLoadVolume(self):
-        '''Test saving and loading a volume image with Dicom files.'''
-        self.plugin.saveObject(self.vol,self.tempdir)
+    def testSaveLoadPlane(self):
+        self.plugin.saveObject(self.plane,self.tempdir)
+        firstfile=first(glob.glob(self.tempdir+'/*'))
+        dcm=read_file(firstfile)
         
-        obj1=self.plugin.loadObject(first(glob.glob(self.tempdir+'/*')))
-        trans=obj1.getVolumeTransform()
+        eidolon.printFlush(self.planearr)
         
-        self.assertEqual(self.vpos,trans.getTranslation())
-        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
-        
-        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
-        
-        with processImageNp(obj1) as arr1:
-            self.assertEqual(self.volarr.shape,arr1.shape)
-            
-            diff=np.sum(np.abs(self.volarr-arr1))
-            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))
+#    def testSaveLoadVolume(self):
+#        '''Test saving and loading a volume image with Dicom files.'''
+#        self.plugin.saveObject(self.vol,self.tempdir)
+#        firstfile=first(glob.glob(self.tempdir+'/*'))
+#        
+#        print(read_file(firstfile))
+#        print(self.vol.images[0].imgmin,self.volarr[...,0].min())
+#        
+#        obj1=self.plugin.loadObject(firstfile)
+#        trans=obj1.getVolumeTransform()
+#        
+#        self.assertEqual(self.vpos,trans.getTranslation())
+#        self.assertTrue(self.rotatorsEqual(self.vrot,trans.getRotation()))
+#        
+#        self.assertEqual(self.vol.getArrayDims(),obj1.getArrayDims())
+#        
+#        with eidolon.processImageNp(obj1) as arr1:
+#            self.assertEqual(self.volarr.shape,arr1.shape)
+#            
+#            diff=np.sum(np.abs(self.volarr-arr1))
+#            self.assertAlmostEqual(diff,0,4,'%r is too large'%(diff,))
     

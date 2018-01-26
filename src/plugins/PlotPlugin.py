@@ -315,7 +315,7 @@ class TimePlotWidget(BasePlotWidget):
         if not isIterable(first(timesteps)):
             timesteps=[list(timesteps) for t in range(len(dataseries))]
 
-        lens=[(len(ds),len(ts) for ds,ts in zip(dataseries,timesteps)]
+        lens=[(len(ds),len(ts)) for ds,ts in zip(dataseries,timesteps)]
             
         if any(ds!=ts for ds,ts in lens):
             raise ValueError('Dataseries lengths do not match associated timesteps: %r != %r'%tuple(zip(*lens)))

@@ -46,6 +46,7 @@ try:
     import Resources_rc5
     QtVersion=5
 except ImportError:
+    raise
     from PyQt4 import QtCore, QtGui, uic
     from PyQt4.QtCore import Qt
     import Resources_rc4
