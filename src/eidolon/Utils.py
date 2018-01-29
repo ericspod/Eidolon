@@ -92,7 +92,6 @@ import subprocess
 import atexit
 import contextlib
 import ast
-import string
 import inspect
 
 py3 = sys.version_info.major == 3
@@ -1171,7 +1170,8 @@ def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
         while line:
             line=line.rstrip() # strip right side empty space including the trailing newline
 
-            indent=first(i for i,c in enumerate(line) if c not in string.whitespace) if line else 0
+            #indent=first(i for i,c in enumerate(line) if c not in string.whitespace) if line else 0
+            indent=len(line)-len(line.lstrip())
 
             if indent==0 and lastindent>0 and line: # complete an indented block if this line of code has indentation
                 templine=line # the current line shouldn't be executed with the finished block, save for next loop

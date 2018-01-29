@@ -43,13 +43,12 @@ import contextlib
 try: 
     from PyQt5 import QtGui, QtCore, QtWidgets, uic
     from PyQt5.QtCore import Qt
-    import Resources_rc5
+    from . import Resources_rc5
     QtVersion=5
 except ImportError:
-    raise
     from PyQt4 import QtCore, QtGui, uic
     from PyQt4.QtCore import Qt
-    import Resources_rc4
+    from . import Resources_rc4
     QtWidgets=QtGui
     QtVersion=4
 
@@ -81,9 +80,9 @@ if len(uifiles)!=0:
 else:
     # load the resource module containing the .ui files appropriate to which version of PyQt is being used
     if QtVersion==5:
-        import UI_rc5
+        from . import UI_rc5
     else:
-        import UI_rc4
+        from . import UI_rc4
         
     # iterate over every file in the layout section of the resources and load them into this module
     it=QtCore.QDirIterator(':/layout')

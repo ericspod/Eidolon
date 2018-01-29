@@ -23,7 +23,6 @@ generateConfig(), initDefault(), initDefaultAssets(), loads command line filenam
 These components can be swapped around as needed in some other sort of application packaging, but initDefault() is the
 critical routine responsible for doing a lot of the bookkeeping and creating the SceneManager and main window objects.
 '''
-
 from renderer import vec3,color,initSharedDir,Config,platformID,PT_FRAGMENT,PT_VERTEX
 
 import sys
