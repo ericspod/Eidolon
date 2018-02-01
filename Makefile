@@ -38,7 +38,6 @@ PLUGINS=$(SRC)/plugins
 UI=$(SRC)/ui
 
 PYTHON=$(shell which python)
-PYTHON_VERNAME=python2.7
 PYINST?=pyinstaller
 
 # find the path to the python exe using the registry, this uses cygpath to produce a Cygwin-formatted path

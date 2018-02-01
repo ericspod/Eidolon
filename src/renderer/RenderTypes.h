@@ -1624,6 +1624,7 @@ public:
 	Matrix(const char* name,sval n, sval m=1,bool isShared=false)  throw(MemException) :
 			_name(name), _type(""),_sharedname(""),data(0),_n_actual(0),_n(n),_m(m),_isShared(false)
 	{
+		checkDimension("m",m);
 		setShared(isShared);
 	}
 
@@ -1631,6 +1632,7 @@ public:
 	Matrix(const char* name,const char* type,sval n, sval m=1,bool isShared=false)  throw(MemException) :
 			_name(name), _type(type),_sharedname(""),data(0),_n_actual(0),_n(n),_m(m),_isShared(false)
 	{
+		checkDimension("m",m);
 		setShared(isShared);
 	}
 
@@ -1638,6 +1640,8 @@ public:
 	Matrix(const char* name,const char* type,const char* sharedname,const char* serialmeta,sval n, sval m) throw(MemException)  :
 			_name(name), _type(type),_sharedname(sharedname),data(0),_n_actual(n),_n(n),_m(m),_isShared(true)
 	{
+		checkDimension("n",n);
+		checkDimension("m",m);
 		deserializeMeta(serialmeta);
 		data=createShared();
 	}
@@ -1646,6 +1650,8 @@ public:
 	Matrix(const char* name,const char* type,const T* array,sval n, sval m,bool isShared=false)  throw(MemException) :
 		_name(name), _type(type),_sharedname(""),data(0),_n_actual(0),_n(n),_m(m),_isShared(false)
 	{
+		checkDimension("n",n);
+		checkDimension("m",m);
 		setShared(isShared);
 		memcpy(data,array,memSize());
 	}
@@ -1690,12 +1696,12 @@ public:
 			return;
 
 		if(val){
+			_n_actual=_n;
 			sval size=memSize();
-
+			
 			if(size==0)
 				throw MemException("Cannot make empty matrix shared");
-
-			_n_actual=_n;
+			
 			T* shared=createShared();
 
 			if(data){
@@ -1761,6 +1767,9 @@ public:
 	/// Create a submatrix from this one of dimensions (n,m), starting at row `noff' and column `moff'
 	Matrix<T>* subMatrix(const char* name,sval n, sval m=1,sval noff=0,sval moff=0,bool isShared=false) const throw(MemException)
 	{
+		checkDimension("n",n);
+		checkDimension("m",m);
+		
 		if(n>_n || m>_m)
 			throw MemException("Submatrix dimensions may not exceed matrix dimensions");
 
@@ -1776,8 +1785,16 @@ public:
 		return mat;
 	}
 
+	/**
+	 * Create a copy of this matrix with the given dimensions. If the new matrix is smaller, the data copied will be
+	 * truncated, if larger then only as much data as available will be copied and the rest of the new matrix's memory
+	 * will be left uninitialized.
+	 */
 	Matrix<T>* reshape(const char* name,sval n, sval m,bool isShared=false) const throw(MemException)
 	{
+		checkDimension("n",n);
+		checkDimension("m",m);
+		
 		Matrix<T>* mat=new Matrix<T>(name,_type.c_str(),n,m,isShared);
 		memcpy(mat->dataPtr(),data,_min(mat->memSize(),memSize()));
 		return mat;
@@ -1911,11 +1928,17 @@ public:
 	void setAt(const T& t, sval n, sval m=0) throw(IndexException) { data[getIndex(n,m)]=t; }
 
 	/// Resize the matrix to have _newn rows, throws exception if shared
-	void setN(sval _newn) throw(MemException) { checkNotShared(); _n=_newn; resize(); }
+	void setN(sval _newn) throw(MemException) 
+	{ 
+		checkNotShared(); 
+		_n=_newn; 
+		resize(); 
+	}
 
 	/// Reshape to fit this many columns, does not allocate new columns but re-arranges existing ones and truncates the last row if necessary
 	void setM(sval _newm) throw(MemException)
 	{
+		checkDimension("_newm",_newm);
 		checkNotShared();
 		_newm=_max<sval>(1,_newm);
 		if(_newm>(_m*_n))
@@ -2008,10 +2031,19 @@ protected:
 			throw IndexException(name,val,maxval);
 	}
 
-	void checkNotShared() const throw(MemException)
+	inline void checkNotShared() const throw(MemException)
 	{
 		if(_isShared)
 			throw MemException("Operation may only be performed on non-shared matrices");
+	}
+	
+	inline void checkDimension(const char* name, sval dim) const throw(MemException)
+	{
+		if(dim==0){
+			std::ostringstream out;
+			out << "Matrix dimension " << name << " must be non-zero";
+			throw MemException(out.str());
+		}
 	}
 
 	/** 
@@ -2072,7 +2104,7 @@ protected:
 			out << "_" << std::hex << counter << std::dec;
 
 		out << "_" << _name;
-#endif // #ifdef __APPLE__
+#endif // __APPLE__
 
 		_sharedname=out.str();
 		
@@ -2082,7 +2114,7 @@ protected:
 
 		if(_sharedname.size()>=MAXSHMNAMLEN)
 			_sharedname[MAXSHMNAMLEN-1]='\0';
-#endif // #ifdef WIN32
+#endif // WIN32
 	}
 
 	/// Create a shared segment and return a mapped pointer to it
@@ -2194,7 +2226,7 @@ protected:
 		::MultiByteToWideChar(CP_ACP, NULL,name, -1, namebuff,int(_sharedname.size()+1));
 #else
 		const char* namebuff=_sharedname.c_str();
-#endif
+#endif // UNICODE
 
 		mapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, DWORD(memSize()), namebuff);
 	}
@@ -4483,11 +4515,15 @@ T sumMatrix(const Matrix<T> *mat)
 }
 
 template<typename T>
-std::pair<T,T> minmaxMatrix(const Matrix<T>* mat)
+std::pair<T,T> minmaxMatrix(const Matrix<T>* mat) throw(ValueException)
 {
-	std::pair<T,T> result(mat->atc(0,0),mat->atc(0,0));
 	sval rows=mat->n();
 	sval cols=mat->m();
+	
+	if(rows==0)
+		throw ValueException("mat","Matrix must be non-empty");
+
+	std::pair<T,T> result(mat->atc(0,0),mat->atc(0,0));
 
 	for(sval i=0;i<rows;i++)
 		for(sval j=0;j<cols;j++){
@@ -4502,8 +4538,11 @@ std::pair<T,T> minmaxMatrix(const Matrix<T>* mat)
 }
 
 template<typename T>
-T bilerpMatrix(const Matrix<T> *mat,real x, real y) 
+T bilerpMatrix(const Matrix<T> *mat,real x, real y) throw(ValueException)
 {
+	if(mat->n()==0)
+		throw ValueException("mat","Matrix must be non-empty");
+	
 	if(x<0.0 || x>1.0 || y<0.0 || y>1.0)
 		return T();
 		
@@ -4529,7 +4568,7 @@ T bilerpMatrix(const Matrix<T> *mat,real x, real y)
  * to linearly interpolate between the two interpolated points. 
  */
 template<typename T>
-T trilerpMatrices(const Matrix<T>* mat1, const Matrix<T>* mat2, vec3 v1, vec3 v2)
+T trilerpMatrices(const Matrix<T>* mat1, const Matrix<T>* mat2, vec3 v1, vec3 v2) throw(ValueException)
 {
 	T val1=bilerpMatrix<T>(mat1,v1.x(),v1.y());
 	T val2=bilerpMatrix<T>(mat2,v2.x(),v2.y());

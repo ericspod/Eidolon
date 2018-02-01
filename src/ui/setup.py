@@ -21,7 +21,12 @@ import subprocess
 import glob
 import os
 
-from __init__ import QtVersion
+try: 
+    import PyQt5
+    QtVersion=5
+except ImportError:
+    import PyQt4
+    QtVersion=4
 
 def generateResFile():
     '''Generates the resource file from the resources in ../../res and stores it in a PyQt version specific file.'''

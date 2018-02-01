@@ -858,10 +858,9 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 
     real sumMatrix(const RealMatrix* mat)
 
-    #realpair minmaxMatrix(const RealMatrix* mat)
-    pair[T,T] minmaxMatrix[T](const Matrix[T]* mat)
+    pair[T,T] minmaxMatrix[T](const Matrix[T]* mat) except+
 
-    real trilerpMatrices(const RealMatrix* mat1, const RealMatrix* mat2, vec3 v1, vec3 v2)
+    real trilerpMatrices(const RealMatrix* mat1, const RealMatrix* mat2, vec3 v1, vec3 v2) except+
 
     vec3 getPlaneXi(const vec3& pos, const vec3& planepos, const rotator& orientinv, const vec3& dimvec)
 
