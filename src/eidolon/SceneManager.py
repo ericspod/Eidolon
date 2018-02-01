@@ -405,6 +405,8 @@ class SceneManager(TaskQueue):
 
         global globalPlugins
         globalPlugins=[self.meshplugin,self.imageplugin]+globalPlugins
+        
+        self.lastScript=''
 
         # script local variables
         self.scriptlocals={'mgr':self} # local environment object scripts are executed with
@@ -457,6 +459,7 @@ class SceneManager(TaskQueue):
 
         self.win.action_Open_Script.triggered.connect(self._openScriptButton)
         self.win.action_Save_Script.triggered.connect(self._saveScriptButton)
+        self.win.action_Rerun_Last_Script.triggered.connect(self._rerunScriptButton)
         self.win.actionTake_Screenshot.triggered.connect(self._saveScreenshotAction)
         self.win.action_Quit.triggered.connect(self.quit)
 
@@ -831,6 +834,8 @@ class SceneManager(TaskQueue):
         if not Utils.isTextFile(filename):
             raise IOError('Cannot execute %r, not a text file'%filename)
 
+        self.lastScript=(filename,updateLocals,tryHard) # save the path of the last script to run it again
+
         self.scriptlocals['scriptdir']=os.path.split(os.path.abspath(filename))[0]+os.path.sep
         self.scriptlocals['task']=self.getCurrentTask()
 
@@ -848,6 +853,13 @@ class SceneManager(TaskQueue):
 
         if self.win and updateLocals:
             self.win.console.updateLocals(self.scriptlocals)
+            
+    def execLastScript(self):
+        '''Rerun the last script executed with the arguments passed to execScript().'''
+        if not self.lastScript:
+            raise IOError('No script to rerun')
+        else:
+            self.execScript(*self.lastScript)
             
     def getUserAppDir(self):
         '''Returns the per-user application directory as defined by ConfVars.userappdir in the config object.'''
@@ -1866,6 +1878,17 @@ class SceneManager(TaskQueue):
         script=self.win.chooseFileDialog('Choose Open Script Filename',filterstr='Python Files (*.py)',chooseMultiple=False)
         if script:
             self.execScriptsTask(script)
+            
+    def _rerunScriptButton(self):
+        if self.lastScript:
+            @taskroutine('Rerunning script %r'%os.path.basename(self.lastScript[0]))
+            def _rerun(task):
+                try:
+                    self.execLastScript()
+                except Exception as e:
+                    self.showExcept(e)
+                    
+            self.addTasks(_rerun())
 
     def _saveProjectButton(self):
         if self.project:

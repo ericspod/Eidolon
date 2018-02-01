@@ -292,7 +292,7 @@ class Future(object):
                 raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
             else:
                 #raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
-                exec(compile('raise self.obj.exc_type,self.obj.exc_value,self.obj.tb'),locals())
+                exec(compile('raise self.obj.exc_type,self.obj.exc_value,self.obj.tb','','exec'),locals())
 
         elif isinstance(self.obj,Exception):
             raise self.obj

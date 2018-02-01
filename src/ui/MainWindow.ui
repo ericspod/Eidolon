@@ -80,6 +80,7 @@
     <addaction name="separator"/>
     <addaction name="action_Open_Script"/>
     <addaction name="action_Save_Script"/>
+    <addaction name="action_Rerun_Last_Script"/>
     <addaction name="separator"/>
     <addaction name="actionTake_Screenshot"/>
     <addaction name="separator"/>
@@ -136,8 +137,8 @@
   <widget class="QDockWidget" name="interfaceDock">
    <property name="minimumSize">
     <size>
-     <width>360</width>
-     <height>0</height>
+     <width>396</width>
+     <height>596</height>
     </size>
    </property>
    <property name="toolTip">
@@ -1505,6 +1506,11 @@
   <action name="actionGC_Collect">
    <property name="text">
     <string>GC Collect</string>
+   </property>
+  </action>
+  <action name="action_Rerun_Last_Script">
+   <property name="text">
+    <string>&amp;Rerun Last Script</string>
    </property>
   </action>
  </widget>
