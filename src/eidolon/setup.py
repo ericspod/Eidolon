@@ -33,6 +33,12 @@ import numpy as np
 scriptdir= os.path.dirname(os.path.abspath(__file__)) # path of the current file
 libraries=[]
 extra_compile_args=['-w','-O3']
+compiledirs={}
+
+if sys.version_info.major == 3:
+    compiledirs['c_string_type']='unicode'
+    compiledirs['c_string_encoding']='ascii'
+
 
 # platform identifiers, exactly 1 should be true
 isDarwin=platform.system().lower()=='darwin'
@@ -68,6 +74,7 @@ for i in glob.glob('./*.pyx'):
         include_dirs=includedirs,
         libraries=libraries,
         extra_compile_args=extra_compile_args,
+        compiler_directives=compiledirs,
         language='c++'
     )
     extensions.append(e)
@@ -95,4 +102,6 @@ if not isWindows:
     for i in glob.glob('./*.pyx'):
         i=os.path.splitext(i)[0]
         dest='%s.so.%s'%(i,platdir)
-        shutil.move(i+'.so',dest)
+        sobj=glob.glob(i+'.*.so') # .so files get weird names so find the first one that matches
+        sobj=sobj[0] if sobj else i+'.so'
+        shutil.move(sobj,dest)

@@ -261,11 +261,17 @@ cdef class vec3:
     def __mul__(vec3 self,v):
         return vec3._new(self.val*(<vec3>v).val if isinstance(v,vec3) else self.val*<real>v)
 
-    def __div__(vec3 self,v):
+    def _div(vec3 self,v):
         if v in (0,0.0) or (isinstance(v,vec3) and v.isZero()):
             raise ValueError('Divide by zero')
 
         return vec3._new(self.val/(<vec3>v).val if isinstance(v,vec3) else self.val/<real>v)
+        
+    def __div__(vec3 self,v):
+        return self._div(v)
+        
+    def __truediv__(vec3 self,v):
+        return self._div(v)
 
     def __neg__(vec3 self):
         return vec3._new(-self.val)
@@ -505,6 +511,9 @@ cdef class rotator:
     def __div__(rotator self,v):
         return vec3._new(self.val/(<vec3>v).val)
 
+    def __truediv__(rotator self,v):
+        return vec3._new(self.val/(<vec3>v).val)
+        
     def inverse(self):
         return rotator._new(self.val.inverse())
 
@@ -692,7 +701,10 @@ cdef class transform:
 
     def __div__(transform self,vec3 v):
         return vec3._new(self.val/v.val)
-
+        
+    def __truediv__(transform self,vec3 v):
+        return vec3._new(self.val/v.val)
+        
     def getTranslation(self):
         return vec3._new(self.val.getTranslation())
 

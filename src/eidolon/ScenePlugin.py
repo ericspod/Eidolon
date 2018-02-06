@@ -21,12 +21,12 @@ import os
 import glob
 import numpy as np
 
-import Utils
-import MeshAlgorithms
-import ImageAlgorithms
-import VisualizerUI
-import SceneComponents
-import SceneUtils
+from . import Utils
+from . import MeshAlgorithms
+from . import ImageAlgorithms
+from . import VisualizerUI
+from . import SceneComponents
+from . import SceneUtils
 
 from renderer import TF_ALPHALUM8, TF_RGBA32, vec3, rotator,color, minmaxMatrixReal
 from .Utils import first, ParamType, ParamDef, Future, taskroutine, timing, toIterable

@@ -34,9 +34,13 @@ import shutil
 import glob
 import itertools
 from collections import OrderedDict, namedtuple
-from StringIO import StringIO
 from random import randint
 import numpy as np
+
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
 
 from eidolon import (
     vec3, rotator, color, enum, concurrent, timing, queue, first, taskroutine, clamp, taskmethod, fillList,
@@ -44,6 +48,7 @@ from eidolon import (
 )
 import eidolon
 
+#eidolon.addLibraryFile('pydicom-1.0.0a1-py3-none-any.whl')
 eidolon.addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
 
 from pydicom.dicomio import read_file
@@ -1065,7 +1070,7 @@ class DicomPlugin(ImageScenePlugin):
                 dimsize=(dcm[NT.USnumframes].value,dcm[NT.USdepth].value,dcm[NT.USheight].value,dcm[NT.USwidth].value)
                 pixeldata=dcm[NT.USpixeldata].value
 
-                assert len(pixeldata)==eidolon.prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),prod(dimsize))
+                assert len(pixeldata)==eidolon.prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),eidolon.prod(dimsize))
 
                 dat=np.ndarray(dimsize,dtype=np.uint8,buffer=pixeldata,order='C')
                 dat=np.transpose(dat,(3,2,1,0))
@@ -1143,12 +1148,14 @@ class DicomPlugin(ImageScenePlugin):
 
             # create and fill in a dataset object the file requires
             file_meta = Dataset()
-            for k,v in defaultfiletags.items()+fileMetaTags.items():
+            metatags=list(defaultfiletags.items())+list(fileMetaTags.items())
+            for k,v in metatags:
                 setattr(file_meta,k,v)
 
             # create and fill in the file-specific dataset
             ds = FileDataset(filename, {},file_meta = file_meta,preamble="\0"*128)
-            for k,v in defaultdatasettags.items()+datasetTags.items():
+            filetags=list(defaultdatasettags.items())+list(datasetTags.items())
+            for k,v in filetags:
                 setattr(ds,k,v)
 
             # set specific values for this image

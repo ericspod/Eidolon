@@ -11,7 +11,7 @@ import glob
 try:
     from StringIO import StringIO
 except:
-    from io import BytesIO as StringIO
+    from io import StringIO
 
 sys.path.append(scriptdir) 
 

@@ -27,8 +27,9 @@ from renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST,
 from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
 from .SceneUtils import StdProps, MatrixType, getDatasetSummaryTuples, BoundBox
 
-import MeshAlgorithms
-import MathDef 
+from . import MeshAlgorithms
+from . import MathDef 
+    
 
 # Known representation types: description, generator function, FigureType, is Point type, is Polygon type
 ReprType=enum(

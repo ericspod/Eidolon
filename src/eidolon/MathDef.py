@@ -54,9 +54,9 @@ Quadratic Tet elements have 10 nodes, the first 4 defining the corners in the sa
 
 import itertools
 import functools
-import compiler
 import re
 import math
+
 
 import numpy as np
 
@@ -312,7 +312,7 @@ def lagrangeBasis(K,dim,alpha,beta):
     '''Create a lagrange basis function which accepts xi values and calculates coefficients for each node.'''
 
     s='('+','.join(lagrangeBasisIStr(i,K,dim,alpha,beta) for i in range(K))+')'
-    c=compiler.compile(s,'<<basis>>','eval')
+    c=compile(s,'<<basis>>','eval')
     
     return lambda xi0,xi1,xi2,*args,**kwargs : eval(c)
 
@@ -345,17 +345,22 @@ def lagrangeBeta(order,isSimplex,dim):
         #b0=sum(1 for i in b if i!=0)
 
         # sort first by order (# of index components used by vertices), this makes vertices come first
-        if aorder != border:
-            return cmp(border,aorder) # note reversed order
+        if aorder < border:
+            return 1 # note reversed order
+        elif aorder>border:
+            return -1
 
         # sort by number of non-zero compoments for simplex types
         #if isSimplex and a0!=b0:
         #   return cmp(a0,b0)
 
         # sort by component
-        for i,j in reversed(zip(a,b)): # sort in Z, Y, X order 
-            if i!=j:
-                return cmp(i,j)
+        for i,j in reversed(list(zip(a,b))): # sort in Z, Y, X order 
+            if i<j:
+                return -1
+            elif i>j:
+                return 1
+            return 0
 
         return 0
 
@@ -631,7 +636,7 @@ def spectralBasisType(geom,desc,order):
     numnodes=(order+1)**dim
     isSimplex=geom in (GeomType._Tri,GeomType._Tet)
 
-    powers=list(reversed(range(order+1)))
+    powers=list(reversed(list(range(order+1))))
 
     if isSimplex:
         coeffs=matIdent(dim+1)

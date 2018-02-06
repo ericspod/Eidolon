@@ -37,9 +37,9 @@ from .ImageAlgorithms import hounsfieldToUnit
 from .Utils import ConfVars,py3
 
 if py3:
-	from . import SceneManager
+	from . import SceneManager, LightType, globalPlugins, createSceneMgr
 else:
-	import SceneManager
+	from SceneManager import SceneManager, LightType, globalPlugins, createSceneMgr
 
 from .__init__ import __version__, APPDIRVAR, CONFIGFILE
 
@@ -110,9 +110,18 @@ def generateConfig(inargs):
     class HelpAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             parser.print_help()
+            
+            print('\nPython Version:',sys.version)
+            
+            try:
+                from ui import QtCore
+                print('Qt Version:',str(QtCore.qVersion()))
+                print('PyQt Version',QtCore.PYQT_VERSION_STR)
+            except:
+                pass
 
             # print the help info from each plugin if supplied
-            for g in SceneManager.globalPlugins:
+            for g in globalPlugins:
                 helpstr=g.getHelp()
                 if len(helpstr)>0:
                     helplines=helpstr.strip().split('\n')
@@ -264,7 +273,7 @@ def initDefault(conf):
         
     # create the main window and the manager object
     win=VisualizerUI.createVizWin(conf,width,height)
-    mgr=SceneManager.createSceneMgr(win,conf)
+    mgr=createSceneMgr(win,conf)
 
     return win,mgr
 
@@ -281,7 +290,7 @@ def initDefaultAssets(mgr):
         mgr.setCameraZLocked(False)
 
     # create a default directional light that follows the camera
-    cl=mgr.createLight(SceneManager.LightType._cdir,'Camera Light')
+    cl=mgr.createLight(LightType._cdir,'Camera Light')
     cl.setColor(color(0.25,0.25,0.25))
 
     res=mgr.conf.get(platformID,ConfVars.resdir)

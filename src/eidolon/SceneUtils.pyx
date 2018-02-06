@@ -658,7 +658,7 @@ cdef class BoundBox(object):
     @staticmethod
     def union(bbs):
         '''Returns the BoundBox containing all those not None in `bbs', defaulting to BoundBox() if none present.'''
-        bbs=filter(bool,bbs)
+        bbs=list(filter(bool,bbs))
         return sum(bbs,bbs[0] if bbs else BoundBox())
 
 
@@ -863,7 +863,7 @@ def cleanupMatrices():
 
     if isLinux:
         for f in glob.glob(shmdir+'/__viz__*'):
-            fs=filter(bool,f.split('_'))
+            fs=list(filter(bool,f.split('_')))
             ppid=int(fs[2]) # PPID of process that created f
             fpid=int(fs[3]) # PID of process that created f
 
@@ -2166,7 +2166,7 @@ def divideTettoTet(order,refine,expand=0.0):
 def calculateLineXis(elemtype,refine,*args,**kwargs):
     xis=list(frange(0,1.0,1.0/(refine+1)))+[1.0]
     coeffs=[elemtype.basis(x,0.0,0.0,*args,**kwargs) for x in xis]
-    return zip(xis,coeffs)
+    return list(zip(xis,coeffs))
 
 
 def calculateTriXis(elemtype,refine,divideFunc,*args,**kwargs):

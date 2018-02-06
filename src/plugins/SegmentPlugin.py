@@ -17,7 +17,6 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import compiler
 import os
 import math
 
@@ -815,7 +814,7 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
 
 @eidolon.concurrent
 def generateImageMaskRange(process,contours,contourtimes,planes,images,labelfunc):
-    comp=compiler.compile(labelfunc,'labelfunc','eval')
+    comp=compile(labelfunc,'labelfunc','eval')
     func=lambda pt,img,contours:float(eval(comp))
 
     for i in process.prange():

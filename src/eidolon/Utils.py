@@ -93,6 +93,7 @@ import atexit
 import contextlib
 import ast
 import inspect
+import collections
 
 py3 = sys.version_info.major == 3
 
@@ -494,6 +495,52 @@ class EventHandler(object):
             if cb in cblist:
                 cblist.remove(cb)
 
+
+class MutableDict(collections.MutableMapping, dict):
+    '''
+    Implements a dictionary with the same interface as dict which allows mutable keys. These are stored internally and
+    the actual dict implementation uses the values returned by id() as keys, which is a value assumed never to change
+    throughout an object's life so mutability isn't a concern for correctness.
+    '''
+    def __init__(self,*pairs,**kwargs):
+        self.realkeys={}
+        for k,v in pairs:
+            self[k]=v
+            
+        for k,v in kwargs.items():
+            self[k]=v
+            
+    def __len__(self):
+        return dict.__len__(self)
+    
+    def __iter__(self):
+        return dict.__iter__(self)
+    
+    def __contains__(self, key):
+        return dict.__contains__(self, id(key))
+   
+    def __getitem__(self, key):
+        return dict.__getitem__(self, id(key))
+    
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, id(key), value)
+        self.realkeys[id(key)]=key
+    
+    def __delitem__(self, key):
+        dict.__delitem__(self, id(key))
+        del self.realkeys[id(key)]
+    
+    def values(self):
+        return dict.values(self)
+    
+    def items(self):
+        #return dict.items(self)
+        for k,v in dict.items(self):
+            yield self.realkeys[k],v
+            
+    def keys(self):
+        return self.realkeys.values()
+    
 
 class ObjectLocker(object):
     '''
@@ -1186,7 +1233,8 @@ def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
                     c=compile_command('\n'.join(lineadd+linebuffer)+'\n',filename,'exec') # raises syntax exceptions
                     if c:
                         linebuffer=[] # clear the buffer since a complete command has now been compiled and does not needs its pieces buffered
-                        exec(c,localvars) # raises execution exceptions (Note: exec tuple syntax encounters parser bug on python versions below 2.7.9)
+                        exec(c,localvars) # raises execution exceptions 
+                        #Note: exec tuple syntax encounters parser bug on python versions below 2.7.9 if list comprehensions with conditions are present
 
             except Exception as e:
                 linebuffer=[] # any exception means the stored code is possibly bogus so reject

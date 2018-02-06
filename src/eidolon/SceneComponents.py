@@ -17,7 +17,6 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import StringIO
 import os 
 import math
 import operator
@@ -27,10 +26,10 @@ try:
 except:
     from io import StringIO
 
-import renderer
-import SceneUtils
-import Utils
-import VisualizerUI
+from . import renderer
+from . import SceneUtils
+from . import Utils
+from . import VisualizerUI
 
 from renderer import vec3, rotator, color, FT_TRILIST, FT_LINELIST, PT_GEOMETRY, PT_FRAGMENT, PT_VERTEX, PyVertexBuffer, PyIndexBuffer
 from .Utils import halfpi, epsilon, enum, first, clamp, frange, isMainThread, uniqueStr, EventType

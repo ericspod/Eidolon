@@ -2212,7 +2212,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.setWindowTitle(mainTitleString%(eidolon.__appname__,eidolon.__version__))
         self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks)
 
-        self.objMap={} # maps UI items to ObjMapTuple instances
+        self.objMap=Utils.MutableDict() # maps UI items to ObjMapTuple instances
         self.mgr=None # scene manager object, set later
         self.dockWidgets=[] # list of docked widget objects
         self.isExec=False # set to True when the event loop is started

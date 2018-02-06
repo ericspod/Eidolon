@@ -475,7 +475,7 @@ class ProcessServer(threading.Thread):
 
 
 def checkResultMap(result):
-    '''Checks the results from a concurrent operation, throwing any returned exceptions.'''
+    '''Checks the results from a concurrent operation, throwing the first returned exception.'''
     for i in sorted(result):
         if isinstance(result[i],Exception):
             raise result[i]
@@ -498,11 +498,16 @@ def concurrent(func):
     decorated form of `func' the first three arguments provided must be the `valrange', `numprocs', and `task' values
     expected by ProcessServer.callProcessFunc(), followed by the arguments normally passed to `func'.
     
-    Applying this decorator creates a global variable with the name '__local__'+func.__name__ which contains a
-    lambda which calls `func' when evaluated. This is passed to 'ProcessServer.globalServer.callProcessFunc' when the
-    call is made and is used for picklability. Do not call this created function directly.
+    Applying this decorator creates a global variable with the name '__local__'+func.__name__ referencing a lambda
+    function which calls `func' when evaluated. This is passed to 'ProcessServer.globalServer.callProcessFunc' when the
+    call is made and is needed for picklability. Do not call this created function directly. This is necessary since 
+    pickling a function only wraps up its name in the output which is looked up in the global namespace when unpickled.
     
-    Example:
+    This decorator can only be applied to a function declared in a module which is loaded by each process when the app
+    starts up. Since functions are looked up in the global namespace, any functions declared after module import time
+    are not present in the processes global namespace and thus cannot be called. 
+    
+    Example (assuming this declared in a module):
         @concurrent 
         def testfunc(process,values):
             return (process.index,values)
@@ -513,10 +518,12 @@ def concurrent(func):
         
     Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
     '''
+    
     localname='__local__'+func.__name__
     globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
     globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
-
+    globals()[localname].__qualname__=localname # needed in Python 3
+    
     @functools.wraps(func)
     def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
         future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,globals()[localname],*args,**kwargs)

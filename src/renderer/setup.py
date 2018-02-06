@@ -82,6 +82,11 @@ extra_compile_args=['-w','-O3']
 extra_link_args=[]
 define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None),('USEOGRE',None)]
 destfile='./Renderer.'
+compiledirs={}
+
+if sys.version_info.major == 3:
+    compiledirs['c_string_type']='unicode'
+    compiledirs['c_string_encoding']='ascii'
 
 cpptime=max(map(os.path.getmtime,glob.glob('*.cpp')))
 htime=max(map(os.path.getmtime,glob.glob('*.h')))
@@ -138,6 +143,7 @@ extension=Extension(
     libraries=libraries,
     extra_compile_args=extra_compile_args,
     extra_link_args=extra_link_args,
+    compiler_directives=compiledirs,
     language='c++'
 )
 
@@ -159,5 +165,7 @@ shutil.rmtree('build')
 
 # copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 if not isWindows:
-    shutil.move('Renderer.so',destfile)
+    sobj=glob.glob('Renderer.*.so') # .so files get weird names so find the first one that matches or the default
+    sobj=sobj[0] if sobj else 'Renderer.so'
+    shutil.move(sobj,destfile)
 

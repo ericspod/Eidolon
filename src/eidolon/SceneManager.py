@@ -36,13 +36,13 @@ import threading
 import traceback
 import math
 
-import renderer
-import Utils
-import VisualizerUI
-import SceneUtils
-import SceneComponents
-import ScenePlugin
-import ImageObject
+from . import renderer
+from . import Utils
+from . import VisualizerUI
+from . import SceneUtils
+from . import SceneComponents
+from . import ScenePlugin
+from . import ImageObject
 
 from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture, PyVertexBuffer, PyIndexBuffer
 from .Camera2DView import Camera2DView

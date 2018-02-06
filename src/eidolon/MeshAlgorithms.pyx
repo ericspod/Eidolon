@@ -1,3 +1,5 @@
+#cython: nonecheck=True
+
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
 #
@@ -364,7 +366,7 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
     cdef int proccount,count,i
     cdef list ocmatinds,subinds
     cdef dict trees={}
-    cdef object acceptedInds=filter(acceptFunc,dataset.enumIndexSets())
+    cdef object acceptedInds=list(filter(acceptFunc,dataset.enumIndexSets()))
 
     for inds in acceptedInds:
         ocname=inds.getName()+MatrixType.octree[1]
@@ -799,7 +801,7 @@ def calculateDataColorationRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,
     # if there are empty indices, substract a certain amount from the min of the value range to leave room for an out-of-band value
     process.sync()
     emptysub=(maxval-minval)*0.01 if len(emptyinds)>0 else 0
-    emptysub=max([emptysub]+process.shareObject('minmaxvals',emptysub).values())
+    emptysub=max([emptysub]+list(process.shareObject('minmaxvals',emptysub).values()))
     minval-=emptysub
 
     for n in process.nrange():
@@ -1830,7 +1832,7 @@ def selectPlaneElementsRange(process,nodes,inds,octree,planept,planenorm):
 
 def selectPlaneElements(dataset,planept,planenorm,treedepth=2,indexAcceptFunc=None,task=None):
     nodes=dataset.getNodes()
-    indices=filter(indexAcceptFunc or isSpatialIndex,dataset.enumIndexSets())
+    indices=list(filter(indexAcceptFunc or isSpatialIndex,dataset.enumIndexSets()))
 
     selected=IndexMatrix(nodes.getName()+' Selected',0,2) # (index #,element #) pairs
 

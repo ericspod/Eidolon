@@ -21,8 +21,6 @@ import math
 import os
 import contextlib
 import threading
-import compiler
-from Queue import Queue
 
 import numpy as np
 import scipy.ndimage
@@ -31,12 +29,13 @@ import scipy.fftpack
 import scipy.spatial
 
 import renderer
-import Utils
-import MathDef
-import SceneUtils
+
+from . import Utils
+from . import MathDef
+from . import SceneUtils
 
 from renderer import vec3, rotator, RealMatrix, IndexMatrix
-from .Utils import timing, clamp, lerpXi, printFlush, trange, listSum, indexList, first, minmax
+from .Utils import timing, clamp, lerpXi, printFlush, trange, listSum, indexList, first, minmax,queue
 from .SceneUtils import matIterate, validIndices, BoundBox
 from .Concurrency import concurrent, checkResultMap, sumResultMap
 from .ImageObject import SharedImage, ImageSceneObject, ImageSeriesRepr, ImageVolumeRepr, calculateStackClipSq
@@ -123,7 +122,7 @@ def transposeRowsColsNP(img):
 
 
 def reverseDimensions(img):
-    return np.transpose(img,list(reversed(range(img.ndim))))
+    return np.transpose(img,list(reversed(list(range(img.ndim)))))
 	
 
 def sampleImageRay(img,start,samplevec,numsamples):
@@ -175,7 +174,7 @@ def loadImageStack(files,imgLoadFunc,positions,rot=rotator(),spacing=(1.0,1.0),t
 
         return readthread
 
-    imgq=Queue()
+    imgq=queue.Queue()
     numthreads=1
     threads=[]
     results=[]
@@ -710,7 +709,7 @@ def resampleImage(srcobj,destobj):
 @concurrent
 def mergeColinearImagesRange(process,imglist,mergefunc):
     if isinstance(mergefunc,str):
-        comp=compiler.compile(mergefunc,'mergefunc','eval')
+        comp=compile(mergefunc,'mergefunc','eval')
         mergefunc=lambda vals:eval(comp)
 
     minmaxes=[]
