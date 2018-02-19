@@ -554,6 +554,24 @@ def chooseProcCount(numelems,refine,threshold):
         return 0
 
 
+@concurrent
+def concurrentExec(process,execcode,clocals={},cglobals={},returnName=None):
+    '''
+    Execute the code string `execcode' in separate processes using the `clocals' and `cglobals' environment dictionaries.
+    If `returnName' is given this is queried first from `clocals', then `cglobals' if not found, and returned.
+    '''
+    execlocals=dict(clocals)
+    execglobals=dict(globals())
+    
+    execlocals['process']=process
+    execglobals.update(cglobals)
+    
+    exec(execcode,execlocals,execglobals)
+    
+    if returnName:
+        return execlocals.get(returnName,execglobals[returnName])
+    
+
 ### Routines used by unit tests, these have to be here to be defined in the module namespace
 
 @concurrent

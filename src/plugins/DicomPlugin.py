@@ -202,6 +202,7 @@ def createDicomDatasets(process,rootdir,files):
 
 
 @concurrent
+@timing
 def loadSharedImages(process,rootdir,files,crop=None):
     '''Reads the image data from the listed files and returns a list of SharedImage objects storing this image data.'''
     result=[]

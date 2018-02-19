@@ -118,7 +118,7 @@ class NiftiPlugin(ImageScenePlugin):
                 name=name or self.mgr.getUniqueObjName(splitPathExt(filename)[1])
                 img=imgObj or nibabel.load(filename)
 
-                hdr=dict(img.get_header())
+                hdr=dict(img.header)
                 hdr['filename']=filename
 
                 pixdim=hdr['pixdim']
@@ -131,8 +131,6 @@ class NiftiPlugin(ImageScenePlugin):
                 d=float(hdr['quatern_d'])
                 toffset=float(hdr['toffset'])
                 interval=float(pixdim[4])
-                #inter=float(hdr['scl_inter'])
-                #slope=float(hdr['scl_slope'])
 
                 if interval==0.0 and len(img.shape)==4 and img.shape[-1]>1:
                     interval=1.0
@@ -146,7 +144,6 @@ class NiftiPlugin(ImageScenePlugin):
                 else:
                     affine=img.get_affine()
                     position=vec3(-affine[0,3],-affine[1,3],affine[2,3])
-                    #rmat=np.asarray([-affine[0,:3],-affine[1,:3],affine[2,:3]])
                     rmat=np.asarray([affine[0,:3]/-spacing.x(),affine[1,:3]/-spacing.y(),affine[2,:3]/spacing.z()])
                     rot=rotator(*rmat.flatten().tolist())*rotator(vec3.Z(),halfpi)
 
@@ -175,21 +172,29 @@ class NiftiPlugin(ImageScenePlugin):
                     toffset/=1000.0
                     interval/=1000.0
 
+                dobj=img.dataobj
+                datshape=tuple(d or 1 for d in dobj.shape) # dimensions are sometimes given as 0 for some reason?
+                
+                # reading file data directly is expected to be faster than using nibabel, specifically by using memmap
                 if filename.endswith('.gz'):
-                    dat=img.get_data() # TODO: figure out how to handle compressed data directly
+                    #dat=img.get_data() # TODO: handle compressed data directly?
+                    #dat=np.asanyarray(dobj) # same as the above
+                    
+                    with gzip.open(filename) as o: # not sure if this is any faster than the above
+                        o.seek(dobj.offset) # seek beyond the header
+                        dat=np.frombuffer(o.read(),dobj.dtype).reshape(datshape,order=dobj.order)
                 else:
-                    dobj=img.dataobj
                     # mmap the image data below the header in the file
-                    dat=np.memmap(dobj.file_like,dobj._dtype,'r',dobj.offset,tuple(d or 1 for d in dobj.shape),dobj.order)
+                    dat=np.memmap(dobj.file_like,dobj.dtype,'r',dobj.offset,datshape,dobj.order)
 
                 dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
                 obj.source=hdr
 
-                # apply slope since this isn't done automatically when using memmap
+                # apply slope since this isn't done automatically when using memmap/gzip
                 if not filename.endswith('.gz'):
-                    eidolon.applySlopeIntercept(obj,*img.get_header().get_slope_inter())
+                    eidolon.applySlopeIntercept(obj,*img.header.get_slope_inter())
 
                 f.setObject(obj)
 
@@ -200,7 +205,7 @@ class NiftiPlugin(ImageScenePlugin):
                 name=name or self.mgr.getUniqueObjName(splitPathExt(filename)[1])
                 img=imgObj or nibabel.load(filename)
 
-                dat=img.get_data()
+                dat=dat=np.asanyarray(img.dataobj)
                 hdr=dict(img.get_header())
                 hdr['filename']=filename
 

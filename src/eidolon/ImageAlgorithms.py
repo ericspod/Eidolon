@@ -77,11 +77,19 @@ def checkNan(obj):
             assert not math.isnan(v), 'Found NaN in object %s, image %i at %i,%i'%(obj.getName(),i,n,m)
     
 
-def rescaleArray(arr,minv=0.0,maxv=1.0):
+def rescaleArray(arr,minv=0.0,maxv=1.0,dtype=np.float32):
     '''Rescale the values of numpy array `arr' to be from `minv' to `maxv'.'''
+    if dtype is not None:
+        arr=arr.astype(dtype)
+        
     mina=np.min(arr)
-    norm=(arr-mina)/(np.max(arr)-mina)
-    return (norm*(maxv-minv))+minv
+    maxa=np.max(arr)
+    
+    if mina==maxa:
+        return arr*minv
+    
+    norm=(arr-mina)/(maxa-mina) # normalize the array first
+    return (norm*(maxv-minv))+minv # rescale by minv and maxv, which is the normalized array by default
 
 
 @contextlib.contextmanager

@@ -767,7 +767,7 @@ def calculateDataColorationRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,
     cdef float val,alpha
     cdef IndexMatrix ft,fieldtopo,t
     cdef RealMatrix field,f
-
+    
     # Map each index i of `indlist' to (field,fieldtopo,isPerElem,fieldtype) if the field's spatial topology is indlist[i]
     # The value fieldtopo is that field's topology, isPerElem is True is it's a per-element field, and fieldtype is fieldtopo's ElemType
     for i,t in enumerate(indlist):
@@ -776,7 +776,6 @@ def calculateDataColorationRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,
             field,fieldtopo=fft
             isPerElem=field.meta(StdProps._elemdata).lower()=='true' or (field.n()!=nodes.n() and field.n()==fieldtopo.n())
             fieldtype=ElemType[fieldtopo.getType()]
-
             fieldmap[i]=(field,fieldtopo,isPerElem,fieldtype)
 
     for n in process.prange():
@@ -797,7 +796,7 @@ def calculateDataColorationRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,
 
             valfunced=valuelambda(value)
             vals.setAt(valfunced,n)
-
+            
     # if there are empty indices, substract a certain amount from the min of the value range to leave room for an out-of-band value
     process.sync()
     emptysub=(maxval-minval)*0.01 if len(emptyinds)>0 else 0

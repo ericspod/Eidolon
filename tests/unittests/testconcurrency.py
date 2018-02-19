@@ -23,45 +23,51 @@ import unittest
 
 from TestUtils import eqas_
 import eidolon
-from eidolon import ProcessServer, listResults, checkResultMap, listSum
+from eidolon import ProcessServer, listResults, checkResultMap, listSum, concurrentExec
     
     
-class TestVec3(unittest.TestCase):    
-	def testServer(self):
-		'''Test the global ProcessServer instance was created.'''
-		serv=ProcessServer.globalServer
-		assert serv is not None
-		assert serv.realnumprocs>0
-	
-	def testConcurrency(self,values=list(range(100)),numprocs=0,task=None):
-		'''Test concurrent processing on input and returning values.'''
-		result=eidolon.concurrencyTestRange(len(values),numprocs,task,values)
-		checkResultMap(result)
-		eqas_(values,listSum(listResults(result)))
-	
-	def testProcessValues(self,numvals=100,numprocs=0,task=None):
-		'''Test calling the ProcessServer directly with a routine that prints per-process info.'''
-		result=ProcessServer.globalServer.callProcessFunc(numvals,numprocs,task,eidolon.concurrencyTestProcessValues)
-		checkResultMap(result())
-	
-	def testReturnArg(self,values=list(range(20)),numprocs=0,task=None):
-		'''Test returned values from processes.'''
-		result=eidolon.concurrencyTestReturnArg(len(values),numprocs,task,values,partitionArgs=(values,))
-		checkResultMap(result)
-	
-	def testShareObject(self,numprocs=0,task=None):
-		'''Test sharing values between processes.'''
-		result=eidolon.concurrencyTestShareObjects(100,numprocs,task)
-		checkResultMap(result)
-		
-	def testPipe(self):
-		'''Test the asynchronous creation of a Pipe object, this fails with Nose and indicated a thread-unsafe configuration.'''
-		result=[]
-		def createPipe():
-			result.append(multiprocessing.Pipe())
-			
-		t=threading.Thread(target=createPipe)
-		t.start()
-		t.join()
-		assert len(result)==1
+class TestConcurrency(unittest.TestCase):    
+    def testServer(self):
+        '''Test the global ProcessServer instance was created.'''
+        serv=ProcessServer.globalServer
+        assert serv is not None
+        assert serv.realnumprocs>0
+    
+    def testConcurrency(self,values=list(range(100)),numprocs=0,task=None):
+        '''Test concurrent processing on input and returning values.'''
+        result=eidolon.concurrencyTestRange(len(values),numprocs,task,values)
+        checkResultMap(result)
+        eqas_(values,listSum(listResults(result)))
+    
+    def testProcessValues(self,numvals=100,numprocs=0,task=None):
+        '''Test calling the ProcessServer directly with a routine that prints per-process info.'''
+        result=ProcessServer.globalServer.callProcessFunc(numvals,numprocs,task,eidolon.concurrencyTestProcessValues)
+        checkResultMap(result())
+    
+    def testReturnArg(self,values=list(range(20)),numprocs=0,task=None):
+        '''Test returned values from processes.'''
+        result=eidolon.concurrencyTestReturnArg(len(values),numprocs,task,values,partitionArgs=(values,))
+        checkResultMap(result)
+    
+    def testShareObject(self,numprocs=0,task=None):
+        '''Test sharing values between processes.'''
+        result=eidolon.concurrencyTestShareObjects(100,numprocs,task)
+        checkResultMap(result)
+        
+    def testPipe(self):
+        '''Test the asynchronous creation of a Pipe object, this fails with Nose and indicated a thread-unsafe configuration.'''
+        result=[]
+        def createPipe():
+            result.append(multiprocessing.Pipe())
+            
+        t=threading.Thread(target=createPipe)
+        t.start()
+        t.join()
+        assert len(result)==1
+        
+    def testExec(self,rangeval=100,task=None):
+        '''Test concurrentExec() by calculating and returning a list of numbers in the sequence (0,rangeval).'''
+        result=concurrentExec(rangeval,0,task,'x=list(process.nrange())',returnName='x')
+        checkResultMap(result)
+        eqas_(list(range(rangeval)),listSum(listResults(result)))
     
