@@ -45,7 +45,7 @@ defaultNumNodes=16 # default number of contour nodes
 SegViewPoints=enum(
     ('rvAttach','RV Anterior Attachment',color(1,0,1)),
     ('ch2Apex','2 Chamber Long Axis Apex',color(1,0,0)),
-    ('ch3Apex','3 Chamber Long Axis Apex',color(0,1,0)),
+    ('ch3Apex','3 Chamber Long Axis Apex',color(0,0.75,0)),
     ('ch4Apex','4 Chamber Long Axis Apex',color(0,0,1))
 )
 
@@ -401,11 +401,11 @@ def generateContoursFromMask(images,numctrls,innerSeg=True,minSegSize=100,refine
         # mask over whole convex hull
         simplexpts=de.find_simplex(np.argwhere(nparr==nparr))
         mask=(simplexpts.reshape(nparr.shape)!=-1).astype(int)
-        mask=binary_erosion(mask)
+        mask=binary_erosion(mask).astype(np.float32)
         
         if np.sum(mask)>minSegSize: # if mask is too small this indicates a bad segmentation
             # isolate segmentation and fill in holes, this should be the same as the mask if the image was a contour but different if malformed
-            outer= binary_fill_holes(mask*(nparr==nparr.max())) 
+            outer= binary_fill_holes(mask*(nparr==nparr.max())).astype(np.float32)
             
             if ndsum(np.abs(mask-outer))<(minSegSize/10): # too much difference between mask and filled outer indicates a non-contour
                 _addContour(img,region,hull)

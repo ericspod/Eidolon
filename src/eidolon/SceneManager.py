@@ -849,7 +849,8 @@ class SceneManager(TaskQueue):
                 self.showExcept(e,'Exception in script file %r'%filename,format_exc=format_exc)
         else:
             #execfile(filename,scriptlocals,None)
-            exec(compile(open(filename).read(), filename, 'exec'),scriptlocals,None)
+            comp=compile(open(filename).read(), os.path.abspath(filename), 'exec')
+            exec(comp,scriptlocals,None)
 
         if self.win and updateLocals:
             self.win.console.updateLocals(self.scriptlocals)

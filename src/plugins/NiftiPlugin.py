@@ -31,7 +31,21 @@ import unittest
 import tempfile
 import shutil
 import glob
+import contextlib
 import numpy as np
+
+
+@contextlib.contextmanager
+def processNifti(infile,outfile=None):
+    im=nibabel.load(infile)
+    dat=im.get_data()
+    
+    yield im.header,dat
+    
+    if outfile:
+        outim = nibabel.Nifti1Image(dat, im.affine, im.header)
+        nibabel.save(outim,outfile)
+    
 
 class NiftiPlugin(ImageScenePlugin):
     def __init__(self):
@@ -81,7 +95,7 @@ class NiftiPlugin(ImageScenePlugin):
             return []
 
     def getObjFiles(self,obj):
-        if obj.source and obj.source.get('filename',None):
+        if isinstance(obj.source,dict) and obj.source.get('filename',None):
             return [obj.source['filename']]
         else:
             return []

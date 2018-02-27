@@ -44,7 +44,7 @@
       <enum>QFrame::StyledPanel</enum>
      </property>
      <property name="currentIndex">
-      <number>4</number>
+      <number>3</number>
      </property>
      <property name="tabSpacing">
       <number>0</number>
@@ -54,7 +54,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>768</width>
+        <width>781</width>
         <height>224</height>
        </rect>
       </property>
@@ -220,7 +220,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>768</width>
+        <width>781</width>
         <height>480</height>
        </rect>
       </property>
@@ -898,9 +898,9 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-790</y>
         <width>768</width>
-        <height>1389</height>
+        <height>1531</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1568,6 +1568,42 @@ background-color:rgba(255.0,255.0,255.0,200.0);
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Mask-based Volume Analysis</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_23">
+          <item row="3" column="1">
+           <widget class="QCheckBox" name="volImageMaskInnerBox">
+            <property name="text">
+             <string>Calculate volume of inner area (ie. pool)?</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QPushButton" name="maskvolButton">
+            <property name="text">
+             <string>Calculate</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="volImageMaskBox"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_80">
+            <property name="text">
+             <string>Mask Image</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="groupBox_16">
          <property name="minimumSize">
           <size>
@@ -1669,7 +1705,7 @@ background-color:rgba(255.0,255.0,255.0,200.0);
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-799</y>
+        <y>0</y>
         <width>768</width>
         <height>1540</height>
        </rect>

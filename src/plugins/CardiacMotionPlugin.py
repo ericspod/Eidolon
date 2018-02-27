@@ -16,19 +16,37 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import *
+import eidolon
+from eidolon import (
+    vec3, rotator, transform, BoundBox, Vec3Matrix, RealMatrix, IndexMatrix, Future, StdProps, ElemType, Project, 
+    avg, stddev, first, minmax, fillList, taskroutine, taskmethod, timing, concurrent, listSum, matIter, shareMatrices,
+    ParamType, ParamDef, splitPathExt
+)
 
+import numpy as np
+from scipy.ndimage import binary_fill_holes
+
+import os
 import math
 import textwrap
+import unittest
 from glob import glob
 
-from .IRTKPlugin import IRTKPluginMixin,ServerMsgs,applyMotionTrackTask,TrackTypes,JobMetaValues,trackconfname
+from .IRTKPlugin import IRTKPluginMixin,ServerMsgs,TrackTypes,JobMetaValues,trackconfname
 from .SegmentPlugin import SegSceneObject,SegmentTypes
-from .VTKPlugin import DatasetTypes
 from .CheartPlugin import LoadDialog
 from .ReportCardPlugin import ReportCardSceneObject
 from .DicomPlugin import readDicomHeartRate
 from ui import Ui_CardiacMotionProp
+
+
+ConfigNames=eidolon.enum(
+    'savecheart',
+    'shortaxis','templateimg','saxseg','saxtimereg','regsubject','regintermed', # alignment/registration names
+    'tagged3d','detagged3d', # 3D tag values
+    'serveraddr','serverport','jobids','trackedimg','maskimg','adaptive','paramfile', # server values
+    'heartrateBPM' # stored properties
+)
 
 
 def avgDevRange(vals,stddevDist=1.0):
@@ -45,7 +63,7 @@ def avgDevRange(vals,stddevDist=1.0):
 @timing
 def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 
-    spatialmats=list(filter(isSpatialIndex,ds.enumIndexSets()))
+    spatialmats=list(filter(eidolon.isSpatialIndex,ds.enumIndexSets()))
     indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
     indname=indmat.getName()
 
@@ -71,7 +89,7 @@ def calculateLVDirectionalFields(ds,longaxis,radialname,longname,circumname):
 
     #nodes.sub(apexaabb.center*vec3(1,1,0)) # try to center on the apex
 
-    apexray=Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
+    apexray=eidolon.Ray(mitralaabb.center,(apexaabb.center-mitralaabb.center))
 
     for n in range(length):
         node=nodes[n]
@@ -243,18 +261,18 @@ def divideMeshSurfaceByRegion(dataset,regionfield,choosevals,task=None):
     matrices containing the triangle indices for each region selected in `choosevals'. Returns the triangulation dataset,
     index matrix list, and the list of per-region matrices in no particular order.
     '''
-    calculateElemExtAdj(dataset,task=task)
+    eidolon.calculateElemExtAdj(dataset,task=task)
 
     # calculate the triangulation of the original dataset and extract the triangle index and node properties matrices
-    trids,indlist=generateLinearTriangulation(dataset,'dividetris',0,True,task)
-    tris=trids.getIndexSet(trids.getName()+MatrixType.tris[1])
-    nodeprops=trids.getIndexSet(trids.getName()+MatrixType.props[1])
+    trids,indlist=eidolon.generateLinearTriangulation(dataset,'dividetris',0,True,task)
+    tris=trids.getIndexSet(trids.getName()+eidolon.MatrixType.tris[1])
+    nodeprops=trids.getIndexSet(trids.getName()+eidolon.MatrixType.props[1])
 
     assert len(indlist)==1,'Multiple spatial topologies found in mesh, cannot determine element value field association'
     assert indlist[0].n()==regionfield.n(),'Element value field length (%i) does not match topology length (%i)'%(regionfield.n(),indlist[0].n())
 
     # calculate the region division matrices
-    proccount=chooseProcCount(tris.n(),0,2000)
+    proccount=eidolon.chooseProcCount(tris.n(),0,2000)
     shareMatrices(tris,nodeprops,regionfield)
     results= divideTrisByRegionRange(tris.n(),proccount,task,tris,nodeprops,regionfield,choosevals,partitionArgs=(choosevals,))
     matrices=listSum(list(map(list,results.values())))
@@ -291,7 +309,7 @@ def calculateRegionThicknessesRange(process,trinodes,stddevRange,triindlist):
         for n in range(triind.n()):
             center=centers.getAt(n)
             norm=norms.getAt(n)
-            ray=Ray(center,-norm)
+            ray=eidolon.Ray(center,-norm)
 
             intres=ray.intersectsTriMesh(trinodes,triind,centers,radii2,1,n)
 
@@ -329,7 +347,7 @@ def calculateRegionThicknesses(datasetlist,regionfield,choosevals,stddevRange=1.
 
         nodes=dataset.getNodes()
         sumlens=sum(tris.n() for tris in triindlist)
-        proccount=chooseProcCount(sumlens,0,2000)
+        proccount=eidolon.chooseProcCount(sumlens,0,2000)
         shareMatrices(*(triindlist+[nodes]))
         thicknesses=calculateRegionThicknessesRange(sumlens,proccount,None,nodes,stddevRange,triindlist,partitionArgs=(triindlist,))
 
@@ -389,7 +407,7 @@ def calculateAvgDisplacement(datasetlist,regionfield,choosevals,stddevRange=1.0,
         nodes=dataset.getNodes()
         orignodes=orignodes or nodes
         sumlens=sum(tris.n() for tris in triindlist)
-        proccount=chooseProcCount(sumlens,0,2000)
+        proccount=eidolon.chooseProcCount(sumlens,0,2000)
         shareMatrices(*(triindlist+[nodes]))
         dists=calculateAvgDisplacementRange(sumlens,proccount,None,orignodes,nodes,stddevRange,triindlist,partitionArgs=(triindlist,))
 
@@ -427,7 +445,7 @@ def calculateLinTetVolumeRange(process,nodelist,fieldlist,inds,regionfield,choos
             val=regionfield.getAt(n)
             if val in nodevols:
                 elemnodes=nodes.mapIndexRow(inds,n)
-                vol=calculateTetVolume(*elemnodes)
+                vol=eidolon.calculateTetVolume(*elemnodes)
                 nodevols[val]+=abs(vol)
 #               volfield.setAt(vol,n)
 
@@ -458,8 +476,34 @@ def calculateLinTetVolume(datasetlist,regionfield,choosevals,task=None):
 
     results=calculateLinTetVolumeRange(len(nodelist),0,task,nodelist,fieldlist,inds,regionfield,choosevals,partitionArgs=(nodelist,fieldlist))
 
-    return sumResultMap(results)
+    return eidolon.sumResultMap(results)
 
+
+@timing
+def calculateMaskVolume(imgobj,calculateInner=True):
+    volumes=[]
+    voxelvol=eidolon.prod(imgobj.getVoxelSize()) # voxel volume
+    
+    with eidolon.processImageNp(imgobj) as im:
+        for t in range(im.shape[3]):
+            volsum=0
+            for s in range(im.shape[2]):
+                img=im[:,:,s,t]
+                if img.max()>img.min():
+                    binimg=(img==img.max()).astype(int)
+                    
+                    # to calculate the sum of the inside of a mask, subtract the outer mask from the filled mask
+                    if calculateInner:
+                        outer= binary_fill_holes(binimg).astype(int)
+                        if np.any(outer!=binimg):
+                            binimg=outer-binimg
+                            
+                    volsum+=np.sum(binimg)
+                  
+            volumes.append(volsum*voxelvol)
+            
+    return volumes
+    
 
 @timing
 def calculateTorsion(datasetlist,aha,choosevals):
@@ -524,7 +568,7 @@ def calculateTorsion(datasetlist,aha,choosevals):
 def calculateTriAreasRange(process,nodes,inds,result):
     for i in process.prange():
         a,b,c=nodes.mapIndexRow(inds,i)
-        result.setAt(max(epsilon*10,a.triArea(b,c)),i) # ensure no 0-area triangles just in case
+        result.setAt(max(eidolon.epsilon*10,a.triArea(b,c)),i) # ensure no 0-area triangles just in case
 
 
 def calculateTriAreas(nodes,inds,task=None):
@@ -534,7 +578,7 @@ def calculateTriAreas(nodes,inds,task=None):
     result.meta(StdProps._spatial,inds.getName())
 
     shareMatrices(nodes,inds)
-    proccount=chooseProcCount(inds.n(),1,5000)
+    proccount=eidolon.chooseProcCount(inds.n(),1,5000)
     calculateTriAreasRange(inds.n(),proccount,task,nodes,inds,result)
     return result
 
@@ -559,24 +603,15 @@ def calculateRegionSumField(field,regionfield,choosevals):
     return summap,sumfield
 
 
-class CardiacMotionPropWidget(QtWidgets.QWidget,Ui_CardiacMotionProp):
+class CardiacMotionPropWidget(eidolon.QtWidgets.QWidget,Ui_CardiacMotionProp):
     def __init__(self,parent=None):
-        QtWidgets.QWidget.__init__(self,parent)
+        eidolon.QtWidgets.QWidget.__init__(self,parent)
         self.setupUi(self)
         tb=self.toolBox
         tb.setCurrentIndex(0)
         # make the toolbox large enough for the current pane
         tb.currentChanged.connect(lambda i:tb.setMinimumHeight(tb.currentWidget().height()+tb.count()*30))
         tb.currentChanged.emit(0)
-
-
-ConfigNames=enum(
-    'savecheart',
-    'shortaxis','templateimg','saxseg','saxtimereg','regsubject','regintermed', # alignment/registration names
-    'tagged3d','detagged3d', # 3D tag values
-    'serveraddr','serverport','jobids','trackedimg','maskimg','adaptive','paramfile', # server values
-    'heartrateBPM' # stored properties
-)
 
 
 class CardiacMotionProject(Project):
@@ -628,9 +663,9 @@ class CardiacMotionProject(Project):
         prop=Project.getPropBox(self)
 
         # remove the UI for changing the project location
-        cppdel(prop.chooseLocLayout)
-        cppdel(prop.dirButton)
-        cppdel(prop.chooseLocLabel)
+        eidolon.cppdel(prop.chooseLocLayout)
+        eidolon.cppdel(prop.dirButton)
+        eidolon.cppdel(prop.chooseLocLabel)
 
         self.alignprop=CardiacMotionPropWidget()
         prop.verticalLayout.insertWidget(prop.verticalLayout.count()-1,self.alignprop)
@@ -686,6 +721,7 @@ class CardiacMotionProject(Project):
         self.alignprop.thicknessButton.clicked.connect(self._calculateThicknessButton)
         self.alignprop.avgdispButton.clicked.connect(self._calculateAvgDispButton)
         self.alignprop.volButton.clicked.connect(self._calculateVolumeButton)
+        self.alignprop.maskvolButton.clicked.connect(self._calculateImageMaskVolumeButton)
         self.alignprop.strainButton.clicked.connect(self._calculateStrainButton)
         self.alignprop.strainMeshButton.clicked.connect(self._calculateStrainMeshButton)
         self.alignprop.torsionButton.clicked.connect(self._calculateTorsionButton)
@@ -696,13 +732,12 @@ class CardiacMotionProject(Project):
         self.alignprop.isTagCheck.stateChanged.connect(lambda i:self._tagCheckBox(self.alignprop.isTagCheck.isChecked()))
 
         def fillFieldBox(objbox,fieldbox,allowNone=False):
+            @objbox.currentIndexChanged.connect
             def fillAction(*args):
                 obj=self.getProjectObj(str(objbox.currentText()))
                 fields=['None'] if allowNone else []
                 fields+=sorted(obj.datasets[0].fields.keys()) if obj else ['None']
                 fillList(fieldbox,fields)
-
-            objbox.currentIndexChanged.connect(fillAction)
 
         fillFieldBox(self.alignprop.thickMeshBox,self.alignprop.thickFieldBox)
         fillFieldBox(self.alignprop.dispMeshBox,self.alignprop.dispFieldBox)
@@ -712,9 +747,9 @@ class CardiacMotionProject(Project):
 
         fillFieldBox(self.alignprop.strainMeshBox,self.alignprop.strainMeshAHABox)
 
-        setCollapsibleGroupbox(self.alignprop.trackAdvBox,False)
-        setCollapsibleGroupbox(self.alignprop.legacyBox,False)
-        setWarningStylesheet(self.alignprop.trackAdvBox)
+        eidolon.setCollapsibleGroupbox(self.alignprop.trackAdvBox,False)
+        eidolon.setCollapsibleGroupbox(self.alignprop.legacyBox,False)
+        eidolon.setWarningStylesheet(self.alignprop.trackAdvBox)
 
         @self.alignprop.tsExtrSrcBox.activated.connect
         def _fillTS(i=None):
@@ -723,6 +758,9 @@ class CardiacMotionProject(Project):
                 fillList(self.alignprop.tsExtrChooseBox,['Step %i @ Time %i'%its for its in enumerate(o.getTimestepList())])
 
         self.mgr.addFuncTask(self._checkTrackDirs) # check directories after everything else has loaded
+        
+        # TODO: disable choosing how the volume analysis works, this needs work to allow calculating tissue volume in a well presented way
+        self.alignprop.volImageMaskInnerBox.setVisible(False) 
 
         return prop
 
@@ -730,10 +768,10 @@ class CardiacMotionProject(Project):
     def updatePropBox(self,proj,prop):
         Project.updatePropBox(self,proj,prop)
 
-        setChecked(self.configMap[ConfigNames._savecheart].lower()=='true',self.alignprop.saveCHeartCheck)
+        eidolon.setChecked(self.configMap[ConfigNames._savecheart].lower()=='true',self.alignprop.saveCHeartCheck)
 
-        sceneimgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
-        scenemeshes=[o for o in self.memberObjs if isinstance(o,MeshSceneObject)]
+        sceneimgs=[o for o in self.memberObjs if isinstance(o,eidolon.ImageSceneObject)]
+        scenemeshes=[o for o in self.memberObjs if isinstance(o,eidolon.MeshSceneObject)]
 
         names=sorted(o.getName() for o in sceneimgs)
         fillList(self.alignprop.regList,names)
@@ -750,8 +788,8 @@ class CardiacMotionProject(Project):
         fillList(self.alignprop.regInterBox,names,self.configMap[ConfigNames._regintermed],'None')
         fillList(self.alignprop.tsExtrSrcBox,names)
         fillList(self.alignprop.trackedNregBox,names)
-
         fillList(self.alignprop.reorderSrcBox,names)
+        fillList(self.alignprop.volImageMaskBox,names)
 
         names=sorted(o.getName() for o in sceneimgs if not o.is2D)
         fillList(self.alignprop.shortAxisBox,names,self.configMap[ConfigNames._shortaxis])
@@ -813,7 +851,7 @@ class CardiacMotionProject(Project):
             self.alignprop.bpmBox.setValue(heartrate)
 
         # server box values
-        with signalBlocker(self.alignprop.adaptBox,self.alignprop.svrAddrBox,self.alignprop.paramEdit):
+        with eidolon.signalBlocker(self.alignprop.adaptBox,self.alignprop.svrAddrBox,self.alignprop.paramEdit):
             self.alignprop.adaptBox.setValue(self.configMap[ConfigNames._adaptive])
             self.alignprop.svrAddrBox.setText('%s:%i'%(self.configMap[ConfigNames._serveraddr],int(self.configMap[ConfigNames._serverport])))
             self.alignprop.paramEdit.setText(self.configMap[ConfigNames._paramfile])
@@ -857,7 +895,7 @@ class CardiacMotionProject(Project):
                 rc.setValue(series.seriesID,'Heart Rate (bpm)',heartrate)
 
     def renameObject(self,obj,oldname):
-        newname=getValidFilename(obj.getName())
+        newname=eidolon.getValidFilename(obj.getName())
         obj.setName(newname)
 
         conflicts=obj.plugin.checkFileOverwrite(obj,self.getProjectDir())
@@ -885,7 +923,7 @@ class CardiacMotionProject(Project):
 
         # Only try to save objects that aren't already in the project and which are saveable
         # Important: this task method will be called after the project has loaded so won't ask to add things already in the project
-        if not isinstance(obj,SceneObject) or obj in self.memberObjs or obj.plugin.getObjFiles(obj) is None:
+        if not isinstance(obj,eidolon.SceneObject) or obj in self.memberObjs or obj.plugin.getObjFiles(obj) is None:
             return
 
         def _copy():
@@ -896,9 +934,9 @@ class CardiacMotionProject(Project):
             filename=self.getProjectFile(obj.getName())
             savecheart=self.configMap[ConfigNames._savecheart].lower()=='true'
 
-            if isinstance(obj,ImageSceneObject):
+            if isinstance(obj,eidolon.ImageSceneObject):
                 self.CardiacMotion.saveToNifti([obj],True)
-            elif isinstance(obj,MeshSceneObject):
+            elif isinstance(obj,eidolon.MeshSceneObject):
                 if savecheart: # force CHeart saving is selected
                     self.CardiacMotion.CHeart.saveObject(obj,filename,setFilenames=True)
                 else:
@@ -928,7 +966,7 @@ class CardiacMotionProject(Project):
             index=index[0]
             jfile=os.path.join(trackdir,'job.ini')
             tfile=os.path.join(trackdir,trackconfname)
-            jdata=readBasicConfig(jfile) if os.path.isfile(jfile) else {}
+            jdata=eidolon.readBasicConfig(jfile) if os.path.isfile(jfile) else {}
             imgobj=self.mgr.findObject(sceneimgs[index])
 
             if imgobj:
@@ -951,8 +989,8 @@ class CardiacMotionProject(Project):
                 JobMetaValues._pixdim       :vox,
             })
 
-            printFlush('Writing %r with data from %r'%(tfile,name))
-            storeBasicConfig(tfile,jdata)
+            eidolon.printFlush('Writing %r with data from %r'%(tfile,name))
+            eidolon.storeBasicConfig(tfile,jdata)
 
         def _chooseSource(sceneimgs,trackdir):
             msg='''
@@ -965,7 +1003,7 @@ class CardiacMotionProject(Project):
             # important: this is called in a function so that `callback' binds with fresh variables
             self.mgr.win.chooseListItemsDialog('Choose Source Image',textwrap.dedent(msg).strip(),sceneimgs,callback)
 
-        imgs=[o for o in self.memberObjs if isinstance(o,ImageSceneObject)]
+        imgs=[o for o in self.memberObjs if isinstance(o,eidolon.ImageSceneObject)]
 
         for d in glob(self.getProjectFile('*/')): # check each directory `d' to see if it has dof files but no `trackconfname' file
             numdofs=len(glob(os.path.join(d,'*.dof.gz')))
@@ -1321,6 +1359,13 @@ class CardiacMotionProject(Project):
         f=self.CardiacMotion.calculateMeshRegionVolume(objname,fieldname,heartrate)
         self.mgr.checkFutureResult(f)
 
+    def _calculateImageMaskVolumeButton(self):
+        objname=str(self.alignprop.volImageMaskBox.currentText())
+        calculateInner=self.alignprop.volImageMaskInnerBox.isChecked()
+        
+        f=self.CardiacMotion.calculateImageMaskVolume(objname,calculateInner)
+        self.mgr.checkFutureResult(f)
+
     def _calculateStrainButton(self):
         name=str(self.alignprop.strainROIBox.currentText())
         spacing=self.alignprop.strainSpacingBox.value()
@@ -1373,13 +1418,13 @@ class CardiacMotionProject(Project):
 
 
 
-class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
+class CardiacMotionPlugin(eidolon.ImageScenePlugin,IRTKPluginMixin):
     def __init__(self):
-        ImageScenePlugin.__init__(self,'CardiacMotion')
+        eidolon.ImageScenePlugin.__init__(self,'CardiacMotion')
         self.project=None
 
     def init(self,plugid,win,mgr):
-        ImageScenePlugin.init(self,plugid,win,mgr)
+        eidolon.ImageScenePlugin.init(self,plugid,win,mgr)
         IRTKPluginMixin.init(self,plugid,win,mgr)
         self.ParRec=self.mgr.getPlugin('ParRec')
         if self.win!=None:
@@ -1401,7 +1446,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
         return self.project.getProjectDir()
 
     def getLogFile(self,filename):
-        return os.path.join(self.project.logdir,ensureExt(filename,'.log'))
+        return os.path.join(self.project.logdir,eidolon.ensureExt(filename,'.log'))
 
     def getLocalFile(self,name):
         return self.project.getProjectFile(name)
@@ -1474,9 +1519,9 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 savecheart=self.project.configMap[ConfigNames._savecheart].lower()=='true'
                 if savecheart:
                     newxfile=self.project.getProjectFile(os.path.split(xfile)[1])
-                    copyfileSafe(xfile,newxfile,True)
+                    eidolon.copyfileSafe(xfile,newxfile,True)
                     newtfile=self.project.getProjectFile(os.path.split(tfile)[1])
-                    copyfileSafe(tfile,newtfile,True)
+                    eidolon.copyfileSafe(tfile,newtfile,True)
 
                     obj=self.CHeart.loadSceneObject(newxfile,newtfile,elemtype,objname=splitPathExt(xfile)[1])
                 else:
@@ -1691,6 +1736,47 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 f.setObject([plot,plot1])
 
         return self.mgr.runTasks(_calcVolume(objname,regionfieldname,heartrate,regionrange),f)
+    
+    @taskmethod('Calculating Mask Image Volume')
+    def calculateImageMaskVolume(self,objname,calculateInner,task=None):
+        obj=self.findObject(objname)
+        volumes=calculateMaskVolume(obj,calculateInner)
+        
+        volumes_mL=[v/1000.0 for v in volumes] # convert to mL
+        minv,maxv=minmax(volumes_mL)
+        assert minv<maxv,repr(volumes_mL)
+
+        ejectfrac=(maxv-minv)*(100.0/maxv) # calculate ejection fraction percentage
+        
+        resultItems=(
+            ('Mask Timestep Volumes (mL)',volumes_mL),
+            ('Mask ESV Volume (mL)',minv),
+            ('Mask EDV Volume (mL)',maxv),
+            ('Mask Stroke Volume (mL)',maxv-minv),
+            ('Mask Ejection Fraction (%)',ejectfrac),
+        )
+        
+        otherDataItems=dict(resultItems)
+        
+        plotname=self.getUniqueShortName(objname,'maskvolume',complen=15)
+        plottitle=objname+' Blood Pool Volume (Mask)'
+        plotfilename=self.project.getProjectFile(plotname+'.plot')
+
+        plot=self.Plot.createPlotObject(plotfilename,plotname,plottitle,[volumes_mL],obj.getTimestepList(),self.Plot.TimePlotWidget,obj,**otherDataItems)
+        plot.save()
+
+        self.mgr.addSceneObject(plot)
+        self.project.addObject(plot)
+        self.project.save()
+
+        rc=self.mgr.project.getReportCard()
+        if rc:
+            for n,v in resultItems:
+                rc.setValue(objname,n,v)
+
+            rc.save()
+
+        return plot
 
     def calculateMeshStrainField(self,objname,ahafieldname,spacing,trackname):
         def _makePlot(suffix,titlesuffix,values,obj):
@@ -1708,7 +1794,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
         obj=self.findObject(objname)
         timesteps=obj.getTimestepList()
         trackdir=self.project.getProjectFile(trackname)
-        conf=readBasicConfig(os.path.join(trackdir,trackconfname))
+        conf=eidolon.readBasicConfig(os.path.join(trackdir,trackconfname))
 
         if not ahafieldname:
             raise ValueError('Need to provide an AHA field name''')
@@ -1732,7 +1818,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 if ds.hasIndexSet(aha.meta(StdProps._spatial)):
                     indmat=ds.getIndexSet(aha.meta(StdProps._spatial))
                 else:
-                    spatialmats=list(filter(isSpatialIndex,ds.enumIndexSets()))
+                    spatialmats=list(filter(eidolon.isSpatialIndex,ds.enumIndexSets()))
                     indmat=first(m for m in spatialmats if ElemType[m.getType()].dim==3) or first(spatialmats)
 
                 # create a matrix assigning an AHA region to each node
@@ -1762,7 +1848,7 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 strainnodes.setM(1) # make the nodes one long column so that they will be tracked like regular nodes
 
                 # apply motion tracking using a dummy scene object
-                initobj=MeshSceneObject(obj.getName()+'_Strains',PyDataSet('initds',strainnodes,[indmat]))
+                initobj=eidolon.MeshSceneObject(obj.getName()+'_Strains',eidolon.PyDataSet('initds',strainnodes,[indmat]))
                 trackobj=self.applyMotionTrack(initobj,trackname,False)
 
                 # These matrices will contain one row per timestep, each row will have an averaged value for each
@@ -1904,10 +1990,11 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
                 indname='inds'
                 obj=self.findObject(objname)
 
-                nodes,inds=generateHexBox(*griddims)
+                nodes,inds=eidolon.generateHexBox(*griddims)
                 strainnodes=createStrainGrid(nodes,transform(),obj.getVolumeTransform(),spacing)
                 strainnodes.setM(1)
-                initobj=MeshSceneObject(obj.getName()+'_Grid',PyDataSet('initds',strainnodes,[(indname,ElemType._Hex1NL,inds)]))
+                gridDS=eidolon.PyDataSet('initds',strainnodes,[(indname,ElemType._Hex1NL,inds)])
+                initobj=eidolon.MeshSceneObject(obj.getName()+'_Grid',gridDS)
                 trackobj=self.applyMotionTrack(initobj,trackname,False)
 
                 task.setMaxProgress(len(trackobj.datasets))
@@ -2032,18 +2119,18 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
         @taskroutine('Calculating Phase Kinetic Energy')
         def _calcEnergy(mask,phasex,phasey,phasez,maskval,task):
             with f:
-                energy=cropObjectEmptySpace(mask,self.getUniqueObjName('EmptyMask'))
-                thresholdImage(energy,maskval-epsilon,maskval+epsilon,task)
-                binaryMaskImage(energy,maskval-epsilon)
+                energy=eidolon.cropObjectEmptySpace(mask,self.getUniqueObjName('EmptyMask'))
+                eidolon.thresholdImage(energy,maskval-eidolon.epsilon,maskval+eidolon.epsilon,task)
+                eidolon.binaryMaskImage(energy,maskval-eidolon.epsilon)
 
                 voxelw,voxelh=energy.images[0].spacing
                 energycalcfunc='sum([(vals[0]*10)**2,(vals[1]*10)**2,(vals[2]*10)**2])*vals[3]*(%r)'%((voxelw**3)*0.5)
 
-                mergeImages([phasex,phasey,phasez,energy],energy,energycalcfunc,task)
+                eidolon.mergeImages([phasex,phasey,phasez,energy],energy,energycalcfunc,task)
 
                 energylist=[]
                 for _,inds in energy.getTimestepIndices():
-                    energylist.append(sum(sumMatrix(energy.images[ii].img) for ii in inds))
+                    energylist.append(sum(eidolon.sumMatrix(energy.images[ii].img) for ii in inds))
 
                 plotname=self.getUniqueShortName(mask.getName(),'Energy',complen=15)
                 plottitle=mask.getName()+' Total Kinetic Energy'
@@ -2059,4 +2146,34 @@ class CardiacMotionPlugin(ImageScenePlugin,IRTKPluginMixin):
         return self.mgr.runTasks(_calcEnergy(mask,phasex,phasey,phasez,maskval))
 
 
-addPlugin(CardiacMotionPlugin())
+### Add plugin to environment
+
+eidolon.addPlugin(CardiacMotionPlugin())
+
+### Unit tests
+
+class TestCardiacMotionPlugin(unittest.TestCase):
+    def setUp(self):
+        pass
+        
+    def tearDown(self):
+        pass
+    
+    def testTestVolume(self):
+        et=ElemType.Tet1NL
+        sizes=(1.0,2.0,3.0)
+        
+        nodes=listSum(eidolon.divideHextoTet(1))
+        inds=list(eidolon.group(range(len(nodes)),et.numNodes()))
+        
+        regionfield=eidolon.listToMatrix([1]*len(inds),'regionfield')
+        dsinds=('inds',ElemType._Tet1NL,inds)
+        
+        dds=[]
+        for size in sizes:
+            snodes=[vec3(*n)*vec3(size,0,0) for n in nodes] # scale nodes
+            dds.append(eidolon.PyDataSet('TestDS',snodes,dsinds))
+            
+        vols=calculateLinTetVolume(dds,regionfield,[1])
+        
+        
