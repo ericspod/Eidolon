@@ -57,6 +57,7 @@ elif compat.is_darwin:
 		('EidolonLibs/MIRTK/OSX','EidolonLibs/MIRTK/OSX')
 	]
 elif compat.is_linux:
+	hiddenimports+=['scipy._lib.messagestream']
 	binaries+=[(f,'.') for f in glob('EidolonLibs/linux/bin/*')]
 	datas.append(('EidolonLibs/MIRTK/Linux','EidolonLibs/MIRTK/Linux'))
 

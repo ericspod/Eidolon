@@ -1103,7 +1103,7 @@ def setLogging(logfile='eidolon.log',filemode='a'):
     logging.raiseExceptions=False # stop exception prints about the log file being closed when writing traces
 
 
-def addLibraryFile(lib):
+def addLibraryFile(lib,append=True):
     '''Add the nominated egg/wheel file to the end of the system path, assuming this is in ${APPDIR}/Libs/python.'''
     if py3:
         from . import __init__
@@ -1113,11 +1113,18 @@ def addLibraryFile(lib):
     lib=os.path.join(getAppDir(),__init__.LIBSDIR,'python',lib)
     egg=ensureExt(lib,'.egg')
     whl=ensureExt(lib,'.whl')
-
+    
     if os.path.exists(egg):
-        sys.path.append(egg)
+        if append:
+            sys.path.append(egg)
+        else:
+            sys.path.insert(0,egg)
+            
     elif os.path.exists(whl):
-        sys.path.append(whl)
+        if append:
+            sys.path.append(whl)
+        else:
+            sys.path.insert(0,whl)
     else:
         raise ValueError('Library file %s.egg/.whl does not exist'%lib)
 
