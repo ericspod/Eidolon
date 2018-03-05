@@ -159,7 +159,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 assert dim in (3,4),'dim is %r, should be 3 or 4'%len(dimsize)
                 assert len(dimsize)==dim,'%i!=%i'%(len(dimsize),dim)
                 assert len(espacing)==dim,'%i!=%i'%(len(espacing),dim)
-                assert len(trans) in (9,16),'%i!=9 or 16'%len(transform)
+                assert len(trans) in (9,16),'%i!=9 or 16'%len(trans)
                 assert datfile=='LOCAL' or raw==''
 
                 if len(trans)==16:

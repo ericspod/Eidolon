@@ -41,6 +41,7 @@ __version__='%i.%i.%i'%__version_info__
 __author__='Eric Kerfoot'
 __copyright__="Copyright (c) 2016-7 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
 __website__="https://ericspod.github.io/Eidolon"
+__verurl__="https://api.github.com/repos/ericspod/Eidolon/releases"
 
 # top-level constants, these are hard-coded environment variable or file names
 APPDIRVAR='APPDIR' # environment variable defining the application's directory, set by the start up script and is needed at init time

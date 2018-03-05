@@ -86,7 +86,7 @@ def rescaleArray(arr,minv=0.0,maxv=1.0,dtype=np.float32):
     maxa=np.max(arr)
     
     if mina==maxa:
-        return arr*minv
+        return arr*maxv
     
     norm=(arr-mina)/(maxa-mina) # normalize the array first
     return (norm*(maxv-minv))+minv # rescale by minv and maxv, which is the normalized array by default

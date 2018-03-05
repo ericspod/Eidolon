@@ -191,12 +191,12 @@ class NiftiPlugin(ImageScenePlugin):
                 
                 # reading file data directly is expected to be faster than using nibabel, specifically by using memmap
                 if filename.endswith('.gz'):
-                    #dat=img.get_data() # TODO: handle compressed data directly?
+                    dat=img.get_data()
                     #dat=np.asanyarray(dobj) # same as the above
                     
-                    with gzip.open(filename) as o: # not sure if this is any faster than the above
-                        o.seek(dobj.offset) # seek beyond the header
-                        dat=np.frombuffer(o.read(),dobj.dtype).reshape(datshape,order=dobj.order)
+#                    with gzip.open(filename) as o: # TODO: not sure if this is any faster than the above
+#                        o.seek(dobj.offset) # seek beyond the header
+#                        dat=np.frombuffer(o.read(),dobj.dtype).reshape(datshape,order=dobj.order)
                 else:
                     # mmap the image data below the header in the file
                     dat=np.memmap(dobj.file_like,dobj.dtype,'r',dobj.offset,datshape,dobj.order)

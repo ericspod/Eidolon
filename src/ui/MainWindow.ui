@@ -125,6 +125,7 @@
      <string>&amp;Help</string>
     </property>
     <addaction name="action_About"/>
+    <addaction name="action_Check_Version"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuImport"/>
@@ -488,8 +489,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>451</width>
-              <height>251</height>
+              <width>98</width>
+              <height>28</height>
              </rect>
             </property>
            </widget>
@@ -1511,6 +1512,11 @@
   <action name="action_Rerun_Last_Script">
    <property name="text">
     <string>&amp;Rerun Last Script</string>
+   </property>
+  </action>
+  <action name="action_Check_Version">
+   <property name="text">
+    <string>&amp;Check Version</string>
    </property>
   </action>
  </widget>

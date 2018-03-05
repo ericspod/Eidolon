@@ -94,6 +94,8 @@ import contextlib
 import ast
 import inspect
 import collections
+import urllib2
+import json
 
 py3 = sys.version_info.major == 3
 
@@ -1119,6 +1121,31 @@ def addLibraryFile(lib):
     else:
         raise ValueError('Library file %s.egg/.whl does not exist'%lib)
 
+
+def getVersionsFromRepoURL(url=None):
+    '''
+    Returns the current application version, the most recent released version at `url' otherwise None if `url' is None or 
+    the given URL cannot be connected to, and whether the current version is at least a new as the newest release.
+    '''
+    if py3:
+        from . import __init__
+    else:
+        import __init__
+        
+    currentver=__init__.__version__
+    newver=None
+    
+    if url:
+        try:
+            jreq=urllib2.urlopen(url).read()
+            req=json.loads(jreq)
+            newver=max(rel['tag_name'] for rel in req)
+            newver=str(newver)[1:]
+        except urllib2.HTTPError:
+            newver=None
+
+    return currentver,newver,(newver is None or currentver>newver)
+    
 
 def processExists(pid):
     '''Returns true if the process identified by `pid' is running and active, false if it doesn't exist or has crashed.'''

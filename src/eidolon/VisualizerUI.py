@@ -28,6 +28,7 @@ import collections
 import contextlib
 import signal
 import codeop
+import textwrap
     
 import sip
 
@@ -2239,6 +2240,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.action_Time.triggered.connect(lambda:self.timeWidget.setVisible(not self.timeWidget.isVisible()))
         self.actionScratch_Pad.triggered.connect(lambda:self.scratchWidget.setVisible(not self.scratchWidget.isVisible()))
         self.action_About.triggered.connect(self._showAbout)
+        self.action_Check_Version.triggered.connect(self._checkVersion)
 
         self.execButton.clicked.connect(self._executeScratch)
         self.loadScratchButton.clicked.connect(self._loadScratch)
@@ -2307,9 +2309,30 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         centerWindow(self)
 
     def _showAbout(self):
+        '''Show the about dialog box.'''
         vals=(eidolon.__appname__,eidolon.__copyright__,eidolon.__version__,sys.version,str(QtCore.qVersion()),QtCore.PYQT_VERSION_STR)
         msg='%s\n%s\n\nVersion: %s\nPython Version: %s\nQt Version: %s\nPyQt Version: %s'%vals
         QtWidgets.QMessageBox.about(self,'About %s'%eidolon.__appname__,msg)
+        
+    def _checkVersion(self):
+        '''Check the application version against the repository API URL and show the results with the link to the site.'''
+        url=eidolon.__verurl__
+        title='Checking Version'
+        
+        try:
+            cver,nver,isnew=Utils.getVersionsFromRepoURL(url)
+            msg='''Current Version: %s<br>
+                   Newest Version: %s<br><br>
+                   <a href="%s">Download latest release.</a>
+                '''%(cver,nver or '???',eidolon.__website__)
+                
+            box=QtWidgets.QMessageBox(self)
+            box.setWindowTitle(title)
+            box.setTextFormat(Qt.RichText)
+            box.setText(textwrap.dedent(msg))
+            box.exec_()
+        except Exception as e:
+            QtWidgets.QMessageBox.about(self,title,repr(e))
 
     @signalmethod
     def setRenderWinSize(self,w,h):
