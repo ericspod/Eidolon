@@ -2159,21 +2159,21 @@ class TestCardiacMotionPlugin(unittest.TestCase):
     def tearDown(self):
         pass
     
-    def testTestVolume(self):
-        et=ElemType.Tet1NL
-        sizes=(1.0,2.0,3.0)
-        
-        nodes=listSum(eidolon.divideHextoTet(1))
-        inds=list(eidolon.group(range(len(nodes)),et.numNodes()))
-        
-        regionfield=eidolon.listToMatrix([1]*len(inds),'regionfield')
-        dsinds=('inds',ElemType._Tet1NL,inds)
-        
-        dds=[]
-        for size in sizes:
-            snodes=[vec3(*n)*vec3(size,0,0) for n in nodes] # scale nodes
-            dds.append(eidolon.PyDataSet('TestDS',snodes,dsinds))
-            
-        vols=calculateLinTetVolume(dds,regionfield,[1])
+#    def testTestVolume(self):
+#        et=ElemType.Tet1NL
+#        sizes=(1.0,2.0,3.0)
+#        
+#        nodes=listSum(eidolon.divideHextoTet(1))
+#        inds=list(eidolon.group(range(len(nodes)),et.numNodes()))
+#        
+#        regionfield=eidolon.listToMatrix([1]*len(inds),'regionfield')
+#        dsinds=('inds',ElemType._Tet1NL,inds)
+#        
+#        dds=[]
+#        for size in sizes:
+#            snodes=[vec3(*n)*vec3(size,0,0) for n in nodes] # scale nodes
+#            dds.append(eidolon.PyDataSet('TestDS',snodes,dsinds))
+#            
+#        vols=calculateLinTetVolume(dds,regionfield,[1])
         
         

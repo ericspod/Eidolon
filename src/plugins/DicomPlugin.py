@@ -48,8 +48,7 @@ from eidolon import (
 )
 import eidolon
 
-#eidolon.addLibraryFile('pydicom-1.0.0a1-py3-none-any.whl')
-eidolon.addLibraryFile('pydicom-1.0.0a1-py2.7') # PyDicom: https://github.com/darcymason/pydicom
+eidolon.addLibraryFile('pydicom-1.1.0.dev0') # PyDicom: https://github.com/darcymason/pydicom
 
 from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary

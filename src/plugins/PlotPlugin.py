@@ -47,7 +47,7 @@ import eidolon
 
 from ui import Ui_RegionGraphWidget
 
-eidolon.addLibraryFile('pyqtgraph-0.10.0+g0321ecb-py2-none-any')
+eidolon.addLibraryFile('pyqtgraph-0.10.0')
 
 import pyqtgraph as pg
 import numpy as np
