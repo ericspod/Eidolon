@@ -2326,11 +2326,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
                    <a href="%s">Download latest release.</a>
                 '''%(cver,nver or '???',eidolon.__website__)
                 
-            box=QtWidgets.QMessageBox(self)
-            box.setWindowTitle(title)
-            box.setTextFormat(Qt.RichText)
-            box.setText(textwrap.dedent(msg))
-            box.exec_()
+            self.showMsg(textwrap.dedent(msg),title)
         except Exception as e:
             QtWidgets.QMessageBox.about(self,title,repr(e))
 

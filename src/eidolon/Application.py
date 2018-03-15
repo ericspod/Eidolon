@@ -339,6 +339,11 @@ def initDefaultAssets(mgr):
     s9=mgr.createSpectrum('CardiacCT2D')
     s9.setSpectrumData(ctspec,ctspecpos,[vec3(hounsfieldToUnit(-150),0),vec3(hounsfieldToUnit(-100),1.0)])
     
+    s10=mgr.createSpectrum('Thermal')
+    s10.setSpectrumData([color(0.105,0.047,0.253), color(0.291,0.046,0.419), color(0.472,0.111,0.428),
+                         color(0.646,0.174,0.378), color(0.807,0.263,0.279), color(0.930,0.411,0.145),
+                         color(0.985,0.601,0.024), color(0.971,0.813,0.228), color(0.988,0.998,0.645)])
+    
     # create materials
 
     m=mgr.createMaterial('Default')

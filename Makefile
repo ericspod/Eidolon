@@ -120,7 +120,6 @@ else
 	rm dist/Eidolon/EidolonLibs/IRTK/*.dll
 	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 	cd dist/Eidolon && rm -rf libglib-2.0.so.0 libgobject-2.0.so.0 libgpg-error.so.0 share/icons
-    #cd dist/Eidolon && rm -rf libstdc++.so.6 libglib-2.0.so.0 libgobject-2.0.so.0 libgpg-error.so.0 share/icons
 	cp /usr/lib/x86_64-linux-gnu/libCg.so run.sh dist/Eidolon
 	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif

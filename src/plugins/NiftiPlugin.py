@@ -20,7 +20,7 @@
 from eidolon import vec3, rotator, taskroutine, splitPathExt, halfpi, Future,ImageScenePlugin, ImageSceneObject, ImageSceneObjectRepr
 import eidolon
 
-eidolon.addLibraryFile('nibabel-2.3.0.dev0') # http://nipy.org/nibabel/index.html
+eidolon.addLibraryFile('nibabel-2.3.0.dev0',False) # http://nipy.org/nibabel/index.html
 
 import nibabel
 from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes
