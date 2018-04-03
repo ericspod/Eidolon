@@ -104,14 +104,16 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float):
     im=np.ndarray(shape,dtype)
     timeseqs=imgobj.getVolumeStacks()
 
-    for t,ts in enumerate(timeseqs):
-        for d,dd in enumerate(ts):
-            arr=np.asarray(imgobj.images[dd].img).astype(dtype).T
+    # read the image data from the SharedImage objects in `imgobj' in the correct spatial order
+    for t,ts in enumerate(timeseqs): # each stack should represent a timestep which are given in temporal order
+        for d,dd in enumerate(ts): # each stack is in bottom-up order so fill im with the data from the SharedImage matrix
+            arr=np.asarray(imgobj.images[dd].img).astype(dtype).T # RealMatrix is stored in transposed order
             assert arr.shape==shape[:2]
             im[:,:,d,t]=arr
     
     yield im
     
+    # is writeBack is True, write the image data in im back to the SharedImage objects in `imgobj'
     if writeBack:
         imgobj.imagerange=(im.min(),im.max()) # reset the stored image range
         for t,ts in enumerate(timeseqs):
@@ -129,8 +131,9 @@ def transposeRowsColsNP(img):
     return np.swapaxes(img,0,1)
 
 
-def reverseDimensions(img):
-    return np.transpose(img,list(reversed(list(range(img.ndim)))))
+def reverseAxes(img):
+    '''Reverse the axes of numpy array `img'.'''
+    return np.transpose(img,list(reversed(range(img.ndim))))
 	
 
 def sampleImageRay(img,start,samplevec,numsamples):
@@ -438,19 +441,16 @@ def calculateMotionFFT(imgmat):
     out=np.zeros(imgmat.shape[:3],np.float32)
         
     for i in range(imgmat.shape[2]):
-        ff=scipy.fftpack.fftn(np.transpose(imgmat[:,:,i,:],(2,0,1)))
+        ff=scipy.fftpack.fftn(imgmat[:,:,i,:].transpose(2,0,1))
         iff=np.absolute(scipy.fftpack.ifftn(ff[1:]))
-        im=np.sum(iff,axis=0)
-#       im=np.max((iff-np.average(iff,axis=0))**2,axis=0)
-        
-        out[:,:,i]=im
+        out[:,:,i]=np.sum(iff,axis=0)
         
     return out
 
 
 def generateMotionMask(motion,percentile=90,filterSize=10):
     '''
-    Given a 3D image `motion' representing the FFT motion representation, generate a mask image of the same dimensions
+    Given a 3D image `motion' containing the FFT motion representation, generate a mask image of the same dimensions
     containing the area of motion greater than the given percentile which is then filtered with maximum filter of size
     `filterSize'. A larger `percentile' keeps less motion while a larger `filterSize' increases the bounds around the 
     selected motion area of interest.
@@ -473,9 +473,14 @@ def generateMaskConvexHull(mask):
     origshape=mask.shape
     mask=np.squeeze(mask) # if a 2D image is presented as a 3D image with depth 1 this must be compressed
     region=np.argwhere(mask>0) # select non-zero points on the mask image
+    
+    if region.shape[0]==0: # an empty mask produces an empty hull
+        return np.zeros(origshape,mask.dtype)
+    
     hull=scipy.spatial.ConvexHull(region) # define the convex hull
     de=scipy.spatial.Delaunay(region[hull.vertices]) # define a triangulation of the hull
     simplexpts=de.find_simplex(np.argwhere(mask==mask)) # do an inclusion test for every point of the mask
+    
     # reshape the points to the original's shape and mask by valid values
     return (simplexpts.reshape(origshape)!=-1).astype(mask.dtype) 
 

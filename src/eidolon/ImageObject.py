@@ -340,7 +340,7 @@ class ImageSceneObject(SceneObject):
         return minmax(((i.imgmin,i.imgmax) for i in self.images),ranges=True)
 
     def getArrayDims(self):
-        '''Get the 4 dimensions (rows, columns, height, time) for a 4D array containing the volume image data.'''
+        '''Get the 4 dimensions (columns, rows, height, time) for a 4D array containing the volume image data.'''
         inds=self.getTimestepIndices()
         return (self.maxcols,self.maxrows,len(inds[0][1]),len(inds))
 

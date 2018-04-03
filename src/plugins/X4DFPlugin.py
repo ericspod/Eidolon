@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import eidolon
-from eidolon import vec3,rotator,timing, first, frange, splitPathExt, reverseDimensions, StdProps, CombinedScenePlugin, MeshSceneObject
+from eidolon import vec3,rotator,timing, first, frange, splitPathExt, reverseAxes, StdProps, CombinedScenePlugin, MeshSceneObject
 
 import ast
 import os
@@ -142,7 +142,7 @@ def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=Non
     filename='%s.dat'%filenamePrefix if filenamePrefix else None
 
     imgarrmap=plugin.getImageObjectArray(obj)
-    imgarr=reverseDimensions(imgarrmap['array'])
+    imgarr=reverseAxes(imgarrmap['array'])
     pos=imgarrmap['pos']
     shape=imgarr.shape
     spacing=imgarrmap['spacing']*vec3(shape[1],shape[0],shape[2])
@@ -277,7 +277,7 @@ def importImages(x4,plugin):
             else:
                 offset,interval=tstart+i*tstep,0
                 
-            arr=reverseDimensions(arr) # array is stored in inverse index order from what is expected
+            arr=reverseAxes(arr) # array is stored in inverse index order from what is expected
 
             pos=vec3(*imgtrans.position)
             rot=rotator(*imgtrans.rmatrix.flatten())

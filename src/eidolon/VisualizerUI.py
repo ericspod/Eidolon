@@ -1473,6 +1473,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         self.historypos=0
         self.curline=''
         self.isExecuting=False
+        self.initCmds=['from __future__ import print_function, division','from eidolon import *']
 
         self.inputevent=threading.Event()
         self.inputevent.set()
@@ -1483,6 +1484,18 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
         self.orig_stdout=sys.stdout
         self.orig_stderr=sys.stderr
+
+        try:
+            self.ps1=sys.ps1
+        except:
+            self.ps1='>>> '
+
+        try:
+            self.ps2=sys.ps2
+        except:
+            self.ps2='... '
+
+        self.currentPrompt=self.ps1
 
         # try to read the setting for number of log file lines, default to 10000 if not present or the value is not a number
         try:
@@ -1504,18 +1517,6 @@ class ConsoleWidget(QtWidgets.QTextEdit):
             except Exception as e:
                 self.write('Cannot open console log file %r:\n%r\n'%(self.logfile,e))
 
-        try:
-            self.ps1=sys.ps1
-        except:
-            self.ps1='>>> '
-
-        try:
-            self.ps2=sys.ps2
-        except:
-            self.ps2='... '
-
-        self.currentPrompt=self.ps1
-
         self.thread=threading.Thread(target=self._interpretThread)
         self.thread.daemon=True
         self.thread.start()
@@ -1529,7 +1530,8 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         while not self.win.isExec:
             time.sleep(0.01) # wait for window to appear
 
-        self.execute('from eidolon import *')
+        for cmd in self.initCmds:
+            self.execute(cmd) # execute initialization commands
 
         multiline=False # indicates if following lines are expected to be part of a indented block
         while True:
