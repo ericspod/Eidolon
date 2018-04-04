@@ -908,8 +908,9 @@ class DicomPlugin(ImageScenePlugin):
         return self.mgr.runTasks([loadSITask()],f,loadSequential)
 
     def loadSeries(self,series,name=None,selection=None,loadSequential=False,isTimeDependent=None,crop=None):
-        '''Loads the Dicom files for the given series object into a SceneObject subtype.'''
+        '''Loads the Dicom files for the given series object or series ID string `series' into a SceneObject subtype.'''
 
+        # look for the series of `series' is a string 
         if isinstance(series,str):
             allseries=eidolon.listSum(dds.series for dds in self.dirobjs.values())
             series1=first(s for s in allseries if s.seriesID==series)

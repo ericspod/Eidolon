@@ -467,7 +467,7 @@ class SceneManager(TaskQueue):
         self.win.actionShow_Scene_Code.triggered.connect(lambda:self.showTextBox('Current Scene Code:','Scene Code',self.getSceneCode(),700,800))
 
         self.win.actionEnable_Tracing.triggered.connect(setTrace)
-        self.win.actionEnable_Logging.triggered.connect(self._saveLogFile)
+        self.win.actionEnable_Logging.triggered.connect(self._saveLogFileAction)
         self.win.actionGC_Collect.triggered.connect(self._collect)
 
         self.win.removeObjectButton.clicked.connect(self._removeObjectButton)
@@ -902,7 +902,7 @@ class SceneManager(TaskQueue):
         return lambda *args,**kwargs : self.callThreadSafe(func,*args,**kwargs)
         
     def checkFutureResult(self,future):
-        '''Checks the resulting value stored in Future `future', showing an exception if there is one.'''
+        '''Enqueues a task to check the resulting value in Future `future', showing an exception if one is raised.'''
         @self.addFuncTask
         def _check():
             try:
@@ -1958,7 +1958,7 @@ class SceneManager(TaskQueue):
 
         self.win.chooseScreenshotDialog(self.timestepMin,self.timestepMax,self.timeFPS,self.timeStepsPerSec,sources,lambda *args:self.addTasks(_save(*args)))
 
-    def _saveLogFile(self):
+    def _saveLogFileAction(self):
         '''Called when the user chooses a filename for a log file.'''
         savename=self.win.chooseFileDialog('Choose log filename',filterstr='Log files (*.log)',isOpen=False,confirmOverwrite=False)
         if savename!='':

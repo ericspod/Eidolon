@@ -875,8 +875,6 @@ def cleanupMatrices():
 
     elif isDarwin:
         for f in glob.glob(shmdir+'/*'):
-            #with f(f) as ff: # get the creator process ID from the file contents
-            #   fpid=int(ff.read())
             fpid=int(open(f).read())
             # remove f if this process created it or the creator doesn't exist
             if fpid==pid or not processExists(fpid):

@@ -2612,8 +2612,8 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         This is threadsafe and non-blocking.
         '''
         c = QtWidgets.QColorDialog.getColor(toQtColor(origcolor), self)
-        if validQVariantStr(c):
-            callback(c.getRgbF())
+        #if validQVariantStr(c):
+        callback(c.getRgbF())
 
     @signalmethod
     def chooseYesNoDialog(self,msg,title,callback):

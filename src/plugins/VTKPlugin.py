@@ -557,10 +557,13 @@ class VTKPlugin(MeshScenePlugin):
             root=tree.getroot()
             unstruc=root.find('UnstructuredGrid')
             poly=root.find('PolyData')
-            #appended=root.find('AppendedData')
+            appended=root.find('AppendedData')
             compressor=_get(root,'compressor')
             byteorder='<' if root.get('byte_order')=='LittleEndian' else '>'
             
+            #if appended and _get(appended,'encoding').lower()=='base64':
+            #    appended=base64.decodestring(root.find('AppendedData').text)
+                
             if unstruc is not None:
                 pieces=list(unstruc)
                 
@@ -608,6 +611,8 @@ class VTKPlugin(MeshScenePlugin):
                 
             elif poly is not None:
                 pieces=list(poly)
+                
+                #numPoints=int(_get(pieces[0],'NumberOfPoints')
                 
                 points=pieces[0].find('Points')
                 celldata=pieces[0].find('CellData') 

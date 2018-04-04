@@ -1014,10 +1014,11 @@ def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
     return mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
 
 
-def readBasicConfig(filename):
+def readBasicConfig(filename,evalfunc=ast.literal_eval):
     '''
     Read the config (.ini) file `filename' into a map of name/value pairs. The values must be acceptable inputs to
-    ast.literal_eval(), ie. literals. This is for security since eval() on untrusted input can do interesting things.
+    `evalfunc' which is ast.literal_eval() by default, ie. literals. Using literal_eval is for security since eval() 
+    on untrusted input can do interesting things.
     '''
     cparser=configparser.RawConfigParser()
     cparser.optionxform=str
@@ -1030,7 +1031,7 @@ def readBasicConfig(filename):
     results={}
     for s in sections:
         for n,v in cparser.items(s):
-            results[n]=ast.literal_eval(v)
+            results[n]=evalfunc(v)
 
     return results
 

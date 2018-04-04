@@ -17,9 +17,22 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from eidolon import *
-from ui import Ui_OpenImgStackDialog
+import os,glob
+from eidolon import (
+    ImageScenePlugin, ImageSceneObject, vec3, rotator,
+    sortFilenameList, uniqueStr, splitPathExt, fillList, listSum, taskroutine, taskmethod, loadImageStack
+)
+import eidolon
 
+from ui import QtWidgets, Ui_OpenImgStackDialog
+
+import numpy as np
+
+try:
+    from imageio import imwrite
+except:
+    from scipy.misc import imsave as imwrite
+    
 
 class ChooseImgStackDialog(QtWidgets.QDialog,Ui_OpenImgStackDialog):
     def __init__(self, plugin,parent=None):
@@ -66,11 +79,37 @@ class ImageStackPlugin(ImageScenePlugin):
         ImageScenePlugin.init(self,plugid,win,mgr)
         if win:
             win.addMenuItem('Import','ImgStackLoad'+str(plugid),'&Image Stack Directory',self._openDirDialog)
+            win.addMenuItem('Export','ImgStackSave'+str(plugid),'&Image Stack Directory',self._saveDirDialog)
             
     def loadObject(self,filename,name=None,**kwargs):
         filenames=kwargs.pop('filenames',[filename])
         name=name or splitPathExt(filename)[1]
         return self.loadImageStackObject(name,filenames,**kwargs)
+    
+    @taskmethod('Saving Image Files')
+    def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,**kwargs):
+        name=eidolon.getValidFilename(obj.getName())
+        formatname=kwargs.get('format','png')
+        
+        with eidolon.processImageNp(obj) as o:
+            depth,time=o.shape[2:]
+            
+            if task:
+                task.setMaxProgress(depth*time)
+                
+            for t,d in eidolon.trange(time,depth):
+                im=np.asarray(o[:,:,d,t])
+                im=eidolon.rescaleArray(im,0,255)
+                
+                filename=os.path.join(path,'%s_%.4i_%.4i.%s'%(name,d,t,formatname))
+                
+                if not overwrite and os.path.exists(filename):
+                    raise IOError('File already exists: %r'%filename)
+                    
+                imwrite(filename,im,formatname)
+                
+                if task:
+                    task.setProgress(d+t*depth)
 
     def loadImageStackObject(self,name,filenames,pos=vec3(),rot=rotator(),spacing=(1.0,1.0),imgsep=1.0,sortIndex=None,regex=None,reverse=False,task=None):
         '''
@@ -81,7 +120,7 @@ class ImageStackPlugin(ImageScenePlugin):
         is (optionally) sorted and then loaded into a time series object.
         '''
 
-        isTimed=isIterable(filenames[0]) and not isinstance(filenames[0],str)
+        isTimed=eidolon.isIterable(filenames[0]) and not isinstance(filenames[0],str)
 
         if isTimed:
             if sortIndex!=None:
@@ -118,7 +157,7 @@ class ImageStackPlugin(ImageScenePlugin):
         @taskroutine('Loading Image Stack')
         def _loadStack(name,filenames,task=None):
             obj=self.loadImageStackObject(name,filenames,task=task)
-            centerImagesLocalSpace(obj)
+            eidolon.centerImagesLocalSpace(obj)
             self.mgr.addSceneObject(obj)
         
         d=ChooseImgStackDialog(self,self.win)
@@ -126,6 +165,18 @@ class ImageStackPlugin(ImageScenePlugin):
         if result==1:
             name=uniqueStr(str(d.nameEdit.text()),[o.getName() for o in self.mgr.objs])
             self.mgr.runTasks([_loadStack(name,d.filenames)])
+            
+    def _saveDirDialog(self):
+        obj=self.win.getSelectedObject()
+        if isinstance(obj,eidolon.SceneObjectRepr):
+            obj=obj.parent
+
+        if not isinstance(obj,ImageSceneObject):
+            self.mgr.showMsg('Error: Must select image object to export','Image Export')
+            
+        d=self.win.chooseDirDialog('Choose image destination directory')
+        if d:
+            self.saveObject(obj,d,True)
         
         
-addPlugin(ImageStackPlugin())
+eidolon.addPlugin(ImageStackPlugin())

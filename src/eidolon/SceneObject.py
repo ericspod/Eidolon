@@ -805,7 +805,7 @@ class MeshSceneObjectRepr(SceneObjectRepr):
             elif name=='height':
                 fig.setDimension(fig.getWidth(),value)
             elif name=='glyphscale':
-                fig.setGlyphScale(vec3(*value))
+                fig.setGlyphScale(vec3(*toIterable(value)))
             elif name=='glyphname':
                 fig.setGlyphName(value)
 
