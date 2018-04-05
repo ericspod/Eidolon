@@ -98,8 +98,7 @@ class ImageStackPlugin(ImageScenePlugin):
                 task.setMaxProgress(depth*time)
                 
             for t,d in eidolon.trange(time,depth):
-                im=np.asarray(o[:,:,d,t])
-                im=eidolon.rescaleArray(im,0,255)
+                im=eidolon.rescaleArray(o[:,:,d,t].T,0,255)
                 
                 filename=os.path.join(path,'%s_%.4i_%.4i.%s'%(name,d,t,formatname))
                 
