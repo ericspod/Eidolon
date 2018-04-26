@@ -1366,7 +1366,6 @@ class SegmentPlugin(ScenePlugin):
 
         return self.mgr.runTasks(_create(),f)
 
-
     def getSegObjectDock(self,obj,w=400,h=400):
         @self.mgr.proxyThreadSafe
         def createWidget():

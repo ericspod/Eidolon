@@ -22,6 +22,9 @@ This defines the SceneObject and SceneObjectRepr objects and derivatives. These 
 representations of that data respectively.
 '''
 
+import functools
+import inspect
+
 from renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
         IndexMatrix, ColorMatrix,MatrixIndexBuffer, MatrixVertexBuffer, PyIndexBuffer, PyVertexBuffer
 from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
@@ -80,11 +83,23 @@ class SceneObject(object):
         try:
             return self.__getattribute__(name)
         except AttributeError:
-            meth=getattr(self.plugin,name,None)
-            if getattr(meth,'__ispluginmethod__',False):
-                return lambda *args,**kwargs:meth(self,*args,**kwargs)
-            else:
-                raise
+            # Search the base types of self.plugin for a method called `name', if found to be a 
+            # delegated method in any of the types return the wrapped instance from self.plugin.
+            for cls in inspect.getmro(type(self.plugin)):
+                meth=getattr(cls,name,None)
+                if getattr(meth,'__isdelegatedmethod__',False):
+                    meth=getattr(self.plugin,name) # get meth again which will be different if overridden
+                    return functools.partial(meth,self)
+                
+            raise # if no plugin method found, raise the exception
+                    
+#            meth=getattr(self.plugin,name,None)
+#            if getattr(meth,'__ispluginmethod__',False):
+#                #wrapper=lambda *args,**kwargs:meth(self,*args,**kwargs)
+#                #return wraps(meth)(wrapper)
+#                return functools.partial(meth,self)
+#            else:
+#                raise
 
     def getLabel(self):
         '''Returns the UI label.'''
