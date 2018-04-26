@@ -57,6 +57,18 @@ def getReprTypeFromStrBox(strbox):
     return first(i[0] for i in ReprType if i[1]==tstr)
 
 
+def pluginmethod(meth):
+    '''
+    Decorator for marking plugin methods as callable from scene objects or representations associated with that plugin.
+    The method should accept an scene object/representation as its first argument after self. When the method is called
+    with the scene object/representation as the receiver, a proxy callable is returned which places the receiver as the
+    first argument followed by whatever other arguments are given. This allows calls of the form obj.plugin.foo(obj,...)
+    to be replaced with obj.foo(...).
+    '''
+    setattr(meth,'__ispluginmethod__',True)
+    return meth
+
+
 class ScenePlugin(object):
     '''
     Base class for all plugins, includes code for a basic properties box for scene objects and representations.
@@ -70,7 +82,7 @@ class ScenePlugin(object):
         - renameObjFiles - renames an object's file(s)
         - getObjFiles - get the files the given object was loaded from
     '''
-
+    
     def __init__(self,name):
         self.plugid=-1 # plugin ID number
         self.win=None # main window, may be None if no UI is created
@@ -113,6 +125,7 @@ class ScenePlugin(object):
                 
         self.mgr.addFuncTask(_remove,'Removing Files')
 
+    @pluginmethod
     def getScriptCode(self,obj,**kwargs):
         '''
         Return the Python code string to create, load, or initialize the given object. This is called by ScriptWriter
@@ -185,12 +198,6 @@ class ScenePlugin(object):
         '''Return a list of test tuples of the form (callable, arg1, arg2,...) to be called with Nose.'''
         return []
 
-    def getReprParamHelp(self,obj,reprtype):
-        '''Get the help text for the parameters for `obj' and representation type `reprtype'.'''
-        params=self.getReprParams(obj,reprtype)
-        s='Representation type "%s":\n   ' %reprtype
-        return s+'\n   '.join(map(str,params))
-
     def acceptFile(self,filename):
         '''
         Return True if `filename' is a file which can be loaded by this plugin, and if other preconditions are met.
@@ -210,6 +217,7 @@ class ScenePlugin(object):
         '''
         raise NotImplementedError('Cannot load files as SceneObjects')
 
+    @pluginmethod
     def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):
         '''
         Save a SceneObject `obj' to the file or directory `path'. The plugin for `obj' need not necessarily be `self' if
@@ -222,6 +230,7 @@ class ScenePlugin(object):
         '''
         raise NotImplementedError('Cannot save files for this object')
 
+    @pluginmethod
     def checkFileOverwrite(self,obj,dirpath,name=None):
         '''
         Returns the list of file paths which would be overwritten if `obj' was saved to the directory `dirpath' with
@@ -231,6 +240,7 @@ class ScenePlugin(object):
         '''
         raise NotImplementedError('Cannot determine file overwrites')
 
+    @pluginmethod
     def getObjFiles(self,obj):
         '''
         Get the paths to the files `obj' was loaded from. Returns [] if `obj' wasn't loaded from files but can be
@@ -238,6 +248,7 @@ class ScenePlugin(object):
         '''
         return None
 
+    @pluginmethod
     def renameObjFiles(self,obj,oldname,overwrite=False):
         '''
         Rename files for object `obj' so that their names match the current name, previous name being `oldname'. This
@@ -246,6 +257,7 @@ class ScenePlugin(object):
         '''
         raise NotImplementedError('Cannot move files when renaming objects')
 
+    @pluginmethod
     def copyObjFiles(self,obj,sdir,overwrite=False):
         '''
         Copy the object `obj' to directory `sdir' and set its internal representation to match the filename(s). This
@@ -259,6 +271,7 @@ class ScenePlugin(object):
         assert obj.plugin==self
         pass
 
+    @pluginmethod
     def createRepr(self,obj,reprtype,**kwargs):
         '''
         Returns a representation of 'obj' SceneObject instance as defined by the 'reprtype' type and
@@ -266,14 +279,24 @@ class ScenePlugin(object):
         '''
         pass
 
+    @pluginmethod
     def getReprParams(self,obj,reprtype):
         '''Returns the list of ParamDef objects defining the parameters for the given given representation type.'''
         return []
 
+    @pluginmethod
+    def getReprParamHelp(self,obj,reprtype):
+        '''Get the help text for the parameters for `obj' and representation type `reprtype'.'''
+        params=self.getReprParams(obj,reprtype)
+        s='Representation type "%s":\n   ' %reprtype
+        return s+'\n   '.join(map(str,params))
+
+    @pluginmethod
     def getReprTypes(self,obj):
         '''Return the ReprType identifiers for the valid representations of this object.'''
         return []
 
+    @pluginmethod
     def createHandles(self,rep,**kwargs):
         '''
         Create a list of Handle objects for representation `rep'. By default this creates a single TransFormHandle
@@ -328,6 +351,7 @@ class ScenePlugin(object):
         prop.createButton.clicked.connect(lambda:self._createReprButton(obj,prop))
         return prop
 
+    @pluginmethod
     def createReprPropBox(self,rep):
         '''Creates a properties dialog box for SceneObjectRepr 'rep'. This should be a new instance of a QWidget subclass.'''
         prop=VisualizerUI.ObjectReprPropertyWidget()
@@ -376,6 +400,7 @@ class ScenePlugin(object):
 
         return prop
 
+    @pluginmethod
     def addSceneObject(self,obj):
         '''
         Called by the manager when a scene object is added, returns the properties dialog box and an update function.
@@ -387,6 +412,7 @@ class ScenePlugin(object):
         else:
             return None,None
 
+    @pluginmethod
     def addSceneObjectRepr(self,rep):
         '''
         Called by the manager when a representation is added, returns the properties dialog box, update function for
@@ -399,10 +425,18 @@ class ScenePlugin(object):
         else:
             return None,None,None
 
+    @pluginmethod
     def applyMaterial(self,rep,mat,**kwargs):
-        '''Applies the material 'mat' to the representation 'rep', usually called by method of rep of the same name.'''
+        '''
+        Apply material `mat' to the representation `rep', which may make internal copies of the material with differing
+        properties. Users should not rely on changing materials to have an effect on representations after application.
+        The argument `mat' must be a material object. The named argument `field' is used to specify what field to use
+        for coloration or vector determination. The value of this argument should be a RealMatrix object containing
+        the data field, or the name of the data field stored by the representation's SceneObject parent. 
+        '''
         pass
 
+    @pluginmethod
     def objectMenuItem(self,obj,item):
         '''Called when the right-click menu for `obj' is clicked on item `item'. Override this to handle such events.'''
         pass
@@ -430,7 +464,7 @@ class ScenePlugin(object):
 
     def _applyMaterialButton(self,rep,prop):
         matname=str(prop.matnameBox.currentText())
-        rep.applyMaterial(self.mgr.getMaterial(matname),prop=prop)
+        self.applyMaterial(rep,self.mgr.getMaterial(matname),prop=prop)
         self.mgr.addFuncTask(prop.update)
 
     def _setReprVisibleCheckbox(self,rep):
@@ -457,6 +491,7 @@ class MeshScenePlugin(ScenePlugin):
     def __init__(self,name):
         ScenePlugin.__init__(self,name)
 
+    @pluginmethod
     def getScriptCode(self,obj,**kwargs):
         configSection=kwargs.get('configSection',False)
         namemap=kwargs.get('namemap',{})
@@ -507,6 +542,7 @@ class MeshScenePlugin(ScenePlugin):
     def getIcon(self,obj):
         return IconName.Mesh
 
+    @pluginmethod
     def getObjFiles(self,obj):
         '''By default there is no way to save a mesh but they are savable so return [] instead of None.'''
         return []
@@ -695,6 +731,7 @@ class MeshScenePlugin(ScenePlugin):
 
         return algorithm(dataset,name,refine,externalOnly,task,**kwargs)
 
+    @pluginmethod
     def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
         f=Future()
 
@@ -750,6 +787,7 @@ class MeshScenePlugin(ScenePlugin):
         
         return self.mgr.runTasks(tasks,f)
 
+    @pluginmethod
     def loadDataField(self,obj,*args,**kwargs):
         '''
         Loads a data field for the given 'obj' SceneObject instance. This is typically called by the method of 'obj'
@@ -758,6 +796,7 @@ class MeshScenePlugin(ScenePlugin):
         '''
         pass
 
+    @pluginmethod
     def getReprParams(self,obj,reprtype):
         assert reprtype in ReprType, 'Unknown repr type: '+str(reprtype)
         maxdim=max([0]+[ElemType[e].dim for e in obj.elemTypes()])
@@ -823,6 +862,7 @@ class MeshScenePlugin(ScenePlugin):
 
         return params
 
+    @pluginmethod
     def getReprTypes(self,obj):
         elemtypes=obj.elemTypes()
         maxdim=max([0]+[ElemType[e].dim for e in elemtypes]) # maximal spatial dimensions for the stored index sets
@@ -881,6 +921,7 @@ class MeshScenePlugin(ScenePlugin):
             self.mgr.addTasks(_createRepr(obj,item))
 
     @timing
+    @pluginmethod
     def applyMaterial(self,rep,mat,**kwargs):
         @taskroutine('Apply Material')
         @timing
@@ -996,10 +1037,12 @@ class ImageScenePlugin(ScenePlugin):
     def getIcon(self,obj):
         return IconName.Image
 
+    @pluginmethod
     def getObjFiles(self,obj):
         '''By default there is no way to save an image but they are savable so return [] instead of None.'''
         return []
 
+    @pluginmethod
     def getReprTypes(self,obj):
         types=[ReprType._imgstack]
 
@@ -1013,6 +1056,7 @@ class ImageScenePlugin(ScenePlugin):
 
         return types
 
+    @pluginmethod
     def getReprParams(self,obj,reprtype):
         assert reprtype in ReprType, 'Unknown repr type: '+str(reprtype)
         params=[]
@@ -1054,6 +1098,7 @@ class ImageScenePlugin(ScenePlugin):
 
         return [reprtype],conf
 
+    @pluginmethod
     def setCTImageRange(self,obj,isCT):
         if isCT:
             obj.imagerange=tuple(ctImageRange)
@@ -1143,6 +1188,7 @@ class ImageScenePlugin(ScenePlugin):
 
         return prop
 
+    @pluginmethod
     def applyMaterial(self,rep,mat,**kwargs):
         assert mat!=None
         rep.imgmat=mat
@@ -1150,6 +1196,7 @@ class ImageScenePlugin(ScenePlugin):
         rep.copySpec=mat.numSpectrumValues()>0 or mat.numAlphaCtrls()>0
         self.mgr.updateSceneObjectRepr(rep)
 
+    @pluginmethod
     def createRepr(self,obj,reprtype,**kwargs):
         if reprtype not in (ReprType._imgstack,ReprType._imgtimestack,ReprType._imgvolume,ReprType._imgtimevolume):
             raise ValueError('Unsupported representation type '+reprtype)
@@ -1177,12 +1224,15 @@ class ImageScenePlugin(ScenePlugin):
     def createSceneObject(self,name,images,source=None,isTimeDependent=None):
         return ImageSceneObject(name,source,images,self,isTimeDependent)
 
+    @pluginmethod
     def clone(self,obj,name):
         return self.createSceneObject(name,[i.clone() for i in obj.images],obj.source,obj.isTimeDependent)
 
+    @pluginmethod
     def cropXY(self,obj,name,minx,miny,maxx,maxy):
         return self.createSceneObject(name,[i.crop(minx,miny,maxx,maxy) for i in obj.images],obj.source,obj.isTimeDependent)
 
+    @pluginmethod
     def extractTimesteps(self,obj,name,indices=None,timesteps=None,setTimestep=False):
         '''
         Create a clone of 'obj' containing only the images of the selected timesteps. Exactly one of `indices'
@@ -1223,6 +1273,7 @@ class ImageScenePlugin(ScenePlugin):
         images=ImageAlgorithms.generateImageStack(width,height,slices,timesteps,pos,rot,spacing,name)
         return self.createSceneObject(name,images,src,timesteps>1)
 
+    @pluginmethod
     def createRespacedObject(self,obj,name,spacing=vec3(1)):
         '''Create an image object occupying the same space as `obj' with voxel dimensions given by `spacing'.'''
         trans=obj.getVolumeTransform()
@@ -1306,6 +1357,7 @@ class ImageScenePlugin(ScenePlugin):
 
         return obj
 
+    @pluginmethod
     def getImageObjectArray(self,obj,datatype=float):
         '''
         Create a 4D Numpy array of type `datatype' from the image data in `obj'. This array is intended to be
@@ -1352,9 +1404,11 @@ class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
     def getIcon(self,obj):
         return self._getSupertype(obj).getIcon(self,obj)
 
+    @pluginmethod
     def getReprTypes(self,obj):
         return self._getSupertype(obj).getReprTypes(self,obj)
 
+    @pluginmethod
     def getReprParams(self,obj,reprtype):
         return self._getSupertype(obj).getReprParams(self,obj,reprtype)
 
@@ -1382,9 +1436,11 @@ class CombinedScenePlugin(MeshScenePlugin,ImageScenePlugin):
     def createReprPropBox(self,rep):
         return self._getSupertype(rep).createReprPropBox(self,rep)
 
+    @pluginmethod
     def applyMaterial(self,rep,mat,**kwargs):
         return self._getSupertype(rep).applyMaterial(self,rep,mat,**kwargs)
 
+    @pluginmethod
     def createRepr(self,obj,reprtype,**kwargs):
         return self._getSupertype(obj).createRepr(self,obj,reprtype,**kwargs)
 

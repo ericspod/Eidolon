@@ -574,6 +574,15 @@ def cropMotionImage(obj,name,percentile=90,filterSize=10):
     mask=generateMotionMask(motion,percentile,filterSize)
     inds=scipy.ndimage.find_objects(mask)[0]
     return obj.plugin.cropXY(obj,name,inds[0].start, inds[1].start, inds[0].stop, inds[1].stop)
+  
+
+def maskMotionImage(obj,name,percentile=90,filterSize=10):
+    motion=calculateMotionField(obj)
+    mask=generateMotionMask(motion,percentile,filterSize)
+    
+    out=obj.plugin.clone(obj,name)
+    
+    return out
     
 
 def centerImagesLocalSpace(obj):

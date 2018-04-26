@@ -75,6 +75,16 @@ class SceneObject(object):
         self.kwargs=dict(kwargs) # keyword arguments passed in through the constructor
         self.reprtypes=[] # list of possible representation types
         self.proptuples=[] # list of cached property tuples, filled in by getPropTuples()
+        
+    def __getattr__(self,name):
+        try:
+            return self.__getattribute__(name)
+        except AttributeError:
+            meth=getattr(self.plugin,name,None)
+            if getattr(meth,'__ispluginmethod__',False):
+                return lambda *args,**kwargs:meth(self,*args,**kwargs)
+            else:
+                raise
 
     def getLabel(self):
         '''Returns the UI label.'''
@@ -95,10 +105,6 @@ class SceneObject(object):
     def setName(self,name):
         '''Sets the name of the object.'''
         self.name=name
-
-#   def getAABB(self,isTransformed=False,isDerived=True):
-#       '''Returns the untransformed axis-aligned bound box enclosing all existing representations.'''
-#       return BoundBox.union(r.getAABB(isTransformed,isDerived) for r in self.reprs if r.isVisible())
 
     def getReprTypes(self):
         '''Returns an iterable of ReprType names identifying valid representations of this object.'''
@@ -131,32 +137,6 @@ class SceneObject(object):
         ts=self.getTimestepList()
         return ts[0],avgspan(ts) if len(ts)>1 else 0
 
-    def createRepr(self,reprtype,refine=0,**kwargs):
-        '''
-        Create a representation for this dataset. 'reprType' is a member of ReprType, 'refine' is the refinement level,
-        and any other named arguments can be passed to the SceneObjectRepr object. This method calls the plugin's
-        method of the same name to implement its behaviour.
-        '''
-        kwargs['refine']=refine
-        return self.plugin.createRepr(self,reprtype,**kwargs)
-
-#   def getScriptCode(self,**kwargs):
-#       '''Returns the code string to recreate this object given the code generation parameters in `kwargs.'''
-#       return self.plugin.getScriptCode(self,**kwargs)
-#
-#   def copyObjFiles(self,sdir):
-#       self.plugin.copyObjFiles(self,sdir)
-#
-#   def getObjFiles(self):
-#       return self.plugin.getObjFiles(self)
-#
-#   def renameObjFiles(self,oldname):
-#       return self.plugin.renameObjFiles(self,oldname)
-
-    def getReprParams(self,reprtype):
-        '''Returns a list of ParamDef objects defining the parameters for creating the given representation type.'''
-        return self.plugin.getReprParams(self,reprtype)
-
     def __repr__(self):
         return '%s<%r @ 0x%.16x>'%(self.__class__.__name__,self.getName(),id(self))
 
@@ -181,14 +161,16 @@ class SceneObjectRepr(object):
 
         self.rparent=None # parent SceneObjectRepr instance
         self.children=set()
-
-#   def getScriptCode(self,**kwargs):
-#       '''Returns the code string to recreate this object given the code generation parameters in `kwargs.'''
-#       return self.plugin.getScriptCode(self,**kwargs)
-#
-#   def copyObjFiles(self,sdir):
-#       '''Save the representation to files in the directory `sdir' with names based on the object name.'''
-#       self.plugin.copyObjFiles(self,sdir)
+        
+    def __getattr__(self,name):
+        try:
+            return self.__getattribute__(name)
+        except AttributeError:
+            meth=getattr(self.plugin,name,None)
+            if getattr(meth,'__ispluginmethod__',False):
+                return lambda *args,**kwargs:meth(self,*args,**kwargs)
+            else:
+                raise
 
     def isInScene(self):
         '''Returns true if this representation has been initialized and included into the scene, false otherwise.'''
@@ -397,17 +379,6 @@ class SceneObjectRepr(object):
         '''Removes the representation from the scene, but may not destroy scene data (ie. just sets visibility).'''
         pass
 
-    def applyMaterial(self,mat,**kwargs):
-        '''
-        Apply the given material to this representation, which may make internal copies of the material with differing
-        properties. Users should not rely on changing materials to have an effect on representations after application.
-        The argument `mat' must be a material object. The named argument `field' is used to specify what field to use
-        for coloration or vector determination. The value of this argument should be a RealMatrix object containing
-        the data field, or the name of the data field stored by the representation's SceneObject parent. By default
-        this uses the plugin's method of the same name to implement its behaviour.
-        '''
-        self.plugin.applyMaterial(self,mat,**kwargs)
-
     def applySpectrum(self,spec):
         '''Replaces the spectrum information for each internal material with that in `spec'.'''
         for m in self.enumInternalMaterials():
@@ -505,6 +476,15 @@ class MeshSceneObject(SceneObject):
         assert datasets!=None
         self.datasets=list(toIterable(datasets)) # initial dataset or list of datasets
         self.timestepList=list(range(len(self.datasets))) # list of timestep values
+
+    def createRepr(self,reprtype,refine=0,**kwargs):
+        '''
+        Create a representation for this dataset. 'reprType' is a member of ReprType, 'refine' is the refinement level,
+        and any other named arguments can be passed to the SceneObjectRepr object. This method calls the plugin's
+        method of the same name to implement its behaviour.
+        '''
+        kwargs['refine']=refine
+        return self.plugin.createRepr(self,reprtype,**kwargs)
 
     def getPropTuples(self):
         if not self.proptuples:
@@ -759,7 +739,7 @@ class MeshSceneObjectRepr(SceneObjectRepr):
         attrs=[getattr(a,name) for a in self.figs if hasattr(a,name)]
 
         if attrs==[]:
-            return self.__getattribute__(name)
+            return SceneObjectRepr.__getattr__(self,name)
 
         return lambda *args,**kwargs:[a(*args,**kwargs) for a in attrs]
 
