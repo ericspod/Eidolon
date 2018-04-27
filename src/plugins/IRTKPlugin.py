@@ -785,7 +785,7 @@ class IRTKPluginMixin(object):
 #       return f
 
     @taskmethod('Creating Isotropic Object')
-    def createIsotropicObject(self,obj,cropEmpty,task=None):
+    def createIsotropicObject(self,obj,cropEmpty,spacing=1.0,task=None):
         obj=self.findObject(obj)
 
         outname=self.getUniqueShortName(obj.getName(),'Iso')
@@ -794,7 +794,7 @@ class IRTKPluginMixin(object):
         if cropEmpty:
             obj=self.emptyCropObject(obj,False)
 
-        isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso')
+        isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso',vec3(spacing))
         resampleImage(obj,isoobj)
         isoobj.plugin.saveObject(isoobj,outfile,setFilenames=True)
         self.addObject(isoobj)

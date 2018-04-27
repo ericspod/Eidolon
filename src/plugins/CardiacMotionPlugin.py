@@ -1332,11 +1332,12 @@ class CardiacMotionProject(Project):
         name=str(self.alignprop.isoCreateBox.currentText())
         #shapetype=str(self.alignprop.interpTypeBox.currentText())
         cropEmpty=self.alignprop.emptyCropBox.isChecked()
+        spacing=self.alignprop.isoSizeBox.value()
 
         #if cropEmpty:
         #   name=self.CardiacMotion.emptyCropObject(name,False)
 
-        f=self.CardiacMotion.createIsotropicObject(name,cropEmpty)
+        f=self.CardiacMotion.createIsotropicObject(name,cropEmpty,spacing)
         self.mgr.checkFutureResult(f)
 
     def _calculateThicknessButton(self):

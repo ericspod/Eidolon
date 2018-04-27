@@ -124,7 +124,7 @@ def pointInContour(pt,contour,plane=None,bb=None,center=None):
     if center==pt:
         return True
     else:
-        ray=Ray(pt,center-pt) # project a ray from `pt' to the first contour point, it doesn't matter which contour point is chosen
+        ray=Ray(pt,center-pt) # project a ray from `pt' to the center point
         intersects=list(yieldContourIntersects(ray,contour)) # list the intersection points with the contour
         return len(intersects)%2==1 # `pt' is in the contour if the ray intersects the contour an odd number of times
 
@@ -1459,11 +1459,16 @@ class SegmentPlugin(ScenePlugin):
         return self.mgr.runTasks(_create(segobj,name,refine,reinterpolateVal,calcAHA,isVolume,inner),f)
 
     @eidolon.taskmethod('Creating Segmentation Mask')
-    def createImageMask(self,segobj,name,template,labelfunc='1',task=None):
+    def createImageMask(self,segobj,name,template,labelfunc='1',refine=1,elemtype=None,task=None):
         '''Create a mask image object from `segobj'. See generateImageMask() for description.'''
         name=name or (segobj.getName()+'Mask')
         contours,_,times=zip(*segobj.enumContours())
         contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
+
+        if refine>1:
+            elemtype=elemtype or ElemType.Line1PCR
+            contours=[reinterpolateCircularContour(c,elemtype,vec3.X(),refine,len(c)*refine) for c in contours]
+        
         mask=generateImageMask(name,contours,times,template,labelfunc,task)
         mask.source=None
         mask.plugin=None
@@ -1550,6 +1555,8 @@ class SegmentPlugin(ScenePlugin):
         w=obj.getWidget()
         if w:
             w.save()
+            
+        refine=prop.refineMaskBox.value()
 
         conmap=mapContoursToPlanes(obj.enumContours())
         
@@ -1583,7 +1590,7 @@ class SegmentPlugin(ScenePlugin):
             else:
                 maskfunc='2 if len(contours)>1 else 3' # 2-label mask, put down 2 for hemisphere and 1 for cavity
 
-            f=self.createImageMask(obj,obj.getName()+'_Mask',imgobj,maskfunc)
+            f=self.createImageMask(obj,obj.getName()+'_Mask',imgobj,maskfunc,refine)
             self.mgr.checkFutureResult(f)
             self.mgr.addSceneObjectTask(f)
             
