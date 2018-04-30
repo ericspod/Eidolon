@@ -451,12 +451,14 @@ def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,Ind
 @timing
 def calculateElemExtAdj(dataset,object acceptIndex=lambda i:isSpatialIndex(i,3),int treedepth=2,task=None):
     '''
-    For each index matrix which is acceptable according to 'acceptIndex', this generates an external face index
-    and a normal index, and adds the normal vectors to the node list. Each new index's name is the original index's
-    name plus the appropriate suffix in MatrixType. For each element in the original matrix, the normal matrix
-    stores a line with a node index for each face in the same order, so eg. a tet will have a line with 4 indices.
-    The external matrix stores 2 indices for each external face in the original matrix, the first value being the
-    element index and the second the face number.
+    For each index matrix which is acceptable according to `acceptIndex', this generates a face adjacency and external
+    face matrix specifying information about how adjacent 3D elements are related. The adjacency matrix has a row for
+    each element of the original matrix with a column for each face storing which element that face is adjacent to plus
+    another further set of columns storing which face of that adjacent element is shared. Eg. an adjacency matrix for a
+    linear tet will have 8 columns, where column i stores which element face i is adjacent to and column i+4 stores which
+    face is shared. The external face matrix have a column for each face containing 1 if the face is external, 0 otherwise.
+    The names of the matrices are derived from the original index matrix's name with MatrixTpye.adj[1] or external[1]
+    appended.    
     '''
 
     cdef IndexMatrix indmat,octree, adj, ext

@@ -769,7 +769,7 @@ class MeshScenePlugin(ScenePlugin):
                     rep=TDMeshSceneObjectRepr(subreprs,obj,reprtype,obj.reprcount,matname)
                     
                 if matname!='Default':
-                    self.applyMaterial(rep,matname)
+                    self.applyMaterial(rep,matname,**kwargs)
 
                 obj.reprs.append(rep)
                 f.setObject(rep)
