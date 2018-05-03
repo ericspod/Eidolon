@@ -453,8 +453,8 @@ class ImageSceneObject(SceneObject):
         '''
         Returns a map from (vec3,rotator) pairs to the indices of all images (in temporal order) having that
         position and orientation. Each value in the map thus indexes the images defining a 2D slice in time. The
-        ordering of the indices is depedent on the ordering of self.images if multiple colinear images have the same
-        timestep.
+        ordering of the indices is depedent on the ordering of self.images if multiple colicated images have the 
+        same timestep.
         '''
         timeorientmap={}
         for i,img in enumerate(self.images):
@@ -521,7 +521,7 @@ class ImageSceneObject(SceneObject):
         if len(self.proptuples)==0:
             ts=self.getTimestepList()
             if len(ts)>1:
-                ts='%i, start: %i, step: %i'%(len(ts),ts[0],avgspan(ts))
+                ts='%i, start: %.3f, step: %.3f'%(len(ts),ts[0],avgspan(ts))
             else:
                 ts='Static at time %i'%self.images[0].timestep
 

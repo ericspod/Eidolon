@@ -43,7 +43,7 @@ except:
     from io import StringIO
 
 from eidolon import (
-    vec3, rotator, color, enum, concurrent, timing, queue, first, taskroutine, clamp, taskmethod, fillList,
+    vec3, rotator, color, enum, concurrent, timing, queue, first, taskroutine, clamp, taskmethod, fillList, avgspan,
     ImageScenePlugin, ImageSceneObject, ImageSceneObjectRepr, BaseCamera2DWidget, SharedImage, Qt, QtWidgets, Future
 )
 import eidolon
@@ -73,6 +73,7 @@ rowsTag='Rows'
 colsTag='Columns'
 triggerTag='TriggerTime'
 commentTag='ImageComments'
+afterStart=Tag(0x0019,0x1016) # tag for [TimeAfterStart]
 
 # non-standard Dicom tags that are used by different groups
 NonstandardTags=enum(
@@ -145,11 +146,15 @@ def readDicomTimeValue(series_or_dcm):
     trigger=dcm.get(triggerTag,None)
     if trigger is not None:
         return float(trigger)
+    
+    fromstart=dcm.get(afterStart,None)
+    if fromstart is not None:
+        return float(fromstart.value)
 
     m=re.search('(\d+)\s*%',dcm.get(commentTag,''))
     if m:
         return float(m.groups()[0])
-
+    
     return -1
 
 
@@ -376,12 +381,12 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
     si.seriesID=str(dcm.get(seriesTag,''))
     si.imageType=list(dcm.get('ImageType',[]))
     si.isSpatial=validPixelArray and positionTag in dcm and orientationTag in dcm
-    si.timestep=readDicomTimeValue(dcm) #float(dcm.get('TriggerTime',-1))
+    si.timestep=readDicomTimeValue(dcm) 
     si.isCompressed=not validPixelArray and not getattr(dcm,'_is_uncompressed_transfer_syntax',lambda:False)()
     si.tags=convertToDict(dcm) if includeTags else {}
 
-    if 0<=si.timestep<2: # convert from seconds to milliseconds
-        si.timestep*=1000
+    #if 0<=si.timestep<2: # convert from seconds to milliseconds
+    #    si.timestep*=1000
 
     if validPixelArray:
         #wincenter=dcm.get('WindowCenter',None)
@@ -391,7 +396,7 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
         #rtype=dcm.get('RescaleType',None)
 
         # TODO: proper rescaling?
-        if not rescale or rslope==0:
+        if not rescale or rslope==0: 
             rslope=1.0
             rinter=0.0
             
@@ -946,7 +951,14 @@ class DicomPlugin(ImageScenePlugin):
                     else:
                         raise IOError('Empty series %r; no Dicom files found or Dicom files are not readable'%name)
 
-                f.setObject(ImageSceneObject(name,series,imgs,self,isTimeDependent))
+                obj=ImageSceneObject(name,series,imgs,self,isTimeDependent)
+                
+                # convert from seconds to milliseconds, assumes MR/CT capture rates that are never faster than a millisecond
+                if avgspan(obj.getTimestepList())<1:
+                    for i in obj.images:
+                        i.timestep*=1000.0
+
+                f.setObject(obj)
 
         return self.mgr.runTasks([createDicomObject()],f,loadSequential)
 
