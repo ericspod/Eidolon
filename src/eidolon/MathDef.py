@@ -17,12 +17,12 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 '''
-Math definitions for element types, basis functions, etc. These routines assume CHeart-like element definitions and node orders.
-Known element types as defined by basis functions and dimension parameters are stored in the 'ElemType' enumeration.
+Math definitions for element types, basis functions, etc. These routines assume CHeart-like element definitions and node 
+orders. Known element types as defined by basis functions and dimension parameters are stored in the 'ElemType' enum.
 
-The shape of elements is defined by their basis functions and how many dimensions they are defined for. A linear nodal lagrange
-tetrahedron is defined in 3 dimensions with the restriction that xi values for any point in the element must sum to no more
-than 1. Thus linear Tet elements have 4 nodes:
+The shape of elements is defined by their basis functions and how many dimensions they are defined for. A linear nodal 
+lagrange tetrahedron is defined in 3 dimensions with the restriction that xi values for any point in the element must 
+sum to no more than 1. Thus linear Tet elements have 4 nodes:
 
     2---3
    /|  /
@@ -49,6 +49,24 @@ Quadratic Tet elements have 10 nodes, the first 4 defining the corners in the sa
 5 7    9
 |  \   |\
 0-4-1  6-8  3
+
+Element type generation is defined by these objects and types:
+    * GeomType: defines geometry types, eg. Line or Tet
+    * ElemTypeDef: defines element types, including basis function and geometric description
+    * BasisGenFuncs: enumerates ElemTypeDef generators, associating them with abbreviations of the type name
+    * ElemType: defines a generative function which instantiates ElemTypeDef instances on request using BasisGenFuncs
+
+Element types are defined by instances of ElemTypeDef. This class contains the above information, a basis function which
+accepts xi coords and other arguments and returns control point coefficients, other methods for doing interpolation, and
+other ancillary information. These objects are instantiated by generator functions accepting a geometry name as stored in
+GeomType, a textual description, and an integer stating the order of the element type. 
+
+The BasisGenFuncs enum relates abbreviated basis names to the generator functions. Adding new items to this list will
+make new basis types available in the system.
+
+The ElemType object uses the BasisGenFuncs enum to find a generator function then calls that for the given name being
+requested. For example, ElemType.Line1NL will request the generator function for nodal lagrange from BasisGenFuncs then
+pass arguments to it to generate a linear line ElemTypeDef object.
 '''
 
 
@@ -60,8 +78,10 @@ import math
 
 import numpy as np
 
-from .Utils import enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,assertMatDim,mulsum,lerpXi,epsilon
-
+from .Utils import (
+    enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,
+    assertMatDim,mulsum,lerp,lerpXi,epsilon
+)
 
 GeomType=enum(
     ('Point','Point',0,False),
@@ -77,17 +97,27 @@ GeomType=enum(
 
 
 def crossesMidpoint(a,b):
-    return sum(1 if abs(i*0.5+j*0.5-0.5)<epsilon else 0 for i,j in zip(a,b)) in (2,3)
+    return sum(1 if (i*0.5+j*0.5-0.5)<epsilon else 0 for i,j in zip(a,b)) in (2,3)
 
 
 def within(v,a,b):
-    '''Returns True if `v' is within range [a,b] or [b,a] if b<=a.'''
+    '''Returns True if `v' is within range [a,b], or [b,a] if b<=a.'''
     return a<=v<=b if a<=b else b<=v<=a
     
 
+def isLinePoint(p,xi,start,end):
+    '''Returns True if point `p' is at xi position `xi' on line `start'->`end'.'''
+    return all(abs(lerp(xi,j,k)-i)<epsilon for i,j,k in zip(p,start,end))
+
+
 def isBetween(a,start,end):
+    '''Returns True if `a' lies on a line between `start' and `end'.'''
     xi=max(lerpXi(i,j,k) if j!=k else 0 for i,j,k in zip(a,start,end))
-    return all(within(i,j,k) for i,j,k in zip(a,start,end)) and (all(abs(j*xi+k*(1.0-xi)-i)<epsilon for i,j,k in zip(a,start,end)) or all(abs(j*xi+k*(1.0-xi)-i)<epsilon for i,k,j in zip(a,start,end)))
+    
+    if not all(within(i,j,k) for i,j,k in zip(a,start,end)):
+        return False
+    
+    return isLinePoint(a,xi,start,end) or isLinePoint(a,xi,end,start)
 
 
 class ElemTypeDef(object):
@@ -101,7 +131,7 @@ class ElemTypeDef(object):
         self.desc=desc # plain language description
         self.order=order # order (1=linear, 2=quadratic, etc)
         self.xis=list(xis) # xi values for each node, [] if node count not fixed
-        self.dim=len(self.xis[0]) if len(self.xis)>0 else 0 # dimension, must be 1 (1D), 2 (2D), or 3 (3D)
+        #self.dim=len(self.xis[0]) if len(self.xis)>0 else 0 # dimension, must be 1 (1D), 2 (2D), or 3 (3D)
         self.vertices=list(vertices) # list of vertex indices, [] if node count not fixed
         self.faces=list(faces) # list of face node indices, [] if node count not fixed
         self.basis=basis # basis callable, maps xi values to node coefficients, must accept x, y, z coordinate arguments plus any further positional and keyword args
@@ -109,19 +139,22 @@ class ElemTypeDef(object):
         self.facetype=facetype if facetype else self# ElemTypeDef defining faces as 2D elements (assumes all faces same shape)
         self.internalxis=list(internalxis) # per-face xi sub values to convert a xi value on face to internal xi
         self.facevertices=[len(set(self.getFaceIndices(i)).intersection(self.vertices)) for i in range(len(self.faces))] # # of vertices per face
-        self.edges=[]
+        self.edges=[] # tuples of xi indices defining edges on 1D/2D elements, vertices first followed by midpoints
         
         if self.dim==1:
-            self.edges=[list(range(len(xis)))]
+            self.edges=[list(range(len(xis)))] # whole line is an edge
         elif self.dim==2:
             found=[]
             for v1,v2 in itertools.product(self.vertices,repeat=2):
-                xi1=self.xis[v1]
-                xi2=self.xis[v2]
-                if v1!=v2 and  (v1,v2) not in found and (self.isSimplex or not crossesMidpoint(xi1,xi2)):
-                    inds=[i for i in range(len(self.xis)) if i!=v1 and i!=v2 and isBetween(self.xis[i],xi1,xi2)]    
-                    self.edges.append(tuple([v1,v2]+inds))
-                    found+=[(v1,v2),(v2,v1)]
+                if v1!=v2 and  (v1,v2) not in found:
+                    xi1=self.xis[v1]
+                    xi2=self.xis[v2]
+                    if (self.isSimplex or not crossesMidpoint(xi1,xi2)):
+                        # get the midpoints
+                        mids=[i for i in range(len(self.xis)) if i!=v1 and i!=v2 and isBetween(self.xis[i],xi1,xi2)]    
+                        
+                        self.edges.append(tuple([v1,v2]+mids)) # add the edge, vertices first
+                        found+=[(v1,v2),(v2,v1)]
                     
     def isFixedNodeCount(self):
         '''Returns true if the basis function is defined for a fixed number of control nodes, eg. nodal lagrange.'''
@@ -965,7 +998,7 @@ class ElemTypeMap(enum):
         nodal lagrange hexahedrons have the name Hex3NL.
         '''
         if name not in self.valdict:
-            nsplit=re.split('([a-zA-Z]+)(\d+)([a-zA-Z]+)',name)
+            nsplit=re.split('([a-zA-Z]+)(\d+)([a-zA-Z0-9]+)',name)
 
             assert len(nsplit)>3, 'Bad name: '+str(nsplit)+' '+str(name)
 
