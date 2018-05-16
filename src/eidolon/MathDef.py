@@ -83,6 +83,7 @@ from .Utils import (
     assertMatDim,mulsum,lerp,lerpXi,epsilon
 )
 
+
 GeomType=enum(
     ('Point','Point',0,False),
     ('Line','Line',1,False),
@@ -94,30 +95,6 @@ GeomType=enum(
     ('Hemi','Hemisphere',3,False),
     doc='This defines the element geometry types available, eg. point, line, tet, etc. Values are (Name,Dimension,isSimplex).'
 )
-
-
-def crossesMidpoint(a,b):
-    return sum(1 if (i*0.5+j*0.5-0.5)<epsilon else 0 for i,j in zip(a,b)) in (2,3)
-
-
-def within(v,a,b):
-    '''Returns True if `v' is within range [a,b], or [b,a] if b<=a.'''
-    return a<=v<=b if a<=b else b<=v<=a
-    
-
-def isLinePoint(p,xi,start,end):
-    '''Returns True if point `p' is at xi position `xi' on line `start'->`end'.'''
-    return all(abs(lerp(xi,j,k)-i)<epsilon for i,j,k in zip(p,start,end))
-
-
-def isBetween(a,start,end):
-    '''Returns True if `a' lies on a line between `start' and `end'.'''
-    xi=max(lerpXi(i,j,k) if j!=k else 0 for i,j,k in zip(a,start,end))
-    
-    if not all(within(i,j,k) for i,j,k in zip(a,start,end)):
-        return False
-    
-    return isLinePoint(a,xi,start,end) or isLinePoint(a,xi,end,start)
 
 
 class ElemTypeDef(object):
@@ -144,17 +121,7 @@ class ElemTypeDef(object):
         if self.dim==1:
             self.edges=[list(range(len(xis)))] # whole line is an edge
         elif self.dim==2:
-            found=[]
-            for v1,v2 in itertools.product(self.vertices,repeat=2):
-                if v1!=v2 and  (v1,v2) not in found:
-                    xi1=self.xis[v1]
-                    xi2=self.xis[v2]
-                    if (self.isSimplex or not crossesMidpoint(xi1,xi2)):
-                        # get the midpoints
-                        mids=[i for i in range(len(self.xis)) if i!=v1 and i!=v2 and isBetween(self.xis[i],xi1,xi2)]    
-                        
-                        self.edges.append(tuple([v1,v2]+mids)) # add the edge, vertices first
-                        found+=[(v1,v2),(v2,v1)]
+            self.edges=findEdges(self.xis,len(self.vertices),self.isSimplex)
                     
     def isFixedNodeCount(self):
         '''Returns true if the basis function is defined for a fixed number of control nodes, eg. nodal lagrange.'''
@@ -268,6 +235,92 @@ class ElemTypeDef(object):
         return '%s: %s' % (ElemType.getTypeName(self.geom,self.basisname,self.order), self.desc)
 
 
+def findFaces(xis,numVertices,isSimplex):
+    '''
+    Find the faces of an axis-aligned element (tet or hex) with unit xi coordinates. This adheres to CHeart node
+    ordering. The first indices for each face will be the vertices, the last is the index for a node opposite the face.
+    A more general face-finding operation would look for those nodes defining vertices and then the nodes between them
+    to find faces, but life is easier with axis-aligned elements. Other geometry types other than tet or hex would
+    require modification to this function. The first return value is a list of face index lists, the second is a list
+    of xi values which when subtracted from a xi coordinate on the face will produce an internal xi coordinate.
+    '''
+    faces=[]
+    subvalue=0.01
+    internalxisub=[] # values to subtract from surface xis to get an internal xi coord
+    xiDim=len(xis[0])
+    xiRange=(0.0,) if isSimplex else (0.0,1.0)
+
+    def farnode(face,xirange):
+        # assumes vertices are indexed in the range [0,numVertices], ie. CHeart node ordering
+        vertices=[i for i in range(numVertices) if i not in face]
+        return vertices[int(xirange)-1]
+
+    # collect axis-aligned faces
+    for dim,xirange in itertools.product(range(xiDim),xiRange):
+        # collect the indices of each xi value whose component 'dim' equals 'xirange' (which is 0 or 1)
+        face=[n for n,xi in enumerate(xis) if xi[dim]==xirange]
+        if len(face)>0:
+            far=farnode(face,xirange)
+            faces.append(face+[far])
+
+            internalxis=[0.0]*xiDim
+            internalxis[dim]=subvalue if xirange==1.0 else -subvalue
+            internalxisub.append(internalxis)
+
+    # collect tet far face passing through unit vectors
+    if isSimplex:
+        face=[n for n,xi in enumerate(xis) if sum(xi)==1.0]
+        if face!=():
+            far=farnode(face,0)
+            faces.append(face+[far])
+            internalxisub.append([subvalue]*xiDim)
+
+    indices=sorted(range(len(faces)),lambda a,b:cmp(faces[a],faces[b]))
+    return [faces[i] for i in indices],[internalxisub[i] for i in indices]
+
+
+def findEdges(xis,numVertices, isSimplex):
+    def crossesMidpoint(a,b):
+        return sum(1 if abs(i*0.5+j*0.5-0.5)<epsilon else 0 for i,j in zip(a,b)) in (2,3)
+    
+    
+    def within(v,a,b):
+        '''Returns True if `v' is within range [a,b], or [b,a] if b<=a.'''
+        return a<=v<=b if a<=b else b<=v<=a
+        
+    
+    def isLinePoint(p,xi,start,end):
+        '''Returns True if point `p' is at xi position `xi' on line `start'->`end'.'''
+        return all(abs(lerp(xi,j,k)-i)<epsilon for i,j,k in zip(p,start,end))
+    
+    
+    def isBetween(a,start,end):
+        '''Returns True if `a' lies on a line between `start' and `end'.'''
+        xi=max(lerpXi(i,j,k) if j!=k else 0 for i,j,k in zip(a,start,end))
+        
+        if not all(within(i,j,k) for i,j,k in zip(a,start,end)):
+            return False
+        
+        return isLinePoint(a,xi,start,end) or isLinePoint(a,xi,end,start)
+
+    found=[]
+    edges=[]
+    
+    for v1,v2 in itertools.product(range(numVertices),repeat=2):
+        if v1!=v2 and  (v1,v2) not in found:
+            xi1=xis[v1]
+            xi2=xis[v2]
+            
+            if isSimplex or not crossesMidpoint(xi1,xi2):
+                # get the midpoints
+                mids=[i for i in range(len(xis)) if i!=v1 and i!=v2 and isBetween(xis[i],xi1,xi2)]    
+                
+                edges.append(tuple([v1,v2]+mids)) # add the edge, vertices first
+                found+=[(v1,v2),(v2,v1)]
+                
+    return edges
+
+
 def lagrangeBasisI(i,K,xi,alpha,beta):
     '''Evaluate the i'th lagrange basis function using the input xi values and matrix definitions.'''
 
@@ -362,7 +415,7 @@ def lagrangeAlpha(beta,xicoords):
     for i,j in trange(K,K):
         a[i][j]=prod(xicoords[i][k]**beta[k][j] for k in range(d))
 
-    return np.matrix(a).I.T.tolist()
+    return np.linalg.inv(np.asarray(a)).T.tolist()
 
 
 def lagrangeBeta(order,isSimplex,dim):
@@ -414,50 +467,6 @@ def xiCoords(order,beta):
         result.append(tuple(beta[j][i]/fo for j in range(len(beta))))
 
     return result
-
-
-def findFaces(xis,numVertices,isSimplex):
-    '''
-    Find the faces of an axis-aligned element (tet or hex) with unit xi coordinates. This adheres to CHeart node
-    ordering. The first indices for each face will be the vertices, the last is the index for a node opposite the face.
-    A more general face-finding operation would look for those nodes defining vertices and then the nodes between them
-    to find faces, but life is easier with axis-aligned elements. Other geometry types other than tet or hex would
-    require modification to this function. The first return value is a list of face index lists, the second is a list
-    of xi values which when subtracted from a xi coordinate on the face will produce an internal xi coordinate.
-    '''
-    faces=[]
-    subvalue=0.01
-    internalxisub=[] # values to subtract from surface xis to get an internal xi coord
-    xiDim=len(xis[0])
-    xiRange=(0.0,) if isSimplex else (0.0,1.0)
-
-    def farnode(face,xirange):
-        # assumes vertices are indexed in the range [0,numVertices], ie. CHeart node ordering
-        vertices=[i for i in range(numVertices) if i not in face]
-        return vertices[int(xirange)-1]
-
-    # collect axis-aligned faces
-    for dim,xirange in itertools.product(range(xiDim),xiRange):
-        # collect the indices of each xi value whose component 'dim' equals 'xirange' (which is 0 or 1)
-        face=[n for n,xi in enumerate(xis) if xi[dim]==xirange]
-        if len(face)>0:
-            far=farnode(face,xirange)
-            faces.append(face+[far])
-
-            internalxis=[0.0]*xiDim
-            internalxis[dim]=subvalue if xirange==1.0 else -subvalue
-            internalxisub.append(internalxis)
-
-    # collect tet far face passing through unit vectors
-    if isSimplex:
-        face=[n for n,xi in enumerate(xis) if sum(xi)==1.0]
-        if face!=():
-            far=farnode(face,0)
-            faces.append(face+[far])
-            internalxisub.append([subvalue]*xiDim)
-
-    indices=sorted(range(len(faces)),lambda a,b:cmp(faces[a],faces[b]))
-    return [faces[i] for i in indices],[internalxisub[i] for i in indices]
 
 
 def nodalLagrangeType(geom,desc,order):
@@ -678,7 +687,7 @@ def spectralBasisType(geom,desc,order):
         xi=get1DSpectralCoords(order)
 
         v=np.vander(xi,len(xi))
-        coeffs=np.matrix(np.linalg.solve(v,np.identity(order+1)).T)
+        coeffs=np.linalg.solve(v,np.eye(order+1)).T
 
     def basis(xi0,xi1,xi2):
         return tuple(evaluateSpectralBasis(xi0,xi1,xi2,powers,coeffs,order,dim))
@@ -931,7 +940,7 @@ def piecewiseCatmullRomType(geom,desc,order):
     def _addInds(inds,xis):
         return tuple(int(i+x) for i,x in zip(inds,xis))
     
-    def _basis(u,v,w,ul,vl=1,wl=1,*args,**kwargs):
+    def _basisPCR(u,v,w,ul,vl=1,wl=1,*args,**kwargs):
         dims=(ul,vl,wl) # vl==wl==1 for 1D, wl==1 for 2D
         limits=kwargs.get('limits',None)
         circular=kwargs.get('circular',[False]*3)
@@ -947,7 +956,7 @@ def piecewiseCatmullRomType(geom,desc,order):
             
         return coeffs
             
-    return ElemTypeDef(geom,'PCR',desc,order,[],[],[],[],_basis,None,facetype)
+    return ElemTypeDef(geom,'PCR',desc,order,[],[],[],[],_basisPCR,None,facetype)
         
 
 
