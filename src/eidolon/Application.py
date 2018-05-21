@@ -152,6 +152,7 @@ def generateConfig(inargs):
     # get the user application directory from either the platformID or All section in the config file and then set it for platformID
     userappdir=os.path.expanduser(conf.get(platformID,ConfVars.userappdir) or conf.get('All',ConfVars.userappdir))
     conf.set(platformID,ConfVars.userappdir,userappdir)
+    conf.set(platformID,ConfVars.userplugindir,os.path.join(userappdir,'plugins'))
     
     # read the config file specified on the command line, or if not given read userappdir/config.ini if present, and override current values in conf with these
     if args.config:

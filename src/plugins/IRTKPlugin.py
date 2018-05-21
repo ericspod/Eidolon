@@ -39,6 +39,8 @@ import numpy as np
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
 
 from eidolon import *
+from eidolon import enum, printFlush, taskroutine, taskmethod, execBatchProgram
+
 from plugins.SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 from ui import Ui_mtServerForm
 
@@ -328,7 +330,7 @@ class IRTKPluginMixin(object):
                 for obj in objs:
                     obj=Future.get(obj)
                     if obj:
-                        filename=self.getNiftiFile(getValidFilename(obj.getName()))
+                        filename=self.getNiftiFile(self.getUniqueObjName(obj.getName()))
                         printFlush('Saving',filename)
                         self.Nifti.saveImage(filename,obj,setObjArgs)
                         filenames.append(filename)

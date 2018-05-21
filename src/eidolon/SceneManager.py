@@ -34,7 +34,9 @@ import shutil
 import time
 import threading
 import traceback
+import glob
 import math
+import importlib
 
 from . import renderer
 from . import Utils
@@ -62,10 +64,7 @@ def createSceneMgr(win,conf=None):
     if globalMgr==None:
         globalMgr=SceneManager(win,conf)
 
-        for i,plug in enumerate(globalPlugins):
-            plug.init(i,win,globalMgr)
-
-        atexit.register(cleanupPlugins)
+        initializePlugins()
 
     if win:
         win.updateGeometry()
@@ -91,6 +90,25 @@ def addPlugin(plug):
     globalPlugins.append(plug)
     return plug
 
+
+def initializePlugins():
+    '''
+    Initializes all plugins by calling the init() method on each in `globalPlugins'. Plugins in the user-provided plugin 
+    directory (by default ~/.eidolon/plugins) are imported first. These plugins can be scripts or module directories.
+    '''
+    # import user-provided plugins, these are scripts or module directories in the ~/.eidolon/plugins directory
+    plugdir=globalMgr.conf.get(platformID,Utils.ConfVars.userplugindir)    
+    if os.path.isdir(plugdir):
+        sys.path.append(plugdir)
+        for plug in glob.glob(os.path.join(plugdir,'*')):
+            importlib.import_module(Utils.splitPathExt(plug)[1])
+
+    # initialize all plugins    
+    for i,plug in enumerate(globalPlugins):
+        plug.init(i,globalMgr.win,globalMgr)
+
+    # register the cleanup routine
+    atexit.register(cleanupPlugins)
 
 def cleanupPlugins():
     '''Call cleanup() on all listed plugins.'''
