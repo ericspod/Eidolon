@@ -337,8 +337,9 @@ class Future(object):
 
 ConfVars=enum(
     'all','shaders', 'resdir', 'shmdir', 'appdir', 'userappdir','userplugindir','logfile', 'preloadscripts', 'uistyle', 
-    'stylesheet', 'winsize', 'camerazlock', 'maxprocs', 'configfile', 'rtt_preferred_mode', 'vsync', 'rendersystem',
-    'consolelogfile','consoleloglen',
+    'stylesheet', 'winsize', 'camerazlock', 'maxprocs', 'configfile', 
+    'rtt_preferred_mode', 'vsync', 'rendersystem', # renderer related values
+    'consolelogfile','consoleloglen', # console config values
     desc='Variables in the Config object loaded from config files, these should be present and keyed to platformID group'
 )
 

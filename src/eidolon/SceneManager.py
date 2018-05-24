@@ -58,7 +58,7 @@ globalPlugins=[]
 
 
 def createSceneMgr(win,conf=None):
-    '''Create the global scene manager (if not already created) and return it.'''
+    '''Create the global scene manager (if not already created) and initialize plugins. Returns the scene manager.'''
     global globalMgr
 
     if globalMgr==None:

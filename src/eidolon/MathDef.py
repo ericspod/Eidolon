@@ -125,7 +125,7 @@ class ElemTypeDef(object):
                     
     def isFixedNodeCount(self):
         '''Returns true if the basis function is defined for a fixed number of control nodes, eg. nodal lagrange.'''
-        return True
+        return bool(self.xis)
 
     def numNodes(self):
         '''Returns the number of nodes used to define this basis type, -1 if not fixed.'''
