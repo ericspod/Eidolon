@@ -565,44 +565,13 @@ def PoolDockWidget(plugin,parent=None):
     return widg
 
 
-class PlotSceneObject(SceneObject):
-    def __init__(self,name,filename,datamap,plugin,**kwargs):
-        SceneObject.__init__(self,name,plugin,**kwargs)
-        self.filename=filename
-        self.datamap=datamap
-        self._updatePropTuples()
-
-    def _updatePropTuples(self):
-        self.proptuples=[('Filename',str(self.filename))]
-        if self.datamap:
-            self.proptuples+=sorted((k,str(v)) for k,v in self.datamap.items())
-
-    def getPropTuples(self):
-        return self.proptuples
-
+class PlotSceneObject(eidolon.DatafileSceneObject):
     def getWidget(self):
         '''Get the docked widget for this plot, or None if the user hasn't created one.'''
         return self.plugin.getPlotObjectWidget(self)
 
     def getTimestepList(self):
         return self.datamap.get(DatafileParams._timesteps,[0])
-
-    def get(self,name):
-        return self.datamap.get(name,None)
-
-    def set(self,name,value):
-        result=self.datamap[name]=value
-        self._updatePropTuples()
-        return result
-
-    def load(self):
-        if self.filename:
-            self.datamap=eidolon.readBasicConfig(self.filename)
-            self._updatePropTuples()
-
-    def save(self):
-        if self.filename:
-            eidolon.storeBasicConfig(self.filename,self.datamap)
 
 
 class PlotPlugin(ScenePlugin):

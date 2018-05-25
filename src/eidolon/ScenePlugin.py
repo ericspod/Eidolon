@@ -95,7 +95,7 @@ class ScenePlugin(object):
         self.plugid=plugid
         self.win=win
         self.mgr=mgr
-
+        
     def cleanup(self):
         '''Called when shutting down, use this to clear and close resources.'''
         pass

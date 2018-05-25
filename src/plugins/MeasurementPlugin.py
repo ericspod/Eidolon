@@ -150,40 +150,22 @@ class Measurement(object):
         return repr((self.name,self.mtype,col,self.timesteps,values))
         
             
-class MeasureSceneObject(eidolon.SceneObject):
+class MeasureSceneObject(eidolon.DatafileSceneObject):
     def __init__(self,name,filename,plugin,**kwargs):
-        eidolon.SceneObject.__init__(self,name,plugin,**kwargs)
-        self.filename=eidolon.ensureExt(filename,measureExt)
-        self.datamap={
+        filename=eidolon.ensureExt(filename,measureExt)
+        datamap={
             DatafileParams.name: name,
             DatafileParams.title: name,
             DatafileParams.srcimage:'',
             DatafileParams.tracksrc:'',
             DatafileParams.trackdata:''
         }
-        self._updatePropTuples()
-
-    def _updatePropTuples(self):
-        self.proptuples=[('Filename',str(self.filename))]
-        if self.datamap:
-            self.proptuples+=[(k[0],self.datamap[k[0]]) for k in DatafileParams]
-
-    def getPropTuples(self):
-        return self.proptuples
+        
+        eidolon.DatafileSceneObject.__init__(self,name,filename,datamap,plugin,**kwargs)
 
     def getWidget(self):
         '''Get the docked widget for this object, or None if the user hasn't created one.'''
         return self.plugin.getObjectWidget(self)
-
-    def get(self,name):
-        return self.datamap.get(name,None)
-
-    def set(self,name,value):
-        result=self.get(name)
-        self.datamap[name]=value
-        if name in DatafileParams:
-            self._updatePropTuples()
-        return result
         
     def getObjectNames(self):
         return [n for n in self.datamap if n not in DatafileParams]
@@ -203,19 +185,6 @@ class MeasureSceneObject(eidolon.SceneObject):
         for n in list(self.datamap):
             if n not in DatafileParams:
                 self.datamap.pop(n)
-
-    def load(self):
-        if self.filename:
-            self.datamap=eidolon.readBasicConfig(self.filename)
-            self._updatePropTuples()
-            
-            for name,val in self.datamap.items():
-                if name not in DatafileParams:
-                    self.datamap[name]=Measurement(*val)
-
-    def save(self):
-        if self.filename:
-            eidolon.storeBasicConfig(self.filename,self.datamap)
         
         
 class MeasurePropertyWidget(QtWidgets.QWidget,Ui_MeasureObjProp):

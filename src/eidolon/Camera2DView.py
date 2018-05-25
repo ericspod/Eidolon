@@ -103,7 +103,7 @@ class BaseCamera2DWidget(Base2DWidget):
         # construct a quad with a cylinder rim for the indicator plane
         q=BaseCamera2DWidget.defaultQuad[0]
         mq=(q[0]+q[1])*0.5
-        cnodes,cinds=SceneUtils.generateCylinder([mq,q[1],q[3],q[2],q[0],mq],[0.0025]*6,1,4,False)
+        cnodes,cinds=SceneUtils.generateCylinder([mq,q[1],q[3],q[2],q[0],mq],[0.0025]*6,1,4,False,False)
         nodes=list(BaseCamera2DWidget.defaultQuad[0])+cnodes
         inds=list(BaseCamera2DWidget.defaultQuad[1])+cinds
         self.indicatorPlane.fillData(PyVertexBuffer(nodes,[vec3(0,0,1)]*len(nodes),[indicatorCol]*len(nodes)),PyIndexBuffer(inds),False,True)

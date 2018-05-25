@@ -27,11 +27,10 @@ import inspect
 
 from renderer import vec3, color, rotator, transform, FT_POINTLIST, FT_LINELIST, FT_TRILIST, FT_GLYPH, \
         IndexMatrix, ColorMatrix,MatrixIndexBuffer, MatrixVertexBuffer, PyIndexBuffer, PyVertexBuffer
-from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, getStrListCommonality, isMainThread
+from .Utils import enum, avgspan, first, toIterable, listSum, minmax, clamp,radCircularConvert, isMainThread
 from .SceneUtils import StdProps, MatrixType, getDatasetSummaryTuples, BoundBox
 
-from . import MeshAlgorithms
-from . import MathDef 
+from . import MeshAlgorithms, MathDef, Utils
     
 
 # Known representation types: description, generator function, FigureType, is Point type, is Polygon type
@@ -147,6 +146,39 @@ class SceneObject(object):
     def __repr__(self):
         return '%s<%r @ 0x%.16x>'%(self.__class__.__name__,self.getName(),id(self))
 
+
+class DatafileSceneObject(SceneObject):
+    def __init__(self,name,filename,datamap,plugin,**kwargs):
+        SceneObject.__init__(self,name,plugin,**kwargs)
+        self.filename=filename
+        self.datamap=datamap
+        self._updatePropTuples()
+
+    def _updatePropTuples(self):
+        self.proptuples=[('Filename',str(self.filename))]
+        if self.datamap:
+            self.proptuples+=sorted((k,str(v)) for k,v in self.datamap.items())
+
+    def getPropTuples(self):
+        return self.proptuples
+
+    def get(self,name,default=None):
+        return self.datamap.get(name,default)
+
+    def set(self,name,value):
+        result=self.datamap[name]=value
+        self._updatePropTuples()
+        return result
+
+    def load(self):
+        if self.filename:
+            self.datamap=Utils.readBasicConfig(self.filename)
+            self._updatePropTuples()
+
+    def save(self):
+        if self.filename:
+            Utils.storeBasicConfig(self.filename,self.datamap)
+            
 
 class SceneObjectRepr(object):
     '''
@@ -1118,7 +1150,7 @@ class TDMeshSceneObjectRepr(SceneObjectRepr):
                 r.setDataField(None)
         elif isinstance(field,list):
             names=field if isinstance(field[0],str) else [field[0].getName()]
-            common=getStrListCommonality(names)
+            common=Utils.getStrListCommonality(names)
             self.datafieldname=names[0][:common]
             #self.datafieldname=globulateStrList(field) if isinstance(field[0],str) else field[0].getName()
             for f,r in zip(field,self.subreprs):

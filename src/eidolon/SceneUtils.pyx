@@ -1478,7 +1478,7 @@ def reindexMesh(list inds,list components):
     return newinds,newcomps
 
 
-def generateCylinder(ctrls,radii,refine=0,indexoffset=0,endCaps=True,alignRings=True):
+def generateCylinder(ctrls,radii,refine=0,indexoffset=0,startCap=True,endCap=True,alignRings=True):
     '''
     Generate a cylinder using the given control points in `ctrls' to define each cross section. At every location of
     `ctrls' a cross section ring is define for the cylinder with a radius defined in `radii', and which is rotated to
@@ -1523,7 +1523,7 @@ def generateCylinder(ctrls,radii,refine=0,indexoffset=0,endCaps=True,alignRings=
     nodes=makeRing(ctrls[0],dirs[0],radii[0]) # first ring
     indices=[]
 
-    if endCaps:
+    if startCap:
         # start cap composed of triangle fan, starting index is the center of the fan, next indices are consecutive points
         # on the ring. The expression (i+1)%refine is used to index the next point on the ring from point i since the indices
         # have to loop back around to the beginning. Note also that all triangles use counter-clockwise winding.
@@ -1541,7 +1541,7 @@ def generateCylinder(ctrls,radii,refine=0,indexoffset=0,endCaps=True,alignRings=
 
         nodes+=makeRing(ctrls[n],dirs[n],radii[n]) # midsection ring of nodes
 
-    if endCaps: # the ending cap is defined in the same way as the start cap, ie. extra node ring and triangle fan
+    if endCap: # the ending cap is defined in the same way as the start cap, ie. extra node ring and triangle fan
         ln=len(nodes)
         indices+=[(ln+refine,ln+(i+1)%refine,ln+i) for i in xrange(refine)]
         nodes+=makeRing(ctrls[-1],dirs[-1],radii[-1])+[ctrls[-1]]

@@ -1346,7 +1346,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
             cdef int i
             cdef list cnodes,triinds,norms
 
-            cnodes,triinds=SceneUtils.generateCylinder(pts,radii,radrefine,outnodes.n(),endCaps)
+            cnodes,triinds=SceneUtils.generateCylinder(pts,radii,radrefine,outnodes.n(),endCaps,endCaps)
             norms=SceneUtils.generateTriNormals(cnodes,triinds,outnodes.n())
             xis=tuple(vec3(*xi) for xi in xis)
 
@@ -2099,7 +2099,7 @@ def calculateIsolineRange(process,nodes,ind,ext,refine,field,fieldtopo,minv,maxv
 
         # generate each cylinder and add the triangles
         for seg in conjsegs:
-            cnodes,cinds=SceneUtils.generateCylinder([s[0] for s in seg],[radius]*len(seg),cylrefine,outnodes.n(),endCaps) # TODO: want end caps
+            cnodes,cinds=SceneUtils.generateCylinder([s[0] for s in seg],[radius]*len(seg),cylrefine,outnodes.n(),endCaps,endCaps) # TODO: want end caps
             norms=SceneUtils.generateTriNormals(cnodes,cinds,outnodes.n())
 
             for ind in cinds:

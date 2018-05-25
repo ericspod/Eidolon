@@ -62,6 +62,8 @@ def createSceneMgr(win,conf=None):
     global globalMgr
 
     if globalMgr==None:
+        loadUserPlugins(conf)
+        
         globalMgr=SceneManager(win,conf)
 
         initializePlugins()
@@ -91,18 +93,21 @@ def addPlugin(plug):
     return plug
 
 
-def initializePlugins():
+def loadUserPlugins(conf):
     '''
-    Initializes all plugins by calling the init() method on each in `globalPlugins'. Plugins in the user-provided plugin 
-    directory (by default ~/.eidolon/plugins) are imported first. These plugins can be scripts or module directories.
+    Imports plugins from the user-provided plugin directory (by default ~/.eidolon/plugins). This is done by attempting
+    to import every directory or file ending in .py found the conf.get(platformID,ConfVars.userplugindir) directory.
     '''
-    # import user-provided plugins, these are scripts or module directories in the ~/.eidolon/plugins directory
-    plugdir=globalMgr.conf.get(platformID,Utils.ConfVars.userplugindir)    
+    plugdir=conf.get(platformID,Utils.ConfVars.userplugindir)    
     if os.path.isdir(plugdir):
         sys.path.append(plugdir)
         for plug in glob.glob(os.path.join(plugdir,'*')):
-            importlib.import_module(Utils.splitPathExt(plug)[1])
+            if os.path.isdir(plug) or plug.endswith('.py'):
+                importlib.import_module(Utils.splitPathExt(plug)[1])
+                
 
+def initializePlugins():
+    '''Initializes all plugins by calling the init() method on each in `globalPlugins'.'''
     # initialize all plugins    
     for i,plug in enumerate(globalPlugins):
         plug.init(i,globalMgr.win,globalMgr)
@@ -412,6 +417,15 @@ class SceneManager(TaskQueue):
         self.player.daemon=True
         self.player.start()
         
+        # script local variables
+        self.scriptlocals={'mgr':self} # local environment object scripts are executed with
+        self.lastScript='' # name of last executed script file
+        
+        if self.conf.hasValue('var','names'): # add command line variables to the script variable map
+            names=self.conf.get('var','names').split('|')
+            for n in names:
+                self.scriptlocals[n]=self.conf.get('var',n)
+        
         def exception_hook(exctype, value, tb):
             msg='\n'.join(traceback.format_exception(exctype, value, tb))
             self.showExcept(msg,str(value),'Unhandled Exception')
@@ -420,21 +434,15 @@ class SceneManager(TaskQueue):
         # create default plugins for meshes and images added to the manager without one provided
         self.meshplugin=ScenePlugin.MeshScenePlugin('MeshPlugin')
         self.imageplugin=ScenePlugin.ImageScenePlugin('ImgPlugin')
+        
+        self.meshplugin.init(0,self.win,self)
+        self.imageplugin.init(1,self.win,self)
 
         global globalPlugins
         globalPlugins=[self.meshplugin,self.imageplugin]+globalPlugins
         
-        self.lastScript=''
-
-        # script local variables
-        self.scriptlocals={'mgr':self} # local environment object scripts are executed with
-        for p in globalPlugins: # add plugin variables to the script variable map
-            self.scriptlocals[p.name.replace(' ','_')]=p
-
-        if self.conf.hasValue('var','names'): # add command line variables to the script variable map
-            names=self.conf.get('var','names').split('|')
-            for n in names:
-                self.scriptlocals[n]=self.conf.get('var',n)
+        for plug in globalPlugins:
+            self.scriptlocals[plug.name.replace(' ' ,'_')]=plug
 
         if self.win: # window setup
             self.win.mgr=self
@@ -806,8 +814,8 @@ class SceneManager(TaskQueue):
     
     def addRuntimePlugin(self,plug):
         '''
-        Add a plugin to the system at runtime. Typically plugins are loaded at load time and their init() method called 
-        before the SceneManager is created. This method is used to load plugins which can be initialized at a later time.
+        Add a plugin to the system at runtime. Typically plugins are loaded at load time and their init() method just 
+        after the SceneManager is created. This method is used to load plugins which can be initialized at a later time.
         '''
         if self.getPlugin(plug.name) is None:
             plug.init(len(globalPlugins),self.win,self)
