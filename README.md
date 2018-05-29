@@ -32,8 +32,10 @@ Eidolon itself does not need to be installed in any particular location nor requ
 
 ## Building
 
+**Typically for the major platforms you shouldn't need to recompile when running from source.**
 For building the Python bindings and Cython libraries, see BUILDING.md.
 For building the EidolonLibs objects, see the README.md file in that submodule.
+
 
 ## Documentation
 
