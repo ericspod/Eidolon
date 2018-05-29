@@ -10,9 +10,7 @@ For all platforms it requires:
  * Numpy 1.8.0+ (earlier 1.7 versions may work, 1.6 does not)
  * SciPy 0.13.3+ (earlier versions may work)
  
-Python 3 is not supported just yet, this is a TODO item.
-
-The code coverage testing relies on **coverage**.
+Python 3 is not supported just yet, this is a TODO item. The code coverage testing relies on **coverage**.
 
 **The easiest way to get all these for any platform is through Anaconda: http://continuum.io/downloads**
 
