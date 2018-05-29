@@ -418,6 +418,7 @@ def fillList(listobj,items,curitem=-1,defaultitem=None,checkChanges=False):
             listobj.clear()
             for i,(item,value) in enumerate(newitems):
                 addItem(item,value)
+                
                 if curitem!=-1 and (item==curitem or i==curitem):
                     setCurrentIndex(i)
 

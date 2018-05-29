@@ -578,12 +578,12 @@ class VTKPlugin(MeshScenePlugin):
                 if pointdata is None:
                     pointdata=[]
                 
-                nodes=readNodes(nodearray,byteorder,compressor)
-                
                 connectivity=first(i for i in cells if i.get('Name').lower()=='connectivity')
                 types=first(i for i in cells if i.get('Name').lower()=='types')
                 offsets=first(i for i in cells if i.get('Name').lower()=='offsets')
                 
+                nodes=readNodes(nodearray,byteorder,compressor)
+            
                 indlist=readArray(connectivity,byteorder,compressor).tolist() # faster as Python list?
                 fields=readFields(celldata,pointdata,byteorder,compressor)
                 
@@ -600,6 +600,11 @@ class VTKPlugin(MeshScenePlugin):
                     indmat,_=indmats.get(celltype,(None,[])) 
                     if indmat is not None: # only found for those cell types we understand (ie. not polygon)
                         indmat.append(*indlist[off-indmat.m():off])
+                
+                #for celltype,(indmat,_) in indmats.items():
+                #    for ct,off in cellofflist:
+                #        if celltype==ct:
+                #            indmat.append(*indlist[off-indmat.m():off])
                         
                 inds=[]
                 for ind,order in indmats.values(): # collect and reorder all non-empty index matrices
