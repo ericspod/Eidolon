@@ -25,8 +25,8 @@ class CTMotionTrackProject(Project):
         self.Dicom=mgr.getPlugin('Dicom')
         self.CTMotion.project=self
         self.header='\nCTMotion.createProject(%r,scriptdir+"/..")\n' %(self.name)
-        self.logdir=self.getProjectFile('logs')
-        self.backDir=self.logdir
+        self.logDir=self.getProjectFile('logs')
+        self.backDir=self.logDir
 
         for n in ConfigNames:
             self.configMap[n[0]]=''
@@ -81,8 +81,8 @@ class CTMotionTrackProject(Project):
 
         self.ctprop.paramEdit.textChanged.connect(self.updateConfigFromProp)
 
-        if not os.path.isdir(self.logdir):
-            os.mkdir(self.logdir)
+        if not os.path.isdir(self.logDir):
+            os.mkdir(self.logDir)
 
         return prop
 
@@ -221,7 +221,7 @@ class CTMotionTrackPlugin(ImageScenePlugin,IRTKPluginMixin):
         return self.project.getProjectDir()
 
     def getLogFile(self,filename):
-        return os.path.join(self.project.logdir,ensureExt(filename,'.log'))
+        return os.path.join(self.project.logDir,ensureExt(filename,'.log'))
 
     def getLocalFile(self,name):
         return self.project.getProjectFile(name)

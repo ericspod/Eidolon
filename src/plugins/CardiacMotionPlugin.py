@@ -639,15 +639,15 @@ class CardiacMotionProject(Project):
         for o in list(mgr.enumSceneObjects()):
             mgr.removeSceneObject(o)
 
-        self.logdir=self.getProjectFile('logs')
-        self.backDir=self.logdir
+        self.logDir=self.getProjectFile('logs')
+        self.backDir=self.logDir
 
     def create(self):
         '''Task routine set to run after the project is loaded which does extra setup or config operations.'''
         Project.create(self)
 
-        if not os.path.isdir(self.logdir):
-            os.mkdir(self.logdir)
+        if not os.path.isdir(self.logDir):
+            os.mkdir(self.logDir)
 
         reportcardfile=self.getProjectFile(self.name+'.report')
         if not os.path.exists(reportcardfile):
@@ -1447,7 +1447,7 @@ class CardiacMotionPlugin(eidolon.ImageScenePlugin,IRTKPluginMixin):
         return self.project.getProjectDir()
 
     def getLogFile(self,filename):
-        return os.path.join(self.project.logdir,eidolon.ensureExt(filename,'.log'))
+        return os.path.join(self.project.logDir,eidolon.ensureExt(filename,'.log'))
 
     def getLocalFile(self,name):
         return self.project.getProjectFile(name)

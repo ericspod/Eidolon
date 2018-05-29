@@ -40,6 +40,7 @@ import errno
 import threading
 import traceback
 import functools
+import types
 from multiprocessing import Pipe, Process, cpu_count, Array, Value, Lock, Event
 
 from .Utils import queue, lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
@@ -474,6 +475,28 @@ class ProcessServer(threading.Thread):
         self.stopEvent.set()
 
 
+def chooseProcCount(numelems,refine,threshold):
+    '''
+    Determine a process count to use when running concurrent routines. If numelems*(1+refine)>=threshold then 0 is
+    returned to indicate the number of processes used will be however many processes exist (usually the number of
+    physical cores). A value of 1 is returned otherwise to clue in the system to compute sequentially in the calling
+    process. If `numelems' is less than the number of processes used, only that many will actually be used.
+    '''
+    realprocs=ProcessServer.globalServer.realnumprocs
+
+    try:
+        numelemadjust=int(numelems*(refine+1))
+    except:
+        numelemadjust=int(numelems)
+
+    if numelemadjust<threshold: # compute sequentially
+        return 1
+    elif numelems<=realprocs: # compute with `numelems' processors
+        return numelems
+    else: # compute with all processors
+        return 0
+
+
 def checkResultMap(result):
     '''Checks the results from a concurrent operation, throwing the first returned exception.'''
     for i in sorted(result):
@@ -532,27 +555,24 @@ def concurrent(func):
     return concurrent_wrapper
 
 
-def chooseProcCount(numelems,refine,threshold):
-    '''
-    Determine a process count to use when running concurrent routines. If numelems*(1+refine)>=threshold then 0 is
-    returned to indicate the number of processes used will be however many processes exist (usually the number of
-    physical cores). A value of 1 is returned otherwise to clue in the system to compute sequentially in the calling
-    process. If `numelems' is less than the number of processes used, only that many will actually be used.
-    '''
-    realprocs=ProcessServer.globalServer.realnumprocs
-
-    try:
-        numelemadjust=int(numelems*(refine+1))
-    except:
-        numelemadjust=int(numelems)
-
-    if numelemadjust<threshold: # compute sequentially
-        return 1
-    elif numelems<=realprocs: # compute with `numelems' processors
-        return numelems
-    else: # compute with all processors
-        return 0
-
+#def concurrentFunc(func):
+#    @functools.wraps(func)
+#    def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
+#        return concurrentFuncExec(valrange,numprocs,task,func.__code__,globals(),args,kwargs)
+#        
+#    return concurrent_wrapper
+#
+#
+#@concurrent
+#def concurrentFuncExec(process,codeobj,cglobals,args,kwargs):
+#    execglobals=dict(globals())
+#    
+#    execglobals['process']=process
+#    execglobals.update(cglobals)
+#    
+#    func=types.FunctionType(codeobj,execglobals)
+#    return func(*args,**kwargs)
+    
 
 @concurrent
 def concurrentExec(process,execcode,clocals={},cglobals={},returnName=None):
