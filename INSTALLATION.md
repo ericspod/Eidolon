@@ -12,7 +12,9 @@ For all platforms it requires:
  
 Python 3 is not supported just yet, this is a TODO item.
 
-The unit tests rely on **pytest** being installed, and code coverage testing relies on **coverage**.
+The code coverage testing relies on **coverage**.
+
+**The easiest way to get all these for any platform is through Anaconda: http://continuum.io/downloads**
 
 ----
 
@@ -37,7 +39,7 @@ If you don't want to use Anaconda then you'll need to install the following:
 
 ## OS X
 
-Follow the instructions above for Windows, installing Anaconda or a manual Python install. (NOTE: Anaconda may have issues on OSX with multiprocessing, using the prebuilt app or installing manually may be necessary)
+Follow the instructions above for Windows, installing Anaconda or a manual Python install. 
 
 Installing Python manually is easiest with MacPorts (https://www.macports.org/):
 
@@ -86,7 +88,7 @@ This will by default put Anaconda in your home directory, so you need to put **$
 
 ### Ubuntu 14.* and Other Distros
 
-Install Python, Ogre3D, and the packages listed above with a package manager (ie. Synaptic) or **apt-get**:
+Install Python and the packages listed above with a package manager (ie. Synaptic) or **apt-get**:
 
     sudo apt-get install python2.7 python-numpy python-scipy python-qt4 libcg
 
