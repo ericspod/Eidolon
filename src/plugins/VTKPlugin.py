@@ -463,6 +463,19 @@ class VTKPlugin(MeshScenePlugin):
                             o.write('CELL_TYPES %i\n'%len(celltypes))
                             o.write('\n'.join(map(str,celltypes))+'\n')
                             
+                    elif datasettype==DatasetTypes._POLYDATA:
+                        allinds=list(ds.indices.values())
+                        numlines=sum(i.n() for i in allinds)
+                        numvals=sum(i.n()*(i.m()+1) for i in allinds)
+                        
+                        o.write('POLYGONS %i %i\n'%(numlines,numvals))
+                        
+                        for ind in allinds:
+                            numpoints=ind.m()
+                            for i in range(ind.n()):
+                                vals=map(str,ind.getRow(i))
+                                o.write('%i %s\n'%(numpoints,' '.join(vals)))
+                            
                     # write out fields as POINT_DATA, CELL_DATA is not supported
                     fields=list(ds.fields.values()) if writeFields else []
                     if len(fields)>0:
