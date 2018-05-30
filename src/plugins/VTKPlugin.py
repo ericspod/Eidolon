@@ -20,6 +20,7 @@ import os
 import xml.etree.cElementTree as ET
 import base64
 import contextlib
+import warnings
 
 try:
     from StringIO import StringIO
@@ -37,6 +38,21 @@ from eidolon import (
 eidolon.addLibraryFile('pyparsing-2.0.5-py2.7')
 
 from pyparsing import ParserElement,Word, Suppress, Regex, OneOrMore, ZeroOrMore, alphas, alphanums, CharsNotIn, lineEnd, Optional, Keyword
+
+try: # try to use pandas for loading text arrays
+    from pandas import read_csv
+    
+    def readTextArray(text,dtype):
+        buf=StringIO(text.replace(' ','\n'))
+        nn=read_csv(buf,sep='\n',names=['c1'],engine='c',dtype=dtype)
+        return np.asarray(nn).flatten()
+except ImportError: # no pandas, use np.loadtxt
+    warnings.warn('Pandas not found, VTK XML load will be slow.')
+    
+    def readTextArray(text,dtype):
+        buf=StringIO(text.replace(' ','\n'))
+        return np.loadtxt(buf,dtype).flatten()
+
 
 VTKProps=enum('header','desc','version','datasettype','griddims','attrtype','polyinds',desc='Metadata property names for storing VTK info in DataSet objects')
 DatasetTypes=enum('STRUCTURED_GRID','UNSTRUCTURED_GRID','POLYDATA',desc='Understood VTK dataset types')
@@ -517,14 +533,13 @@ class VTKPlugin(MeshScenePlugin):
                     
                 return np.frombuffer(text,dtype=dtype)
             else:
-                return np.loadtxt(StringIO(node.text.replace('\n',' ')),dtype).flatten()
+                return readTextArray(node.text,dtype)
             
         def readNodes(nodearray,byteorder,compressor):
             assert _get(nodearray,'NumberOfComponents')=='3'                    
             arr=readArray(nodearray,byteorder,compressor)
             nodes=eidolon.Vec3Matrix('nodes',arr.shape[0]/3)
             np.asarray(nodes).flat[:]=arr
-            del arr
             return nodes
                 
         def readFields(celldata,pointdata,byteorder,compressor):
@@ -570,7 +585,7 @@ class VTKPlugin(MeshScenePlugin):
             root=tree.getroot()
             unstruc=root.find('UnstructuredGrid')
             poly=root.find('PolyData')
-            appended=root.find('AppendedData')
+            #appended=root.find('AppendedData')
             compressor=_get(root,'compressor')
             byteorder='<' if root.get('byte_order')=='LittleEndian' else '>'
             
@@ -618,7 +633,7 @@ class VTKPlugin(MeshScenePlugin):
                 #    for ct,off in cellofflist:
                 #        if celltype==ct:
                 #            indmat.append(*indlist[off-indmat.m():off])
-                        
+                
                 inds=[]
                 for ind,order in indmats.values(): # collect and reorder all non-empty index matrices
                     if ind.n()>0:
