@@ -629,11 +629,6 @@ class VTKPlugin(MeshScenePlugin):
                     if indmat is not None: # only found for those cell types we understand (ie. not polygon)
                         indmat.append(*indlist[off-indmat.m():off])
                 
-                #for celltype,(indmat,_) in indmats.items():
-                #    for ct,off in cellofflist:
-                #        if celltype==ct:
-                #            indmat.append(*indlist[off-indmat.m():off])
-                
                 inds=[]
                 for ind,order in indmats.values(): # collect and reorder all non-empty index matrices
                     if ind.n()>0:

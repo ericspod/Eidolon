@@ -234,6 +234,7 @@ class IRTKPluginMixin(object):
         self.transimage=os.path.join(self.mirtkdir,'transform-image')+self.exesuffix
         self.transpts=os.path.join(self.mirtkdir,'transform-points')+self.exesuffix
         self.editimage=os.path.join(self.mirtkdir,'edit-image')+self.exesuffix
+        self.decimatesurf=os.path.join(self.mirtkdir,'decimate-surface')+self.exesuffix
 
     def getCWD(self):
         '''This method must be overridden to return the current working directory (ie. project directory).'''
