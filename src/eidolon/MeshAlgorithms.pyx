@@ -434,9 +434,10 @@ def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,Ind
         for e in range(start,end):
             elem=octree.getAt(e)
             for face in range(numfaces):
-                f=Face.fromElem(indmat,elem,face,elemtype)
-                if f in uniques: # face encountered a second time so must be internal
-                    ff=uniques.pop(f) # ff is not the same object as f but the face adjacent to it
+                f=Face.fromElem(indmat,elem,face,elemtype) # create face, adjacent face will have same hash but different indices
+                ff=uniques.pop(f,None) # ff is not the same object as f but the face adjacent to it
+                
+                if ff is not None: # face encountered a second time so must be internal
                     adj.mat.ats(ff.elemid,ff.faceid,f.elemid) # the face ff.faceid of element ff.elemid is adjacent to element f.elemid
                     adj.mat.ats(ff.elemid,ff.faceid+numfaces,f.faceid) # the face ff.faceid of element ff.elemid is adjacent to face f.faceid
                     ext.mat.ats(ff.elemid,ff.faceid,0) # the face ff.faceid of element ff.elemid is internal
