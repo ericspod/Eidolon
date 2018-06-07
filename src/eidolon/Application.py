@@ -97,7 +97,7 @@ def generateConfig(inargs):
     prog='run.bat' if platformID=='Windows' else 'run.sh'
     conf=Config()
     configfile=''
-
+    
     # set configuration default values for the current platform, these are overridden below when the config file is read
     conf.set(platformID,APPDIRVAR,appdir) # store Eidolon's root directory, this is './' if the global variable isn't present
     conf.set(platformID,ConfVars.resdir,appdir+'/res/') # store the resource directory

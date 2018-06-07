@@ -41,7 +41,7 @@ import SceneUtils
 cimport SceneUtils
 
 from .SceneUtils import PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix,calculateLinePlaneIntersect
-from .SceneUtils cimport PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix,calculateLinePlaneIntersect
+from SceneUtils cimport PyDataSet,Octree,BoundBox,Face,StdProps,shareMatrices,isSpatialIndex,MatrixType,findIndexSets,listToMatrix,calculateLinePlaneIntersect
 
 
 def unitfuncLin(x):

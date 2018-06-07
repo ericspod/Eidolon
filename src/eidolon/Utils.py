@@ -94,7 +94,6 @@ import contextlib
 import ast
 import inspect
 import collections
-import urllib2
 import json
 
 py3 = sys.version_info.major == 3
@@ -1138,19 +1137,22 @@ def getVersionsFromRepoURL(url=None):
     '''
     if py3:
         from . import __init__
+        from urllib.request import urlopen
+        from urllib.error import HTTPError
     else:
         import __init__
+        from urllib2 import urlopen, HTTPError
         
     currentver=__init__.__version__
     newver=None
     
     if url:
         try:
-            jreq=urllib2.urlopen(url).read()
+            jreq=urlopen(url).read()
             req=json.loads(jreq)
             newver=max(rel['tag_name'] for rel in req)
             newver=str(newver)[1:]
-        except urllib2.HTTPError:
+        except HTTPError:
             newver=None
 
     return currentver,newver,(newver is None or currentver>newver)
