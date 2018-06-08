@@ -1,6 +1,6 @@
 /*
  * Eidolon Biomedical Framework
- * Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+ * Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
  * 
  * This file is part of Eidolon.
  *

@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 # 
 # This file is part of Eidolon.
 #
@@ -35,7 +35,7 @@ from eidolon import (
     taskroutine,PyDataSet, uniqueStr, copyfileSafe
 )
 
-eidolon.addLibraryFile('pyparsing-2.0.5-py2.7')
+eidolon.addLibraryFile('pyparsing-2.2.0-py2.py3-none-any')
 
 from pyparsing import ParserElement,Word, Suppress, Regex, OneOrMore, ZeroOrMore, alphas, alphanums, CharsNotIn, lineEnd, Optional, Keyword
 

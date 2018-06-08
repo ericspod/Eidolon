@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 # 
 # This file is part of Eidolon.
 #
@@ -48,7 +48,7 @@ from . import ImageObject
 
 from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture, PyVertexBuffer, PyIndexBuffer
 from .Camera2DView import Camera2DView
-from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, Future, FutureError, timeBackupFile, setTrace, TaskQueue
+from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, taskmethod,Future, FutureError, timeBackupFile, setTrace, TaskQueue
 from .VisualizerUI import QtWidgets, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
 from .SceneObject import SceneObject, SceneObjectRepr, MeshSceneObject
 from .SceneComponents import LightType, CenterType, AxesType, SceneLight, ScriptWriter
@@ -1440,32 +1440,26 @@ class SceneManager(TaskQueue):
         '''Returns the AABB containing all visible repr objects.'''
         return SceneUtils.BoundBox.union(r.getAABB(True) for r in self.enumSceneObjectReprs() if r.isVisible())
 
+    @taskmethod('Update Representation',mgrName='')
     @timing
-    def updateSceneObjectRepr(self,rep):
+    def updateSceneObjectRepr(self,rep,task=None):
         '''
-        Causes the SceneObjectRepr object to update its data through prepareBuffers() and update(). Updating occurs
-        in a task which first calls rep.prepareBuffers() in its thread which expects `rep' to setup all data which is
-        to be loaded into figures, then rep.update() is called in the main thread which is when `rep' is expected to
-        create figures and load them with data. Once this is done the UI refreshes itself, the scene redraws, and the
-        objectUpdated event is sent.
+        Causes the SceneObjectRepr object to update its data through prepareBuffers() and update(). Updating occurs in
+        a task which first calls rep.prepareBuffers() in its thread expecting `rep' to setup all data to be loaded into
+        figures, then rep.update() is called in the main thread where `rep' is expected to create figures and load them 
+        with data. Once this is done the UI refreshes itself, the scene redraws, and the objectUpdated event is sent.
         '''
-        f=Future()
-        @taskroutine('Update Representation')
-        def updateTask(task):
-            with f:
-                rep.prepareBuffers() # prepare data in a way that doesn't require operations in the main thread
+        rep.prepareBuffers() # prepare data in a way that doesn't require operations in the main thread
 
-                self.callThreadSafe(rep.update,self.scene) # update object in the main thread
+        self.callThreadSafe(rep.update,self.scene) # update object in the main thread
 
-                self.repaint()
-                self._collect()
-                self._triggerEvent(EventType._objectUpdated,rep)
-                if self.win:
-                    self.win.relayoutViz()
+        self.repaint()
+        self._collect()
+        self._triggerEvent(EventType._objectUpdated,rep)
+        if self.win:
+            self.win.relayoutViz()
 
-                f.setObject(rep)
-
-        return self.runTasks(updateTask(),f)
+        return rep
 
     def renameSceneObject(self,obj,newname):
         oldname=obj.getName()

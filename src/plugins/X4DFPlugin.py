@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -27,7 +27,7 @@ import shutil
 import glob
 import numpy as np
 
-eidolon.addLibraryFile('x4df-0.1.0-py2-none-any')
+eidolon.addLibraryFile('x4df-0.1.0-py3-none-any')
 
 import x4df
 from x4df import readFile, writeFile, idTransform, validFieldTypes, ASCII, BASE64, BASE64_GZ, BINARY, BINARY_GZ
@@ -38,6 +38,10 @@ ConfigArgs=eidolon.enum(
     ('loadorder','Which mesh/image the object is loaded from in the original file'),
     ('source','Source object the data for this object was loaded from')
 )
+
+
+def shapeStr(arr):
+    return ' '.join(map(str,arr.shape))
 
 
 def array2MatrixForm(arr,dtype):
@@ -87,7 +91,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
     for ind in obj.datasets[0].enumIndexSets():
         if eidolon.isSpatialIndex(ind):
             indmat=np.asarray(ind)
-            shape=' '.join(map(str,indmat.shape))
+            shape=shapeStr(indmat.shape)
             filename='%s_%s.dat'%(filenamePrefix,ind.getName()) if filenamePrefix else None
 
             topo=x4df.topology(ind.getName(),ind.getName(),ind.getType(),ind.meta(StdProps._spatial),[])
@@ -122,7 +126,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 
 
 @timing
-def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=None):
+def convertImage(obj,plugin,arrayformat=ASCII,datatype='f4',filenamePrefix=None):
     '''
     Convert the ImageSceneObject `obj' into a x4df structure. The arrays are all formatted the same using `arrayformat'
     and are stored in files whose names begin with `filenamePrefix' if this is given, otherwise they are stored in the 
@@ -157,7 +161,8 @@ def convertImage(obj,plugin,arrayformat=ASCII,dataFormat='f4',filenamePrefix=Non
     imd=x4df.imagedata('image',None,None,[])
     im.imagedata.append(imd)
 
-    x4.arrays.append(x4df.array('image',' '.join(map(str,imgarr.shape)),None,dataFormat,arrayformat,None,filename,imgarr))
+    arr=x4df.array('image',shapeStr(imgarr),type=datatype,format=arrayformat,filename=filename,data=imgarr)
+    x4.arrays.append(arr)
 
     return x4
 
@@ -372,7 +377,7 @@ class X4DFPlugin(CombinedScenePlugin):
         return objs
 
     @eidolon.taskmethod('Saving X4DF Object')
-    def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64_GZ,dataFormat='f4',separateFiles=False,**kwargs):
+    def saveObject(self,obj,path,overwrite=False,setFilenames=False,task=None,arrayFormat=BASE64_GZ,datatype='f4',separateFiles=False,**kwargs):
         if os.path.isdir(path):
             path=os.path.join(path,eidolon.getValidFilename(obj.getName()))
         
@@ -385,7 +390,7 @@ class X4DFPlugin(CombinedScenePlugin):
         if isinstance(obj,MeshSceneObject):
             x4=convertMesh(obj,arrayFormat,fileprefix)
         else:
-            x4=convertImage(obj,self,arrayFormat,dataFormat,fileprefix)
+            x4=convertImage(obj,self,arrayFormat,datatype,fileprefix)
 
         timing(writeFile)(x4,path)
 

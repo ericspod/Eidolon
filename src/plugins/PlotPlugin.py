@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -47,7 +47,7 @@ import eidolon
 
 from ui import Ui_RegionGraphWidget
 
-eidolon.addLibraryFile('pyqtgraph-0.10.0')
+eidolon.addLibraryFile('pyqtgraph-0.10.0-py3-none-any')
 
 import pyqtgraph as pg
 import numpy as np

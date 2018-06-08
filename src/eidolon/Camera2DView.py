@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -665,7 +665,7 @@ class Camera2DView(Draw2DView,BaseCamera2DWidget):
 
     def updateUI(self,_=None):
         stdPlanes=list(BaseCamera2DWidget.standardPlanes)
-        reprs=sorted(self.mgr.enumSceneObjectReprs())
+        reprs=sorted(self.mgr.enumSceneObjectReprs(),key=lambda r:r.getName())
         imgreprs=[o for o in reprs if isinstance(o,ImageSceneObjectRepr)]
 
         names=[o.getName() for o in imgreprs]

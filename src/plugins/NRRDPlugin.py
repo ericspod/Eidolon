@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 # 
 # This file is part of Eidolon.
 #
@@ -19,7 +19,7 @@
 
 from eidolon import *
 
-addLibraryFile('pynrrd-0.1-py2.7')
+addLibraryFile('pynrrd-0.2.4-py2.py3-none-any')
 
 import nrrd
 

@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -20,7 +20,7 @@
 from eidolon import vec3, rotator, taskroutine, splitPathExt, halfpi, Future,ImageScenePlugin, ImageSceneObject, ImageSceneObjectRepr
 import eidolon
 
-eidolon.addLibraryFile('nibabel-2.3.0.dev0',False) # http://nipy.org/nibabel/index.html
+eidolon.addLibraryFile('nibabel-2.3.0.dev0-py3-none-any',False) # http://nipy.org/nibabel/index.html
 
 import nibabel
 from nibabel.nifti1 import unit_codes, xform_codes,data_type_codes

@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -39,7 +39,7 @@ __appname__='Eidolon Biomedical Framework'
 __version_info__=(0,4,99) # global application version, major/minor/patch, patch value 99 means development code directly from the repo
 __version__='%i.%i.%i'%__version_info__
 __author__='Eric Kerfoot'
-__copyright__="Copyright (c) 2016-7 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
+__copyright__="Copyright (c) 2016-8 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
 __website__="https://ericspod.github.io/Eidolon"
 __verurl__="https://api.github.com/repos/ericspod/Eidolon/releases"
 

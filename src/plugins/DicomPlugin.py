@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -48,7 +48,7 @@ from eidolon import (
 )
 import eidolon
 
-eidolon.addLibraryFile('pydicom-1.1.0.dev0') # PyDicom: https://github.com/darcymason/pydicom
+eidolon.addLibraryFile('pydicom-1.1.0.dev0-py3-none-any') # PyDicom: https://github.com/darcymason/pydicom
 
 from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary

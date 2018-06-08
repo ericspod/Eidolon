@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -1003,7 +1003,7 @@ def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
             return doSomething()
     '''
     self,args=args[0],args[1:]
-    mgr=getattr(self,mgrName)
+    mgr=getattr(self,mgrName,self)
     f=Future()
 
     def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f

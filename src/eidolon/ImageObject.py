@@ -1,5 +1,5 @@
 # Eidolon Biomedical Framework
-# Copyright (C) 2016-7 Eric Kerfoot, King's College London, all rights reserved
+# Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
 #
 # This file is part of Eidolon.
 #
@@ -1087,7 +1087,7 @@ class ImageVolumeRepr(ImageSceneObjectRepr):
                     # mulAlpha will be False, if no alpha masks and no spectrum texture then mulAlpha will be True
                     # and the alpha value for each pixel is multipled by the pixel's data value. This ensures there
                     # is some sort of alpha being stored regardless of settings and input
-                    tex.fillColor(matrix,j,imgmin,imgmax,colormat,alpha,mulAlpha)                 
+                    tex.fillColor(matrix,j,imgmin,imgmax,colormat,alpha,mulAlpha)       
 
     def update(self,scene):
         assert isMainThread()
