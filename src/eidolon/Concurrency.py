@@ -41,10 +41,13 @@ import threading
 import traceback
 import functools
 import types
+import inspect
 from multiprocessing import Pipe, Process, cpu_count, Array, Value, Lock, Event
 
-from .Utils import queue, lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
-
+try:
+    from .Utils import queue, lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
+except ImportError:
+    from Utils import queue, lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
 
 class MethodProxy(object):
     '''
@@ -542,16 +545,22 @@ def concurrent(func):
     Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
     '''
     
-    localname='__local__'+func.__name__
-    globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
-    globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
-    globals()[localname].__qualname__=localname # needed in Python 3
-    
-    @functools.wraps(func)
-    def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
-        future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,globals()[localname],*args,**kwargs)
-        return future(None)
-
+    if inspect.isbuiltin(func):
+        localname='__local__'+func.__name__
+        globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
+        globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
+        globals()[localname].__qualname__=localname # needed in Python 3
+        
+        @functools.wraps(func)
+        def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
+            future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,globals()[localname],*args,**kwargs)
+            return future(None)
+    else:
+        @functools.wraps(func)
+        def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
+            future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,concurrentFuncExec,func.__code__,{},*args,**kwargs)
+            return future(None)
+            
     return concurrent_wrapper
 
 
@@ -564,14 +573,13 @@ def concurrent(func):
 #
 #
 #@concurrent
-#def concurrentFuncExec(process,codeobj,cglobals,args,kwargs):
-#    execglobals=dict(globals())
-#    
-#    execglobals['process']=process
-#    execglobals.update(cglobals)
-#    
-#    func=types.FunctionType(codeobj,execglobals)
-#    return func(*args,**kwargs)
+def concurrentFuncExec(process,codeobj,cglobals,args,kwargs):
+    execglobals=dict(globals())
+    
+    execglobals.update(cglobals)
+    
+    func=types.FunctionType(codeobj,execglobals)
+    return func(process,*args,**kwargs)
     
 
 @concurrent

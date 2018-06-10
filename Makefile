@@ -42,9 +42,10 @@ PYINST?=pyinstaller
 
 # find the path to the python exe using the registry, this uses cygpath to produce a Cygwin-formatted path
 ifeq ($(PLAT),win64_mingw)
-	REG="$(shell cat /proc/registry/HKEY_CURRENT_USER/Software/Python/PythonCore/2.7/InstallPath/@ 2>/dev/null)"
+	WINVER=3.6
+	REG="$(shell cat /proc/registry/HKEY_CURRENT_USER/Software/Python/PythonCore/$(WINVER)/InstallPath/@ 2>/dev/null)"
 	ifeq ($(REG),"")
-		REG="$(shell cat /proc/registry/HKEY_LOCAL_MACHINE/SOFTWARE/Python/PythonCore/2.7/InstallPath/@ 2>/dev/null)"
+		REG="$(shell cat /proc/registry/HKEY_LOCAL_MACHINE/SOFTWARE/Python/PythonCore/$(WINVER)/InstallPath/@ 2>/dev/null)"
 	endif
 
 	PYTHON=$(shell cygpath -u '$(REG)')/python.exe
