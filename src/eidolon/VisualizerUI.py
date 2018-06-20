@@ -1330,6 +1330,8 @@ class RenderWidget(QtWidgets.QWidget):
         self.setAttribute(Qt.WA_PaintOnScreen,True)
         self.setAttribute(Qt.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WA_OpaquePaintEvent, True)
+        #self.setMouseTracking(True)
+        
         self.conf=conf
         self.scene=None
         self.evtHandler=None
@@ -1342,7 +1344,7 @@ class RenderWidget(QtWidgets.QWidget):
     def _getWinHandle(self):
         '''Returns the string window handle for this widget (or its parent as appropriate).'''
         if Utils.isWindows:
-            return str(int(self.parentWidget().winId()))
+            return str(int(self.winId()))
         elif Utils.isDarwin:
             return str(int(self.winId()))
         else:
@@ -2287,9 +2289,10 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         setattr(self.scratchWidget,'keyPressEvent',_keyPress)
 
         # reset self.viz to use Eidolon renderer widget
-        self.mainLayout.removeWidget(self.viz)
+        #self.mainLayout.removeWidget(self.viz)
+        #self.viz1=self.viz
         self.viz=RenderWidget(conf,self)
-        self.mainLayout.addWidget(self.viz)
+        #self.mainLayout.addWidget(self.viz)
         self.viz.initViz()
 
         # force a relayout
