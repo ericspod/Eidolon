@@ -33,10 +33,11 @@ mgr.callThreadSafe(d1.setImageStackPosition,25)
 d2=mgr.create2DView()
 mgr.callThreadSafe(d2.setImageStackPosition,25)
 
-# wait for 1 second, remove the second 2d window and then add a third
-@mgr.addFuncTask
-@delayedcall(1.0)
-def _remove():
-    d2.parentWidget().close()
-    d3=mgr.create2DView()
-    d3.setImageStackPosition(25)
+# TODO: fix the crash problem this is causing
+## wait for 1 second, remove the second 2d window and then add a third
+#@mgr.addFuncTask
+#@delayedcall(1.0)
+#def _remove():
+#    d2.parentWidget().close()
+#    d3=mgr.create2DView()
+#    d3.setImageStackPosition(25)

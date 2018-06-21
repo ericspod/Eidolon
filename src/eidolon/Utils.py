@@ -633,10 +633,9 @@ class Task(object):
     a 'maxprogress' value. Tasks may have their own threads or be executed by their containers. Normally tasks are
     executed by a TaskQueue object. The actual action of the Task object should be implemented by the supplied `func'
     argument, which must be a callable accepting the positional and keyword arguments given by `args' and `kwargs'.
-    When a Task object is executed, it's start() method is called which will call self.func either in the calling thread
-    or a new one, depending on the `useThread' argument. A Task object can have a parent Task, which occurs when the body
-    of one task invokes an operation that normally adds a task to a queue. When this occurs the progress and label
-    methods call into the parent Task object.
+    When a Task object is executed, it's start() method is called which will call self.func in the calling thread. A 
+    Task object can have a parent Task, which occurs when the body of one task invokes an operation that normally adds 
+    a task to a queue. When this occurs the progress and label methods call into the parent Task object.
     '''
     @staticmethod
     def Null():
@@ -658,36 +657,27 @@ class Task(object):
         self.func=func
         self.args=args
         self.kwargs=kwargs
-        self.thread=None
         self.setLabel(label)
-
-    def _callFunc(self):
-        '''Call self.func with arguments self.args and self.kwargs, storing the result in self.result.'''
-        self.result=self.func(*self.args,**self.kwargs)
 
     def start(self,useThread=False):
         '''
-        Perform the execution of the task. This will set the label, set self.started to True, and then if useThread is
-        True create a thread which will _callFunc(), otherwise _callFunc() is called directly. Finally self.completed
-        is set to True once this is done.
+        Perform the execution of the task. This will set the label, set self.started to True, and then set self.result to
+        the result of calling self.func with self.args and self.kwargs as arguments. Finally self.complete is set to True 
+        once this is done.
         '''
         oldlabel=self.getLabel()
         self.setLabel(self.label)
         self.started=True
         try:
-            if useThread:
-                self.thread=Thread(target=self._callFunc,name=self.label)
-                self.thread.start()
-            else:
-                self._callFunc()
+            self.result=self.func(*self.args,**self.kwargs)
             self.completed=True
         finally:
             if oldlabel and self.parentTask:
                 self.parentTask.setLabel(oldlabel) # restore the old label of the parent task if present
 
     def isDone(self):
-        '''Returns True if the task has started and the thread is no longer alive or self.complete is True.'''
-        return self.started and (not self.thread.isAlive() if self.thread else self.completed)
+        '''Returns True if the task has started and self.complete is True.'''
+        return self.started and self.completed
 
     def setLabel(self,label):
         '''Set the task's label (or that of the parent if present), this will be used by UI to indicate current task.'''
@@ -695,8 +685,6 @@ class Task(object):
             self.parentTask.setLabel(label)
         else:
             self.label=label
-            if self.thread:
-                self.thread.label=label
 
     def getLabel(self):
         '''Get the task's label, or that of the parent if present.'''
@@ -1605,6 +1593,25 @@ def tracing(func):
         return func(*args,**kwargs)
 
     return _wrap
+
+
+def setmethod(obj,methname=None):
+    '''
+    Applying this decorator to a routine replaces the method of `obj' with name `methname' (or the name of the applied
+    routine if this is None) with the routine. 
+    '''
+    def setfunc(func):
+        fname=str(methname or func.__name__)
+        print(fname)
+        oldfunc=getattr(obj,fname,None)
+        if oldfunc:
+            setattr(obj,'__old__'+fname,oldfunc)
+            
+        setattr(obj,fname,func)
+        
+        return func
+    
+    return setfunc
 
 
 def traverseObj(obj,func,visited=()):

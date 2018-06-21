@@ -26,12 +26,14 @@ import eidolon
 
 from ui import QtWidgets, Ui_OpenImgStackDialog
 
-import numpy as np
-
 try:
     from imageio import imwrite
-except:
-    from scipy.misc import imsave as imwrite
+except ImportError:
+    try:
+        from scipy.misc import imsave as imwrite
+    except ImportError:
+        import warnings
+        warnings.warn('imageio not found, ImageStackPlugin will be unable to save')
     
 
 class ChooseImgStackDialog(QtWidgets.QDialog,Ui_OpenImgStackDialog):
