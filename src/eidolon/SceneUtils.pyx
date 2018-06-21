@@ -1906,7 +1906,7 @@ def isSpatialIndex(IndexMatrix ind,dim=None):
     the element type are greater or equal to this value.
     '''
     cdef str itype=ind.getType()
-    return itype in ElemType and ind.meta(StdProps._isspatial)=='True' and (dim==None or ElemType[ind.getType()].dim>=dim)
+    return itype in ElemType and ind.meta(StdProps._isspatial)=='True' and (dim==None or ElemType[itype].dim>=dim)
 
 
 def isPerNodeField(RealMatrix field,int numnodes):
