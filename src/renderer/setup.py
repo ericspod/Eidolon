@@ -163,9 +163,9 @@ setup(ext_modules=ext)
 os.remove('Renderer.cpp')
 shutil.rmtree('build')
 
-# copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
-if not isWindows:
-    sobj=glob.glob('Renderer.*.so') # .so files get weird names so find the first one that matches or the default
-    sobj=sobj[0] if sobj else 'Renderer.so'
-    shutil.move(sobj,destfile)
+## copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
+#if not isWindows:
+#    sobj=glob.glob('Renderer.*.so') # .so files get weird names so find the first one that matches or the default
+#    sobj=sobj[0] if sobj else 'Renderer.so'
+#    shutil.move(sobj,destfile)
 

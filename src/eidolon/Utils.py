@@ -1602,7 +1602,6 @@ def setmethod(obj,methname=None):
     '''
     def setfunc(func):
         fname=str(methname or func.__name__)
-        print(fname)
         oldfunc=getattr(obj,fname,None)
         if oldfunc:
             setattr(obj,'__old__'+fname,oldfunc)

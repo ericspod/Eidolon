@@ -1434,10 +1434,7 @@ class RenderWidget(QtWidgets.QWidget):
 
     def wheelEvent(self,e):
         self._triggerEvent(EventType._mouseWheel,e)
-<<<<<<< HEAD
         QtWidgets.QWidget.wheelEvent(self,e)
-=======
->>>>>>> origin/master
         
     def mouseMoveEvent(self,e):
         self._triggerEvent(EventType._mouseMove,e)
@@ -2209,58 +2206,6 @@ class ScreenshotDialog(QtWidgets.QDialog,Ui_ScreenshotForm):
                 self.result[4:7]=[start,end,interval]
 
             self.close()
-
-
-class TestWidget(QtWidgets.QWidget):
-    def __init__(self,parent=None):
-        QtWidgets.QWidget.__init__(self,parent)
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setAttribute(Qt.WA_PaintOnScreen,True)
-        self.setAttribute(Qt.WA_NoSystemBackground, True)
-        self.setAttribute(Qt.WA_OpaquePaintEvent, True)
-
-    def paintEngine(self):
-        '''Override method returning None to clue in Qt that we're handling painting ourselves.'''
-        return None
-
-    def resizeEvent(self,e):
-        '''
-        Triggered when the widget resizes, this handles sending the correct resize information to the adapter which
-        must keep track of size in platform-specific ways. This triggers the widgetResize event and calls repaint().
-        '''
-        QtWidgets.QWidget.resizeEvent(self,e)
-
-    def update(self):
-        QtWidgets.QWidget.update(self)
-
-    def repaint(self,*q):
-        QtWidgets.QWidget.repaint(self,*q)
-
-    def mousePressEvent(self,e):
-        Utils.printFlush(e)
-
-    def mouseReleaseEvent(self,e):
-        Utils.printFlush(e)
-
-    def mouseDoubleClickEvent(self,e):
-        Utils.printFlush(e)
-
-    def wheelEvent(self,e):
-        Utils.printFlush(e)
-
-    def mouseMoveEvent(self,e):
-        Utils.printFlush(e)
-
-    def keyPressEvent(self,e):
-        Utils.printFlush(e)
-        QtWidgets.QWidget.keyPressEvent(self,e)
-
-    def keyReleaseEvent(self,e):
-        Utils.printFlush(e)
-        QtWidgets.QWidget.keyReleaseEvent(self,e)
-
-    def paintEvent(self,e):
-        Utils.printFlush(e)
 
 
 @signalclass

@@ -97,11 +97,11 @@ setup(ext_modules=ext)
 
 shutil.rmtree('build')
 
-# copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
-if not isWindows:
-    for i in glob.glob('./*.pyx'):
-        i=os.path.splitext(i)[0]
-        dest='%s.so.%s'%(i,platdir)
-        sobj=glob.glob(i+'.*.so') # .so files get weird names so find the first one that matches
-        sobj=sobj[0] if sobj else i+'.so'
-        shutil.move(sobj,dest)
+## copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
+#if not isWindows:
+#    for i in glob.glob('./*.pyx'):
+#        i=os.path.splitext(i)[0]
+#        dest='%s.so.%s'%(i,platdir)
+#        sobj=glob.glob(i+'.*.so') # .so files get weird names so find the first one that matches
+#        sobj=sobj[0] if sobj else i+'.so'
+#        shutil.move(sobj,dest)

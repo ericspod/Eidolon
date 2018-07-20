@@ -16,34 +16,24 @@ function getFileDir() {
 
 # directory of this script
 export APPDIR=$(getFileDir "${BASH_SOURCE[0]}")
+
 export LIBSDIR="$APPDIR/EidolonLibs"
+export PYTHONPATH=$([ -z "$PYTHONPATH" ] && echo "$APPDIR/src" || echo "$PYTHONPATH:$APPDIR/src")
+export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
+export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 
-if [ -z "$PYTHONPATH" ]
-then
-	export PYTHONPATH="$APPDIR/src"
-else
-	export PYTHONPATH="$PYTHONPATH:$APPDIR/src"
-fi	
-
-if [ -f "$APPDIR/Eidolon" ] # generated executable, run this instead of the script
+# generated executable, run this instead of the script
+if [ -f "$APPDIR/Eidolon" ] 
 then
 	LD_LIBRARY_PATH="$APPDIR:$LD_LIBRARY_PATH" "$APPDIR/Eidolon" "$@"
 	exit $?
-elif [ "$(uname -o 2>/dev/null)" == "Cygwin" ] || [ "$(uname -o 2>/dev/null)" == "Msys" ] # Windows Cygwin or Msys shell
+fi
+
+# Windows Cygwin or Msys shell
+if [ "$(uname -o 2>/dev/null)" == "Cygwin" ] || [ "$(uname -o 2>/dev/null)" == "Msys" ] 
 then
 	"$APPDIR/run.bat" $@
 	exit $?
-elif [ "$(uname)" == "Darwin" ] # OSX
-then
-	# symlink each compiled library for OSX to the correct name
-	for i in "$APPDIR"/src/*/*.so.osx; do ln -fs "$i" "${i%.so.osx}.so";done
-	
-	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
-else
-	# symlink every compiled library for this platform to the correct name
-	for i in $APPDIR/src/*/*.so.linux; do ln -fs $i ${i%.so.linux}.so;done
-	
-	export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
 python "$APPDIR/main.py" "$@"
