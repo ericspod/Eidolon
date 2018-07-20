@@ -29,6 +29,9 @@
    <bool>true</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
    <layout class="QVBoxLayout" name="mainLayout">
     <property name="spacing">
      <number>0</number>

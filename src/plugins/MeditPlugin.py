@@ -17,11 +17,13 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from eidolon import *
+import os
+import eidolon
+from eidolon import MeshScenePlugin, MeshSceneObject, StdProps, taskmethod
 
 class MeditPlugin(MeshScenePlugin):
     def __init__(self):
-        ScenePlugin.__init__(self,'Medit')
+        MeshScenePlugin.__init__(self,'Medit')
         self.objcount=0
 
     def init(self,plugid,win,mgr):
@@ -42,6 +44,9 @@ class MeditPlugin(MeshScenePlugin):
 
     def getHelp(self):
         return '\nUsage: --medit=mesh-file-path[,solution-file-path]'
+    
+    def acceptFile(self,filename):
+        return eidolon.hasExtension(filename,'mesh',)
 
     def getObjFiles(self,obj):
         filenames=[obj.kwargs['filename']]
@@ -49,12 +54,12 @@ class MeditPlugin(MeshScenePlugin):
         return filenames
         
     def renameObjFiles(self,obj,oldname,overwrite=False):
-        assert isinstance(obj,SceneObject) and obj.plugin==self
-        obj.kwargs['filename']=renameFile(obj.kwargs['filename'],obj.getName(),overwriteFile=overwrite)
+        assert isinstance(obj,MeshSceneObject) and obj.plugin==self
+        obj.kwargs['filename']=eidolon.renameFile(obj.kwargs['filename'],obj.getName(),overwriteFile=overwrite)
         
     def copyObjFiles(self,obj,sdir,overwrite=False):
         filename=os.path.join(sdir,os.path.basename(obj.kwargs['filename']))
-        copyfileSafe(obj.kwargs['filename'],filename,overwrite)
+        eidolon.copyfileSafe(obj.kwargs['filename'],filename,overwrite)
         obj.kwargs['filename']=filename
 
     def _openFileDialog(self):
@@ -72,84 +77,88 @@ class MeditPlugin(MeshScenePlugin):
             if filename!='':
                 self.loadSolution(filename,obj)
             
-    def loadObject(self,filename,name=None,**kwargs):
-        widths={'triangles':3,'quadrilaterals':4,'tetrahedra':4,'hexaedra':8,'edges':2}
-        types={'triangles':'Tri1NL','quadrilaterals':'Quad1NL','tetrahedra':'Tet1NL', 'hexaedra':'Hex1NL','edges':'Line1NL'}
-        f=Future()
+    @taskmethod('Loading Medit File')
+    def loadObject(self,filename,name=None,task=None,**kwargs):
+        widths={'triangles':3,'quadrilaterals':4,'tetrahedra':4,'hexahedra':8,'edges':2}
+        types={'triangles':'Tri1NL','quadrilaterals':'Quad1NL','tetrahedra':'Tet1NL', 'hexahedra':'Hex1NL','edges':'Line1NL'}
+        orderings={'triangles':[0,1,2],'quadrilaterals':[0,1,3,2],'tetrahedra':[0,1,2,3], 'hexahedra':[0,1,3,2,4,5,7,6],'edges':[0,1]}
         
-        @taskroutine('Loading Medit File')
-        def _loadFile(filename,name,task):
-            name=self.mgr.getUniqueObjName(name or splitPathExt(filename)[1])
-            nodes=None
-            indices=[]
-            fields=[]
+        name=self.mgr.getUniqueObjName(name or eidolon.splitPathExt(filename)[1])
+        nodes=None
+        indices=[]
+        fields=[]
+        
+        with open(filename) as o:
+            header=[o.readline().strip(),o.readline().strip()]
+            assert header[0]=='MeshVersionFormatted 1'
+            assert header[1].split()[0]=='Dimension'
             
-            with open(filename) as o:
-                header=[o.readline(),o.readline(),o.readline()]
-                assert header[0].strip()=='MeshVersionFormatted 1'
-                assert header[1].strip()=='Dimension'
-                assert header[2].strip()=='3'
+            if header[1]=='Dimension':
+                header+=[o.readline().strip()]
                 
+                assert header[1]=='Dimension'
+                assert 1<=int(header[2])<=3
+            else:
+                assert 1<=int(header[1].split()[1])<=3
+                
+            section=o.readline().strip().lower()
+            while section and section!='end':
+                numlines=int(o.readline())
+                if section=='vertices': # special case for vertices
+                    nodes=eidolon.Vec3Matrix('nodes',numlines)
+                    vertexrefs=eidolon.RealMatrix('vertexrefs',numlines)
+                    vertexrefs.meta(StdProps._nodedata,'True')
+                    fields.append(vertexrefs)
+                    
+                    for n in range(numlines):
+                        line=list(map(float,o.readline().split()))
+                        nodes.setAt(eidolon.vec3(*line[:-1]),n)
+                        vertexrefs.setAt(line[-1],n)
+                else: # read the index sets
+                    stype=types[section]
+                    inds=eidolon.IndexMatrix(section,stype,numlines,widths[section])
+                    inds.meta(StdProps._isspatial,'True')
+                    
+                    refs=eidolon.RealMatrix(section+'refs',numlines)
+                    refs.meta(StdProps._spatial,section)
+                    refs.meta(StdProps._topology,section)
+                    
+                    for n in range(numlines):
+                        line=list(map(int,o.readline().split()))
+                        #inds.setRow(n,*line[:-1])
+                        inds.setRow(n,*[line[i] for i in orderings[section]])
+                        refs.setAt(float(line[-1]),n)
+                        
+                    inds.sub(1)
+                    indices.append(inds)
+                    fields.append(refs)
+                    
                 section=o.readline().strip().lower()
-                while section and section!='end':
-                    numlines=int(o.readline())
-                    if section=='vertices': # special case for vertices
-                        nodes=Vec3Matrix('nodes',numlines)
-                        vertexrefs=RealMatrix('vertexrefs',numlines)
-                        vertexrefs.meta(StdProps._nodedata,'True')
-                        fields.append(vertexrefs)
-                        
-                        for n in range(numlines):
-                            line=list(map(float,o.readline().split()))
-                            nodes.setAt(vec3(*line[:-1]),n)
-                            vertexrefs.setAt(line[-1],n)
-                    else: # read the index sets
-                        inds=IndexMatrix(section,types[section],numlines,widths[section])
-                        refs=RealMatrix(section+'refs',numlines)
-                        refs.meta(StdProps._spatial,section)
-                        refs.meta(StdProps._topology,section)
-                        
-                        for n in range(numlines):
-                            line=list(map(int,o.readline().split()))
-                            inds.setRow(n,*line[:-1])
-                            refs.setAt(float(line[-1]),n)
-                            
-                        inds.sub(1)
-                        indices.append(inds)
-                        fields.append(refs)
-                        
-                    section=o.readline().strip().lower()
-                
-            f.setObject(MeshSceneObject(name,PyDataSet('meditDS',nodes,indices,fields),self,filename=filename))
             
-        return self.mgr.runTasks(_loadFile(filename,name),f)
+        return MeshSceneObject(name,eidolon.PyDataSet('meditDS',nodes,indices,fields),self,filename=filename)
         
-    def loadSolution(self,filename,obj,name=None):
-        f=Future()
-        @taskroutine('Loading Medit Solution File')
-        def _loadFile(filename,name,obj,task):
-            with open(filename) as o:
-                obj=Future.get(obj)
-                dds=obj.datasets
-                dim,width,numvals,stype=map(int,o.readline().split())
-                numlines=int(numvals/width)
+    @taskmethod('Loading Medit Solution File')
+    def loadSolution(self,filename,obj,name=None,task=None):
+        with open(filename) as o:
+            obj=eidolon.Future.get(obj)
+            dds=obj.datasets
+            dim,width,numvals,stype=map(int,o.readline().split())
+            numlines=int(numvals/width)
+            
+            firstspatial=eidolon.first(filter(eidolon.isSpatialIndex,dds[0].indices.values())) # get the first spatial index
+            
+            sol=eidolon.RealMatrix(name or eidolon.splitPathExt(filename)[1],numlines,width)
+            sol.meta(StdProps._topology,firstspatial.getName())
+            sol.meta(StdProps._spatial,firstspatial.getName())
+            sol.meta(StdProps._filename,filename)
+            
+            for n in range(numlines):
+                sol.setRow(n,*map(float,o.readline().split()))
                 
-                firstspatial=first(filter(isSpatialIndex,dds[0].indices.values())) # get the first spatial index
+            for ds in dds:
+                ds.setDataField(sol)
                 
-                sol=RealMatrix(name or splitPathExt(filename)[1],numlines,width)
-                sol.meta(StdProps._topology,firstspatial.getName())
-                sol.meta(StdProps._spatial,firstspatial.getName())
-                sol.meta(StdProps._filename,filename)
-                
-                for n in range(numlines):
-                    sol.setRow(n,*map(float,o.readline().split()))
-                    
-                for ds in dds:
-                    ds.setDataField(sol)
-                    
-                f.setObject(sol)
-        
-        return self.mgr.runTasks(_loadFile(filename,name,obj),f)
+            return sol
             
     def getScriptCode(self,obj,**kwargs):
         if isinstance(obj,MeshSceneObject):
@@ -172,9 +181,9 @@ class MeditPlugin(MeshScenePlugin):
                         args['ffilename'+str(i)]=convertpath(ffilename)
                         script+='Medit.loadSolution(%(ffilename'+str(i)+')s,%(varname)s)\n'
             
-            return setStrIndent(script % args).strip()+'\n'
+            return eidolon.setStrIndent(script % args).strip()+'\n'
         else:
             return MeshScenePlugin.getScriptCode(self,obj,**kwargs)     
             
         
-addPlugin(MeditPlugin())
+eidolon.addPlugin(MeditPlugin())

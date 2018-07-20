@@ -274,9 +274,15 @@ def findFaces(xis,numVertices,isSimplex):
             far=farnode(face,0)
             faces.append(face+[far])
             internalxisub.append([subvalue]*xiDim)
+            
+    def _cmp(a,b):
+        a=faces[a]
+        b=faces[b]
+        return ((a > b) - (a < b))
 
-    #indices=sorted(range(len(faces)),lambda a,b:cmp(faces[a],faces[b]))
-    indices=sorted(range(len(faces)),key=lambda i:faces[i])
+    #indices=sorted(range(len(faces)),key=lambda i:faces[i])
+    indices=sorted(range(len(faces)),key=functools.cmp_to_key(_cmp))
+    
     return [faces[i] for i in indices],[internalxisub[i] for i in indices]
 
 

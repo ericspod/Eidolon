@@ -1330,6 +1330,7 @@ class RenderWidget(QtWidgets.QWidget):
         self.setAttribute(Qt.WA_PaintOnScreen,True)
         self.setAttribute(Qt.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WA_OpaquePaintEvent, True)
+        
         self.conf=conf
         self.scene=None
         self.evtHandler=None
@@ -1418,7 +1419,7 @@ class RenderWidget(QtWidgets.QWidget):
     def repaint(self,*q):
         self.eventTriggered=True
         QtWidgets.QWidget.repaint(self,*q)
-
+        
     def mousePressEvent(self,e):
         self._triggerEvent(EventType._mousePress,e)
         QtWidgets.QWidget.mousePressEvent(self,e)
@@ -1433,7 +1434,10 @@ class RenderWidget(QtWidgets.QWidget):
 
     def wheelEvent(self,e):
         self._triggerEvent(EventType._mouseWheel,e)
+<<<<<<< HEAD
         QtWidgets.QWidget.wheelEvent(self,e)
+=======
+>>>>>>> origin/master
         
     def mouseMoveEvent(self,e):
         self._triggerEvent(EventType._mouseMove,e)
@@ -1533,7 +1537,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         self.thread=threading.Thread(target=self._interpretThread)
         self.thread.daemon=True
         self.thread.start()
-
+        
     def _interpretThread(self):
         '''
         Daemon thread method which prints the appropriate prompt and reads commands given through sendInputLine().
@@ -2341,23 +2345,18 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.scratchWidget.setVisible(False) # hide the scratch pad by default
 
         # replace the key press handler for the scratch pad so that the code is executed when Ctrl/Meta+Enter is pressed
-        oldkeypress=self.scratchWidget.keyPressEvent
-        def _keyPress(e):
+        @Utils.setmethod(self.scratchWidget,'keyPressEvent')
+        def _keyPressEvent(e):
             if e.key() in (Qt.Key_Return, Qt.Key_Enter) and e.modifiers()&(Qt.ControlModifier|Qt.MetaModifier):
                 self._executeScratch()
             else:
-                oldkeypress(e)
-
-        setattr(self.scratchWidget,'keyPressEvent',_keyPress)
+                getattr(self.scratchWidget,'__old__keyPressEvent')(e) # TODO: why do I need to use getattr?
 
         # reset self.viz to use Eidolon renderer widget
-#        self.mainLayout.removeWidget(self.viz)
         self.viz=RenderWidget(conf,self)
         self.mainLayout.addWidget(self.viz)
         self.viz.initViz()
         
-#        self.mainLayout.addWidget(TestWidget())
-
         # force a relayout
         self.resize(width, height+1)
         self.show()
