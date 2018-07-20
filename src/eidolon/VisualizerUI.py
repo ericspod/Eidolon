@@ -1335,14 +1335,14 @@ class RenderWidget(QtWidgets.QWidget):
         self.evtHandler=None
         self.eventTriggered=False # True if the next event was triggered by internal method calls rather than user input
         self.wid=None
-
+        
         # create the adapter from the C++ renderer, associating self.conf with it from which config info will be taken
         self.adapt=getRenderAdapter(self.conf)
 
     def _getWinHandle(self):
         '''Returns the string window handle for this widget (or its parent as appropriate).'''
         if Utils.isWindows:
-            return str(int(self.parentWidget().winId()))
+            return str(int(self.winId()))
         elif Utils.isDarwin:
             return str(int(self.winId()))
         else:
@@ -1359,8 +1359,13 @@ class RenderWidget(QtWidgets.QWidget):
         self.wid to the created window's ID.
         '''
         # set the window handle parameter
-        paramname='externalWindowHandle' if Utils.isDarwin else 'parentWindowHandle'
-        self.conf.set(RenderParamGroup,paramname,self._getWinHandle()) # set the config parameter createWindow needs
+#        paramname='externalWindowHandle' if Utils.isDarwin else 'parentWindowHandle'
+#        self.conf.set(RenderParamGroup,paramname,self._getWinHandle()) # set the config parameter createWindow needs
+        
+        # TODO: correct for all platforms?
+        whandle=self._getWinHandle()
+        self.conf.set(RenderParamGroup,'externalWindowHandle',whandle)
+        self.conf.set(RenderParamGroup,'parentWindowHandle',whandle)
 
         if Utils.isLinux: # call XSync to ensure the handle for the window referred to in `paramname' is valid
             if QtVersion==4:
@@ -1399,11 +1404,11 @@ class RenderWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.resizeEvent(self,e)
 
         r=self.geometry() if not Utils.isDarwin else QtCore.QRect()
-        self.adapt.resize(*r.getRect())
+        self.adapt.resize(r.x(),r.y(),r.width(),r.height())
 
         self._triggerEvent(EventType._widgetResize,self.width(),self.height())
         self.repaint()
-
+        
     def update(self):
         self.eventTriggered=True
         self._triggerEvent(EventType._widgetPreDraw)
@@ -1416,19 +1421,24 @@ class RenderWidget(QtWidgets.QWidget):
 
     def mousePressEvent(self,e):
         self._triggerEvent(EventType._mousePress,e)
+        QtWidgets.QWidget.mousePressEvent(self,e)
 
     def mouseReleaseEvent(self,e):
         self._triggerEvent(EventType._mouseRelease,e)
+        QtWidgets.QWidget.mouseReleaseEvent(self,e)
 
     def mouseDoubleClickEvent(self,e):
         self._triggerEvent(EventType._mouseDoubleClick,e)
+        QtWidgets.QWidget.mouseDoubleClickEvent(self,e)
 
     def wheelEvent(self,e):
         self._triggerEvent(EventType._mouseWheel,e)
-
+        QtWidgets.QWidget.wheelEvent(self,e)
+        
     def mouseMoveEvent(self,e):
         self._triggerEvent(EventType._mouseMove,e)
-
+        QtWidgets.QWidget.mouseMoveEvent(self,e)
+        
     def keyPressEvent(self,e):
         self._triggerEvent(EventType._keyPress,e)
         QtWidgets.QWidget.keyPressEvent(self,e)
@@ -1445,6 +1455,8 @@ class RenderWidget(QtWidgets.QWidget):
         If self.eventTriggered if False then the rendering is done in high quality mode, and self.eventTriggered is
         always set to False afterwards.
         '''
+       
+            
         if not self.eventTriggered:
             self.getRenderScene().setRenderHighQuality(True)
         self.eventTriggered=False
@@ -1633,7 +1645,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
             self.isExecuting=True
             exec(comp, self.locals) # execute the statement(s) in the context of the local symbol table
-        except SyntaxError as e:
+        except SyntaxError:
             sys.last_type, sys.last_value, sys.last_traceback = sys.exc_info()
 
             try:
@@ -2195,6 +2207,58 @@ class ScreenshotDialog(QtWidgets.QDialog,Ui_ScreenshotForm):
             self.close()
 
 
+class TestWidget(QtWidgets.QWidget):
+    def __init__(self,parent=None):
+        QtWidgets.QWidget.__init__(self,parent)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setAttribute(Qt.WA_PaintOnScreen,True)
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
+        self.setAttribute(Qt.WA_OpaquePaintEvent, True)
+
+    def paintEngine(self):
+        '''Override method returning None to clue in Qt that we're handling painting ourselves.'''
+        return None
+
+    def resizeEvent(self,e):
+        '''
+        Triggered when the widget resizes, this handles sending the correct resize information to the adapter which
+        must keep track of size in platform-specific ways. This triggers the widgetResize event and calls repaint().
+        '''
+        QtWidgets.QWidget.resizeEvent(self,e)
+
+    def update(self):
+        QtWidgets.QWidget.update(self)
+
+    def repaint(self,*q):
+        QtWidgets.QWidget.repaint(self,*q)
+
+    def mousePressEvent(self,e):
+        Utils.printFlush(e)
+
+    def mouseReleaseEvent(self,e):
+        Utils.printFlush(e)
+
+    def mouseDoubleClickEvent(self,e):
+        Utils.printFlush(e)
+
+    def wheelEvent(self,e):
+        Utils.printFlush(e)
+
+    def mouseMoveEvent(self,e):
+        Utils.printFlush(e)
+
+    def keyPressEvent(self,e):
+        Utils.printFlush(e)
+        QtWidgets.QWidget.keyPressEvent(self,e)
+
+    def keyReleaseEvent(self,e):
+        Utils.printFlush(e)
+        QtWidgets.QWidget.keyReleaseEvent(self,e)
+
+    def paintEvent(self,e):
+        Utils.printFlush(e)
+
+
 @signalclass
 class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
     '''
@@ -2209,7 +2273,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
     # named tuple type used to map UI elements to stored objects, data, and routines
     ObjMapTuple=collections.namedtuple('ObjMapTuple','obj propbox assettype updateFunc dblClickFunc menu menuFunc')
 
-    def __init__(self,conf,width=1200,height=600):
+    def __init__(self,conf,width=1200,height=800):
         super(VisualizerWindow, self).__init__()
 
         self.setupUi(self)
@@ -2287,10 +2351,12 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         setattr(self.scratchWidget,'keyPressEvent',_keyPress)
 
         # reset self.viz to use Eidolon renderer widget
-        self.mainLayout.removeWidget(self.viz)
+#        self.mainLayout.removeWidget(self.viz)
         self.viz=RenderWidget(conf,self)
         self.mainLayout.addWidget(self.viz)
         self.viz.initViz()
+        
+#        self.mainLayout.addWidget(TestWidget())
 
         # force a relayout
         self.resize(width, height+1)

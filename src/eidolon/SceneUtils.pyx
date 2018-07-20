@@ -171,7 +171,8 @@ class PyDataSet(object):
                 if i.getType() and not i.meta(StdProps._isspatial):
                     i.meta(StdProps._isspatial,'True')
 
-            map(self._setDefaultFieldMeta,self.fields.values())
+            for f in self.fields.values():
+                self._setDefaultFieldMeta(f)
 
     def _setDefaultFieldMeta(self,fieldmat):
         if fieldmat.meta(StdProps._nodedata) in ('','False'): # set meta values if this isn't already designated a per-node field
@@ -2374,7 +2375,7 @@ def collectFieldTopos(dataset,fields,indlist=[]):
 
             fspatial=dataset.getIndexSet(sname)
             ftopo=dataset.getIndexSet(tname)
-
+            
             if fspatial and fspatial not in indlist:
                 raise ValueError('Spatial topology %r is associated with field %r but not in use'%(sname,fname))
 
@@ -2384,10 +2385,10 @@ def collectFieldTopos(dataset,fields,indlist=[]):
             if bool(field.meta(StdProps._nodedata)):
                 raise ValueError('Field %r is a per-node field and so has no topology'%fname)
 
-            if fspatial==None:
+            if fspatial is None:
                 raise ValueError('No spatial topology found for %r, name is given as %r'%(fname,sname))
 
-            if ftopo==None and field.meta(StdProps._topology):
+            if ftopo is None and field.meta(StdProps._topology):
                 raise ValueError('No field topology found for %r, name is given as %r'%(fname,tname))
 
     #       if field.n()!=fspatial.n() or field.m()!=fspatial.m():

@@ -545,7 +545,10 @@ def concurrent(func):
     Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
     '''
     
-    if inspect.isbuiltin(func):
+    module=inspect.getmodule(func)
+    modname=module.__name__ if module is not None else ''
+    
+    if inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.'):
         localname='__local__'+func.__name__
         globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
         globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
@@ -564,16 +567,7 @@ def concurrent(func):
     return concurrent_wrapper
 
 
-#def concurrentFunc(func):
-#    @functools.wraps(func)
-#    def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
-#        return concurrentFuncExec(valrange,numprocs,task,func.__code__,globals(),args,kwargs)
-#        
-#    return concurrent_wrapper
-#
-#
-#@concurrent
-def concurrentFuncExec(process,codeobj,cglobals,args,kwargs):
+def concurrentFuncExec(process,codeobj,cglobals,*args,**kwargs):
     execglobals=dict(globals())
     
     execglobals.update(cglobals)

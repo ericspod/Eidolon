@@ -1,7 +1,7 @@
 /*
 
-http://qt-project.org/doc/qt-4.8/stylesheet-reference.html
-http://qt-project.org/doc/qt-4.7/stylesheet-examples.html
+http://doc.qt.io/qt-5/stylesheet-reference.html
+http://doc.qt.io/qt-5/stylesheet-examples.html
 
 change stylesheet in console: mgr.callThreadSafe(getUIApp().setStyleSheet,open('res/DefaultUIStyle.css').read()) 
 */
@@ -12,9 +12,18 @@ QWidget {
 	color:rgb(240, 240, 240);
 }
 
+QWidget::item:selected, QWidget::tab:selected, QWidget::section {
+	background-color: rgb(120, 120, 120);
+}
+
+QWidget::tab:!selected{
+	background-color: rgb(100, 100, 100);
+}
+
 QToolTip {
 	background-color: rgb(120, 120, 120);
 	border: 0px;
+	color:rgb(240, 240, 240);
 }
 
 QAbstractItemView {
@@ -44,6 +53,10 @@ QPushButton:pressed {
 
 QComboBox {
 	padding-left: 3px;
+}
+
+QComboBox QAbstractItemView {
+    selection-background-color: rgb(120, 120, 120);
 }
 
 QComboBox::drop-down {

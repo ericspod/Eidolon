@@ -275,7 +275,8 @@ def findFaces(xis,numVertices,isSimplex):
             faces.append(face+[far])
             internalxisub.append([subvalue]*xiDim)
 
-    indices=sorted(range(len(faces)),lambda a,b:cmp(faces[a],faces[b]))
+    #indices=sorted(range(len(faces)),lambda a,b:cmp(faces[a],faces[b]))
+    indices=sorted(range(len(faces)),key=lambda i:faces[i])
     return [faces[i] for i in indices],[internalxisub[i] for i in indices]
 
 

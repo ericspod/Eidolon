@@ -348,6 +348,12 @@ def initDefaultAssets(mgr):
     # create materials
 
     m=mgr.createMaterial('Default')
+    
+    m=mgr.createMaterial('BlueWhiteRed')
+    m.copySpectrumFrom(s6)
+
+    m=mgr.createMaterial('Rainbow')
+    m.copySpectrumFrom(s1)
 
     # prime color materials
     m=mgr.createMaterial('Red')
@@ -362,9 +368,6 @@ def initDefaultAssets(mgr):
     m.setDiffuse(color(1,0,1))
     m=mgr.createMaterial('Cyan')
     m.setDiffuse(color(0,1,1))
-
-    m=mgr.createMaterial('Rainbow')
-    m.copySpectrumFrom(s1)
 
     m=mgr.createMaterial('BaseImage')
     m.useVertexColor(False)
