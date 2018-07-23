@@ -1481,16 +1481,13 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         self.logfile=''
         self.locals={'win':self.win}
         self.comp=codeop.CommandCompiler()
-        self.inputlines=['']
+        self.inputlines=Utils.queue.Queue()
         self.linebuffer=[]
         self.history=[]
         self.historypos=0
         self.curline=''
         self.isExecuting=False
         self.initCmds=['from __future__ import print_function, division','from eidolon import *']
-
-        self.inputevent=threading.Event()
-        self.inputevent.set()
 
         self.isMetaDown=False # is a meta (shift/ctrl/alt/win/cmd) down?
         self.metakeys=(Qt.Key_Control,Qt.Key_Shift,Qt.Key_Alt,Qt.Key_AltGr,Qt.Key_Meta)
@@ -1546,35 +1543,37 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
         for cmd in self.initCmds:
             self.execute(cmd) # execute initialization commands
+            
+        self.sendInputLine('') # show initial prompt
 
         multiline=False # indicates if following lines are expected to be part of a indented block
         while True:
-            self.inputevent.wait() # wait for an input line to come in
-            self.inputevent.clear()
-
-            line=self._getInputLine()
+            line=self.inputlines.get()
+            
+            # execute each line in the lines queue, printing the appropriate prompt when the queue is empty
             while line!=None:
                 multiline=self.execute(line)
-                line=self._getInputLine()
 
-                if line==None:
+                if self.inputlines.empty(): # no more lines, write prompt and wait
                     self.currentPrompt=self.ps2 if multiline else self.ps1
 
                     if len(self.getCurrentLine())>0: # ensure prompt goes onto a new line
                         self.write('\n')
 
                     self.write(self.currentPrompt)
+                    line=None
+                else:
+                    line=self.inputlines.get(0)
 
-    @Utils.locking
     def sendInputLine(self,line,historyAppend=True):
         '''Send the given line to the interpreter's line queue.'''
 
         # skip the usual console exiting commands, these don't make sense for a persistent console
         if line in ('exit','exit()','quit','quit()'):
-            self.inputlines.append('') # do nothing, forces clean prompt printing
+            inputline='' # do nothing, forces clean prompt printing
         else:
             # execute command and append to history
-            self.inputlines.append(line)
+            inputline=line
             self.historypos=0
 
             # append only if not a duplicate of previous entry
@@ -1589,7 +1588,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                     except Exception as e:
                         self.write('Cannot write to console log file %r:\n%r\n'%(self.logfile,e))
 
-        self.inputevent.set()
+        self.inputlines.put(inputline)
 
     def sendInputBlock(self,block,printBlock=True):
         '''Send a block of code lines `block' to be interpreted, printing the block to the console if `printBlock'.'''
@@ -1615,10 +1614,6 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                     self.sendInputLine(line)
 
             self.sendInputLine('\n')
-
-    @Utils.locking
-    def _getInputLine(self):
-        return self.inputlines.pop(0) if len(self.inputlines)>0 else None
 
     def updateLocals(self,localvals):
         '''Override the local variable dictionary with the given dictionary.'''
@@ -1646,22 +1641,16 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
             self.isExecuting=True
             exec(comp, self.locals) # execute the statement(s) in the context of the local symbol table
-        except SyntaxError:
-            sys.last_type, sys.last_value, sys.last_traceback = sys.exc_info()
-
-            try:
-                msg, (dummy_filename, lineno, offset, line) = sys.last_value
-                value = SyntaxError(msg, ('<console>', lineno, offset, line))
-                sys.last_value = value
-            except:
-                value=None
-
+            
+        except SyntaxError as se:
             self.linebuffer=[]
-            self.write('\n'.join(traceback.format_exception_only(SyntaxError, value)))
+            self.write('\n'.join(l.rstrip() for l in traceback.format_exception_only(SyntaxError, se) if l.strip()))
+            
         except Exception as e:
             self.linebuffer=[]
             self.write(str(e)+'\n')
             self.write(traceback.format_exc())
+            
         finally:
             sys.stdout=self.orig_stdout # always restore stdout/stderr
             sys.stderr=self.orig_stderr
@@ -1671,12 +1660,10 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
     def write(self, line):
         '''Write a line of text to the text window.'''
-
+        @self.win.callFuncUIThread
         def writeLine():
             self.insertPlainText(line)
             self.ensureCursorVisible()
-
-        self.win.callFuncUIThread(writeLine)
 
     def flush(self):
         '''Stream compatibility, does nothing.'''

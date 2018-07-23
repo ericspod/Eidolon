@@ -1391,7 +1391,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
             interppoints=[elemtype.applyCoeffs(elemnodes,c) for xi,c in xis]
 
             if radiusfield:
-                elemradii=map(valfunc,radiusfield.mapIndexRow(ind,elem))
+                elemradii=list(map(valfunc,radiusfield.mapIndexRow(ind,elem)))
                 interpradii=[elemtype.applyCoeffs(elemradii,c) for xi,c in xis]
             else:
                 interpradii=defaultradii
@@ -1432,7 +1432,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
                 elemnodes=nodes.mapIndexRow(ind,elem)
 
                 if radiusfield:
-                    elemradii=map(valfunc,radiusfield.mapIndexRow(ind,elem))
+                    elemradii=list(map(valfunc,radiusfield.mapIndexRow(ind,elem)))
 
                 for face in xrange(elemtype.numFaces()):
                     isExt=extline[face]==1 #ext==None or ext.getAt(elem,face)==1
@@ -1732,7 +1732,7 @@ def reduceMesh(nodes,indslist=[],fieldslist=[],depth=4,aabb=None,marginSq=None):
     # for each field, rebuild the matrix by pulling out those rows indexed in fieldinds only
     for field in fieldslist:
         # pull out each row from the old field which corresponds to a node that's been retained
-        newfield=map(field.getRow if field.m()>1 else field.getAt, fieldinds)
+        newfield=list(map(field.getRow if field.m()>1 else field.getAt, fieldinds))
         newfieldslist.append(listToMatrix(newfield,field.getName()))
 
     return newnodes,newindslist,newfieldslist
