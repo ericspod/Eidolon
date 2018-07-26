@@ -694,6 +694,13 @@ cdef class Octree(object):
     cdef readonly object equalityFunc
     cdef readonly str name
     cdef readonly list subtrees
+    
+    @staticmethod
+    def fromMesh(int depth, Vec3Matrix nodes, IndexMatrix inds,equalityFunc = None):
+        cdef BoundBox aabb=BoundBox(nodes)
+        cdef Octree octree=Octree(depth,aabb.getDimensions(),aabb.center,equalityFunc)
+        octree.addMesh(nodes,inds)
+        return octree        
 
     def __init__(self,int depth,vec3 dim,vec3 parentcenter,equalityFunc=None,int octant=8,Octree parent=None):
         '''
@@ -843,10 +850,17 @@ cdef class Octree(object):
             return None,None,None
 
     def addLeafData(self,vec3 n,val):
-        '''Find the leaf `n' belongs in and add `val' to its `treedata' field.'''
+        '''Find the leaf `n' belongs in and add `val' to its `leafdata' field.'''
         leaf=self.getLeaf(n)
         if leaf:
             leaf.leafdata.append(val)
+            
+    def addMesh(self,Vec3Matrix nodes,IndexMatrix inds):
+        cdef tuple elem=()
+        for n in range(inds.n()):
+            elem=nodes.mapIndexRow(inds,n)
+            for node in elem:
+                self.addLeafData(node,n)
 
 
 @atexit.register

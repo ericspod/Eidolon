@@ -1,7 +1,7 @@
 
 from eidolon import *
 
-m1=mgr.getMaterial('Rainbow')
+m1=mgr.getMaterial('Default')
 
 nodes=[vec3(0.1,0.2,0.3),vec3(0.5,0.2,1),vec3(1,0.4,2)]
 inds=[(0,1,2)]

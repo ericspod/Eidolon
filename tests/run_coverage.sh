@@ -20,34 +20,26 @@ function getFileDir() {
 
 # parent directory of this script, assuming this is in the directory tests
 export APPDIR=$(getFileDir "${BASH_SOURCE[0]}")/../
+
 export LIBSDIR=$APPDIR/EidolonLibs
 export PYTHONPATH=$APPDIR/src
+export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
+export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 
 if [ "$(uname -o 2>/dev/null)" == "Cygwin" ]
 then
-#	$APPDIR/run.bat $@
-#	exit 0
 	APPDIR=$(cygpath -w $APPDIR)
 	export PATH="$APPDIR\\EidolonLibs\\win64_mingw\\bin;$PATH"
 	export PYTHONPATH="$APPDIR\\src"
-elif [ "$(uname)" == "Darwin" ]
-then
-	# symlink each compiled library for OSX to the correct name
-	for i in $APPDIR/src/*/*.so.osx; do ln -fs $i ${i%.so.osx}.so;done
-	
-	export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
-else
-	# symlink every compiled library for this platform to the correct name
-	for i in $APPDIR/src/*/*.so.linux; do ln -fs $i ${i%.so.linux}.so;done
-	
-	export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 fi
 
+# if the coverage file isn't present create it with a simple run of the program
 if [ ! -f .coverage ]
 then
     coverage run --branch $APPDIR/main.py --help
 fi
 
+# contribute to a current .coverage file, delete this file to start fresh
 coverage run -a --branch $APPDIR/main.py "$@"
 coverage report
 
