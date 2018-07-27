@@ -407,6 +407,21 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
     return trees
 
 
+def generateMeshOctree(Vec3Matrix nodes,IndexMatrix inds,int depth=2,float margins=0.05,BoundBox aabb=None,equalityFunc=None,task=None):
+#    aabb=aabb or BoundBox(nodes)
+#        
+#    cdef Octree oc=Octree(depth,aabb.getDimensions()*(1+margins),aabb.center,equalityFunc)
+#    
+#    cdef dict trees=getDatasetOctrees(PyDataSet('oc',nodes,[inds]),depth,task=task)
+#    cdef IndexMatrix ocmat=first(trees.values())
+#    sparseinds=eval(ocmat.meta(StdProps._sparsematrix))
+#    
+#    for indset,leaf in zip(successive(sparseinds),oc.getLeaves()):
+#        leaf.leafdata=ocmat[indset[0]:indset[1]]
+#        
+#    return oc
+    return Octree.fromMesh(depth,nodes,inds,margins,equalityFunc) # TODO: replace with above in proper form
+
 @concurrent
 def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,IndexMatrix adj,IndexMatrix ext):
     '''

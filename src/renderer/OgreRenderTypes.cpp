@@ -1076,6 +1076,8 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 
 			if(vb->hasNormal())
 				dir=vb->getNormal(g);
+				if(dir.isZero()) // make glyph really small
+					scale=scale*0.05;
 			
 			if(vb->hasUVWCoord())
 				scale=scale*vb->getUVWCoord(g);

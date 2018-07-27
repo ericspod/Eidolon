@@ -696,9 +696,9 @@ cdef class Octree(object):
     cdef readonly list subtrees
     
     @staticmethod
-    def fromMesh(int depth, Vec3Matrix nodes, IndexMatrix inds,equalityFunc = None):
+    def fromMesh(int depth, Vec3Matrix nodes, IndexMatrix inds,margins = 1.05,equalityFunc = None):
         cdef BoundBox aabb=BoundBox(nodes)
-        cdef Octree octree=Octree(depth,aabb.getDimensions(),aabb.center,equalityFunc)
+        cdef Octree octree=Octree(depth,aabb.getDimensions()*(1.0+margins),aabb.center,equalityFunc)
         octree.addMesh(nodes,inds)
         return octree        
 
