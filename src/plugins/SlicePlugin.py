@@ -865,7 +865,7 @@ class SlicePlugin(ScenePlugin):
     def __init__(self):
         ScenePlugin.__init__(self,'SlicePlugin')
         self.objcount=0
-        self.checkboxMap={} # relates QTableWidgetItem objects to (SliceObject,SceneObjectRepr) pairs
+        self.checkboxMap=eidolon.MutableDict() # relates QTableWidgetItem objects to (SliceObject,SceneObjectRepr) pairs
 
     def init(self,plugid,win,mgr):
         ScenePlugin.init(self,plugid,win,mgr)

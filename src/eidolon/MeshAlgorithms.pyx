@@ -495,6 +495,8 @@ def calculateElemExtAdj(dataset,object acceptIndex=lambda i:isSpatialIndex(i,3),
 
             adj=IndexMatrix(adjname,MatrixType._adj,indmat.n(),elemtype.numFaces()*2,proccount!=1)
             ext=IndexMatrix(extname,MatrixType._external,indmat.n(),elemtype.numFaces(),proccount!=1)
+            
+            adj.fill(indmat.n()) # the size of the index matrix is always an invalid adjacent value
             ext.fill(1) # all faces are first assumed to be external until they are found to be adjacent to others
 
             dataset.setIndexSet(adj)
