@@ -219,7 +219,7 @@ def createVec3Func(vecfunc,label,dim):
     c=CommandCompiler()
     comp=c(vecfunc,label,'eval')
     return lambda vals: eval(comp,globals(),{'vals':vals,'vec3':vec3})
-
+        
 
 def applyCoeffsVec3(tuple vecs,tuple coeffs):
     cdef vec3 result=vec3(),v

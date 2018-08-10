@@ -626,9 +626,9 @@ class MeshScenePlugin(ScenePlugin):
         panel=prop.getParamPanel()
         if panel:
             panel.fillStrList(obj.getFieldNames(),ParamType._field,'None')
-            panel.fillStrList(list(ValueFunc),ParamType._valuefunc,'None')
-            panel.fillStrList(list(VecFunc),ParamType._vecfunc,'None')
-            panel.fillStrList(list(UnitFunc),ParamType._unitfunc,'None')
+            panel.fillStrList([v[0] for v in ValueFunc],ParamType._valuefunc,'None')
+            panel.fillStrList([v[0] for v in VecFunc],ParamType._vecfunc,'None')
+            panel.fillStrList([v[0] for v in UnitFunc],ParamType._unitfunc,'None')
 
             # if this is the first time the panel was update, call updateReprParamPanel to fill in the boxes correctly
             if panel.isFirstUpdate:
