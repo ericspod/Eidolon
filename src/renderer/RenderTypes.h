@@ -3317,7 +3317,7 @@ public:
 		signz=invdir.z()<0;
 	}
 
-	/// Returns the distance to the projection of `v' on the ray, which is at getPosition(distTo(v)).
+	/// Returns the distance from `v' to the projection of `v' on the ray, which is at getPosition(distTo(v)).
 	real distTo(const vec3 v) const { return dir.dot(v-pos); }
 	
 	/**
@@ -3500,14 +3500,18 @@ public:
 				continue;
 
 			vec3 ncenter,npos,v0,v1,v2;
-			real nrad=0;
+			real nrad=0,cdist;
 			
 			if(centers && radii2){
 				ncenter=centers->at(n);
 				nrad=radii2->at(n);
-				npos=getPosition(ncenter.distTo(pos));
+				//npos=getPosition(ncenter.distTo(pos));
 	
-				if(npos.distToSq(ncenter)>nrad)
+				//if(npos.distToSq(ncenter)>nrad)
+				//	continue;
+				
+				cdist=distTo(ncenter);
+				if((cdist*cdist)>nrad)
 					continue;
 				
 				v0=nodes->getAt(inds->at(n,0));

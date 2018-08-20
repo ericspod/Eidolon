@@ -594,18 +594,16 @@ class SceneManager(TaskQueue):
 
         cam=first(c for c in self.cameras if c.isPointInViewport(x,y) and not c.isSecondaryCamera())
 
-        if cam!=None:
+        if cam is not None:
             ray=cam.getProjectedRay(x,y)
             campos=cam.getPosition()
 
             handles=[]
             for r,h in self.handlemap.items():
                 rpos=r.getPosition()
-                handles+=[(rpos.distTo(campos),hh) for hh in h]
+                handles+=[(rpos.distToSq(campos),hh) for hh in h]
 
-            handles.sort(key=lambda i:i[0])
-
-            for d,h in handles:
+            for _,h in sorted(handles):
                 if h.checkSelected(ray):
                     h.mousePress(cam,e)
                     return True # prevent other handlers from being triggered

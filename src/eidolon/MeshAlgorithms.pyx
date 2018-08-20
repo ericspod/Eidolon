@@ -1724,11 +1724,11 @@ def reduceMesh(nodes,indslist=[],fieldslist=[],depth=4,aabb=None,marginSq=None):
     cdef RealMatrix field
 
     aabb=aabb or BoundBox(nodes)
-    oc=Octree(depth,aabb.maxv-aabb.minv,aabb.center,None if marginSq==None else (lambda a,b:a.distToSq(b)<=marginSq))
+    oc=Octree(depth,aabb.maxv-aabb.minv,aabb.center,None if marginSq is None else (lambda a,b:a.distToSq(b)<=marginSq))
 
     # associate each node with the indices of those nodes equivalent to it in `nodes'
     for i in xrange(len(nodes)):
-        oc.addNode(nodes.getAt(i),list())[1].append(i)
+        oc.addNode(nodes[i],list())[1].append(i)
 
     # fill nodemap to relate every old node index to the new one, put the new node in newnodes,
     # and put the first of the old indices into fieldinds
