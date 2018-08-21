@@ -658,6 +658,8 @@ class Handle3D(Handle):
             axisdir=vec3(axisdir.y(),-axisdir.x(),0)
 
         dragamount=1.0-(axisdir.angleTo(dragvec)/halfpi) # [-1,1]
+        Utils.printFlush(axis,dragvec,startpos,isPerpendicular,axisdir,axisdir.angleTo(dragvec))
+        
         return dragvec.len()*dragamount
 
     def getDragVector(self,dragvec,curpos):
@@ -716,7 +718,7 @@ class TransformHandle(Handle3D):
         self._generatefigureValues()
 
     def _generatefigureValues(self):
-        if TransformHandle.arrowinds!=None:
+        if TransformHandle.arrowinds is not None:
             return
 
         refine=5
@@ -729,7 +731,7 @@ class TransformHandle(Handle3D):
         TransformHandle.ynodes=[rotator(vec3(1,0,0),-halfpi)*n for n in TransformHandle.znodes]
 
     def isSelected(self):
-        return self.lastIntersect!=None
+        return self.lastIntersect is not None
         
     def setSelected(self,isSelected):
         if isSelected:
@@ -761,12 +763,13 @@ class TransformHandle(Handle3D):
     def mouseDrag(self,e,dragvec):
         nodes,inds,i,startpos=self.lastIntersect
 
+        # select axis based on which arrow was clicked
         if nodes is TransformHandle.xnodes:
-            axis=vec3(1,0,0)
+            axis=vec3.X()
         elif nodes is TransformHandle.ynodes:
-            axis=vec3(0,1,0)
+            axis=vec3.Y()
         else:
-            axis=vec3(0,0,1)
+            axis=vec3.Z()
 
         dragdist=self.getDragDistance(axis,dragvec,startpos,self.buttons==Qt.RightButton)
 
