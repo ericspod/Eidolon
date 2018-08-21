@@ -652,13 +652,12 @@ class Handle3D(Handle):
             return 0
 
         screenpos=self.pressedCamera.getScreenPosition(startpos)
-        axispos=self.pressedCamera.getScreenPosition(startpos+axis)
+        axispos=self.pressedCamera.getScreenPosition(startpos+axis*self.figscale)
         axisdir=(axispos-screenpos) # direction along tested axis
         if isPerpendicular: # if a perpendicular check is requested, make direction perpendicular to axis
             axisdir=vec3(axisdir.y(),-axisdir.x(),0)
 
         dragamount=1.0-(axisdir.angleTo(dragvec)/halfpi) # [-1,1]
-        Utils.printFlush(axis,dragvec,startpos,isPerpendicular,axisdir,axisdir.angleTo(dragvec))
         
         return dragvec.len()*dragamount
 
