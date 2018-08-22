@@ -1347,6 +1347,11 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
         out=stdout.read()
         stdout.close()
 
+    try:
+        out=out.decode('utf-8')
+    except:
+        pass
+
     return (returncode,output+(out or ''))
 
 

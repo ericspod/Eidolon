@@ -419,7 +419,7 @@ class VTKPlugin(MeshScenePlugin):
         datasettype=kwargs.get('datasettype',ds.meta(VTKProps.datasettype)) or DatasetTypes._UNSTRUCTURED_GRID
         desc=kwargs.get('descStr',ds.meta(VTKProps._desc)).strip()
         writeFields=kwargs.get('writeFields',True)
-        vecfunc=kwargs.get('vecfunc',tuple)
+        vecfunc=kwargs.get('vecfunc',None) or tuple
         version=3.0
         
         assert datasettype in DatasetTypes, 'Unsupported dataset type: %s'%datasettype

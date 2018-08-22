@@ -1719,15 +1719,21 @@ def reduceMesh(nodes,indslist=[],fieldslist=[],depth=4,aabb=None,marginSq=None):
     cdef list fieldinds=[] # indices for the values to go into new per-node fields
     cdef Vec3Matrix newnodes=Vec3Matrix('newnodes',0)
     cdef list newindslist=[],newfieldslist=[],oldinds,newfield,newind
-    cdef int i
+    cdef int i,j
     cdef IndexMatrix ind
     cdef RealMatrix field
+    cdef set usednodes=set()
+    
+    for ind in indslist:
+        for i in range(ind.n()):
+            for j in range(ind.m()):
+                usednodes.add(ind[i,j])
 
     aabb=aabb or BoundBox(nodes)
     oc=Octree(depth,aabb.maxv-aabb.minv,aabb.center,None if marginSq is None else (lambda a,b:a.distToSq(b)<=marginSq))
 
     # associate each node with the indices of those nodes equivalent to it in `nodes'
-    for i in xrange(len(nodes)):
+    for i in usednodes:#for i in xrange(len(nodes)):
         oc.addNode(nodes[i],list())[1].append(i)
 
     # fill nodemap to relate every old node index to the new one, put the new node in newnodes,
@@ -1738,6 +1744,8 @@ def reduceMesh(nodes,indslist=[],fieldslist=[],depth=4,aabb=None,marginSq=None):
         newnodes.append(n)
         fieldinds.append(oldinds[0]) # assuming duplicate nodes have the same field value, store only the first index
 
+    assert len(newnodes)==len(usednodes)
+        
     # for each index, replace the old indices with the new ones by applying each old index to nodemap
     for ind in indslist:
         newind=[]
