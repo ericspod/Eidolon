@@ -82,11 +82,12 @@ extra_compile_args=['-w','-O3']
 extra_link_args=[]
 define_macros=[('BOOST_SYSTEM_NO_DEPRECATED',None),('USEOGRE',None)]
 destfile='./Renderer.'
-compiledirs={}
 
-if sys.version_info.major == 3:
-    compiledirs['c_string_type']='unicode'
-    compiledirs['c_string_encoding']='ascii'
+#compiledirs={}
+#
+#if sys.version_info.major == 3:
+#    compiledirs['c_string_type']='unicode'
+#    compiledirs['c_string_encoding']='ascii'
 
 cpptime=max(map(os.path.getmtime,glob.glob('*.cpp')))
 htime=max(map(os.path.getmtime,glob.glob('*.h')))
@@ -116,6 +117,10 @@ else:
     libraries+=['m','rt']
     platdir='linux'
     destfile+='so.%s'%platdir
+    
+    # force the use of GCC 4.9 for now
+    os.environ["CC"] = "gcc-4.9" 
+    os.environ["CXX"] = "g++-4.9"
 
 # root directory for the current platform's libraries
 libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
@@ -143,7 +148,7 @@ extension=Extension(
     libraries=libraries,
     extra_compile_args=extra_compile_args,
     extra_link_args=extra_link_args,
-    compiler_directives=compiledirs,
+#    compiler_directives=compiledirs,
     language='c++'
 )
 

@@ -334,15 +334,15 @@ def makeMeshOctreeRange(process,Vec3Matrix nodes,IndexMatrix inds,int depth,vec3
 
     leaves=[set(l.leafdata) for l in oc.getLeaves()]
     rlen=sum(len(leaf) for leaf in leaves)
-
+    
     result=IndexMatrix('%s%s%i'%(inds.getName(),MatrixType.octree[1],process.index),rlen,1,True)
     sparseindices=[0]
     count=0
-
+    
     # construct a sparse row matrix by appending all the elements for each leaf, storing the index where each leaf starts
     for leaf in leaves:
         for i,v in enumerate(leaf):
-            result.mat.ats(count+i,0,v)
+            result.setAt(v,count+i)
 
         count+=len(leaf)
         sparseindices.append(count)
@@ -393,7 +393,7 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
                     subinds[i].pop(0) # remove the first index so that the next iteration of the outer loop goes to the next row
 
                     for j in xrange(start,end):
-                        ocmat.mat.ats(count,0,s.mat.atc(j,0))
+                        ocmat.setAt(s.getAt(j),count)
                         count+=1
 
                 ocmatinds.append(count)
@@ -422,8 +422,10 @@ def generateMeshOctree(Vec3Matrix nodes,IndexMatrix inds,int depth=2,float margi
 #    return oc
     return Octree.fromMesh(depth,nodes,inds,margins,equalityFunc) # TODO: replace with above in proper form
 
+    
 @concurrent
-def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,IndexMatrix adj,IndexMatrix ext):
+@timing
+def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,IndexMatrix adj,IndexMatrix ext,list facelist):
     '''
     Calculate face normals, face adjacencies, and determine which elements have external (boundary) faces. Each octant
     will contain the index of each element that has at least one vertex in its bound box. This guarantees that any two
@@ -432,38 +434,45 @@ def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,Ind
     cdef Face f,ff
     cdef int e,elem,start,end,face
     cdef dict uniques
-    cdef object elemtype=ElemType[indmat.getType()]
-    cdef int numfaces=elemtype.numFaces()
-    cdef list sparseinds=eval(octree.meta(StdProps._sparsematrix))
+    cdef object elemtype=None
+    cdef int numfaces=0
+    cdef list sparseinds=[]
+    
+    #elemtype=ElemType[indmat.getType()]
+    #numfaces=elemtype.numFaces()
+    numfaces=len(facelist)
+    
+    sparseinds=eval(octree.meta(StdProps._sparsematrix))
 
     # traverse only certain rows of the octree matrix assigned to this process
     for leaf in process.prange():
         uniques={}
         start=sparseinds[leaf] # start of octree leaf row
         end=sparseinds[leaf+1] # end of octree leaf row
-
+        
         # For each element in the leaf, create the Face object for each face. If this object is not in `uniques'
         # then add it. If it is already in `uniques' then the element's face is adjacent to a face of the element
         # the stored Face object refers to, thus the adjacency and external matrices can be filled in. The important
         # feature of the Face type is that equivalence only takes face indices into account, not element or face ID.
         for e in range(start,end):
             elem=octree.getAt(e)
+            
             for face in range(numfaces):
-                f=Face.fromElem(indmat,elem,face,elemtype) # create face, adjacent face will have same hash but different indices
+                f=Face.fromElemFaces(indmat,facelist,elem,face) # create face, adjacent face will have same hash but different indices
                 ff=uniques.pop(f,None) # ff is not the same object as f but the face adjacent to it
                 
                 if ff is not None: # face encountered a second time so must be internal
-                    adj.mat.ats(ff.elemid,ff.faceid,f.elemid) # the face ff.faceid of element ff.elemid is adjacent to element f.elemid
-                    adj.mat.ats(ff.elemid,ff.faceid+numfaces,f.faceid) # the face ff.faceid of element ff.elemid is adjacent to face f.faceid
-                    ext.mat.ats(ff.elemid,ff.faceid,0) # the face ff.faceid of element ff.elemid is internal
+                    adj.setAt(f.elemid,ff.elemid,ff.faceid) # the face ff.faceid of element ff.elemid is adjacent to element f.elemid
+                    adj.setAt(f.faceid,ff.elemid,ff.faceid+numfaces) # the face ff.faceid of element ff.elemid is adjacent to face f.faceid
+                    ext.setAt(0,ff.elemid,ff.faceid) # the face ff.faceid of element ff.elemid is internal
                     # this stores the same as the above, just for the current face
-                    adj.mat.ats(elem,face,ff.elemid)
-                    adj.mat.ats(elem,face+numfaces,ff.faceid)
-                    ext.mat.ats(elem,face,0)
+                    adj.setAt(ff.elemid,elem,face)
+                    adj.setAt(ff.faceid,elem,face+numfaces)
+                    ext.setAt(0,elem,face)
                 else:
                     uniques[f]=f # newly encountered face, add it
 
-
+                    
 @timing
 def calculateElemExtAdj(dataset,object acceptIndex=lambda i:isSpatialIndex(i,3),int treedepth=2,task=None):
     '''
@@ -485,7 +494,7 @@ def calculateElemExtAdj(dataset,object acceptIndex=lambda i:isSpatialIndex(i,3),
     for indmat,octree in trees.items():
         adjname=indmat.getName()+MatrixType.adj[1]
         extname=indmat.getName()+MatrixType.external[1]
-
+        
         if not dataset.hasIndexSet(adjname):
             elemtype=ElemType[indmat.getType()]
             if not elemtype.faces: # no face information available, cannot perform adjacency determination
@@ -507,7 +516,7 @@ def calculateElemExtAdj(dataset,object acceptIndex=lambda i:isSpatialIndex(i,3),
             if proccount!=1:
                 shareMatrices(octree,indmat)
 
-            calculateOctantExtAdjRange(8**depth,proccount,task,octree,indmat,adj,ext)
+            calculateOctantExtAdjRange(8**depth,proccount,task,octree,indmat,adj,ext,elemtype.faces)
 
 
 @concurrent
@@ -535,7 +544,7 @@ def calculateTriRange(process,IndexMatrix ind,Vec3Matrix nodes,IndexMatrix ext,i
         nlen=len(elemnodes)
 
         for face in range(numfaces):
-            isExt=(ext==None or ext.mat.atc(elem,face)==1)
+            isExt=(ext==None or ext.getAt(elem,face)==1)
             if not isExt and externalOnly: # skip internal faces if externalOnly is True
                 continue
 
@@ -616,7 +625,7 @@ def generateMeshPlanecutRange(process,str name,vec3 pt,vec3 norm,float width,Vec
 
     for p in process.prange():
         for e in range(*slicedleaves[p]):
-            elem=octree.mat.atc(e,0)
+            elem=octree.getAt(e,0)
             elemxis=None
 
             if isTri:

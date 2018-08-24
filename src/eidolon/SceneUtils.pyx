@@ -513,20 +513,23 @@ cdef class Face(object):
     @staticmethod
     def fromFaceDef(IndexMatrix ind,int elem,face,int facenum):
         return Face((ind.getAt(elem,f) for f in face[:-1]),ind.getAt(elem,face[-1]),facenum,elem)
+        
+    @staticmethod
+    def fromElemFaces(IndexMatrix ind,list faces,int elem,int facenum=-1):
+        if facenum!=-1:
+            face=faces[facenum]
+            return Face.fromFaceDef(ind,elem,face,facenum)
+        else:
+            faces=[]
+            for i,face in enumerate(faces):
+                faces.append(Face.fromFaceDef(ind,elem,face,i))
+
+            return faces
 
     @staticmethod
     def fromElem(IndexMatrix ind,int elem,int facenum=-1,object elemtype=None):
         elemtype=elemtype or ElemType[ind.getType()]
-
-        if facenum!=-1:
-            face=elemtype.faces[facenum]
-            return Face.fromFaceDef(ind,elem,face,facenum)
-        else:
-            faces=[]
-            for i,face in enumerate(elemtype.faces):
-                faces.append(Face.fromFaceDef(ind,elem,face,i))
-
-            return faces
+        return Face.fromElemFaces(ind,elemtype.faces,elem,facenum)
 
 
 cdef class BoundBox(object):

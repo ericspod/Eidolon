@@ -33,11 +33,11 @@ import numpy as np
 scriptdir= os.path.dirname(os.path.abspath(__file__)) # path of the current file
 libraries=[]
 extra_compile_args=['-w','-O3']
-compiledirs={}
+#compiledirs={}
 
-if sys.version_info.major == 3:
-    compiledirs['c_string_type']='unicode'
-    compiledirs['c_string_encoding']='ascii'
+#if sys.version_info.major == 3:
+#    compiledirs['c_string_type']='unicode'
+#    compiledirs['c_string_encoding']='ascii'
 
 
 # platform identifiers, exactly 1 should be true
@@ -47,6 +47,7 @@ isLinux=platform.system().lower()=='linux'
 
 # ensure there's a value for CC, this is omitted sometimes but gcc is a valid substitute
 sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
+
 
 if isDarwin:
     platdir='osx'
@@ -58,6 +59,10 @@ else:
     assert isLinux
     libraries+=['m']
     platdir='linux'
+    
+    # force the use of GCC 4.9 for now
+    os.environ["CC"] = "gcc-4.9" 
+    os.environ["CXX"] = "g++-4.9"
 
 libdir=os.path.abspath(os.path.join(scriptdir,'..','..','EidolonLibs',platdir))
 assert os.path.isdir(libdir),'%r not found'%libdir
@@ -74,7 +79,7 @@ for i in glob.glob('./*.pyx'):
         include_dirs=includedirs,
         libraries=libraries,
         extra_compile_args=extra_compile_args,
-        compiler_directives=compiledirs,
+#        compiler_directives=compiledirs,
         language='c++'
     )
     extensions.append(e)

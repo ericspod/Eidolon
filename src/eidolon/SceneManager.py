@@ -603,7 +603,7 @@ class SceneManager(TaskQueue):
                 rpos=r.getPosition()
                 handles+=[(rpos.distToSq(campos),hh) for hh in h]
 
-            for _,h in sorted(handles):
+            for _,h in sorted(handles,key=lambda i:i[0]):
                 if h.checkSelected(ray):
                     h.mousePress(cam,e)
                     return True # prevent other handlers from being triggered

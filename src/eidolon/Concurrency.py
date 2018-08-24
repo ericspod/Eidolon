@@ -547,8 +547,10 @@ def concurrent(func):
     
     module=inspect.getmodule(func)
     modname=module.__name__ if module is not None else ''
+#    isBuiltInfunc=inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.')
+    isBuiltInfunc=True
     
-    if inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.'):
+    if isBuiltInfunc:
         localname='__local__'+func.__name__
         globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
         globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
