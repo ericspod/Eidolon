@@ -424,7 +424,6 @@ def generateMeshOctree(Vec3Matrix nodes,IndexMatrix inds,int depth=2,float margi
 
     
 @concurrent
-@timing
 def calculateOctantExtAdjRange(process,IndexMatrix octree,IndexMatrix indmat,IndexMatrix adj,IndexMatrix ext,list facelist):
     '''
     Calculate face normals, face adjacencies, and determine which elements have external (boundary) faces. Each octant
@@ -1753,8 +1752,6 @@ def reduceMesh(nodes,indslist=[],fieldslist=[],depth=4,aabb=None,marginSq=None):
         newnodes.append(n)
         fieldinds.append(oldinds[0]) # assuming duplicate nodes have the same field value, store only the first index
 
-    assert len(newnodes)==len(usednodes)
-        
     # for each index, replace the old indices with the new ones by applying each old index to nodemap
     for ind in indslist:
         newind=[]

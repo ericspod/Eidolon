@@ -80,7 +80,7 @@ import numpy as np
 
 from .Utils import (
     enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,
-    assertMatDim,mulsum,lerp,lerpXi,epsilon
+    assertMatDim,mulsum,lerp,lerpXi,epsilon, matInv
 )
 
 
@@ -423,6 +423,7 @@ def lagrangeAlpha(beta,xicoords):
         a[i][j]=prod(xicoords[i][k]**beta[k][j] for k in range(d))
 
     return np.linalg.inv(np.asarray(a)).T.tolist()
+#    return transpose(matInv(a))
 
 
 def lagrangeBeta(order,isSimplex,dim):

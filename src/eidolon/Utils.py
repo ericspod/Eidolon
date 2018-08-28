@@ -2582,8 +2582,150 @@ def transpose(mat):
 
     result=matZero(m,n)
 
-    for i,j in trange(n,m):
-        result[j][i]=mat[i][j]
+    for i in range(n):
+        for j in range(m):
+#    for i,j in trange(n,m):
+            result[j][i]=mat[i][j]
 
     return result
 
+
+def mat2Det(a,b,c,d):
+    return a*d-b*c
+
+
+def mat3Det(a,b,c,d,e,f,g,h,i):
+    return a*(e*i-f*h)+b*(f*g-i*d)+c*(d*h-e*g)
+
+
+def mat4Det(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p):
+    return (l * o * b * e - k * p * b * e - l * n * c * e + j * p * c * e + k * n * d * e - j * o * d * e
+        - a * l * o * f + a * k * p * f + l * m * c * f - k * m * d * f + a * l * n * g - a * j * p * g
+        - l * m * b * g + j * m * d * g - a * k * n * h + a * j * o * h + k * m * b * h - j * m * c * h
+        - p * c * f * i + o * d * f * i + p * b * g * i - n * d * g * i - o * b * h * i + n * c * h * i)
+
+
+def mat2Inv(a,b,c,d):
+    det=mat2Det(a,b,c,d)
+    return ((d/det,-b/det),(-c/det,a/det))
+
+
+def mat3Inv(a,b,c,d,e,f,g,h,i):
+    det=mat3Det(a,b,c,d,e,f,g,h,i)
+    A=e*i-f*h
+    B=f*g-d*i
+    C=d*h-e*g
+    D=c*h-b*i
+    E=a*i-c*g
+    F=g*b-a*h
+    G=b*f-c*e
+    H=c*d-a*f
+    I=a*e-b*d
+
+    return ((A/det,D/det,G/det),(B/det,E/det,H/det),(C/det,F/det,I/det))
+
+
+def mat4Inv(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p):
+    s0 = a * f - e * b
+    s1 = a * g - e * c
+    s2 = a * h - e * d
+    s3 = b * g - f * c
+    s4 = b * h - f * d
+    s5 = c * h - g * d
+
+    c5 = k * p - o * l
+    c4 = j * p - n * l
+    c3 = j * o - n * k
+    c2 = i * p - m * l
+    c1 = i * o - m * k
+    c0 = i * n - m * j
+
+    invdet = 1.0 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0)
+
+    b00 = ( f * c5 - g * c4 + h * c3) * invdet
+    b01 = (-b * c5 + c * c4 - d * c3) * invdet
+    b02 = ( n * s5 - o * s4 + p * s3) * invdet
+    b03 = (-j * s5 + k * s4 - l * s3) * invdet
+
+    b10 = (-e * c5 + g * c2 - h * c1) * invdet
+    b11 = ( a * c5 - c * c2 + d * c1) * invdet
+    b12 = (-m * s5 + o * s2 - p * s1) * invdet
+    b13 = ( i * s5 - k * s2 + l * s1) * invdet
+
+    b20 = ( e * c4 - f * c2 + h * c0) * invdet
+    b21 = (-a * c4 + b * c2 - d * c0) * invdet
+    b22 = ( m * s4 - n * s2 + p * s0) * invdet
+    b23 = (-i * s4 + j * s2 - l * s0) * invdet
+
+    b30 = (-e * c3 + f * c1 - g * c0) * invdet
+    b31 = ( a * c3 - b * c1 + c * c0) * invdet
+    b32 = (-m * s3 + n * s1 - o * s0) * invdet
+    b33 = ( i * s3 - j * s1 + k * s0) * invdet
+
+    return ((b00,b01,b02,b03),(b10,b11,b12,b13),(b20,b21,b22,b23),(b30,b31,b32,b33))
+
+def matDet(mat):
+    n=len(mat)
+    assert all(len(m)==n for m in mat)
+
+    if n in (2,3,4):
+        if n==2:
+            det=mat2Det
+        elif n==3:
+            det=mat3Det
+        else:
+            det=mat4Det
+
+        return det(*(mat[i][j] for i,j in trange(n,n)))
+    else:
+        sign=1
+        result=0
+        for j in range(n):
+            result+=sign*mat[0][j]*matDet(matCrossOut(mat,0,j))
+            sign*=-1
+
+        return result
+    
+    
+def matCrossOut(mat,i,j):
+    '''Returns matrix 'mat' with row 'i' and column 'j' removed.'''
+    return [row[:j] + row[j+1:] for row in (mat[:i]+mat[i+1:])]
+
+
+def matCoFactors(mat):
+    n=len(mat)
+    cofactors=matZero(n,n)
+    
+    for i in range(n):
+        for j in range(n):
+#    for i,j in trange(n,n):
+            sign=1-((i+j)%2)*2 # -1 if (i+j)%2==1 else 1
+            cofactors[i][j]=matDet(matCrossOut(mat,i,j))*sign
+
+    return cofactors
+
+
+def matInv(mat):
+    n=len(mat)
+    assert all(len(m)==n for m in mat)
+
+    if n in (2,3,4):
+        if n==2:
+            inv=mat2Inv
+        elif n==3:
+            inv=mat3Inv
+        else:
+            inv=mat4Inv
+
+        return inv(*(mat[i][j] for i,j in itertools.product(range(n),repeat=2)))
+    else:
+        detinv=1.0/matDet(mat)
+        comat=matCoFactors(mat)
+        inv=matZero(n,n)
+
+        for i in range(n):
+            for j in range(n):
+#        for i,j in trange(n,n):
+                inv[i][j]=comat[j][i]*detinv
+
+    return inv

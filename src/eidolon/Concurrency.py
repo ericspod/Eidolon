@@ -547,8 +547,7 @@ def concurrent(func):
     
     module=inspect.getmodule(func)
     modname=module.__name__ if module is not None else ''
-#    isBuiltInfunc=inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.')
-    isBuiltInfunc=True
+    isBuiltInfunc=inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.')
     
     if isBuiltInfunc:
         localname='__local__'+func.__name__
