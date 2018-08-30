@@ -826,8 +826,6 @@ def generateImageMaskRange(process,contours,contourtimes,planes,images,labelfunc
         imgcontours=[]
         for con,ctime,plane in zip(contours,contourtimes,planes):
             if eidolon.equalsEpsilon(ctime,img.timestep) and contourOnPlane(con,img.position,img.norm):
-#            angle=plane[1].angleTo(img.norm)
-#            if (angle<eidolon.epsilon or angle>(math.pi-eidolon.epsilon)) and abs(img.getDist(plane[0]))<=eidolon.Handle2D.defaultPlaneMargin:
                 transcon=[(trans*c)*vec3(1,1) for c in con]
                 box=BoundBox(transcon)
                 box=BoundBox([box.minv-vec3(0,0,1),box.maxv+vec3(0,0,1)])
@@ -1603,5 +1601,6 @@ class SegmentPlugin(ScenePlugin):
         self.mgr.checkFutureResult(f)
         self.mgr.addSceneObjectTask(f)
 
+### Add plugin to environment
 
 eidolon.addPlugin(SegmentPlugin())
