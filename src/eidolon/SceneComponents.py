@@ -231,7 +231,7 @@ class Handle2D(Handle):
     have representation in the main 3D view. 
     '''
     
-    defaultPlaneMargin=1e-3 # margin for measuring if a handle is on a plane in 3D space, a handle this far from a plane is considered on it
+    defaultPlaneMargin=1e-10 # margin for measuring if a handle is on a plane in 3D space, a handle this far from a plane is considered on it
     
     def __init__(self,widg2D,col,selectRadius=None):
         '''

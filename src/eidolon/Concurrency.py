@@ -42,6 +42,7 @@ import traceback
 import functools
 import types
 import inspect
+import marshal
 from multiprocessing import Pipe, Process, cpu_count, Array, Value, Lock, Event
 
 try:
@@ -545,9 +546,13 @@ def concurrent(func):
     Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
     '''
     
-    module=inspect.getmodule(func)
-    modname=module.__name__ if module is not None else ''
-    isBuiltInfunc=inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.')
+    try:
+        mcode=marshal.dumps(func.__code__)
+        isBuiltInfunc=False
+    except:
+        module=inspect.getmodule(func)
+        modname=module.__name__ if module is not None else ''
+        isBuiltInfunc=inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.')
     
     if isBuiltInfunc:
         localname='__local__'+func.__name__
@@ -562,17 +567,17 @@ def concurrent(func):
     else:
         @functools.wraps(func)
         def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
-            future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,concurrentFuncExec,func.__code__,{},*args,**kwargs)
+            future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,concurrentFuncExec,mcode,{},*args,**kwargs)
             return future(None)
             
     return concurrent_wrapper
 
 
-def concurrentFuncExec(process,codeobj,cglobals,*args,**kwargs):
+def concurrentFuncExec(process,mcode,cglobals,*args,**kwargs):
     execglobals=dict(globals())
     
     execglobals.update(cglobals)
-    
+    codeobj=marshal.loads(mcode)
     func=types.FunctionType(codeobj,execglobals)
     return func(process,*args,**kwargs)
     

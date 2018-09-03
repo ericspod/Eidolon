@@ -492,23 +492,17 @@ cdef class Face(object):
     def __cmp__(self,Face other):
         return cmp(self.vertices,other.vertices)
 
-    #def __eq__(self,other):
-    #   return self.vertices == other.vertices
-
     def __richcmp__(Face self,v,int op):
-            if v is None:
-                return op==3
+        if v is None:
+            return op==3
 
-            if not isinstance(v,Face):
-                return False
-
-            if op in (1,2,5) and self.vertices==v.vertices:
-                return True
-
+        if not isinstance(v,Face):
             return False
 
-    #def __getitem__(self,key):
-    #   return (self.vertices+(self.far,)).__getitem__(key)
+        if op in (1,2,5) and self.vertices==v.vertices:
+            return True
+
+        return False
 
     @staticmethod
     def fromFaceDef(IndexMatrix ind,int elem,face,int facenum):
