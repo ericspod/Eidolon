@@ -335,7 +335,7 @@ def makeMeshOctreeRange(process,Vec3Matrix nodes,IndexMatrix inds,int depth,vec3
     leaves=[set(l.leafdata) for l in oc.getLeaves()]
     rlen=sum(len(leaf) for leaf in leaves)
     
-    result=IndexMatrix('%s%s%i'%(inds.getName(),MatrixType.octree[1],process.index),rlen,1,True)
+    result=IndexMatrix('%s%s%i'%(inds.getName(),MatrixType._octree,process.index),rlen,1,True)
     sparseindices=[0]
     count=0
     
@@ -381,7 +381,9 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
             submats=result.values()
             subinds=[eval(s.meta(StdProps._sparsematrix)) for s in submats]
 
-            ocmat=IndexMatrix(ocname,sum(s.n() for s in submats),1,True)
+            ocmat=IndexMatrix(ocname,MatrixType._octree,sum(s.n() for s in submats),1,True)
+            ocmat.meta(StdProps._spatial,inds.getName())
+            
             count=0
             ocmatinds=[0]
 
@@ -503,6 +505,9 @@ def calculateElemExtAdj(dataset,object acceptIndex=lambda i:isSpatialIndex(i,3),
 
             adj=IndexMatrix(adjname,MatrixType._adj,indmat.n(),elemtype.numFaces()*2,proccount!=1)
             ext=IndexMatrix(extname,MatrixType._external,indmat.n(),elemtype.numFaces(),proccount!=1)
+            
+            adj.meta(StdProps._spatial,indmat.getName())
+            ext.meta(StdProps._spatial,indmat.getName())
             
             adj.fill(indmat.n()) # the size of the index matrix is always an invalid adjacent value
             ext.fill(1) # all faces are first assumed to be external until they are found to be adjacent to others

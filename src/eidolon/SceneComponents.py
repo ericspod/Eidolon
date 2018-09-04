@@ -31,12 +31,12 @@ from . import SceneUtils
 from . import Utils
 from . import VisualizerUI
 
-from renderer import vec3, rotator, color, FT_TRILIST, FT_LINELIST, PT_GEOMETRY, PT_FRAGMENT, PT_VERTEX, PyVertexBuffer, PyIndexBuffer
+from renderer import vec3, rotator, transform, color, FT_TRILIST, FT_LINELIST, PT_GEOMETRY, PT_FRAGMENT, PT_VERTEX, PyVertexBuffer, PyIndexBuffer
 from .Utils import halfpi, epsilon, enum, first, clamp, frange, isMainThread, uniqueStr, EventType
 from .VisualizerUI import Qt, BaseSpectrumWidget, mapWidgetValues, setChecked, setColorButton
 from .SceneObject import SceneObject, SceneObjectRepr
 from .MathDef import ElemType
-from .SceneUtils import generateTriNormals, generateArrow, fillCircleFigure, fillPolyFigure, fillSphereFigure, vec3SimpleStr
+from .SceneUtils import generateTriNormals, generateArrow, generateSphere, fillCircleFigure, fillPolyFigure, fillSphereFigure, vec3SimpleStr
 
 
 AxesType=enum(
@@ -178,10 +178,11 @@ class Handle(object):
     def checkSelected(self,selectObj):
         '''
         Check whether this object is selected given the input `selectObj'. The input will vary depending on context,
-        for a handle selected from a 3D window this should be a ray and so the handle should do a ray intersection
-        test. For a 2D handle this may be the screen coordinates. This method should return True if the selection
-        criteria is met, and isSelected() should then return the same until checkSelected() is called again. This
-        method should return False if isVisible() is False. If it returns True it should also make the handle active.
+        for a handle selected from a 3D window this should be a Ray and so the handle should do a ray intersection
+        test. For a 2D handle this may be the screen coordinates. In any case the object should be fresh and retainable
+        by the handle. This method should return True if the selection criteria is met, and isSelected() should then 
+        return the same until checkSelected() is called again. This method should return False if isVisible() is False. 
+        If it returns True it should also make the handle active.
         '''
         pass
 
@@ -639,6 +640,22 @@ class Handle3D(Handle):
             self.prevX=e.x()
             self.prevY=e.y()
             self.mouseDrag(e,dragvec)
+            
+    def getCameraRay(self,x=None,y=None):
+        if self.pressedCamera is None:
+            return None
+        
+        if x is None or y is None:
+            x=self.prevX or 0
+            y=self.prevY or 0
+            
+        return self.pressedCamera.getProjectedRay(x,y)
+    
+    def getCameraDirection(self):
+        if self.pressedCamera is None:
+            return vec3.Z()
+        else:
+            return (self.pressedCamera.getLookAt()-self.pressedCamera.getPosition()).norm()
 
     def getDragDistance(self,axis,dragvec,startpos,isPerpendicular=False):
         '''
@@ -682,23 +699,85 @@ class Handle3D(Handle):
             f.setRotation(rot)
 
 
-#class NodeHandle(Handle3D):
-#   spherenodes=None
-#   sphereinds=None
-#
-#   def __init__(self,rep,nodes,nodeind,col):
-#       Handle.__init__(self)
-#       self.rep=rep
-#       self.nodes=nodes
-#       self.nodeind=nodeind
-#       self.col=col
-#       self.lastIntersect=None
-#
-#       if NodeHandle.spherenodes==None:
-#           NodeHandle.spherenodes,NodeHandle.sphereinds=generateSphere(2)
-#
-#   def isSelected(self):
-#       return self.lastIntersect!=None
+class NodeDragHandle(Handle3D):
+    sphereNodes=None
+    sphereInds=None
+    sphereNorms=None
+    sphereScale=0.5
+    
+    def __init__(self,positionOffset,value,dragCallback=lambda h,r:None,col=color(1,0,0,1)):
+        Handle3D.__init__(self)
+        self.position=vec3()
+        self.positionOffset=positionOffset
+        self.value=value
+        self.dragCallback=dragCallback
+        self.col=col
+        self.lastIntersect=None
+
+        if NodeDragHandle.sphereNodes is None:
+            NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds=generateSphere(2)
+            NodeDragHandle.sphereNorms=generateTriNormals(NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds)
+
+    def isSelected(self):
+        return self.lastIntersect!=None
+   
+    def checkSelected(self,ray):
+        assert isinstance(ray,renderer.Ray)
+        self.lastIntersect=None
+        
+        if self.isVisible():
+            trans=transform(self.position+self.positionOffset,self.figscale*NodeDragHandle.sphereScale)
+            
+            for i,tri in enumerate(NodeDragHandle.sphereInds):
+                tnodes=[trans*NodeDragHandle.sphereNodes[t] for t in tri]
+                result=ray.intersectsTri(*tnodes)
+                if len(result)>0:
+                    self.lastIntersect=(i,result,ray)
+                    return True
+
+        return False
+    
+    def setPosition(self,pos):
+        self.position=pos
+        self.figs[0].setPosition(pos+self.positionOffset)
+        
+    def getAbsolutePosition(self):
+        return self.position+self.positionOffset
+    
+    def addToScene(self,mgr,scene):
+        assert isMainThread()
+
+        figname='NodeDragHandle%r'%self.value
+        mat=Handle._defaultMaterial(mgr)
+        matname=mat.getName()
+        
+        nodes=[n*NodeDragHandle.sphereScale for n in NodeDragHandle.sphereNodes]
+        inds=NodeDragHandle.sphereInds
+        norms=NodeDragHandle.sphereNorms
+        
+        vbuf=PyVertexBuffer(nodes,norms,[self.col]*len(nodes))
+        ibuf=PyIndexBuffer(inds)
+
+        fig=scene.createFigure(figname,matname,FT_TRILIST)
+        fig.fillData(vbuf,ibuf)
+        fig.setOverlay(True)
+        self.figs.append(fig)
+        self.setPosition(self.position)
+        
+    def mouseDrag(self,e,dragvec):
+        if self.buttons==Qt.LeftButton: # translate relative to camera
+            norm=self.getCameraDirection()
+            r=self.getCameraRay()
+            rdist=r.intersectsPlane(self.getAbsolutePosition(),norm)
+            if rdist>0:
+                self.positionOffset=r.getPosition(rdist)-self.position
+                self.setPosition(self.position)
+                self.dragCallback(self,False)
+                
+    def mouseRelease(self,e):
+        Handle3D.mouseRelease(self,e)
+        if self.isSelected():
+            self.dragCallback(self,True)
 
 
 class TransformHandle(Handle3D):
@@ -762,36 +841,39 @@ class TransformHandle(Handle3D):
     def mouseDrag(self,e,dragvec):
         nodes,inds,i,startpos=self.lastIntersect
 
-        # select axis based on which arrow was clicked
-        if nodes is TransformHandle.xnodes:
-            axis=vec3.X()
-        elif nodes is TransformHandle.ynodes:
-            axis=vec3.Y()
+        if self.buttons==Qt.LeftButton|Qt.RightButton: # translate relative to camera
+            norm=self.getCameraDirection()
+            r=self.getCameraRay()
+            rdist=r.intersectsPlane(startpos,norm)
+            if rdist>0:
+                self.rep.setPosition(r.getPosition(rdist))
         else:
-            axis=vec3.Z()
-
-        dragdist=self.getDragDistance(axis,dragvec,startpos,self.buttons==Qt.RightButton)
-
-        if self.buttons==Qt.LeftButton: # translate
-            multiplier=0.005*self.repRadius
-            v=axis*(dragdist*multiplier)
-            self.rep.setPosition(self.rep.getPosition()+v)
-
-        elif self.buttons==Qt.RightButton: # rotate
-            multiplier=-0.005
-            rot=rotator(axis,dragdist*multiplier)*rotator(*self.rep.getRotation())
-            yaw,pitch,roll=rot.getEulers()
-            self.rep.setRotation(yaw,pitch,roll)
-
-        elif self.buttons==Qt.MiddleButton: # scale
-            multiplier=0.005
-            v=axis*(dragdist*multiplier)
-            scale=self.rep.getScale()
-            self.rep.setScale(scale+v)
-
-        elif self.buttons==Qt.LeftButton|Qt.RightButton: # translate relative to camera
-            v=self.getDragVector(dragvec,vec3(e.x(),e.y()))*10000
-            self.rep.setPosition(self.rep.getPosition()+v)
+            # select axis based on which arrow was clicked
+            if nodes is TransformHandle.xnodes:
+                axis=vec3.X()
+            elif nodes is TransformHandle.ynodes:
+                axis=vec3.Y()
+            else:
+                axis=vec3.Z()
+    
+            dragdist=self.getDragDistance(axis,dragvec,startpos,self.buttons==Qt.RightButton)
+    
+            if self.buttons==Qt.LeftButton: # translate
+                multiplier=0.005*self.repRadius
+                v=axis*(dragdist*multiplier)
+                self.rep.setPosition(self.rep.getPosition()+v)
+    
+            elif self.buttons==Qt.RightButton: # rotate
+                multiplier=-0.005
+                rot=rotator(axis,dragdist*multiplier)*rotator(*self.rep.getRotation())
+                yaw,pitch,roll=rot.getEulers()
+                self.rep.setRotation(yaw,pitch,roll)
+    
+            elif self.buttons==Qt.MiddleButton: # scale
+                multiplier=0.005
+                v=axis*(dragdist*multiplier)
+                scale=self.rep.getScale()
+                self.rep.setScale(scale+v)
 
     def addToScene(self,mgr,scene):
         assert isMainThread()

@@ -82,22 +82,22 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
         filename='%s_%s.dat'%(filenamePrefix,src) if filenamePrefix else None
 
         nodes_=x4df.nodes(src,None,step,[])
-        arr=x4df.array(src,shape,'CR','f8',arrayformat,None,filename,nodesmat)
+        arr=x4df.array(src,shape,'CR','f8',arrayformat,None,None,filename,nodesmat)
 
         m.nodes.append(nodes_)
         x4.arrays.append(arr)
 
     # spatial topologies only for now?
     for ind in obj.datasets[0].enumIndexSets():
-        if eidolon.isSpatialIndex(ind):
-            indmat=np.asarray(ind)
-            shape=shapeStr(indmat.shape)
-            filename='%s_%s.dat'%(filenamePrefix,ind.getName()) if filenamePrefix else None
+#        if eidolon.isSpatialIndex(ind):
+        indmat=np.asarray(ind)
+        shape=shapeStr(indmat)
+        filename='%s_%s.dat'%(filenamePrefix,ind.getName()) if filenamePrefix else None
 
-            topo=x4df.topology(ind.getName(),ind.getName(),ind.getType(),ind.meta(StdProps._spatial),[])
-            arr=x4df.array(ind.getName(),shape,None,'u4',arrayformat,None,filename,indmat)
-            m.topologies.append(topo)
-            x4.arrays.append(arr)
+        topo=x4df.topology(ind.getName(),ind.getName(),ind.getType(),ind.meta(StdProps._spatial),[])
+        arr=x4df.array(ind.getName(),shape,None,'u4',arrayformat,None,None,filename,indmat)
+        m.topologies.append(topo)
+        x4.arrays.append(arr)
 
     # fields
     for i,ds in enumerate(obj.datasets):
@@ -119,7 +119,7 @@ def convertMesh(obj,arrayformat=ASCII,filenamePrefix=None):
 
             if not isTimeCopy or i==0:
                 filename='%s_%s.dat'%(filenamePrefix,src) if filenamePrefix else None
-                arr=x4df.array(src,shape,'CR','f8',arrayformat,None,filename,dfmat)
+                arr=x4df.array(src,shape,'CR','f8',arrayformat,None,None,filename,dfmat)
                 x4.arrays.append(arr)
 
     return x4

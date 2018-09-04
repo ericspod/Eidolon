@@ -548,6 +548,7 @@ def concurrent(func):
     
     try:
         mcode=marshal.dumps(func.__code__)
+        func=types.FunctionType(marshal.loads(mcode))
         isBuiltInfunc=False
     except:
         module=inspect.getmodule(func)

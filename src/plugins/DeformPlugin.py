@@ -18,7 +18,7 @@
 
 import eidolon
 from eidolon import (
-        MeshScenePlugin, ElemType, RealMatrix, BoundBox, vec3, chooseProcCount
+        MeshSceneObject,MeshScenePlugin, ElemType, RealMatrix, BoundBox, vec3, chooseProcCount, delegatedmethod
 )
 
 gridType=ElemType.Hex1PCR
@@ -90,12 +90,21 @@ def applyCoeffs(coeffs,ctrlpts,outnodes,task=None):
     return outnodes
     
 
+#class DeformSceneObject(MeshSceneObject):
+    
+
 class DeformPlugin(MeshScenePlugin):
     def __init__(self):
         MeshScenePlugin.__init__(self,'Deform')
 
     def init(self,plugid,win,mgr):
         MeshScenePlugin.init(self,plugid,win,mgr)
+        
+    @delegatedmethod
+    def createHandles(self,rep,**kwargs):
+        handles=MeshScenePlugin.createHandles(rep)
+        
+        return handles
         
 ### Add plugin to environment
 
