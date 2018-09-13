@@ -1771,7 +1771,10 @@ def generateHexBox(dimx,dimy,dimz):
     dimxy=dimx*dimy
 
     ind=lambda i,j,k:i+j*dimx+k*dimxy
-    hexes=[(ind(i,j,k),ind(i+1,j,k),ind(i,j+1,k),ind(i+1,j+1,k),ind(i,j,k+1),ind(i+1,j,k+1),ind(i,j+1,k+1),ind(i+1,j+1,k+1)) for k,j,i in trange(dimz-1,dimy-1,dimx-1)]
+    hexinds=lambda i,j,k:[ind(i+x,j+y,k+z) for z,y,x in trange([0,1],[0,1],[0,1])]
+    
+    #hexes=[(ind(i,j,k),ind(i+1,j,k),ind(i,j+1,k),ind(i+1,j+1,k),ind(i,j,k+1),ind(i+1,j,k+1),ind(i,j+1,k+1),ind(i+1,j+1,k+1)) for k,j,i in trange(dimz-1,dimy-1,dimx-1)]
+    hexes=[hexinds(i,j,k) for k,j,i in trange(dimz-1,dimy-1,dimx-1)]
 
     return nodes,hexes
 
@@ -1932,7 +1935,10 @@ def isPerNodeField(RealMatrix field,int numnodes):
     isPerNode=bool(field.meta(StdProps._nodedata)) or (field.n()==numnodes and not topo)
 
     if isPerNode and field.n()!=numnodes:
-        raise ValueError('Field %r is designated to be per node for a node set of length %i, but has length %i'%(field.getName(),numnodes,field.n()))
+        raise ValueError(
+                'Field %r is designated to be per node for a node set of length %i, but has length %i'%
+                (field.getName(),numnodes,field.n())
+            )
 
     return isPerNode
 

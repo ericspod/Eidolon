@@ -18,7 +18,8 @@
 
 import eidolon
 from eidolon import (
-        MeshSceneObject,MeshScenePlugin, ElemType, RealMatrix, BoundBox, vec3, chooseProcCount, delegatedmethod
+        MeshSceneObject,MeshScenePlugin, ElemType, PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
+        chooseProcCount, delegatedmethod
 )
 
 gridType=ElemType.Hex1PCR
@@ -50,47 +51,79 @@ def calculateNodeXis(nodes,boundbox=None,task=None):
 
 
 @eidolon.concurrent
-def calculateNodeCoeffsRange(process,xis,wpts,hpts,dpts,coeffs):
+def calculateNodeCoeffsRange(process,xis,wpts,hpts,dpts):
+    coeffs=[]
+    
     for n in process.prange():
         x,y,z=xis[n]
-        coeffs[n]=gridType.basis(x,y,z,wpts,hpts,dpts)
+        ncoeffs=gridType.basis(x,y,z,wpts,hpts,dpts)
+        coeffs.append({i:v for i,v in enumerate(ncoeffs) if eidolon.epsilonZero(v)!=0})
         
-
-def calculateNodeCoeffs(xis,wpts,hpts,dpts,coeffs,task=None):
-    proccount=chooseProcCount(len(xis),0,1000)
-    xis.setShared(proccount!=1)
-    
-    if not coeffs:
-        coeffs=RealMatrix('coeffs',xis.n(),wpts*hpts*dpts,proccount!=1)
-    else:
-        coeffs.setShared(proccount!=1)
-    
-    calculateNodeCoeffsRange(xis.n(),proccount,task,xis,wpts,hpts,dpts,coeffs)
-    
     return coeffs
+
+
+def calculateNodeCoeffs(xis,wpts,hpts,dpts,task=None):
+    proccount=chooseProcCount(len(xis),0,1000)
+    if proccount!=1:
+        eidolon.shareMatrices(xis)
+    
+    result=calculateNodeCoeffsRange(xis.n(),proccount,task,xis,wpts,hpts,dpts)
+    
+    eidolon.checkResultMap(result)
+    
+    return eidolon.sumResultMap(result)
 
 
 @eidolon.concurrent
 def applyCoeffsRange(process,coeffs,ctrlpts,outnodes):
     for n in process.prange():
-        outnodes[n]=ElemType.Point.applyCoeffs(ctrlpts,coeffs[n])
+        ncoeff=[0]*len(ctrlpts)
+        for i,v in coeffs[n].items():
+            ncoeff[i]=v
+            
+        outnodes[n]=ElemType.Point.applyCoeffs(ctrlpts,ncoeff)
         
 
 def applyCoeffs(coeffs,ctrlpts,outnodes,task=None):
     proccount=chooseProcCount(len(coeffs),0,1000)
-    coeffs.setShared(proccount!=1)
     
     if not outnodes:
-        outnodes=eidolon.Vec3Matrix('nodes',coeffs.n(),1,proccount!=1)
-    else:
-        outnodes.setShared(proccount!=1)
+        outnodes=eidolon.Vec3Matrix('nodes',len(coeffs),1,proccount!=1)
+    elif proccount!=1:
+        eidolon.shareMatrices(outnodes)
         
-    applyCoeffsRange(coeffs.n(),proccount,task,coeffs,ctrlpts,outnodes)
+    applyCoeffsRange(outnodes.n(),proccount,task,coeffs,ctrlpts,outnodes)
     
     return outnodes
     
 
-#class DeformSceneObject(MeshSceneObject):
+def generateControlBox(bbmin,bbmax,dimx,dimy,dimz):
+    nodes,hexes=eidolon.generateHexBox(dimx,dimy,dimz) # generate a hex grid
+    _,lineinds=eidolon.generateLineBox((bbmin,bbmax)) # get indices for a line box
+    
+    bbdiff=bbmax-bbmin
+    nodes=[n*bbdiff+bbmin for n in nodes]
+    lines=set()
+    
+    # convert hexes into line indices joining the edges
+    for h in hexes:
+        for i,j in lineinds:
+            lines.add((h[i],h[j]))
+            
+    return nodes,sorted(lines)
+    
+
+class DeformSceneObject(MeshSceneObject):
+    def __init__(self,name,datasets,plugin=None,**kwargs):
+        self.ctrls=Vec3Matrix('ctrl',1)
+        self.lineinds=IndexMatrix('lines',ElemType._Line1NL,1,2)
+        self.sourceObj=None
+        self.sourceCoeffs=None
+        self.sourceXis=None
+        
+        dataset=PyDataSet('ctrls',self.ctrls,[self.lineinds])
+        
+        MeshSceneObject.__init__(name,dataset,plugin)
     
 
 class DeformPlugin(MeshScenePlugin):

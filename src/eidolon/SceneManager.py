@@ -1526,6 +1526,14 @@ class SceneManager(TaskQueue):
 
     def isHandleShown(self,rep):
         return rep in self.handlemap and self.handlemap[rep][0].isVisible()
+    
+    def removeHandle(self,rep):
+        '''Remove and delete the handle(s) for representation `rep'.'''
+        if rep in self.handlemap:
+            for h in self.handlemap[rep]:
+                h.setVisible(False)
+                
+            del self.handlemap[rep]
 
     def setReprProps(self,rep,**props):
         '''
