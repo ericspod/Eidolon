@@ -938,7 +938,19 @@ def piecewiseCatmullRomType(geom,desc,order):
     Defines the basis function for a piecewise Catmull Rom object. A piecewise object is composed of multiple sub-element
     which are treated as one large object with a continuous xi space. The basis function will, for a given xi coordinate,
     determine which element this xi coordinate falls into, what the local xi coordinate in that element is, and choose
-    the indices of the control points for that element. 
+    the indices of the control points for that element. The produced basis function requires arguments in addition to
+    the xi coordinates:
+        - ul: number of nodes in x dimension
+        - vl: number of nodes in y dimension (default 1)
+        - wl: number of nodes in z dimension (default 1)
+        - circular: a list of boolean values, 1 per dimension, stating if that dimension represents a continuous, circular
+        xi space. Setting this to True for certain dimensions can be used to define loops in 1D, cylinders or spheres in 
+        2D or 3D. This needs to be coordinated with the limits value to define overlapping control points.
+        - limits: a list of integer pairs, 1 per dimension, stating how many nodes at the end of the dimension are control
+        point nodes only and do not define geometry, default value for dimensions is (1,1) meaning the edge nodes are for
+        control only. Values of (0,0) mean the geometry of the object is defined by all nodes in that dimension, and 
+        values of (-1,-1) imply that control points at one dimension edge are used as derivatives at the opposite edge
+        (ie. a circular xi space in that dimension) which make sense mostly with "circular" being true for that dimension.
     '''
     assert geom in (GeomType._Line,GeomType._Quad, GeomType._Hex)
     basetype=catmullRomType(geom,desc+' (base type)',order)

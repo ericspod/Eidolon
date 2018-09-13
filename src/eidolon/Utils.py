@@ -2082,7 +2082,7 @@ def arrayIndex(inds,dims,circular):
 
 def xisToPiecewiseXis(xis,dims,limits=None):
     '''
-    Given a set of xi values `xis' and assumming a piecewise basis function on an grid of control points with dimensions
+    Given a set of xi values `xis' and assuming a piecewise basis function on an grid of control points with dimensions
     `dim', calculate the xi values for the local element to apply to the basis function, and the indices for the control
     point of that element at xi=0. The unit values in `xis' represent a position in the xi space covering the whole
     object defined by the control point grid, the resuting xi values represent the equivalent position within one element
@@ -2090,7 +2090,7 @@ def xisToPiecewiseXis(xis,dims,limits=None):
     point at the xi space origin. The xi coordinates of the other control points are assumed to be integers, so one can
     figure out what the other control point indices in the grid are by adding the element's control point xis to this
     index. The list `limits' must contain pairs of integers for each dimension of `dims' and state how many indices
-    from the faces of the grid are control points. If `limits' is None the the value [(1,1)]*len(dims) is used. This
+    from the edges/faces of the grid are control points. If `limits' is None the the value [(1,1)]*len(dims) is used which
     implies that the first and last values in the grid in every dimension are control points.
     '''
     limits=limits or [(1,1)]*len(dims)
