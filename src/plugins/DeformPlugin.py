@@ -19,6 +19,7 @@
 import eidolon
 from eidolon import (
         MeshSceneObject,MeshScenePlugin, ElemType, PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
+        NodeDragHandle,
         chooseProcCount, delegatedmethod
 )
 
@@ -98,7 +99,7 @@ def applyCoeffs(coeffs,ctrlpts,outnodes,task=None):
     
 
 def generateControlBox(bbmin,bbmax,dimx,dimy,dimz):
-    nodes,hexes=eidolon.generateHexBox(dimx,dimy,dimz) # generate a hex grid
+    nodes,hexes=eidolon.generateHexBox(dimx-2,dimy-2,dimz-2) # generate a hex grid
     _,lineinds=eidolon.generateLineBox((bbmin,bbmax)) # get indices for a line box
     
     bbdiff=bbmax-bbmin
@@ -114,8 +115,9 @@ def generateControlBox(bbmin,bbmax,dimx,dimy,dimz):
     
 
 class DeformSceneObject(MeshSceneObject):
-    def __init__(self,name,datasets,plugin=None,**kwargs):
+    def __init__(self,name,plugin=None,**kwargs):
         self.ctrls=Vec3Matrix('ctrl',1)
+        self.ctrldims=(1,1,1)
         self.lineinds=IndexMatrix('lines',ElemType._Line1NL,1,2)
         self.sourceObj=None
         self.sourceCoeffs=None
@@ -123,7 +125,16 @@ class DeformSceneObject(MeshSceneObject):
         
         dataset=PyDataSet('ctrls',self.ctrls,[self.lineinds])
         
-        MeshSceneObject.__init__(name,dataset,plugin)
+        MeshSceneObject.__init__(self,name,dataset,plugin)
+    
+    def setControlBox(self,bbmin,bbmax,dimx,dimy,dimz):
+        nodes,lines=generateControlBox(bbmin,bbmax,dimx,dimy,dimz)
+        self.ctrldims=(dimx,dimy,dimz)
+        
+        self.ctrls.setN(len(nodes))
+        self.ctrls[:]=nodes
+        self.lineinds.setN(len(lines))
+        self.lineinds[:]=lines
     
 
 class DeformPlugin(MeshScenePlugin):
@@ -133,9 +144,23 @@ class DeformPlugin(MeshScenePlugin):
     def init(self,plugid,win,mgr):
         MeshScenePlugin.init(self,plugid,win,mgr)
         
+    def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
+        MeshScenePlugin.createRepr(self,obj,reprtype,0,drawInternal,externalOnly,matname,**kwargs)
+        
+    def setControlPoint(self,handle,isRelease):
+        if isRelease:
+            obj,ind=handle.value
+            obj.nodes[ind]=handle.getAbsolutePosition()
+        
     @delegatedmethod
     def createHandles(self,rep,**kwargs):
         handles=MeshScenePlugin.createHandles(rep)
+        
+        nodes=rep.nodes
+        pos=rep.getPosition()
+        
+        
+        
         
         return handles
         
