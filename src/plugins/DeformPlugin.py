@@ -19,21 +19,23 @@
 import eidolon
 from eidolon import (
         MeshSceneObject,MeshScenePlugin, ElemType, PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
-        NodeDragHandle,
+        NodeDragHandle, transform,
         chooseProcCount, delegatedmethod
 )
 
 gridType=ElemType.Hex1PCR
 
+deformRepr='deform'
+
     
 @eidolon.concurrent
-def calculateNodeXisRange(process,nodes,xis,minv,diff):
+def calculateNodeXisRange(process,nodes,trans,xis,minv,diff):
     for n in process.prange():
-        xi=(nodes[n]-minv)/diff
+        xi=((trans*nodes[n])-minv)/diff
         xis[n]=tuple(xi)
 
 
-def calculateNodeXis(nodes,boundbox=None,task=None):
+def calculateNodeXis(nodes,trans,boundbox=None,task=None):
     boundbox=boundbox or BoundBox(nodes)
     minv=boundbox.minv
     maxv=boundbox.maxv
@@ -45,8 +47,7 @@ def calculateNodeXis(nodes,boundbox=None,task=None):
     nodes.setShared(proccount!=1)
     xis=eidolon.RealMatrix('xis',len(nodes),3,proccount!=1)
     
-
-    calculateNodeXisRange(len(nodes),proccount,task,nodes,xis,minv,diff)
+    calculateNodeXisRange(len(nodes),proccount,task,nodes,trans,xis,minv,diff)
         
     return xis
 
@@ -57,8 +58,10 @@ def calculateNodeCoeffsRange(process,xis,wpts,hpts,dpts):
     
     for n in process.prange():
         x,y,z=xis[n]
-        ncoeffs=gridType.basis(x,y,z,wpts,hpts,dpts)
-        coeffs.append({i:v for i,v in enumerate(ncoeffs) if eidolon.epsilonZero(v)!=0})
+        ncoeffs=gridType.basis(x,y,z,wpts,hpts,dpts,limits=[(0,0)]*3)
+        coeffmap={i:v for i,v in enumerate(ncoeffs) if eidolon.epsilonZero(v)!=0}
+        print(n,xis[n],coeffmap)
+        coeffs.append(coeffmap)
         
     return coeffs
 
@@ -127,8 +130,25 @@ class DeformSceneObject(MeshSceneObject):
         
         MeshSceneObject.__init__(self,name,dataset,plugin)
     
+    def setControlPoint(self,index,position):
+        oldpos=self.ctrls[index]
+        self.ctrls[index]=position
+        
+        for r in self.reprs:
+            rtrans=r.getTransform()
+            rold=rtrans/oldpos
+            rpos=rtrans/position
+            
+            for i in range(r.nodes.n()):
+                n=r.nodes[i][0]
+                if n==rold:
+                    r.nodes[i,0]=rpos
+    
     def setControlBox(self,bbmin,bbmax,dimx,dimy,dimz):
         nodes,lines=generateControlBox(bbmin,bbmax,dimx,dimy,dimz)
+        
+        assert len(nodes)==(dimx*dimy*dimz),'%i %i %i %i'%(len(nodes),dimx,dimy,dimz)
+        
         self.ctrldims=(dimx,dimy,dimz)
         
         self.ctrls.setN(len(nodes))
@@ -144,23 +164,68 @@ class DeformPlugin(MeshScenePlugin):
     def init(self,plugid,win,mgr):
         MeshScenePlugin.init(self,plugid,win,mgr)
         
-    def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
-        MeshScenePlugin.createRepr(self,obj,reprtype,0,drawInternal,externalOnly,matname,**kwargs)
+    def createDeformObject(self,name='deform'):
+        return DeformSceneObject(name,self)
         
-    def setControlPoint(self,handle,isRelease):
-        if isRelease:
+    def getReprTypes(self,obj):
+        return [eidolon.ReprType._line]
+        
+    def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
+        if obj.sourceObj is None or obj.ctrls.n()==1:
+            raise ValueError('Deform object must have source and nodes set before creating representation')
+            
+        if reprtype==deformRepr:
+            return self.createDeformRepr(obj,refine,drawInternal,externalOnly,matname,**kwargs)
+            
+        if obj.reprs:
+            return None
+            
+        rep=MeshScenePlugin.createRepr(self,obj,reprtype,0,drawInternal,externalOnly,matname,**kwargs)
+        self.mgr.addFuncTask(lambda:self.mgr.showHandle(rep))
+        return rep
+    
+    def createDeformRepr(obj,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
+        pass
+    
+    @delegatedmethod
+    def setSourceObj(self,defobj,source,dimx,dimy,dimz):
+        defobj.sourceObj=source.getName()
+        trans=transform()
+        srcnodes=source.datasets[0].getNodes()
+        
+        if source.reprs:
+            rep=source.reprs[0]
+            trans=rep.getTransform()
+            aabb=BoundBox([trans*n[0] for n in rep.nodes])
+        else:
+            aabb=BoundBox(srcnodes)
+            
+        defobj.setControlBox(aabb.minv,aabb.maxv,dimx,dimy,dimz)
+        defobj.sourceXis=calculateNodeXis(srcnodes,trans,aabb)
+        defobj.sourceCoeffs=calculateNodeCoeffs(defobj.sourceXis,dimx,dimy,dimz)
+    
+    def setControlPoint(self,handle,isReleased):
+        if isReleased:
             obj,ind=handle.value
-            obj.nodes[ind]=handle.getAbsolutePosition()
+            #obj.ctrls[ind]=handle.getAbsolutePosition()
+            obj.setControlPoint(ind,handle.getAbsolutePosition())
+            self.updateDeformObj(obj)
+            
+    def updateDeformObj(self,obj):
+        for r in obj.reprs:
+            self.mgr.updateSceneObjectRepr(r)
         
     @delegatedmethod
     def createHandles(self,rep,**kwargs):
-        handles=MeshScenePlugin.createHandles(rep)
+        handles=MeshScenePlugin.createHandles(self,rep)
         
-        nodes=rep.nodes
         pos=rep.getPosition()
+        obj=rep.parent
+        ctrls=obj.ctrls
         
-        
-        
+        for ind in range(ctrls.n()):
+            h=NodeDragHandle(ctrls[ind]-pos,(obj,ind),self.setControlPoint)
+            handles.append(h)
         
         return handles
         

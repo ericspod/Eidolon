@@ -703,7 +703,7 @@ class NodeDragHandle(Handle3D):
     sphereNodes=None
     sphereInds=None
     sphereNorms=None
-    sphereScale=0.5
+    sphereScale=0.25
     
     def __init__(self,positionOffset,value,dragCallback=lambda h,r:None,col=color(1,0,0,1)):
         Handle3D.__init__(self)
@@ -747,7 +747,7 @@ class NodeDragHandle(Handle3D):
     def addToScene(self,mgr,scene):
         assert isMainThread()
 
-        figname='NodeDragHandle%r'%self.value
+        figname='NodeDragHandle%r'%(self.value,)
         mat=Handle._defaultMaterial(mgr)
         matname=mat.getName()
         
