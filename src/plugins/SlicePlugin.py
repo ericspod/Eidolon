@@ -17,7 +17,15 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from eidolon import *
+import math
+import eidolon
+from eidolon import (
+    Qt, QtWidgets, PT_FRAGMENT,
+    vec3, rotator, color, Ray, SceneObject, SceneObjectRepr, MeshSceneObjectRepr, ModifierBase, IndexMatrix, Vec3Matrix, 
+    ColorMatrix, MatrixType, ReprType, ScenePlugin, ImageSeriesRepr, TDMeshSceneObjectRepr, ImageVolumeRepr,
+    enum,timing, mulsum, concurrent, shareMatrices, radCircularConvert, taskroutine, first, fillList
+)
+
 from eidolon.VisualizerUI import addCustomUIRow
 
 from ui import Ui_SliceObjProp
@@ -40,11 +48,11 @@ def sliceTriangle(slicevals,verts,indices,cols,startindex):
     defining new triangles. The indices start from `startindex' and go up, thus they can be added to a topology whose
     largest index is `startindex'-1.
     '''
-    a,b,c=getSliceTriOrdering(*slicevals)
+    a,b,c=eidolon.getSliceTriOrdering(*slicevals)
     numbelow=sum(1 if s<0 else 0 for s in slicevals)
 
     # sort the vertices so that the first is the lone vertex above or below the plane, then transpose so each element is the collected vertex components
-    verts=transpose([verts[i] for i in (a,b,c)])
+    verts=eidolon.transpose([verts[i] for i in (a,b,c)])
 
     if numbelow==1: # first vertex below the plane
         coeffs1=(1.0+slicevals[a],-slicevals[a],0)
@@ -144,9 +152,9 @@ def planeSliceFilterRange(process,origtrans,planept,planenorm, nodes,nodeprops, 
             cols=nodecolors.mapIndexRow(indices,i)
             pts=[(origtrans*iv[0]) for iv in iverts] # transform points into world space
 
-            barydist=avg(pts,vec3()).planeDist(planept,planenorm)
+            barydist=eidolon.avg(pts,vec3()).planeDist(planept,planenorm)
 
-            slicevals=calculateTriPlaneSlice(planept,planenorm,*pts)
+            slicevals=eidolon.calculateTriPlaneSlice(planept,planenorm,*pts)
 
             if all(sv==0 for sv in slicevals) and barydist>0: # entirely above, ignore
                 continue
@@ -209,9 +217,9 @@ class PlaneSliceFilter(ModifierBase):
                 tri=inds[ind]
                 trinodes=[nodes[i] for i in tri]
 
-                slicevals=calculateTriPlaneSlice(planept,planenorm,*trinodes)
+                slicevals=eidolon.calculateTriPlaneSlice(planept,planenorm,*trinodes)
 
-                barydist=avg(trinodes,vec3()).planeDist(planept,planenorm)
+                barydist=eidolon.avg(trinodes,vec3()).planeDist(planept,planenorm)
 
                 if all(sv==0 for sv in slicevals) and barydist>0:
                     inds.pop(ind) # remove triangle, above slice plane
@@ -222,7 +230,7 @@ class PlaneSliceFilter(ModifierBase):
                     trinorms=[norms[i] for i in tri] if norms else [vec3(0,0,1)]*3
                     triuvws=[uvws[i] for i in tri] if uvws else [vec3()]*3
 
-                    verts=transpose([trinodes,trinorms,triuvws])
+                    verts=eidolon.transpose([trinodes,trinorms,triuvws])
 
                     v1,v2,c1,c2,newinds=sliceTriangle(slicevals,verts,tri,tricols,len(nodes))
 
@@ -262,14 +270,14 @@ class PlaneSliceFilter(ModifierBase):
         else:
             elemcount=nodes.n()
 
-        proccount=chooseProcCount(elemcount,1,1000)
+        proccount=eidolon.chooseProcCount(elemcount,1,1000)
 
         if proccount!=1:
             shareMatrices(nodes,nodeprops,nodecolors,indices,selectedinds)
 
         result= planeSliceFilterRange(elemcount,proccount,None,rep.getTransform(True),planept,planenorm,nodes,nodeprops,nodecolors,indices,selectedinds,reprtype)
 
-        unshareMatrices(nodes,nodeprops,nodecolors,indices,selectedinds)
+        eidolon.unshareMatrices(nodes,nodeprops,nodecolors,indices,selectedinds)
 
         oldnoden=nodes.n()
         newnodecount=0
@@ -337,7 +345,7 @@ class IsoplaneModifier(ModifierBase):
         rot=rotator(*rep.getRotation(True)).inverse()
         pos=rep.getPosition(True)
 
-        planeds,selindices=generateIsoplaneDataSet(rep.parentdataset,rep.getName()+'DS',rep.refine,self.planept-pos,rot*self.planenorm)
+        planeds,selindices=eidolon.generateIsoplaneDataSet(rep.parentdataset,rep.getName()+'DS',rep.refine,self.planept-pos,rot*self.planenorm)
 
         newnodes=planeds.getNodes()
         inds=planeds.getIndexSet(planeds.getName()+MatrixType.tris[1])
@@ -345,7 +353,7 @@ class IsoplaneModifier(ModifierBase):
         if newnodes!=None and newnodes.n()>0 and inds!=None:
             nodes=dataset.getNodes()
             nodeprops=dataset.getIndexSet(dataset.getName()+MatrixType.props[1])
-            unshareMatrices(nodes,nodeprops,indices,nodecolors)
+            eidolon.unshareMatrices(nodes,nodeprops,indices,nodecolors)
 
             for n in range(inds.n()):
                 modinds.append(indices.n()+n)
@@ -406,7 +414,7 @@ class SliceObject(SceneObject):
                 if r.parent is not self and not isinstance(r.parent,SliceObject):
                     aabbs.append(r.getAABB(isTransformed,isDerived))
 
-        return BoundBox.union(aabbs)
+        return eidolon.BoundBox.union(aabbs)
 
     def setPosition(self,pos):
         self.slicepos=pos
@@ -559,7 +567,7 @@ class SliceBox(SliceObject):
             if r.getName() in self.slicedReprs:
                 aabbs.append(r.getAABB(isTransformed,isDerived))
 
-        return BoundBox.union(aabbs)
+        return eidolon.BoundBox.union(aabbs)
         
     def setInside(self,isInside):
         self.isInside=isInside
@@ -623,16 +631,16 @@ class SliceBoxRepr(SliceRepr):
         return self.boxFig!=None and self.boxFig.isTransparent()
 
     def addToScene(self,scene):
-        self.boxFig=scene.createFigure(self.name+'BoxFig',self.matname,FT_LINELIST)
+        self.boxFig=scene.createFigure(self.name+'BoxFig',self.matname,eidolon.FT_LINELIST)
         self.setVisible(True)
         self.setTransparent(True)
 
     def prepareBuffers(self):
-        nodes,inds=generateLineBox([vec3(-1),vec3(1)])
+        nodes,inds=eidolon.generateLineBox([vec3(-1),vec3(1)])
         cols=[color()]*len(nodes)
         norms=[vec3(0,0,1)]*len(nodes)
-        self.vbuff=PyVertexBuffer(nodes,norms,cols)
-        self.ibuff=PyIndexBuffer(inds)
+        self.vbuff=eidolon.PyVertexBuffer(nodes,norms,cols)
+        self.ibuff=eidolon.PyIndexBuffer(inds)
 
     def update(self,scene):
         self.boxFig.fillData(self.vbuff,self.ibuff)
@@ -659,7 +667,7 @@ class SlicePlane(SliceObject):
         if planenorm!=None:
             planenorm=planenorm.toPolar()
             planepitch=planenorm.y()
-            planeyaw=planenorm.x()+halfpi
+            planeyaw=planenorm.x()+eidolon.halfpi
 
         self.psfilter=PlaneSliceFilter(slicepos,vec3(0,0,1))
         self.isofilter=IsoplaneModifier(slicepos,vec3(0,0,1))
@@ -726,7 +734,7 @@ class SlicePlane(SliceObject):
                 rep.removeModifier(self.psfilter)
                 rep.removeModifier(self.isofilter)
 
-        if not isinstance(rep,ImageVolumeRepr):
+        if not isinstance(rep,eidolon.ImageVolumeRepr):
             self.updateRepr(rep)
 
         self.mgr.repaint()
@@ -769,7 +777,7 @@ class SlicePlane(SliceObject):
                 self.slicedReprs.remove(name)
                 
     def setPlaneMode(self,planemode):
-        self.planemode=clamp(planemode,0,len(PlaneModes)-1)
+        self.planemode=eidolon.clamp(planemode,0,len(PlaneModes)-1)
         self.setPlane()
         
 
@@ -821,7 +829,7 @@ class SlicePlaneRepr(SliceRepr):
         return self.planeFig!=None and self.planeFig.isTransparent()
 
     def addToScene(self,scene):
-        figtype=FT_LINELIST if self.reprtype==ReprType._line else FT_TRILIST
+        figtype=eidolon.FT_LINELIST if self.reprtype==ReprType._line else eidolon.FT_TRILIST
         self.planeFig=scene.createFigure(self.name+'PlaneFig',self.matname,figtype)
         self.setVisible(True)
         self.setTransparent(True)
@@ -837,8 +845,8 @@ class SlicePlaneRepr(SliceRepr):
             inds=[(0,1,2),(0,2,3)]
             cols=[color(1,1,1,0.5)]*len(nodes)
 
-        self.vbuff=PyVertexBuffer(nodes,norms,cols)
-        self.ibuff=PyIndexBuffer(inds)
+        self.vbuff=eidolon.PyVertexBuffer(nodes,norms,cols)
+        self.ibuff=eidolon.PyIndexBuffer(inds)
 
     def update(self,scene):
         self.planeFig.fillData(self.vbuff,self.ibuff)
@@ -874,7 +882,7 @@ class SlicePlugin(ScenePlugin):
             win.addMenuItem('Create','NewBox'+str(plugid),'New Slice &Box',self._createSliceBoxMenu)
 
     def getIcon(self,obj):
-        return IconName.Scissors
+        return eidolon.IconName.Scissors
         
     def getObjFiles(self,obj):
         return None
@@ -926,7 +934,7 @@ class SlicePlugin(ScenePlugin):
     def _alignToObj(self,obj,prop):
         alignobj=self.mgr.findObject(str(prop.alignObjBox.currentText()))
         if alignobj:
-            if isinstance(alignobj,ImageSceneObjectRepr):
+            if isinstance(alignobj,eidolon.ImageSceneObjectRepr):
                 t=alignobj.getDefinedTransform()
             else:
                 t=alignobj.getTransform()
@@ -1006,7 +1014,7 @@ class SlicePlugin(ScenePlugin):
         prop.verticalLayout.insertWidget(2,updatebox)
         formLayout = QtWidgets.QFormLayout(updatebox)
 
-        label,button=addCustomUIRow(formLayout,0,CustomUIType._button,'updateButton','Update')
+        label,button=addCustomUIRow(formLayout,0,eidolon.CustomUIType._button,'updateButton','Update')
         
         button.clicked.connect(lambda:self.mgr.addFuncTask(rep.parent.update))
 
@@ -1051,8 +1059,8 @@ class SlicePlugin(ScenePlugin):
             nodecolors=rep.nodecolors
             origindices=rep.sliceselindices
 
-            valfunc=slicedrepr.getDataFunc('valfunc',ValueFunc)
-            alphafunc=slicedrepr.getDataFunc('alphafunc',UnitFunc)
+            valfunc=slicedrepr.getDataFunc('valfunc',eidolon.ValueFunc)
+            alphafunc=slicedrepr.getDataFunc('alphafunc',eidolon.UnitFunc)
 
             parentdataset=slicedrepr.parentdataset
             field=slicedrepr.getDataField()
@@ -1060,7 +1068,7 @@ class SlicePlugin(ScenePlugin):
             minv,maxv=slicedrepr.getSelectedFieldRange()
 
             if field!=None and mat.numSpectrumValues()>0 and useSpectrum:
-                calculateDataColoration(mat,parentdataset,nodecolors,nodes,nodeprops,origindices,fields,minv,maxv,valfunc,alphafunc,task)
+                eidolon.calculateDataColoration(mat,parentdataset,nodecolors,nodes,nodeprops,origindices,fields,minv,maxv,valfunc,alphafunc,task)
             else:
                 col=mat.getDiffuse()
                 if mat.usesInternalAlpha():
@@ -1113,5 +1121,6 @@ class SlicePlugin(ScenePlugin):
 
         return code
 
-addPlugin(SlicePlugin())
+
+eidolon.addPlugin(SlicePlugin())
 

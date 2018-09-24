@@ -18,10 +18,13 @@
 
 import eidolon
 from eidolon import (
+        QtWidgets,
         MeshSceneObject,MeshScenePlugin, ElemType, PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
         NodeDragHandle, transform,
         chooseProcCount, delegatedmethod
 )
+
+from ui import Ui_DeformObjProp
 
 gridType=ElemType.Hex1PCR
 
@@ -117,6 +120,15 @@ def generateControlBox(bbmin,bbmax,dimx,dimy,dimz):
     return nodes,sorted(lines)
     
 
+class DeformPropertyWidget(QtWidgets.QWidget,Ui_DeformObjProp):
+    def __init__(self, parent=None):
+        QtWidgets.QWidget.__init__(self,parent)
+        self.setupUi(self)
+        
+    def getGridSize(self):
+        return self.xgridBox.value(),self.ygridBox.value(),self.zgridBox.value()
+    
+
 class DeformSceneObject(MeshSceneObject):
     def __init__(self,name,plugin=None,**kwargs):
         self.ctrls=Vec3Matrix('ctrl',1)
@@ -151,8 +163,11 @@ class DeformSceneObject(MeshSceneObject):
         
         self.ctrldims=(dimx,dimy,dimz)
         
+        self.ctrls.setShared(False)
         self.ctrls.setN(len(nodes))
         self.ctrls[:]=nodes
+        
+        self.lineinds.setShared(False)
         self.lineinds.setN(len(lines))
         self.lineinds[:]=lines
     
@@ -186,6 +201,37 @@ class DeformPlugin(MeshScenePlugin):
     
     def createDeformRepr(obj,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
         pass
+    
+    def updateObjPropBox(self,obj,prop):
+        MeshScenePlugin.updateObjPropBox(self,obj,prop)
+
+        objs=[o.getName() for o in self.mgr.objs if o is not obj and isinstance(o,MeshSceneObject)]
+        
+        eidolon.fillList(prop.deprop.srcBox,objs,prop.deprop.srcBox.currentIndex())
+    
+    def createObjPropBox(self,obj):
+        prop=MeshScenePlugin.createObjPropBox(self,obj)
+        
+        deprop=DeformPropertyWidget()
+        prop.deprop=deprop
+        prop.layout().addWidget(prop.deprop)
+
+        @deprop.setButton.clicked.connect
+        def _set():
+            src=deprop.srcBox.currentText()
+            sobj=eidolon.first(o for o in self.mgr.objs if o.getName()==src)
+            x,y,z=deprop.getGridSize()
+            
+            if not sobj:
+                raise ValueError('No valid source mesh object found (name given as %r)'%src)
+            
+            obj.setSourceObj(sobj,x,y,z)
+            
+        @deprop.updateButton.clicked.connect
+        def _update():
+            pass
+
+        return prop
     
     @delegatedmethod
     def setSourceObj(self,defobj,source,dimx,dimy,dimz):
