@@ -19,9 +19,9 @@
 import eidolon
 from eidolon import (
         QtWidgets,
-        MeshSceneObject,MeshScenePlugin, ElemType, PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
+        MeshSceneObject,MeshScenePlugin, ElemType, ReprType,PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
         NodeDragHandle, transform,
-        chooseProcCount, delegatedmethod
+        chooseProcCount, delegatedmethod, taskmethod
 )
 
 from ui import Ui_DeformObjProp
@@ -128,15 +128,25 @@ class DeformPropertyWidget(QtWidgets.QWidget,Ui_DeformObjProp):
     def getGridSize(self):
         return self.xgridBox.value(),self.ygridBox.value(),self.zgridBox.value()
     
+    def setGridSize(self,x,y,z):
+        self.xgridBox.setValue(x)
+        self.ygridBox.setValue(y)
+        self.zgridBox.setValue(z)
+    
+    def getMeshType(self):
+        return ReprType._line if self.lineButton.isChecked() else ReprType._volume
+    
 
 class DeformSceneObject(MeshSceneObject):
     def __init__(self,name,plugin=None,**kwargs):
         self.ctrls=Vec3Matrix('ctrl',1)
-        self.ctrldims=(1,1,1)
+        self.ctrldims=(1,1,1) # XYZ dimensions of the control point grid
         self.lineinds=IndexMatrix('lines',ElemType._Line1NL,1,2)
         self.sourceObj=None
         self.sourceCoeffs=None
         self.sourceXis=None
+        
+        self.deformReprType=ReprType._volume
         
         dataset=PyDataSet('ctrls',self.ctrls,[self.lineinds])
         
@@ -183,7 +193,7 @@ class DeformPlugin(MeshScenePlugin):
         return DeformSceneObject(name,self)
         
     def getReprTypes(self,obj):
-        return [eidolon.ReprType._line]
+        return [ReprType._line]
         
     def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
         if obj.sourceObj is None or obj.ctrls.n()==1:
@@ -204,10 +214,14 @@ class DeformPlugin(MeshScenePlugin):
     
     def updateObjPropBox(self,obj,prop):
         MeshScenePlugin.updateObjPropBox(self,obj,prop)
-
+        deprop=prop.deprop
+        
         objs=[o.getName() for o in self.mgr.objs if o is not obj and isinstance(o,MeshSceneObject)]
         
-        eidolon.fillList(prop.deprop.srcBox,objs,prop.deprop.srcBox.currentIndex())
+        eidolon.fillList(deprop.srcBox,objs,deprop.srcBox.currentIndex())
+        
+        deprop.setGridSize(*obj.ctrldims)
+        
     
     def createObjPropBox(self,obj):
         prop=MeshScenePlugin.createObjPropBox(self,obj)
@@ -215,6 +229,10 @@ class DeformPlugin(MeshScenePlugin):
         deprop=DeformPropertyWidget()
         prop.deprop=deprop
         prop.layout().addWidget(prop.deprop)
+        
+        @deprop.volButton.toggled.connect
+        def _setRepr(_):
+            obj.deformReprType=deprop.getMeshType()
 
         @deprop.setButton.clicked.connect
         def _set():
@@ -229,12 +247,16 @@ class DeformPlugin(MeshScenePlugin):
             
         @deprop.updateButton.clicked.connect
         def _update():
-            pass
+            if not obj.reprs:
+                raise ValueError('Deform object representation must be visible first')
+                
+            
 
         return prop
     
     @delegatedmethod
-    def setSourceObj(self,defobj,source,dimx,dimy,dimz):
+    @taskmethod('Setting Source Object')
+    def setSourceObj(self,defobj,source,dimx,dimy,dimz,task=None):
         defobj.sourceObj=source.getName()
         trans=transform()
         srcnodes=source.datasets[0].getNodes()
@@ -246,9 +268,16 @@ class DeformPlugin(MeshScenePlugin):
         else:
             aabb=BoundBox(srcnodes)
             
+        if defobj.reprs:
+            for r in defobj.reprs:
+                self.mgr.removeSceneObjectRepr(r)
+            
         defobj.setControlBox(aabb.minv,aabb.maxv,dimx,dimy,dimz)
-        defobj.sourceXis=calculateNodeXis(srcnodes,trans,aabb)
-        defobj.sourceCoeffs=calculateNodeCoeffs(defobj.sourceXis,dimx,dimy,dimz)
+        defobj.sourceXis=calculateNodeXis(srcnodes,trans,aabb,task)
+        defobj.sourceCoeffs=calculateNodeCoeffs(defobj.sourceXis,dimx,dimy,dimz,task)
+        
+        rep=defobj.createRepr(ReprType._line)
+        self.mgr.addSceneObjectRepr(rep)
     
     def setControlPoint(self,handle,isReleased):
         if isReleased:

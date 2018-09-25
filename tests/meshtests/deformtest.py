@@ -33,13 +33,14 @@ mgr.addSceneObjectRepr(rep)
 #rep.applyMaterial('Rainbow',field='dist')
 
 de=Deform.createDeformObject()
+mgr.addSceneObject(de)
 
 de.setSourceObj(obj,3,3,3)
 
-mgr.addSceneObject(de)
 
-rep=de.createRepr(ReprType._line)
-mgr.addSceneObjectRepr(rep)
+
+#rep=de.createRepr(ReprType._line)
+#mgr.addSceneObjectRepr(rep)
 
 
 mgr.setCameraSeeAll()
