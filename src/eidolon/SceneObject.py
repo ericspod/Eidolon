@@ -520,14 +520,14 @@ class MeshSceneObject(SceneObject):
         self.datasets=list(toIterable(datasets)) # initial dataset or list of datasets
         self.timestepList=list(range(len(self.datasets))) # list of timestep values
 
-    def createRepr(self,reprtype,refine=0,**kwargs):
-        '''
-        Create a representation for this dataset. 'reprType' is a member of ReprType, 'refine' is the refinement level,
-        and any other named arguments can be passed to the SceneObjectRepr object. This method calls the plugin's
-        method of the same name to implement its behaviour.
-        '''
-        kwargs['refine']=refine
-        return self.plugin.createRepr(self,reprtype,**kwargs)
+#    def createRepr(self,reprtype,refine=0,**kwargs):
+#        '''
+#        Create a representation for this dataset. 'reprType' is a member of ReprType, 'refine' is the refinement level,
+#        and any other named arguments can be passed to the SceneObjectRepr object. This method calls the plugin's
+#        method of the same name to implement its behaviour.
+#        '''
+#        kwargs['refine']=refine
+#        return self.plugin.createRepr(self,reprtype,**kwargs)
 
     def getPropTuples(self):
         if not self.proptuples:

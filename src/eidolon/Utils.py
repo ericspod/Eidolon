@@ -1645,12 +1645,18 @@ def isPicklable(obj):
 
 
 def isIterable(obj):
-    '''Returns True if `obj' is iterable type, ie. list, tuple, dict.'''
-#   try:
-#       return iter(obj) is not None
-#   except:
-#       return False
+    '''Returns True if `obj' is iterable container type, ie. list, tuple, dict.'''
     return isinstance(obj, (list,tuple,dict))
+#    if isinstance(obj,(bytes,str)):
+#        return False
+#    
+#    if isinstance(obj, (list,tuple,dict)):
+#        return True
+#    
+#    try:
+#        return iter(obj) is not None
+#    except:
+#        return False
 
 
 def toIterable(obj):

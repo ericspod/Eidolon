@@ -29,7 +29,7 @@ obj=MeshSceneObject('Tri',ds)
 mgr.addSceneObject(obj)
 
 # create a visual representation of the triangle, "volume" in this value referring to a 3D representation
-rep=obj.createRepr(ReprType._volume,0)
+rep=obj.createRepr(ReprType._volume)
 mgr.addSceneObjectRepr(rep)
 rep.applyMaterial('Rainbow',field='vals')
 

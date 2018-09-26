@@ -29,7 +29,9 @@ from ui import Ui_DeformObjProp
 gridType=ElemType.Hex1PCR
 
 deformRepr='deform'
-
+specialRepr='specialRepr'
+tempDS='tempDS'
+specialReprs=eidolon.enum('handlelines','deformedmesh')
     
 @eidolon.concurrent
 def calculateNodeXisRange(process,nodes,trans,xis,minv,diff):
@@ -83,6 +85,8 @@ def calculateNodeCoeffs(xis,wpts,hpts,dpts,task=None):
 
 @eidolon.concurrent
 def applyCoeffsRange(process,coeffs,ctrlpts,outnodes):
+    ctrlpts=ctrlpts[:,0]
+    
     for n in process.prange():
         ncoeff=[0]*len(ctrlpts)
         for i,v in coeffs[n].items():
@@ -97,7 +101,7 @@ def applyCoeffs(coeffs,ctrlpts,outnodes,task=None):
     if not outnodes:
         outnodes=eidolon.Vec3Matrix('nodes',len(coeffs),1,proccount!=1)
     elif proccount!=1:
-        eidolon.shareMatrices(outnodes)
+        eidolon.shareMatrices(outnodes,ctrlpts)
         
     applyCoeffsRange(outnodes.n(),proccount,task,coeffs,ctrlpts,outnodes)
     
@@ -195,22 +199,58 @@ class DeformPlugin(MeshScenePlugin):
     def getReprTypes(self,obj):
         return [ReprType._line]
         
-    def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
+    @taskmethod('Creating Representation')
+    def createRepr(self,obj,reprtype,refine=0,drawInternal=False,externalOnly=True,matname='Default',task=None,**kwargs):
         if obj.sourceObj is None or obj.ctrls.n()==1:
-            raise ValueError('Deform object must have source and nodes set before creating representation')
+            raise ValueError('Deform object must have source and nodes set before creating representations')
             
-        if reprtype==deformRepr:
-            return self.createDeformRepr(obj,refine,drawInternal,externalOnly,matname,**kwargs)
+        # create the deformed mesh representation
+        if reprtype==deformRepr and not any(r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh for r in obj.reprs):
+            sobj=eidolon.first(o for o in self.mgr.objs if o.getName()==obj.sourceObj)
+        
+            nodes=applyCoeffs(obj.sourceCoeffs,obj.ctrls,None,task)
+            ds=sobj.datasets[0].clone(tempDS)
+            ds.setNodes(nodes)
             
-        if obj.reprs:
-            return None
+            tempObj=MeshSceneObject('tempobj',ds,self)
             
-        rep=MeshScenePlugin.createRepr(self,obj,reprtype,0,drawInternal,externalOnly,matname,**kwargs)
-        self.mgr.addFuncTask(lambda:self.mgr.showHandle(rep))
-        return rep
+            kwargs[specialRepr]=specialReprs.deformedmesh
+            kwargs[tempDS]=ds
+            
+            rep= MeshScenePlugin.createRepr(self,tempObj,obj.deformReprType,refine,drawInternal,externalOnly,matname,**kwargs)
+            rep.setName('DeformedMesh')
+            rep.parent=obj
+            obj.reprs.append(rep)
+            return rep
+            
+        # create the handle line grid representation
+        if not any(r.kwargs.get(specialRepr,'')==specialReprs.handlelines for r in obj.reprs):
+               
+            kwargs[specialRepr]=specialReprs.handlelines
+            
+            rep=MeshScenePlugin.createRepr(self,obj,reprtype,0,drawInternal,externalOnly,matname,**kwargs)
+            rep.setName('ControlPointHandles')
+            self.mgr.addFuncTask(lambda:self.mgr.showHandle(rep))
+            return rep
+        
+        return None
     
-    def createDeformRepr(obj,refine=0,drawInternal=False,externalOnly=True,matname='Default',**kwargs):
-        pass
+    @delegatedmethod
+    @taskmethod('Updating Deformed Representation')
+    def updateDeformedRepr(self,obj,task=None):
+        assert obj.plugin==self
+        
+        if not obj.reprs:
+            raise ValueError('Deform object representation must be visible first')
+            
+        drep=eidolon.first(r for r in obj.reprs if r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh)
+        
+        if not drep:
+            drep=obj.createRepr(deformRepr)
+            self.mgr.addSceneObjectRepr(drep)
+        else:
+            pass # TODO: update existing deformed mesh
+
     
     def updateObjPropBox(self,obj,prop):
         MeshScenePlugin.updateObjPropBox(self,obj,prop)
@@ -221,7 +261,6 @@ class DeformPlugin(MeshScenePlugin):
         eidolon.fillList(deprop.srcBox,objs,deprop.srcBox.currentIndex())
         
         deprop.setGridSize(*obj.ctrldims)
-        
     
     def createObjPropBox(self,obj):
         prop=MeshScenePlugin.createObjPropBox(self,obj)
@@ -243,14 +282,13 @@ class DeformPlugin(MeshScenePlugin):
             if not sobj:
                 raise ValueError('No valid source mesh object found (name given as %r)'%src)
             
-            obj.setSourceObj(sobj,x,y,z)
+            f=obj.setSourceObj(sobj,x,y,z)
+            self.mgr.checkFutureResult(f)
             
         @deprop.updateButton.clicked.connect
         def _update():
-            if not obj.reprs:
-                raise ValueError('Deform object representation must be visible first')
-                
-            
+            f=self.updateDeformedRepr(obj)
+            self.mgr.checkFutureResult(f)
 
         return prop
     
@@ -294,13 +332,14 @@ class DeformPlugin(MeshScenePlugin):
     def createHandles(self,rep,**kwargs):
         handles=MeshScenePlugin.createHandles(self,rep)
         
-        pos=rep.getPosition()
-        obj=rep.parent
-        ctrls=obj.ctrls
-        
-        for ind in range(ctrls.n()):
-            h=NodeDragHandle(ctrls[ind]-pos,(obj,ind),self.setControlPoint)
-            handles.append(h)
+        if rep.kwargs.get('specialRepr','')==specialReprs.handlelines:
+            pos=rep.getPosition()
+            obj=rep.parent
+            ctrls=obj.ctrls
+            
+            for ind in range(ctrls.n()):
+                h=NodeDragHandle(ctrls[ind]-pos,(obj,ind),self.setControlPoint)
+                handles.append(h)
         
         return handles
         
