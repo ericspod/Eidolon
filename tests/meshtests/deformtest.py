@@ -28,8 +28,8 @@ ds=generateTestMeshDS(ElemType._Hex1NL,5)
 obj=MeshSceneObject('Hexes',ds)
 mgr.addSceneObject(obj)
 
-rep=obj.createRepr(ReprType._volume)
-mgr.addSceneObjectRepr(rep)
+#rep=obj.createRepr(ReprType._volume)
+#mgr.addSceneObjectRepr(rep)
 #rep.applyMaterial('Rainbow',field='dist')
 
 de=Deform.createDeformObject()

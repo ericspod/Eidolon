@@ -195,10 +195,6 @@ class ScenePlugin(object):
         '''Return a help text block.'''
         return ''
     
-    def getTests(self):
-        '''Return a list of test tuples of the form (callable, arg1, arg2,...) to be called with Nose.'''
-        return []
-
     def acceptFile(self,filename):
         '''
         Return True if `filename' is a file which can be loaded by this plugin, and if other preconditions are met.
@@ -216,7 +212,7 @@ class ScenePlugin(object):
         if the data is incorrect. A SceneObject is returned or an iterable thereof if multiple objects can be loaded.
         The return value varies by plugin and can be a Future object.
         '''
-        raise NotImplementedError('Cannot load files as SceneObjects')
+        raise NotImplementedError('Loading of files not implemented')
 
     @delegatedmethod
     def saveObject(self,obj,path,overwrite=False,setFilenames=False,**kwargs):

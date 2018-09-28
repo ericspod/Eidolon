@@ -18,10 +18,8 @@
 
 import eidolon
 from eidolon import (
-        QtWidgets,
-        MeshSceneObject,MeshScenePlugin, ElemType, ReprType,PyDataSet, Vec3Matrix,IndexMatrix, RealMatrix, BoundBox, vec3, 
-        NodeDragHandle, transform,
-        chooseProcCount, delegatedmethod, taskmethod, first
+        QtWidgets, MeshSceneObject,MeshScenePlugin, ElemType, ReprType,PyDataSet, Vec3Matrix, BoundBox, transform,
+        chooseProcCount, delegatedmethod, taskmethod, first, concurrent
 )
 
 from ui import Ui_DeformObjProp
@@ -33,7 +31,8 @@ specialRepr='specialRepr'
 tempDS='tempDS'
 specialReprs=eidolon.enum('handlelines','deformedmesh')
     
-@eidolon.concurrent
+
+@concurrent
 def calculateNodeXisRange(process,nodes,trans,xis,minv,diff):
     for n in process.prange():
         xi=((trans*nodes[n])-minv)/diff
@@ -57,7 +56,7 @@ def calculateNodeXis(nodes,trans,boundbox=None,task=None):
     return xis
 
 
-@eidolon.concurrent
+@concurrent
 def calculateNodeCoeffsRange(process,xis,wpts,hpts,dpts):
     coeffs=[]
     
@@ -83,7 +82,7 @@ def calculateNodeCoeffs(xis,wpts,hpts,dpts,task=None):
     return eidolon.sumResultMap(result)
 
 
-@eidolon.concurrent
+@concurrent
 def applyCoeffsRange(process,coeffs,ctrlpts,outnodes):
     ctrlpts=ctrlpts[:,0]
     
@@ -109,6 +108,12 @@ def applyCoeffs(coeffs,ctrlpts,outnodes,task=None):
     
 
 def generateControlBox(bbmin,bbmax,dimx,dimy,dimz):
+    if bbmax<=bbmin:
+        raise ValueError('Invalid bound box: %r -> %r'%(bbmin,bbmax))
+        
+    if dimx<=2 or dimy<=2 or dimz<=2:
+        raise ValueError('Invalid dimensions, must be >2 (%r, %r, %r)'%(dimx,dimy,dimz))
+    
     nodes,hexes=eidolon.generateHexBox(dimx-2,dimy-2,dimz-2) # generate a hex grid
     _,lineinds=eidolon.generateLineBox((bbmin,bbmax)) # get indices for a line box
     
@@ -119,7 +124,8 @@ def generateControlBox(bbmin,bbmax,dimx,dimy,dimz):
     # convert hexes into line indices joining the edges
     for h in hexes:
         for i,j in lineinds:
-            lines.add((h[i],h[j]))
+            hi,hj=h[i],h[j]
+            lines.add((min(hi,hj),max(hi,hj)))
             
     return nodes,sorted(lines)
     
@@ -146,7 +152,7 @@ class DeformSceneObject(MeshSceneObject):
         self.ctrls=Vec3Matrix('ctrl',1)
         self.ctrldims=(1,1,1) # XYZ dimensions of the control point grid
         
-        self.lineinds=IndexMatrix('lines',ElemType._Line1NL,1,2)
+        self.lineinds=eidolon.IndexMatrix('lines',ElemType._Line1NL,1,2)
         self.sourceObj=None
         self.sourceCoeffs=None
         self.sourceXis=None
@@ -159,18 +165,25 @@ class DeformSceneObject(MeshSceneObject):
     
     def setControlPoint(self,index,position):
         '''
-        Set the control point number `index' to the relative coordinate `position'. 
+        Set the control point number `index' to the relative coordinate `position'. These coordinates are relative to the
+        control point representation position, thus that object's transform must be applied to get world coordinates.
         '''
         oldpos=self.ctrls[index]
         self.ctrls[index]=position
         
-        for r in self.reprs:
-            for i in range(r.nodes.n()):
-                n=r.nodes[i][0]
+        ctrlrep=self.getCtrlPointRepr()
+        if ctrlrep:
+            for i in range(ctrlrep.nodes.n()):
+                n=ctrlrep.nodes[i][0]
                 if n==oldpos:
-                    r.nodes[i,0]=position
+                    ctrlrep.nodes[i,0]=position
     
     def setControlBox(self,bbmin,bbmax,dimx,dimy,dimz):
+        '''
+        Set a new control point box of nodes on an axis-aligned grid in the bounding region (bbmin,bbmax) with dimensions
+        (dimx,dimy,dimz). This will create a set of control nodes dimx*dimy*dimz in size in self.ctrls and set 
+        self.lineinds to contain a line topology representing the control point grid.
+        '''
         nodes,lines=generateControlBox(bbmin,bbmax,dimx,dimy,dimz)
         
         assert len(nodes)==(dimx*dimy*dimz),'%i %i %i %i'%(len(nodes),dimx,dimy,dimz)
@@ -196,6 +209,12 @@ class DeformPlugin(MeshScenePlugin):
     def init(self,plugid,win,mgr):
         MeshScenePlugin.init(self,plugid,win,mgr)
         
+        def _createDef():
+            self.mgr.addSceneObject(self.createDeformObject())
+        
+        win.addMenuItem('Create','NewDeform'+str(plugid),'&Deformation Object',_createDef)
+        
+        
     def createDeformObject(self,name='deform'):
         return DeformSceneObject(name,self)
         
@@ -208,22 +227,19 @@ class DeformPlugin(MeshScenePlugin):
             raise ValueError('Deform object must have source and nodes set before creating representations')
             
         # create the deformed mesh representation
-        if reprtype==deformRepr and not any(r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh for r in obj.reprs):
-            sobj=first(o for o in self.mgr.objs if o.getName()==obj.sourceObj)
-        
-            nodes=applyCoeffs(obj.sourceCoeffs,obj.ctrls,None,task)
-            ds=sobj.datasets[0].clone(tempDS)
-            ds.setNodes(nodes)
-            
-            tempObj=MeshSceneObject('tempobj',ds,self)
+        if reprtype==deformRepr:# and not any(r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh for r in obj.reprs):
+            # create a temporary object to create a representation from
+            tempObj=self.exportDeformedMesh(obj,'tempobj',False)
             
             kwargs[specialRepr]=specialReprs.deformedmesh
-            kwargs[tempDS]=ds
+            kwargs[tempDS]=tempObj.datasets[0]
             
             rep= MeshScenePlugin.createRepr(self,tempObj,obj.deformReprType,refine,drawInternal,externalOnly,matname,**kwargs)
             rep.setName('DeformedMesh')
             rep.parent=obj
+            rep.plugin=self
             obj.reprs.append(rep)
+            
             return rep
             
         # create the handle line grid representation
@@ -249,18 +265,17 @@ class DeformPlugin(MeshScenePlugin):
         drep=first(r for r in obj.reprs if r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh)
         
         newrep=obj.createRepr(deformRepr)
-        newrep.nodes.mul(obj.getCtrlPointRepr().getTransform())
         
         if not drep:
-#            drep=obj.createRepr(deformRepr)
+            self.mgr.addSceneObjectRepr(newrep)
+        elif obj.deformReprType!=drep.reprtype:
+            self.mgr.removeSceneObjectRepr(drep)
             self.mgr.addSceneObjectRepr(newrep)
         else:
-            drep.nodes=newrep.nodes
-            drep.tris=newrep.tris
-            drep.lines=newrep.lines
+            obj.reprs.remove(newrep)
+            drep.nodes[:]=newrep.nodes[:]
             
             self.mgr.updateSceneObjectRepr(drep)
-
     
     def updateObjPropBox(self,obj,prop):
         MeshScenePlugin.updateObjPropBox(self,obj,prop)
@@ -299,6 +314,12 @@ class DeformPlugin(MeshScenePlugin):
         def _update():
             f=self.updateDeformedRepr(obj)
             self.mgr.checkFutureResult(f)
+            
+        @deprop.exportButton.clicked.connect
+        def _export():
+            exobj=self.exportDeformedMesh(obj)
+            self.mgr.checkFutureResult(exobj)
+            self.mgr.addSceneObjectTask(exobj)
 
         return prop
     
@@ -340,6 +361,20 @@ class DeformPlugin(MeshScenePlugin):
         if ctrlrep:
             f=self.mgr.updateSceneObjectRepr(ctrlrep)
             self.mgr.checkFutureResult(f)
+            
+    @taskmethod('Exporting Deformed Mesh')
+    def exportDeformedMesh(self,obj,name=None,copyData=True,task=None):
+        sobj=first(o for o in self.mgr.objs if o.getName()==obj.sourceObj)
+        ctrlrep=obj.getCtrlPointRepr()
+        name=name or (sobj.getName()+'_Deform')
+        
+        ctrls=obj.ctrls.clone('ctrlsclone')
+        ctrls.mul(ctrlrep.getTransform() if ctrlrep else transform())
+        
+        ds=sobj.datasets[0].clone(tempDS,True,copyData,copyData)
+        applyCoeffs(obj.sourceCoeffs,ctrls,ds.getNodes(),task)
+        
+        return MeshSceneObject(name,ds,None)
         
     @delegatedmethod
     def createHandles(self,rep,**kwargs):
@@ -351,7 +386,7 @@ class DeformPlugin(MeshScenePlugin):
             ctrls=obj.ctrls
             
             for ind in range(ctrls.n()):
-                h=NodeDragHandle(ctrls[ind]-pos,(obj,ind),self._handleMoved)
+                h=eidolon.NodeDragHandle(ctrls[ind]-pos,(obj,ind),self._handleMoved)
                 handles.append(h)
         
         return handles

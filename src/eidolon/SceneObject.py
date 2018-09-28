@@ -973,7 +973,7 @@ class MeshSceneObjectRepr(SceneObjectRepr):
         self.setVisible(True)
 
     def prepareBuffers(self):
-        assert not isMainThread()
+        #assert not isMainThread()
 
         if len(self.figs)>0:
             extinds=None if self.drawInternal else self.extinds

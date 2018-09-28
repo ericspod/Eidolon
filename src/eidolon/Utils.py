@@ -911,6 +911,13 @@ def wrapper(func):
 
         Calling <function tostr at 0x7f91d747a1b8> Ni!
         Spam and Eggs
+        
+    The null wrapper decorator which simply calls the function with the given arguments is:
+        
+        @wrapper
+        def null(func,args,kwargs):
+            return func(*args,**kwargs)
+            
     '''
     @wraps(func)
     def _newdecorator(*args,**kwargs):
@@ -966,11 +973,11 @@ def taskroutine(func,args,kwargs,taskLabel=None,selfName='task'):
 
 
 @wrapper
-def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
+def taskmethod(meth,args,kwargs,taskLabel=None,taskName='task',mgrName='mgr'):
     '''
     Wraps a given method such that it will execute the method's body in a task and store the result in a returned
     Future object. This assumes the method's receiver has a member named by `mgrName' which references a TaskQueue
-    object. This will also add the keywod argument named `selfName' which will refer to the Task object when called.
+    object. This will also add the keywod argument named `taskName' which will refer to the Task object when called.
     The string `taskLabel' is used to identify the task, typically in a status bar, ie. the same as in @taskroutine.
 
     For example, the method:
@@ -996,10 +1003,10 @@ def taskmethod(meth,args,kwargs,taskLabel=None,selfName='task',mgrName='mgr'):
 
     def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
         with f:
-            kwargs[selfName]=task
+            kwargs[taskName]=task
             f.setObject(meth(self,*args,**kwargs))
 
-    return mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=selfName),f)
+    return mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=taskName),f)
 
 
 def readBasicConfig(filename,evalfunc=ast.literal_eval):
@@ -1604,14 +1611,24 @@ def setmethod(obj,methname=None):
     '''
     Applying this decorator to a routine replaces the method of `obj' with name `methname' (or the name of the applied
     routine if this is None) with the routine. 
+    
+    Eg.:
+        x=type('test',(),{}) # test object with no members
+        
+        @setmethod(x)
+        def foo():
+            return str(x)
+            
+        x.foo()
+        >>> "<class '__main__.test'>"
     '''
     def setfunc(func):
-        fname=str(methname or func.__name__)
-        oldfunc=getattr(obj,fname,None)
+        mname=str(methname or func.__name__)
+        oldfunc=getattr(obj,mname,None)
         if oldfunc:
-            setattr(obj,'__old__'+fname,oldfunc)
+            setattr(obj,'__old__'+mname,oldfunc)
             
-        setattr(obj,fname,func)
+        setattr(obj,mname,func)
         
         return func
     
