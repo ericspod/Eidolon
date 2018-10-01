@@ -66,7 +66,6 @@ def calculateNodeCoeffsRange(process,xis,wpts,hpts,dpts):
         x,y,z=xis[n]
         ncoeffs=gridType.basis(x,y,z,wpts,hpts,dpts,limits=[(0,0)]*3)
         coeffmap={i:v for i,v in enumerate(ncoeffs) if eidolon.epsilonZero(v)!=0}
-        print(n,xis[n],coeffmap)
         coeffs.append(coeffmap)
         
     return coeffs
