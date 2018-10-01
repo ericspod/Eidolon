@@ -258,6 +258,7 @@ class DeformPlugin(MeshScenePlugin):
         return None
     
     def _delayUpdateRepr(self,obj):
+        '''Delayed method to auto-update the deformed mesh representation when a control point is moved.'''
         drep=first(r for r in obj.reprs if r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh)
         
         if drep:

@@ -853,6 +853,7 @@ class DelayThread(Thread):
                 self.args=None
                 self.kwargs=None
             except:
+                # on exception remove self from the global map
                 t=first(t for t,d in DelayThread.globalDelayMap.items() if d==self)
                 del DelayThread.globalDelayMap[t]
                 return

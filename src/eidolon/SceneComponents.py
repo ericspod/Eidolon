@@ -215,6 +215,9 @@ class Handle(object):
 
     def mouseDrag(self,e,dragvec):
         pass
+    
+    def getPosition(self):
+        return self.figs[0].getPosition() if self.figs else None
 
     def setPosition(self,pos):
         pass

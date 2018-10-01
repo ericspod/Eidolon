@@ -574,12 +574,15 @@ class SceneManager(TaskQueue):
             fig.setPosition(aabb.center)
             fig.setScale(aabb.maxv-aabb.minv)
 
+        campos=self.cameras[0].getPosition()
+
         for rep,handles in self.handlemap.items(): # transform handles
             for h in handles:
                 if rep.isVisible():
                     pos=rep.getPosition(True)
+                    scale=h.getPosition().distTo(campos)*0.05
                     h.setPosition(pos)
-                    h.setScale(vec3(pos.distTo(self.cameras[0].getPosition())*0.05)) # view distance kludge, should instead use overlayed ortho camera?
+                    h.setScale(vec3(scale)) # view distance kludge, should instead use overlayed ortho camera?
                     h.setRotation(*rep.getRotation(True))
                 else:
                     h.setVisible(False)
@@ -600,8 +603,8 @@ class SceneManager(TaskQueue):
 
             handles=[]
             for r,h in self.handlemap.items():
-                rpos=r.getPosition()
-                handles+=[(rpos.distToSq(campos),hh) for hh in h]
+#                rpos=r.getPosition()
+                handles+=[(hh.getPosition().distToSq(campos),hh) for hh in h if hh.getPosition() is not None]
 
             for _,h in sorted(handles,key=lambda i:i[0]):
                 if h.checkSelected(ray):
