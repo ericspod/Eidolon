@@ -214,6 +214,7 @@ class Handle(object):
         pass
 
     def mouseDrag(self,e,dragvec):
+        '''Called by mouseMove() when the mouse is dragged by a distance of `dragvec' screen coordinates.'''
         pass
     
     def getPosition(self):
@@ -618,13 +619,14 @@ class Handle3D(Handle):
     '''
     def __init__(self):
         Handle.__init__(self)
-        self.figscale=1.0
-        self.prevX=0
+        self.figscale=1.0 # figure scale, multiplied by a distance scale by renderer
+        self.prevX=0 # previous position of the mouse while being dragged to a new position
         self.prevY=0
-        self.buttons=None
-        self.pressedCamera=None
+        self.buttons=None # which buttons were pressed when the handle was selected
+        self.pressedCamera=None # which camera the mouse click selecting the handle came from
 
     def mousePress(self,camera,e):
+        '''Called when the handle is clicked, sets previous position, self.buttons, and self.pressedCamera.'''
         if self.isSelected():
             self.prevX=e.x()
             self.prevY=e.y()
@@ -632,12 +634,14 @@ class Handle3D(Handle):
             self.pressedCamera=camera
 
     def mouseRelease(self,e):
+        '''Called when handle is released, clears all state values.'''
         self.prevX=0
         self.prevY=0
         self.buttons=None
         self.pressedCamera=None
 
     def mouseMove(self,e):
+        '''Called when the handle is dragged, sets previous position and calls self.mouseDrag().'''
         if self.isSelected():
             dragvec=vec3(e.x()-self.prevX,e.y()-self.prevY,0)
             self.prevX=e.x()
@@ -645,6 +649,10 @@ class Handle3D(Handle):
             self.mouseDrag(e,dragvec)
             
     def getCameraRay(self,x=None,y=None):
+        '''
+        Get the ray originating from the previous mouse position, or (x,y) if provided, on the camera selecting this
+        handle. If not selected, None is returned.
+        '''
         if self.pressedCamera is None:
             return None
         
@@ -655,6 +663,7 @@ class Handle3D(Handle):
         return self.pressedCamera.getProjectedRay(x,y)
     
     def getCameraDirection(self):
+        '''Get the direction vector of the camera selecting this handle, or +Z if not selected.'''
         if self.pressedCamera is None:
             return vec3.Z()
         else:
@@ -681,34 +690,41 @@ class Handle3D(Handle):
         
         return dragvec.len()*dragamount
 
-    def getDragVector(self,dragvec,curpos):
-        prevpos=curpos-dragvec
-        screenpos=self.pressedCamera.getProjectedRay(curpos.x(),curpos.y()).getPosition()
-        startpos=self.pressedCamera.getProjectedRay(prevpos.x(),prevpos.y()).getPosition()
-        return screenpos-startpos
-
     def setPosition(self,pos):
+        '''Set the position of each internal figure to `pos'.'''
         for f in self.figs:
             f.setPosition(pos)
 
     def setScale(self,scale):
+        '''Set the scale of each internal figure to `scale'.'''
         self.figscale=scale
         for f in self.figs:
             f.setScale(scale)
 
     def setRotation(self,yaw,pitch,roll):
+        '''Set the rotation of each internal figure to rotator(yaw,pitch,roll).'''
         rot=rotator(yaw,pitch,roll)
         for f in self.figs:
             f.setRotation(rot)
 
 
 class NodeDragHandle(Handle3D):
+    '''
+    Handle for arbitrarily dragging a node around in the space. This is defined with initial position, position offset
+    from the origin of the associated representation, and user value, and a callback to be called whenever the node moves.
+    '''
     sphereNodes=None
     sphereInds=None
     sphereNorms=None
     sphereScale=0.25
     
     def __init__(self,positionOffset,value,dragCallback=lambda h,r:None,col=color(1,0,0,1)):
+        '''
+        Initialize the handle with `positionOffset' as the handle's position relative to the parent representation, a
+        `value' to be stored in self.value, the callback function `dragCallback', and the handle's color `col'. The 
+        callback accepts as arguments the handle itself and a boolean value which is True when the handle has been 
+        released and False if dragged. It is called when the handle is dragged and upon mouse button release.
+        '''
         Handle3D.__init__(self)
         self.position=vec3()
         self.positionOffset=positionOffset
