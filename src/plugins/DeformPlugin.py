@@ -24,6 +24,8 @@ from eidolon import (
 
 from ui import Ui_DeformObjProp
 
+autoUpdateDelay=2.0
+
 gridType=ElemType.Hex1PCR
 
 deformRepr='deform'
@@ -205,6 +207,8 @@ class DeformSceneObject(MeshSceneObject):
 class DeformPlugin(MeshScenePlugin):
     def __init__(self):
         MeshScenePlugin.__init__(self,'Deform')
+        
+        eidolon.delayedMethodWeak(self,'_delayUpdateRepr',autoUpdateDelay)
 
     def init(self,plugid,win,mgr):
         MeshScenePlugin.init(self,plugid,win,mgr)
@@ -213,7 +217,6 @@ class DeformPlugin(MeshScenePlugin):
             self.mgr.addSceneObject(self.createDeformObject())
         
         win.addMenuItem('Create','NewDeform'+str(plugid),'&Deformation Object',_createDef)
-        
         
     def createDeformObject(self,name='deform'):
         return DeformSceneObject(name,self)
@@ -253,6 +256,13 @@ class DeformPlugin(MeshScenePlugin):
             return rep
         
         return None
+    
+    def _delayUpdateRepr(self,obj):
+        drep=first(r for r in obj.reprs if r.kwargs.get(specialRepr,'')==specialReprs.deformedmesh)
+        
+        if drep:
+            f=self.updateDeformedRepr(obj)
+            self.mgr.checkFutureResult(f)
     
     @delegatedmethod
     @taskmethod('Updating Deformed Representation')
@@ -361,6 +371,7 @@ class DeformPlugin(MeshScenePlugin):
         if ctrlrep:
             f=self.mgr.updateSceneObjectRepr(ctrlrep)
             self.mgr.checkFutureResult(f)
+            self._delayUpdateRepr(obj)
             
     @taskmethod('Exporting Deformed Mesh')
     def exportDeformedMesh(self,obj,name=None,copyData=True,task=None):
