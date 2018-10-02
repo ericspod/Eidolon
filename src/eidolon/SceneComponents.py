@@ -624,6 +624,22 @@ class Handle3D(Handle):
         self.prevY=0
         self.buttons=None # which buttons were pressed when the handle was selected
         self.pressedCamera=None # which camera the mouse click selecting the handle came from
+        self.lastIntersect=None # last intersection with the handle made by a mouse click, None if not selected
+        
+    def isSelected(self):
+        return self.lastIntersect is not None
+            
+    def checkMeshIntersect(self,ray,nodes,tris):
+        '''
+        Returns the (index,result) pair if `ray' intersects `tris' through the triangle at that index with `node's as
+        the list of vertices. Returns (-1,None) if no intersect.
+        '''
+        for i,tri in enumerate(tris):
+            result=ray.intersectsTri(nodes[tri[0]],nodes[tri[1]],nodes[tri[2]])
+            if len(result)>0:
+                return i,result
+            
+        return -1,None
 
     def mousePress(self,camera,e):
         '''Called when the handle is clicked, sets previous position, self.buttons, and self.pressedCamera.'''
@@ -731,28 +747,21 @@ class NodeDragHandle(Handle3D):
         self.value=value
         self.dragCallback=dragCallback
         self.col=col
-        self.lastIntersect=None
 
         if NodeDragHandle.sphereNodes is None:
             NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds=generateSphere(2)
             NodeDragHandle.sphereNorms=generateTriNormals(NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds)
 
-    def isSelected(self):
-        return self.lastIntersect!=None
-   
     def checkSelected(self,ray):
         assert isinstance(ray,renderer.Ray)
         self.lastIntersect=None
         
         if self.isVisible():
             trans=transform(self.position+self.positionOffset,self.figscale*NodeDragHandle.sphereScale)
-            
-            for i,tri in enumerate(NodeDragHandle.sphereInds):
-                tnodes=[trans*NodeDragHandle.sphereNodes[t] for t in tri]
-                result=ray.intersectsTri(*tnodes)
-                if len(result)>0:
-                    self.lastIntersect=(i,result,ray)
-                    return True
+            i,result=self.checkMeshIntersect(trans.inverse()*ray,NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds)
+            if i>-1:
+                self.lastIntersect=(i,result,ray)
+                return True
 
         return False
     
@@ -797,6 +806,104 @@ class NodeDragHandle(Handle3D):
         Handle3D.mouseRelease(self,e)
         if self.isSelected():
             self.dragCallback(self,True)
+            
+
+class NodeSelectHandle(Handle3D):
+    '''
+    Handle for selecting a node/vertex from a set defined by a radius search query callback. This is used to select a 
+    node from a mesh by moving the handle around.
+    '''
+    
+    sphereNodes=None
+    sphereInds=None
+    sphereNorms=None
+    sphereScale=0.25
+    
+    def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,col=color(1,0,0,1)):
+        '''
+        Initialize the node to be located at the offset `positionOffset' from the parent representation's position, and
+        storing user value `value'. The `radiusQuery' callback accepts a vec3 and radius value and returns indices of
+        nodes within that radius and the node list itself. The nodes are expected to be nodes from the representation's 
+        mesh. The `selectCallback' callable is called when the handle is dragged closer to another node or when the mouse
+        is released, accepting as arguments the handle itself, the closest node index, and a boolean stating if the mouse
+        was released or not. Handle mesh color is given as `col'.
+        '''
+        Handle3D.__init__(self)
+        self.position=vec3()
+        self.positionOffset=positionOffset
+        self.radiusQuery=radiusQuery
+        self.value=value
+        self.selectCallback=selectCallback
+        self.col=col
+
+        if NodeSelectHandle.sphereNodes is None:
+            NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds=generateSphere(2)
+            NodeSelectHandle.sphereNorms=generateTriNormals(NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds)
+        
+    def checkSelected(self,ray):
+        assert isinstance(ray,renderer.Ray)
+        self.lastIntersect=None
+        
+        if self.isVisible():
+            trans=transform(self.position+self.positionOffset,self.figscale*NodeSelectHandle.sphereScale)
+            i,result=self.checkMeshIntersect(trans.inverse()*ray,NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds)
+            if i>-1:
+                self.lastIntersect=(i,result,ray)
+                return True
+
+        return False
+    
+    def addToScene(self,mgr,scene):
+        assert isMainThread()
+
+        figname='NodeSelectHandle%r'%(self.value,)
+        mat=Handle._defaultMaterial(mgr)
+        matname=mat.getName()
+        
+        nodes=[n*NodeSelectHandle.sphereScale for n in NodeSelectHandle.sphereNodes]
+        inds=NodeSelectHandle.sphereInds
+        norms=NodeSelectHandle.sphereNorms
+        
+        vbuf=PyVertexBuffer(nodes,norms,[self.col]*len(nodes))
+        ibuf=PyIndexBuffer(inds)
+
+        fig=scene.createFigure(figname,matname,FT_TRILIST)
+        fig.fillData(vbuf,ibuf)
+        fig.setOverlay(True)
+        self.figs.append(fig)
+        self.setPosition(self.position)
+        
+    def getAbsolutePosition(self):
+        return self.position+self.positionOffset
+    
+    def setPosition(self,pos):
+        self.position=pos
+        self.figs[0].setPosition(pos+self.positionOffset)
+        
+    def mouseDrag(self,e,dragvec):
+        if self.buttons==Qt.LeftButton: # translate relative to camera
+            ray=self.getCameraRay()
+            handlepos=self.getAbsolutePosition()
+            campos=ray.getPosition(0)
+            dragpos=ray.getPosition(campos.distTo(handlepos))
+            radius=dragpos.distTo(handlepos)
+            
+            # find nodes within radius of this handle
+            radinds,nodes=self.radiusQuery(self.positionOffset,radius)
+            
+            if len(radinds)>1:
+                offpos=dragpos-self.position
+                nearest=min(radinds,key=lambda i: vec3(*nodes[i]).distTo(offpos))
+                nearnode=vec3(*nodes[nearest])
+                
+                if nearnode!=self.positionOffset:
+                    self.selectCallback(self,nearest,False)
+                    self.positionOffset=nearnode
+                    
+    def mouseRelease(self,e):
+        Handle3D.mouseRelease(self,e)
+        if self.isSelected():
+            self.selectCallback(self,-1,True)
 
 
 class TransformHandle(Handle3D):
@@ -810,7 +917,6 @@ class TransformHandle(Handle3D):
     def __init__(self,rep):
         Handle3D.__init__(self)
         self.rep=rep
-        self.lastIntersect=None
         self.repRadius=0
         self._generatefigureValues()
 
@@ -827,9 +933,6 @@ class TransformHandle(Handle3D):
         TransformHandle.xnodes=[rotator(vec3(0,1,0),halfpi)*n for n in TransformHandle.znodes]
         TransformHandle.ynodes=[rotator(vec3(1,0,0),-halfpi)*n for n in TransformHandle.znodes]
 
-    def isSelected(self):
-        return self.lastIntersect is not None
-        
     def setSelected(self,isSelected):
         if isSelected:
             self.lastIntersect=(TransformHandle.xnodes,TransformHandle.arrowinds,0,self.rep.getPosition(True))
@@ -839,16 +942,16 @@ class TransformHandle(Handle3D):
     def checkSelected(self,ray):
         assert isinstance(ray,renderer.Ray)
         self.lastIntersect=None
-        if self.isVisible():# and self.isActive():
+        if self.isVisible():
             pos=self.rep.getPosition(True)
+            trans=transform(pos,self.figscale,rotator())
+            iray=trans.inverse()*ray
 
             for nodes in (TransformHandle.xnodes,TransformHandle.ynodes,TransformHandle.znodes):
-                for i,tri in enumerate(TransformHandle.arrowinds):
-                    tnodes=[(nodes[t]*self.figscale)+pos for t in tri]
-                    result=ray.intersectsTri(*tnodes)
-                    if len(result)>0:
-                        self.lastIntersect=(nodes,TransformHandle.arrowinds,i,pos)
-                        return True
+                i,_=self.checkMeshIntersect(iray,nodes,TransformHandle.arrowinds)
+                if i>-1:
+                    self.lastIntersect=(nodes,TransformHandle.arrowinds,i,pos)
+                    return True
 
         return False
 
