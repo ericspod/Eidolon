@@ -1122,10 +1122,10 @@ def applyMatOpRange(process,mat,opstring,localmap,minn,minm,maxm):
 
     matcomp=compile(opstring,'<<opstring>>','eval')
 
-    def op(val,n,m):
+    def _op(val,n,m):
         return eval(matcomp,globals(),locals())
 
-    mat.applyCell(op,minn+process.startval,minm,minn+process.endval,maxm)
+    mat.applyCell(_op,minn+process.startval,minm,minn+process.endval,maxm)
 
     process.setProgress(process.endval-process.startval+1)
 

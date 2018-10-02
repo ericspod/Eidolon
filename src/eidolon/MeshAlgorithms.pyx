@@ -104,39 +104,6 @@ def vecfuncY(vals):
 def vecfuncZ(vals):
     return vec3(1,1,valuefuncMag(vals))
 
-#UnitFunc=enum(
-#   ('Linear','x'),
-#   ('InvLinear','1.0-x'),
-#   ('One','1.0'),
-#   ('Zero','0.0'),
-#   ('sin(x*(pi/2))','math.sin(0.5*x*math.pi)'),
-#   ('1-cos(x*(pi/2))','1-math.cos(0.5*x*math.pi)'),
-#   ('(1-cos(x*pi))/2','(1-math.cos(x*math.pi))/2'),
-#   doc='Functions for mapping one scalar unit value (0<=x<=1) to another, used for fitting data values to curves and alpha calculations.',
-#   valtype=(str,),
-#)
-
-## Functions for fitting raw field values to a scalar value
-#ValueFunc=enum(
-#   ('Average','avg(vals)'),
-#   ('Magnitude','mag(vals)'),
-#   ('Column 1','vals[0]'),
-#   ('Column 2','vals[1]'),
-#   ('Column 3','vals[2]'),
-#   ('Column 4','vals[3]'),
-#   ('Column 5','vals[4]'),
-#   valtype=(str,),
-#)
-
-#VecFunc=enum(
-#   ('Zero','vec3()'),
-#   ('Linear','vec3(*vals)'),
-#   ('Magnitude','vec3(mag(vals))'),
-#   ('XAxis','vec3(mag(vals),1,1)'),
-#   ('YAxis','vec3(1,mag(vals),1)'),
-#   ('ZAxis','vec3(1,1,mag(vals))'),
-#   valtype=(str,),
-#)
 
 UnitFunc=enum(
     ('Linear',unitfuncLin),
@@ -1078,7 +1045,7 @@ def generateLinearTriangulation(dataset,str name,int refine,bint externalOnly=Fa
 
 
 @concurrent
-def calculatePointsRange(process,IndexMatrix ind,Vec3Matrix nodes,tuplenodebounds,IndexMatrix ext,int refine,bint externalOnly,bint includeUVW,int indnum):
+def calculatePointsRange(process,IndexMatrix ind,Vec3Matrix nodes,tuple nodebounds,IndexMatrix ext,int refine,bint externalOnly,bint includeUVW,int indnum):
     cdef object elemtype=ElemType[ind.getType()]
     cdef str geom=elemtype.geom
     cdef str name='calculatePointsRange'
@@ -1159,6 +1126,43 @@ def calculatePointsRange(process,IndexMatrix ind,Vec3Matrix nodes,tuplenodebound
     return shareMatrices(outnodes,outprops,None,outext)
 
 
+@concurrent
+def calculateElemPointsRange(process,IndexMatrix ind,Vec3Matrix nodes,IndexMatrix ext,bint externalOnly,bint includeUVW,int indnum):
+    cdef object elemtype=ElemType[ind.getType()]
+    cdef vec3 centerxi=vec3(*elemtype.centerxi)
+    cdef tuple centercoeffs=elemtype.basis(*elemtype.centerxi)
+    cdef str geom=elemtype.geom
+    cdef str name='calculateElemPointsRange'
+    cdef Vec3Matrix outnodes
+    cdef IndexMatrix outprops,outext
+    cdef int elem
+    cdef vec3 node
+    cdef bint isExt
+
+    outnodes,outprops,_,outext=createDataMatrices(name+str(process.index),None,includeUVW)
+
+    def addNode(vec3 node,int elem,bint isExt):
+        outnodes.append(node,vec3.Z(),centerxi)
+        outprops.append(elem,0,indnum)
+        if isExt:
+            outext.append(outnodes.n()-1)
+
+    if geom==GeomType._Point:
+        for elem in process.prange():
+            node=nodes.getAt(elem)
+            addNode(node,vec3(),elem,0,True)
+    else:
+        for elem in process.prange():
+            elemnodes=nodes.mapIndexRow(ind,elem)
+            node=elemtype.applyCoeffs(elemnodes,centercoeffs)
+            isExt= True if ext is None else any(e==1 for e in ext.getRow(elem))
+            
+            if not externalOnly or isExt:
+                addNode(node,elem,isExt)
+
+    return shareMatrices(outnodes,outprops,None,outext)
+    
+    
 @concurrent
 def calculatePoissonPointsRange(process,IndexMatrix ind,Vec3Matrix nodes,RealMatrix densityfield, float fmin, float fmax,startpos,IndexMatrix ext,int refine,bint externalOnly,bint includeUVW,int indnum):
     cdef object elemtype=ElemType[ind.getType()]
@@ -1253,6 +1257,7 @@ def generatePointDataSet(dataset,str name,int refine,bint externalOnly=False,tas
     cdef bint includeUVW=kwargs.get('includeUVW',False)
     cdef bint usePoisson=kwargs.get('usePoisson',False)
     cdef object startpos=kwargs.get('startPos',None)
+    cdef bint isPerElem=kwargs.get('isPerElem',False)
     cdef RealMatrix densityfield=kwargs.get('densityField',None)
     cdef BoundBox aabb=BoundBox(nodes)
     cdef str geom,valfunc=kwargs.get('valfunc','avg(vals)')
@@ -1273,7 +1278,9 @@ def generatePointDataSet(dataset,str name,int refine,bint externalOnly=False,tas
         proccount=chooseProcCount(ind.n(),refine,6000)
         geom=elemtype=ElemType[ind.getType()].geom
 
-        if usePoisson and geom in (GeomType._Tri,GeomType._Quad): # TODO: (GeomType._Tet,GeomType._Hex)
+        if isPerElem:
+            result=calculateElemPointsRange(ind.n(),proccount,task,ind,nodes,ext,externalOnly,includeUVW,len(indlist))
+        elif usePoisson and geom in (GeomType._Tri,GeomType._Quad): # TODO: (GeomType._Tet,GeomType._Hex)
             result=calculatePoissonPointsRange(ind.n(),proccount,task,ind,nodes,densityfield, fmin, fmax,startpos,ext,refine,externalOnly,includeUVW,len(indlist))
         else:
             result=calculatePointsRange(ind.n(),proccount,task,ind,nodes,(aabb.minv,aabb.maxv),ext,refine,externalOnly,includeUVW,len(indlist))
@@ -1599,7 +1606,7 @@ def calculateGlyphScales(dataset,Vec3Matrix nodes,IndexMatrix nodeprops,list fie
 def generateGlyphDataSet(dataset,name,refine,externalOnly=False,task=None,**kwargs):
     dfield=kwargs.get('dfield',None)
     sfield=kwargs.get('sfield',None)
-
+    
     ds,indlist=generatePointDataSet(dataset,name,refine,externalOnly,task,includeUVW=(sfield!=None),**kwargs)
 
     if dfield!=None:

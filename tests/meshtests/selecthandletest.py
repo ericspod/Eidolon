@@ -1,9 +1,5 @@
 
-import eidolon
-from eidolon import (
-        Qt, Handle, Handle3D, vec3, rotator,color, transform, MeshSceneObject, PyVertexBuffer, PyIndexBuffer, FT_TRILIST,
-        ReprType, halfpi, generatePlane, generateSphere, generateTriNormals, setmethod,isMainThread
-        )
+from eidolon import vec3, rotator, MeshSceneObject, PyDataSet, NodeSelectHandle, ReprType, halfpi, generatePlane, setmethod
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -14,7 +10,7 @@ nodes,_,_=generatePlane(4)
 r=rotator(vec3.X(),halfpi)
 nodes=[r*n for n in nodes]
 
-obj=MeshSceneObject('nodes',eidolon.PyDataSet('ds',nodes,[],[]))
+obj=MeshSceneObject('nodes',PyDataSet('ds',nodes,[],[]))
 mgr.addSceneObject(obj)
 
 rep=obj.createRepr(ReprType._glyph,0,externalOnly=False,drawInternal=True,glyphname='sphere',glyphscale=(0.1,0.1,0.1))

@@ -80,7 +80,7 @@ import numpy as np
 
 from .Utils import (
     enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,
-    assertMatDim,mulsum,lerp,lerpXi,epsilon, matInv
+    assertMatDim,mulsum,lerp,lerpXi,epsilon, #matInv
 )
 
 
@@ -102,12 +102,13 @@ class ElemTypeDef(object):
 
     def __init__(self,geom,basisname,desc,order,xis,vertices,faces,internalxis,basis,pointsearch,facetype):
         self.geom=geom # geometry (tet, hex, etc)
-        self.dim=GeomType[geom][1]
-        self.isSimplex=GeomType[geom][2]
+        self.dim=GeomType[geom][1] # spatial dimensions
+        self.isSimplex=GeomType[geom][2] # whether the element is simplex (tri,tet) or not
         self.basisname=basisname # basis function name (NL=nodal lagrange, etc)
         self.desc=desc # plain language description
         self.order=order # order (1=linear, 2=quadratic, etc)
         self.xis=list(xis) # xi values for each node, [] if node count not fixed
+        self.centerxi=(0.25 if self.isSimplex else 0.5,)*self.dim
         #self.dim=len(self.xis[0]) if len(self.xis)>0 else 0 # dimension, must be 1 (1D), 2 (2D), or 3 (3D)
         self.vertices=list(vertices) # list of vertex indices, [] if node count not fixed
         self.faces=list(faces) # list of face node indices, [] if node count not fixed
