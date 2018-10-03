@@ -1941,6 +1941,14 @@ def isPerNodeField(RealMatrix field,int numnodes):
             )
 
     return isPerNode
+    
+
+def isPerElemField(RealMatrix field, int numelems):
+    '''
+    Return True if `field' is a per-element field, that is its StdProps._elemdata meta value is True or it is the same
+    length as the number of elements in field or spatial topology (given as `numelems').
+    '''
+    return field.meta(StdProps._elemdata).lower()=='true' or field.n()==numelems
 
 
 def findIndexSets(dataset,acceptFunc=isSpatialIndex):

@@ -50,6 +50,7 @@ try:
 except ImportError:
     from Utils import queue, lockobj, printFlush, processExists, Task, clamp, Future, partitionSequence, listSum
 
+
 class MethodProxy(object):
     '''
     A proxy type for a method of an object hosted remotely. When called, a message containing the name of the
@@ -277,7 +278,6 @@ class AlgorithmProcess(Process):
         Sets the progress indicator value of the associated Task object or the shared value array, only updates if
         the previous update was more than 200ms in the past.
         '''
-
         curtime=time.time()
         if (curtime-self.progressTime)<0.2 and not forceUpdate:
             return
@@ -318,9 +318,7 @@ class ProcessServer(threading.Thread):
     This type manages the creation of subprocesses and the despatch of computational tasks to them. Typically the global
     instance is created at startup through createGlobalServer() at which point the subprocesses are created. Tasks are
     enqueued to be executed through callProcessFunc() or indirectly if a routine decorated with @concurrent is called.
-    
     '''
-
     globalServer=None # global instance of the server
 
     @staticmethod
@@ -525,59 +523,75 @@ def concurrent(func):
     decorated form of `func' the first three arguments provided must be the `valrange', `numprocs', and `task' values
     expected by ProcessServer.callProcessFunc(), followed by the arguments normally passed to `func'.
     
-    Applying this decorator creates a global variable with the name '__local__'+func.__name__ referencing a lambda
-    function which calls `func' when evaluated. This is passed to 'ProcessServer.globalServer.callProcessFunc' when the
-    call is made and is needed for picklability. Do not call this created function directly. This is necessary since 
-    pickling a function only wraps up its name in the output which is looked up in the global namespace when unpickled.
+    Applying this decorator to a function whose code can be marshalled into a code blob using marshal will produce a
+    wrapper which executes that blob in subprocesses using concurrentFuncExec(). This in general allows code defined
+    in script files or in interpreter shells to be executabled concurrently. When the wrapped function is called the 
+    method 'ProcessServer.globalServer.callProcessFunc' is called to execute the marshalled function.
     
-    This decorator can only be applied to a function declared in a module which is loaded by each process when the app
-    starts up. Since functions are looked up in the global namespace, any functions declared after module import time
-    are not present in the processes global namespace and thus cannot be called. 
+    Applying this decorator to a function which cannot be marshalled, ie. builtin or compiled Cython function,
+    creates a global variable with the name '__local__'+func.__name__ referencing a lambda function which calls `func' 
+    when evaluated. This is passed to 'ProcessServer.globalServer.callProcessFunc' when the call is made and is needed 
+    for picklability. Do not call this created function directly. This is necessary since pickling a builtin function 
+    only wraps up its name in the output which is looked up in the global namespace when unpickled.
     
-    Example (assuming this declared in a module):
+    This decorator can only be applied to a builtin function declared in a module which is loaded by each process when 
+    the app starts up. Since functions are looked up in the global namespace, any functions declared after module import 
+    time are not present in the processes global namespace and thus can only be called if marshallable. 
+    
+    Example:
         @concurrent 
         def testfunc(process,values):
             return (process.index,values)
         
-        values=range(10)
+        values=list(range(10))
         result=testfunc(len(values),3,None,values,partitionArgs=(values,))
         printFlush(listResults(result))
         
     Output: [(0, [0, 1, 2]), (1, [3, 4, 5]), (2, [6, 7, 8, 9])]
     '''
+    confunc=concurrentFuncExec # function to call concurrently, changed to a proxy lambda function when decorating a builtin
+    extraargs=() # arguments prepended to the positional arguments supplied to the concurrent function when called
     
+    # attempt to marshal the wrapped function, if this fails treat the function as a builtin and set global values as appropriate
     try:
         mcode=marshal.dumps(func.__code__)
         func=types.FunctionType(marshal.loads(mcode))
-        isBuiltInfunc=False
+        extraargs=(mcode,{}) # use concurrentFuncExec() with these as the first positional arguments
     except:
+        # function cannot be marshalled and applied to FunctionType, check that it is considered builtin
         module=inspect.getmodule(func)
         modname=module.__name__ if module is not None else ''
         isBuiltInfunc=inspect.isbuiltin(func) or modname.startswith('eidolon.') or modname.startswith('plugins.')
-    
-    if isBuiltInfunc:
-        localname='__local__'+func.__name__
-        globals()[localname]=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
-        globals()[localname].__name__=localname # rename that function so that it can be matched up when unpickled
-        globals()[localname].__qualname__=localname # needed in Python 3
         
-        @functools.wraps(func)
-        def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
-            future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,globals()[localname],*args,**kwargs)
-            return future(None)
-    else:
-        @functools.wraps(func)
-        def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
-            future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,concurrentFuncExec,mcode,{},*args,**kwargs)
-            return future(None)
+        if not isBuiltInfunc:
+            raise ValueError('Cannot make concurrent: this function is neither useable with marshal/FunctionType nor considered built-in')
+            
+        # for a builtin function setup a proxy lambda function in the global namespace and set confunc to refer to it
+        localname='__local__'+func.__name__
+        confunc=lambda *args,**kwargs:func(*args,**kwargs) # create a new function in the global scope
+        confunc.__name__=localname # rename that function so that it can be matched up when unpickled
+        confunc.__qualname__=localname # needed in Python 3
+        globals()[localname]=confunc
+
+    @functools.wraps(func)
+    def concurrent_wrapper(valrange,numprocs,task,*args,**kwargs):
+        '''Concurrently calls `confunc' provided from the above with `extraargs' prepended to `args'.'''
+        args=extraargs+args
+        future=ProcessServer.globalServer.callProcessFunc(valrange,numprocs,task,confunc,*args,**kwargs)
+        return future(None)
             
     return concurrent_wrapper
 
 
 def concurrentFuncExec(process,mcode,cglobals,*args,**kwargs):
+    '''
+    Execute the marshalled code segment `mcode' by converting it to a function using types.FunctionType. The `cglobals'
+    dictionary and globals() initialize the global variables supplied to the function, which is called with arguments
+    `args' and `kwargs'. This function is meant to be called indirectly through concurrent() in subprocesses.
+    '''
     execglobals=dict(globals())
-    
     execglobals.update(cglobals)
+    
     codeobj=marshal.loads(mcode)
     func=types.FunctionType(codeobj,execglobals)
     return func(process,*args,**kwargs)

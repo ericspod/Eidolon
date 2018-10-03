@@ -1257,7 +1257,7 @@ def generatePointDataSet(dataset,str name,int refine,bint externalOnly=False,tas
     cdef bint includeUVW=kwargs.get('includeUVW',False)
     cdef bint usePoisson=kwargs.get('usePoisson',False)
     cdef object startpos=kwargs.get('startPos',None)
-    cdef bint isPerElem=kwargs.get('isPerElem',False)
+    cdef bint isPerElem=kwargs.get('perelem',False)
     cdef RealMatrix densityfield=kwargs.get('densityField',None)
     cdef BoundBox aabb=BoundBox(nodes)
     cdef str geom,valfunc=kwargs.get('valfunc','avg(vals)')
@@ -1574,16 +1574,17 @@ def calculateGlyphScalesRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,lis
 
     fieldtopolist=[(f,ft,ElemType[ft.getType()]) for f,ft in fieldtopolist]
 
-    for n in process.nrange():
-        process.setProgress(n-process.startval+1)
-
-        xi=nodes.getAt(n,2)
+    for n in process.prange():
         elem,face,indnum=nodeprops.getRow(n)
         field,fieldtopo,fieldtype=fieldtopolist[indnum]
-
-        fieldvals=[field.getRow(v) for v in fieldtopo.getRow(elem)]
-
-        value=fieldtype.applyBasis(fieldvals,*xi)
+        
+        if SceneUtils.isPerElemField(field,fieldtopo.n()):
+            value=field[elem]
+        else:
+            xi=nodes.getAt(n,2)
+            fieldvals=[field.getRow(v) for v in fieldtopo.getRow(elem)]
+            value=fieldtype.applyBasis(fieldvals,*xi)
+            
         vec=veclambda(value)
         nodes.setAt(vec,n,3) # set the scale value for the given node in the UVW field
 
@@ -2277,16 +2278,20 @@ def calculateDataNormalsRange(process,Vec3Matrix nodes,IndexMatrix nodeprops,lis
     cdef IndexMatrix fieldtopo
 
     for n in process.prange():
-        xi=nodes.getAt(n,2)
         elem=nodeprops.getAt(n,0)
         field,fieldtopo=fieldtopolist[nodeprops.getAt(n,2)]
-        fieldtype=ElemType[fieldtopo.getType()]
-
-        #topoinds=[fieldtopo.getAt(elem,m) for m in xrange(fieldtopo.m())] # get the indices of the topology element
-        #fieldvals=[[field.getAt(v,w) for w in range(field.m())] for v in topoinds] # extract the field values for each index
-        fieldvals=[field.getRow(v) for v in fieldtopo.getRow(elem)]
-
-        value=fieldtype.applyBasis(fieldvals,*xi)
+        
+        if SceneUtils.isPerElemField(field,fieldtopo.n()):
+            value=field[elem]
+        else:
+            xi=nodes.getAt(n,2)
+            fieldtype=ElemType[fieldtopo.getType()]
+            #topoinds=[fieldtopo.getAt(elem,m) for m in xrange(fieldtopo.m())] # get the indices of the topology element
+            #fieldvals=[[field.getAt(v,w) for w in range(field.m())] for v in topoinds] # extract the field values for each index
+            fieldvals=[field.getRow(v) for v in fieldtopo.getRow(elem)]
+    
+            value=fieldtype.applyBasis(fieldvals,*xi)
+            
         vec=veclambda(value)
         nodes.setAt(vec,n,1) # set the normal value for the given node
 

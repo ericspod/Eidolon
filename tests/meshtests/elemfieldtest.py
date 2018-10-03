@@ -22,7 +22,7 @@ sys.path.append(scriptdir+'..')
 from eidolon import MeshSceneObject,ElemType,ReprType, RealMatrix, StdProps, vec3,avg
 from TestUtils import generateTestMeshDS
 
-ds=generateTestMeshDS(ElemType._Hex1NL,5)
+ds=generateTestMeshDS(ElemType._Tet1NL,2) # try Hex or higher order
 
 nodes=ds.getNodes()
 inds=ds.getIndexSet('inds')
@@ -38,15 +38,13 @@ for i in range(inds.n()):
 obj=MeshSceneObject('Hexes',ds)
 mgr.addSceneObject(obj)
 
-#rep=obj.createRepr(ReprType._volume)
-#mgr.addSceneObjectRepr(rep)
-#rep.applyMaterial('Rainbow',field='field')
-
-
 rep01=obj.createRepr(ReprType._line,0,drawInternal=True,externalOnly=False)
 mgr.addSceneObjectRepr(rep01)
 
-rep=obj.createRepr(ReprType._glyph,0,isPerElem=True,externalOnly=False,drawInternal=True,glyphname='arrow',dfield='field',glyphscale=(0.025,0.025,0.05))
+rep=obj.createRepr(ReprType._glyph,0,perelem=True,externalOnly=False,drawInternal=True,glyphname='arrow',
+                   dfield='field',sfield='field',scalefunc='ZAxis',glyphscale=(0.02,0.02,0.1))
 mgr.addSceneObjectRepr(rep)
+
+rep.applyMaterial('Rainbow',field='field',valfunc='Magnitude')
 
 mgr.setCameraSeeAll()

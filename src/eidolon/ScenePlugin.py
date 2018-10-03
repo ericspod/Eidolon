@@ -806,6 +806,7 @@ class MeshScenePlugin(ScenePlugin):
         elif reprtype == ReprType._glyph:
             rad=SceneUtils.BoundBox(obj.datasets[0].getNodes()).radius
             params+=[
+                ParamDef('perelem','Per-Element',ParamType._bool,False),
                 ParamDef('glyphname','Glyph',ParamType._strlist,['sphere','arrow','cube'],notNone=True),
                 ParamDef('dfield','Dir Field',ParamType._field),
                 ParamDef('vecfunc','Vector Func',ParamType._vecfunc),

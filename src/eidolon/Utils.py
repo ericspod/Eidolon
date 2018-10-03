@@ -1665,6 +1665,7 @@ def isPicklable(obj):
 def isIterable(obj):
     '''Returns True if `obj' is iterable container type, ie. list, tuple, dict.'''
     return isinstance(obj, (list,tuple,dict))
+#TODO: is this definition sufficient?
 #    if isinstance(obj,(bytes,str)):
 #        return False
 #    
@@ -1715,7 +1716,7 @@ def isMainThread():
 def asyncfunc(func):
     '''
     Wraps the callable `func' with a asynchronous version which executes the callable in a daemon thread. The
-    return value is the threading.Thread object executing the callable, which an extra member `result' containing the
+    return value is the threading.Thread object executing the callable, with an extra member `result' containing the
     Future object which will eventually store the return value or raised exception from calling `func'.
     '''
     @wraps(func)
@@ -1861,7 +1862,7 @@ def setStrIndent(s,indent=0,useTab=False):
 def getUnitValue(val):
     '''
     Given a size `val' in bytes, returns a string with the size rounded to the nearest base 2 unit (B, kB, MB, etc.)
-    with the appropriate unit suffix addded to the end.
+    with the appropriate unit suffix addded to the end. These are base-2 units, ie. MB is given in stead of MiB.
     '''
     suffixes=['B','kB','MB','GB','TB','PB']
     power=0
