@@ -206,15 +206,18 @@ def createDicomDatasets(process,rootdir,files):
 
 
 @concurrent
-@timing
+#@timing
 def loadSharedImages(process,rootdir,files,crop=None):
     '''Reads the image data from the listed files and returns a list of SharedImage objects storing this image data.'''
     result=[]
+#    eidolon.printFlush(process.index,'Start')
 
     for i in range(len(files)):
         process.setProgress(i+1)
         filename=os.path.join(rootdir,files[i])
+#        eidolon.printFlush(process.index,i,files[i])
         dcm=DicomSharedImage(filename,i+process.startval,False)
+#        eidolon.printFlush(process.index,i,files[i],'Done')
 
         # crop the image if a valid crop rectangle is given and the object has image data
         if dcm.img is not None and crop!=None and (crop[0]>0 or crop[1]>0 or crop[2]<dcm.dimensions[0]-1 or crop[3]<dcm.dimensions[1]-1):
@@ -224,7 +227,8 @@ def loadSharedImages(process,rootdir,files,crop=None):
         if dcm.img is not None or dcm.isCompressed:
             dcm.setShared(True)
             result.append(dcm)
-
+            
+#    eidolon.printFlush(process.index,'Done')
     return result
 
 
@@ -361,7 +365,7 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
     '''
     dcm=read_file(filename) if dcm is None else dcm
     assert dcm!=None
-
+    
     position=vec3(*roundHeaderVals(*dcm.get(positionTag,[0,0,0]))) # top-left corner
     dimensions=(dcm.get(colsTag,0),dcm.get(rowsTag,0))
     spacing=list(map(float,dcm.get(spacingTag,[1,1])))

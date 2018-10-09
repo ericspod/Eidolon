@@ -697,7 +697,7 @@ class MeshScenePlugin(ScenePlugin):
         # copy over adjacency and external information from first dataset if present
         for ds in obj.datasets:
             ds0=obj.datasets[0]
-            for n in ds.getIndexNames():
+            for n in list(ds.getIndexNames()):
                 adjname=n+SceneUtils.MatrixType.adj[1]
                 extname=n+SceneUtils.MatrixType.external[1]
 

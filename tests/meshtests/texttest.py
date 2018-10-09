@@ -16,25 +16,16 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon import *
+from eidolon import FT_TEXT, H_CENTER
 
-m1=mgr.getMaterial('Default')
-
-nodes=[vec3(0.1,0.2,0.3),vec3(0.5,0.2,1),vec3(1,0.4,2)]
-inds=[(0,1,2)]
-field=[0.5,0.7,1.0]
-
-ds=PyDataSet('lineDS',nodes,[('lines',ElemType._Line2NL,inds)],[('field',field,'lines')])
-
-obj=MeshSceneObject('line',ds)
-mgr.addSceneObject(obj)
-
-rep=obj.createRepr(ReprType._cylinder,30,radrefine=30,field='field')
-mgr.addSceneObjectRepr(rep)
-
-mgr.showBoundBox(rep) # draw a bound box around the vessels
-
-# apply material, the alpha function is a linear function on the field, ie. the field's value
-rep.applyMaterial(m1,field='field',alphafunc=UnitFunc.Linear) 
-
-mgr.setCameraSeeAll()
+@mgr.callThreadSafe
+def _fig():
+    fig=mgr.scene.createFigure('text','Default',FT_TEXT)
+    fig.setText('If you can read this, the test passes')
+    fig.setHAlign(H_CENTER)
+    fig.setVisible(True)
+    return fig # need to return fig so that it's stored as _fig, otherwise it will get collected
+    
+   
+mgr.controller.setZoom(15)
+mgr.repaint()

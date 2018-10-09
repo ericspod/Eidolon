@@ -345,7 +345,7 @@ def getDatasetOctrees(dataset,int depth=2,acceptFunc=isSpatialIndex,task=None):
                 shareMatrices(nodes,inds)
 
             result=makeMeshOctreeRange(inds.n(),proccount,task,nodes,inds,depth,dim,center)
-            submats=result.values()
+            submats=list(result.values())
             subinds=[eval(s.meta(StdProps._sparsematrix)) for s in submats]
 
             ocmat=IndexMatrix(ocname,MatrixType._octree,sum(s.n() for s in submats),1,True)
@@ -736,7 +736,7 @@ def calculateFieldMinMax(fields,valfunc=None,task=None):
         minv,maxv=minmax(minmaxs.values(),ranges=True)
         for f in fields[1:]:
             minmaxs=calculateFieldMinMaxRange(f.n(),proccount,task,[f],valfunc)
-            minv,maxv=minmax([(minv,maxv)]+minmaxs.values(),ranges=True)
+            minv,maxv=minmax([(minv,maxv)]+list(minmaxs.values()),ranges=True)
     else:
         proccount=chooseProcCount(len(fields),0,cpu_count()*10)
         minmaxs=calculateFieldMinMaxRange(len(fields),proccount,task,fields,valfunc)
@@ -1342,7 +1342,7 @@ def getUniqueEdges(process,Vec3Matrix nodes,IndexMatrix ind,IndexMatrix ext,list
     if calcRadius: # calculate a radius value by averaging rough line lengths between procs
         rad=math.sqrt(avg(linelengths))
         otherrads=process.shareObject('rad',rad)
-        radius=max(0.0001,avg([rad]+otherrads.values())*0.01)
+        radius=max(0.0001,avg([rad]+list(otherrads.values()))*0.01)
 
     return linepairs,radius
 
@@ -1415,7 +1415,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
             # determine the rough minimal length from amongst the procs
             rad=math.sqrt(avg(linelengths))
             otherrads=process.shareObject('rad',rad)
-            radius=max(0.0001,avg([rad]+otherrads.values())*0.01)
+            radius=max(0.0001,avg([rad]+list(otherrads.values()))*0.01)
 
         xis=SceneUtils.calculateLineXis(elemtype,refine)
 
@@ -2156,7 +2156,7 @@ def calculateIsolineRange(process,nodes,ind,ext,refine,field,fieldtopo,minv,maxv
                 elif (len(cnodes)-i)<=capSize:
                     sind=-1
                 else:
-                    sind=(i-capSize)/ringSize
+                    sind=(i-capSize)//ringSize
 
                 xi,elem=seg[sind][1:]
 
