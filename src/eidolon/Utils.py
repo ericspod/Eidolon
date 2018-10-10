@@ -1306,10 +1306,12 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
     keyword value `timeout' can be given indicating how long to wait for the program in seconds before killing it,
     otherwise the routine will wait forever. If the keyword `logcmd' is True then the command line to be executed is
     printed to stdout before being run. If a log file path is given in keyword `logfile', the output from the program
-    will be piped to that file.
+    will be piped to that file. An environment map can be provided as `env' which will be used to override the inherited
+    environment during the execution.
     '''
     timeout=kwargs.get('timeout',None) # timeout time value in seconds
     cwd=kwargs.get('cwd',None)
+    env=kwargs.get('enc',None)
     exefile=os.path.abspath(exefile)
     output=''
     errcode=0
@@ -1328,8 +1330,13 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
         stdout=open(kwargs['logfile'],'w+')
     else:
         stdout=subprocess.PIPE
+        
+    if env is not None:
+        origenv=dict(os.environ)
+        origenv.update(env)
+        env=origenv
 
-    proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = stdout,cwd=cwd)
+    proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = stdout,cwd=cwd,env=env)
 
     # if timeout is present, kill the process and throw an exception if the program doesn't finish beforehand
     if timeout!=None and timeout>0:
