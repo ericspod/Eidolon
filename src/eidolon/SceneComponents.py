@@ -818,6 +818,7 @@ class NodeSelectHandle(Handle3D):
     sphereInds=None
     sphereNorms=None
     sphereScale=0.25
+    materialName='Node'
     
     def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,col=color(1,0,0,1)):
         '''
@@ -857,8 +858,8 @@ class NodeSelectHandle(Handle3D):
         assert isMainThread()
 
         figname='NodeSelectHandle%r'%(self.value,)
-        mat=Handle._defaultMaterial(mgr)
-        matname=mat.getName()
+#        mat=Handle._defaultMaterial(mgr)
+#        matname=mat.getName()
         
         nodes=[n*NodeSelectHandle.sphereScale for n in NodeSelectHandle.sphereNodes]
         inds=NodeSelectHandle.sphereInds
@@ -867,7 +868,7 @@ class NodeSelectHandle(Handle3D):
         vbuf=PyVertexBuffer(nodes,norms,[self.col]*len(nodes))
         ibuf=PyIndexBuffer(inds)
 
-        fig=scene.createFigure(figname,matname,FT_TRILIST)
+        fig=scene.createFigure(figname,NodeSelectHandle.materialName,FT_TRILIST)
         fig.fillData(vbuf,ibuf)
         fig.setOverlay(True)
         self.figs.append(fig)

@@ -389,8 +389,10 @@ def initDefaultAssets(mgr):
     m.setDiffuse(color(0.75,0,0))
 
     m=mgr.createMaterial('Handle')
-#    m.useLighting(False)
-#    m.useDepthCheck(False)
+    m.useLighting(False)
+    m.useDepthCheck(False)
+    
+    m=mgr.createMaterial('Node')
 
     m=mgr.createMaterial('Contour')
     m.useLighting(False)

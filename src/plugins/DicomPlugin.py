@@ -48,7 +48,7 @@ from eidolon import (
 )
 import eidolon
 
-eidolon.addLibraryFile('pydicom-1.1.0.dev0-py3-none-any') # PyDicom: https://github.com/darcymason/pydicom
+eidolon.addLibraryFile('pydicom-1.3.0.dev0-py2.py3-none-any') # PyDicom: https://github.com/darcymason/pydicom
 
 from pydicom.dicomio import read_file
 from pydicom.datadict import DicomDictionary
@@ -210,14 +210,14 @@ def createDicomDatasets(process,rootdir,files):
 def loadSharedImages(process,rootdir,files,crop=None):
     '''Reads the image data from the listed files and returns a list of SharedImage objects storing this image data.'''
     result=[]
-#    eidolon.printFlush(process.index,'Start')
+    eidolon.printFlush(process.index,'Start')
 
     for i in range(len(files)):
         process.setProgress(i+1)
         filename=os.path.join(rootdir,files[i])
-#        eidolon.printFlush(process.index,i,files[i])
+        eidolon.printFlush(process.index,i,files[i])
         dcm=DicomSharedImage(filename,i+process.startval,False)
-#        eidolon.printFlush(process.index,i,files[i],'Done')
+        eidolon.printFlush(process.index,i,files[i],'Done')
 
         # crop the image if a valid crop rectangle is given and the object has image data
         if dcm.img is not None and crop!=None and (crop[0]>0 or crop[1]>0 or crop[2]<dcm.dimensions[0]-1 or crop[3]<dcm.dimensions[1]-1):
@@ -228,7 +228,7 @@ def loadSharedImages(process,rootdir,files,crop=None):
             dcm.setShared(True)
             result.append(dcm)
             
-#    eidolon.printFlush(process.index,'Done')
+    eidolon.printFlush(process.index,'Done')
     return result
 
 
@@ -404,13 +404,14 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
             rslope=1.0
             rinter=0.0
             
-        pixelarray=dcm.pixel_array*rslope+rinter
-        if pixelarray.ndim==3: # TODO: handle actual multichannel images?
-            pixelarray=np.sum(pixelarray,axis=2)
-
-        si.allocateImg(si.seriesID+str(si.index),isShared)
-        np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
-        si.setMinMaxValues(*eidolon.minmaxMatrixReal(si.img))
+        pixelarray=dcm.pixel_array
+        pixelarray=pixelarray*rslope+rinter
+#        if pixelarray.ndim==3: # TODO: handle actual multichannel images?
+#            pixelarray=np.sum(pixelarray,axis=2)
+#
+#        si.allocateImg(si.seriesID+str(si.index),isShared)
+#        np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
+#        si.setMinMaxValues(*eidolon.minmaxMatrixReal(si.img))
 
     return si
 
