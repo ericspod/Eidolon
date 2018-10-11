@@ -405,13 +405,15 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
             rinter=0.0
             
         pixelarray=dcm.pixel_array
-        pixelarray=pixelarray*rslope+rinter # TODO: linux concurrency hang?
+#        pixelarray=pixelarray*rslope+rinter # linux concurrency hang?
         
         if pixelarray.ndim==3: # TODO: handle actual multichannel images?
             pixelarray=np.sum(pixelarray,axis=2)
 
         si.allocateImg(si.seriesID+str(si.index),isShared)
         np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
+        si.img.mul(rslope)
+        si.img.add(rinter)
         si.setMinMaxValues(*eidolon.minmaxMatrixReal(si.img))
 
     return si
