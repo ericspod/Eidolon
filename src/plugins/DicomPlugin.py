@@ -210,14 +210,14 @@ def createDicomDatasets(process,rootdir,files):
 def loadSharedImages(process,rootdir,files,crop=None):
     '''Reads the image data from the listed files and returns a list of SharedImage objects storing this image data.'''
     result=[]
-    eidolon.printFlush(process.index,'Start')
+#    eidolon.printFlush(process.index,'Start')
 
     for i in range(len(files)):
         process.setProgress(i+1)
         filename=os.path.join(rootdir,files[i])
-        eidolon.printFlush(process.index,i,files[i])
+#        eidolon.printFlush(process.index,i,files[i])
         dcm=DicomSharedImage(filename,i+process.startval,False)
-        eidolon.printFlush(process.index,i,files[i],'Done')
+#        eidolon.printFlush(process.index,i,files[i],'Done')
 
         # crop the image if a valid crop rectangle is given and the object has image data
         if dcm.img is not None and crop!=None and (crop[0]>0 or crop[1]>0 or crop[2]<dcm.dimensions[0]-1 or crop[3]<dcm.dimensions[1]-1):
@@ -228,7 +228,7 @@ def loadSharedImages(process,rootdir,files,crop=None):
             dcm.setShared(True)
             result.append(dcm)
             
-    eidolon.printFlush(process.index,'Done')
+#    eidolon.printFlush(process.index,'Done')
     return result
 
 
@@ -405,13 +405,14 @@ def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,incl
             rinter=0.0
             
         pixelarray=dcm.pixel_array
-        pixelarray=pixelarray*rslope+rinter
-#        if pixelarray.ndim==3: # TODO: handle actual multichannel images?
-#            pixelarray=np.sum(pixelarray,axis=2)
-#
-#        si.allocateImg(si.seriesID+str(si.index),isShared)
-#        np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
-#        si.setMinMaxValues(*eidolon.minmaxMatrixReal(si.img))
+        pixelarray=pixelarray*rslope+rinter # TODO: linux concurrency hang?
+        
+        if pixelarray.ndim==3: # TODO: handle actual multichannel images?
+            pixelarray=np.sum(pixelarray,axis=2)
+
+        si.allocateImg(si.seriesID+str(si.index),isShared)
+        np.asarray(si.img)[:,:]=pixelarray # pixelarray is in (row,column) index order already
+        si.setMinMaxValues(*eidolon.minmaxMatrixReal(si.img))
 
     return si
 
@@ -885,37 +886,32 @@ class DicomPlugin(ImageScenePlugin):
             for s in dds.series:
                 yield s
 
-    def loadSeriesImages(self,series,selection,loadSequential=False,crop=None):
+    @taskmethod('Loading Image Data')
+    @timing
+    def loadSeriesImages(self,series,selection,crop=None,task=None):
         '''Load the actual image data from the files in `series' and store them as SharedImage objects in series.simgs.'''
-        f=Future()
         assert selection==None or all(s<len(series.filenames) for s in selection)
 
-        @taskroutine('Loading Image Data')
-        @timing
-        def loadSITask(task=None):
-            with f:
-                if len(series.filenames)>0:
-                    proccount=eidolon.chooseProcCount(len(series.filenames),0,10)
-                    rootdir=series.parent.rootdir
+        if len(series.filenames)>0:
+            proccount=eidolon.chooseProcCount(len(series.filenames),0,10)
+            rootdir=series.parent.rootdir
 
-                    if self.selectCropMap.get(series,None)!=(selection,crop):
-                        series.clearSharedImages()
+            if self.selectCropMap.get(series,None)!=(selection,crop):
+                series.clearSharedImages()
 
-                    self.selectCropMap[series]=(selection,crop)
+            self.selectCropMap[series]=(selection,crop)
 
-                    # get the series filenames or a selected range thereof if `selection' is given
-                    filenames=[series.filenames[i] for i in selection] if selection else series.filenames
-                    # remove already-loaded images
-                    filenames=[i for i in filenames if series.getSharedImage(i)==None]
+            # get the series filenames or a selected range thereof if `selection' is given
+            filenames=[series.filenames[i] for i in selection] if selection else series.filenames
+            # remove already-loaded images
+            filenames=[i for i in filenames if series.getSharedImage(i)==None]
 
-                    if len(filenames)>0:
-                        simgs=loadSharedImages(len(filenames),proccount,task,rootdir,filenames,crop,partitionArgs=(filenames,))
-                        eidolon.checkResultMap(simgs)
-                        series.addSharedImages(eidolon.sumResultMap(simgs)) # add new images, there isn't necessarily any order to this list
+            if len(filenames)>0:
+                simgs=loadSharedImages(len(filenames),proccount,task,rootdir,filenames,crop,partitionArgs=(filenames,))
+                eidolon.checkResultMap(simgs)
+                series.addSharedImages(eidolon.sumResultMap(simgs)) # add new images, there isn't necessarily any order to this list
 
-                f.setObject(series.simgs)
-
-        return self.mgr.runTasks([loadSITask()],f,loadSequential)
+        return series.simgs
 
     def loadSeries(self,series,name=None,selection=None,loadSequential=False,isTimeDependent=None,crop=None):
         '''Loads the Dicom files for the given series object or series ID string `series' into a SceneObject subtype.'''
@@ -936,7 +932,7 @@ class DicomPlugin(ImageScenePlugin):
         name=eidolon.uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
         self.loadedNames.append(name)
 
-        ff=self.loadSeriesImages(series,selection,loadSequential,crop)
+        ff=self.loadSeriesImages(series,selection,crop)
         self.mgr.checkFutureResult(ff)
 
         @taskroutine('Creating Scene Object')
@@ -1014,47 +1010,39 @@ class DicomPlugin(ImageScenePlugin):
 
         return ds
 
-    def loadDirDataset(self,dirpath,loadSequential=False):
-        '''Loads the dataset directory as an asset and create the DicomDataset object keyed to `dirpath' in self.dirobjs.'''
-        f=Future()
+    @taskmethod('Loading Dicom Directory')
+    def loadDirDataset(self,dirpath,task=None):
+        '''Loads the dataset directory as an asset and creates the DicomDataset object keyed to `dirpath' in self.dirobjs.'''
+        
+        if dirpath in self.dirobjs:
+            return self.dirobjs[dirpath]
+        
+        # load the directory dataset object if it isn't already loaded
+        dds=self.loadDigestFile(dirpath,task)
+        self.dirobjs[dirpath]=dds
 
-        @taskroutine('Loading Dicom Directory')
-        def loadDirTask(task):
-            with f:
-                # load the directory dataset object if it isn't already loaded
-                dds=self.loadDigestFile(dirpath,task)
-                self.dirobjs[dirpath]=dds
+        # add the dataset as an asset to the UI
+        self.win.addAsset(dds,dirpath,eidolon.AssetType._dcm)
+        self.win.sync()
+        listitem=self.win.findWidgetItem(dds)
 
-                # add the dataset as an asset to the UI
-                self.win.addAsset(dds,dirpath,eidolon.AssetType._dcm)
-                self.win.sync()
-                listitem=self.win.findWidgetItem(dds)
+        # add each series as a child of the dataset asset item
+        for s in dds.series:
+            prop=self.mgr.callThreadSafe(SeriesPropertyWidget)
+            self.win.addAsset(s,str(s),eidolon.AssetType._dcm,prop,self._updateSeriesPropBox)
+            self.win.sync()
+            slistitem=self.win.findWidgetItem(s)
+            # reset the list item's parent by removing it and adding it to the new paren't child list
+            slistitem.parent().removeChild(slistitem)
+            listitem.addChild(slistitem)
 
-                # add each series as a child of the dataset asset item
-                for s in dds.series:
-                    prop=self.win.callFuncUIThread(SeriesPropertyWidget)
-                    self.win.addAsset(s,str(s),eidolon.AssetType._dcm,prop,self._updateSeriesPropBox)
-                    self.win.sync()
-                    slistitem=self.win.findWidgetItem(s)
-                    # reset the list item's parent by removing it and adding it to the new paren't child list
-                    slistitem.parent().removeChild(slistitem)
-                    listitem.addChild(slistitem)
+            # double lambda needed to capture local variables 'prop' and 's'
+            caplambda=lambda prop,ss: lambda:self._loadSeriesButton(prop,ss)
+            self.win.connect(prop.createButton.clicked,caplambda(prop,s))
 
-                    # double lambda needed to capture local variables 'prop' and 's'
-                    caplambda=lambda prop,ss: lambda:self._loadSeriesButton(prop,ss)
-                    self.win.connect(prop.createButton.clicked,caplambda(prop,s))
+        listitem.setExpanded(True) # expand th list of series
 
-                listitem.setExpanded(True) # expand th list of series
-
-                f.setObject(dds)
-
-        if dirpath not in self.dirobjs:
-            tasklist=[loadDirTask()]
-        else:
-            tasklist=[]
-            f.setObject(self.dirobjs[dirpath])
-
-        return self.mgr.runTasks(tasklist,f,loadSequential)
+        return dds
 
     def acceptFile(self,filename):
         try:
@@ -1074,31 +1062,25 @@ class DicomPlugin(ImageScenePlugin):
             self.loadDirDataset(os.path.dirname(filename))
             return self.loadSeries(seriesID,name)
 
-    def loadDicomVolume(self,filename,name=None,interval=1.0,toffset=0.0,position=vec3(),rot=rotator()):
+    @taskmethod('Loading Volume File')
+    def loadDicomVolume(self,filename,name=None,interval=1.0,toffset=0.0,position=vec3(),rot=rotator(),task=None):
         '''Load a single DICOM file containing a 3D or 4D image volume (ie. ultrasound) using nonstandard tags.'''
-        f=Future()
-        @taskroutine('Loading Volume File')
-        def _loadFile(filename,name,interval,toffset,position,rot,task):
-            with f:
-                dcm=read_file(filename)
-                name=name or eidolon.splitPathExt(filename)[1]
+        dcm=read_file(filename)
+        name=name or eidolon.splitPathExt(filename)[1]
 
-                NT=NonstandardTags
-                spacing=vec3(dcm[NT.USpixdimx].value,dcm[NT.USpixdimy].value,dcm[NT.USpixdimz].value)*10
-                dimsize=(dcm[NT.USnumframes].value,dcm[NT.USdepth].value,dcm[NT.USheight].value,dcm[NT.USwidth].value)
-                pixeldata=dcm[NT.USpixeldata].value
+        NT=NonstandardTags
+        spacing=vec3(dcm[NT.USpixdimx].value,dcm[NT.USpixdimy].value,dcm[NT.USpixdimz].value)*10
+        dimsize=(dcm[NT.USnumframes].value,dcm[NT.USdepth].value,dcm[NT.USheight].value,dcm[NT.USwidth].value)
+        pixeldata=dcm[NT.USpixeldata].value
 
-                assert len(pixeldata)==eidolon.prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),eidolon.prod(dimsize))
+        assert len(pixeldata)==eidolon.prod(dimsize), 'Pixel data dimension is %i, should be %i'%(len(pixeldata),eidolon.prod(dimsize))
 
-                dat=np.ndarray(dimsize,dtype=np.uint8,buffer=pixeldata,order='C')
-                dat=np.transpose(dat,(3,2,1,0))
-                
+        dat=np.ndarray(dimsize,dtype=np.uint8,buffer=pixeldata,order='C')
+        dat=np.transpose(dat,(3,2,1,0))
 
-                obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot*rotator(eidolon.halfpi,0,0),spacing,task=task)
-                obj.source=convertToDict(dcm)
-                f.setObject(obj)
-
-        return self.mgr.runTasks([_loadFile(filename,name,interval,toffset,position,rot)],f)
+        obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot*rotator(eidolon.halfpi,0,0),spacing,task=task)
+        obj.source=convertToDict(dcm)
+        return obj
 
     def saveImage(self,dirpath,obj,datasetTags={},fileMetaTags={}):
         '''Deprecated, for compatibility only.'''
@@ -1269,7 +1251,7 @@ class DicomPlugin(ImageScenePlugin):
         @self.mgr.callThreadSafe
         def showDialog():
             with f:
-                d=TimeMultiSeriesDialog(eidolon.toIterable(series),f,self.mgr,self,self.mgr.win)
+                d=TimeMultiSeriesDialog(eidolon.toIterable(series),f,self.mgr,self,self.win)
                 d.exec_()
 
         return f # do not block on f since data is loaded in a task and stored in f
@@ -1288,7 +1270,7 @@ class DicomPlugin(ImageScenePlugin):
         self.loadDicomDir()
 
     def _openVolumeMenuItem(self):
-        filename=self.mgr.win.chooseFileDialog('Choose Dicom filename')
+        filename=self.win.chooseFileDialog('Choose Dicom filename')
         if filename:
             obj=self.loadDicomVolume(filename)
             self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(obj),'Loading Dicom file')
@@ -1315,7 +1297,7 @@ class DicomPlugin(ImageScenePlugin):
             selectlist=None
 
         obj=self.loadSeries(series,None,selectlist)
-        self.mgr.addFuncTask(lambda:self.mgr.addSceneObject(obj()),'Adding Series Object')
+        self.mgr.addSceneObjectTask(obj)
 
     def _exportMenuItem(self):
         obj=self.win.getSelectedObject()
@@ -1325,7 +1307,7 @@ class DicomPlugin(ImageScenePlugin):
             if isinstance(obj,ImageSceneObjectRepr):
                 obj=obj.parent
 
-            outdir=self.mgr.win.chooseDirDialog('Choose directory to save Dicoms to')
+            outdir=self.win.chooseDirDialog('Choose directory to save Dicoms to')
             if outdir:
                 f=self.saveObject(obj,outdir,overwrite=True)
                 self.mgr.checkFutureResult(f)
@@ -1395,7 +1377,7 @@ class TestDicomPlugin(unittest.TestCase):
     def testSaveLoadPlane(self):
         self.plugin.saveObject(self.plane,self.tempdir)
         firstfile=first(glob.glob(self.tempdir+'/*'))
-        dcm=read_file(firstfile)
+        read_file(firstfile)
         
         eidolon.printFlush(self.planearr)
         
