@@ -1132,7 +1132,10 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 void TextRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
 {
 	OgreBaseRenderable::_notifyCurrentCamera(cam);
-	mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
+	vec3 tocam=convert(cam->getDerivedPosition()-mParentNode->_getDerivedPosition());
+	rotator rot(vec3::Z(),tocam.norm());
+	mParentNode->setOrientation(convert(rotator(rot*vec3::Z(),vec3::Z())*rot));
+	//mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
 }
 
 void TextRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
@@ -1258,6 +1261,7 @@ void TextRenderable::updateGeometry()
 		if(startline){ // new line so move the line start position (\r, \v, \f treated as spaces)
 			startline=false;
 			float wline=0;
+			left=0;
 			
 			for (std::string::iterator j = i; j != iend && *j!='\n'; j++) {
 				if(std::isspace(*j))
@@ -1271,8 +1275,6 @@ void TextRenderable::updateGeometry()
 				left=-wline*0.5;
 			else if(halign==H_RIGHT)
 				left=-wline;
-			else
-				left=0;
 		}
 		
 		if(c=='\n'){

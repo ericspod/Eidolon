@@ -46,7 +46,7 @@ def createHandles():
     h= rep.__old__createHandles()
     
     ind=15
-    h.append(NodeSelectHandle(nodes[ind],(ind,nodes),radiusQuery,print))
+    h.append(NodeSelectHandle(nodes[ind],(ind,nodes),radiusQuery,print,'Select Handle'))
     
     return h
 

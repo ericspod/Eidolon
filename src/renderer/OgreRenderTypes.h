@@ -1762,16 +1762,17 @@ class TextRenderable : public OgreBaseRenderable
 	struct TextVertex
 	{
 		float x,y,z,u,v;
+		
 		void set(float _x, float _y, float _u, float _v,vec3& min, vec3& max)
 		{
 			x=_x;
 			y=_y;
-			z=0;
+			z=5;
 			u=_u;
 			v=_v;
-			vec3 v(x,y);
-			min.setMinVals(v);
-			max.setMaxVals(v);
+			vec3 p(x,y,z);
+			min.setMinVals(p);
+			max.setMaxVals(p);
 		}
 	};
 	

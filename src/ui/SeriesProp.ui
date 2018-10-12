@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>270</width>
+    <width>345</width>
     <height>563</height>
    </rect>
   </property>
@@ -87,7 +87,7 @@
           <string>Name</string>
          </property>
          <property name="textAlignment">
-          <set>AlignLeft|AlignVCenter</set>
+          <set>AlignLeading|AlignVCenter</set>
          </property>
         </column>
         <column>
@@ -95,7 +95,7 @@
           <string>Value</string>
          </property>
          <property name="textAlignment">
-          <set>AlignLeft|AlignVCenter</set>
+          <set>AlignLeading|AlignVCenter</set>
          </property>
         </column>
        </widget>
@@ -121,24 +121,44 @@
       <property name="fieldGrowthPolicy">
        <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
       </property>
-      <item row="0" column="1">
-       <widget class="QRadioButton" name="allButton">
-        <property name="text">
-         <string>All Images</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QRadioButton" name="selectedButton">
-        <property name="text">
-         <string>Selected Images By Index</string>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="allButton">
+          <property name="text">
+           <string>All Images</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="selectedButton">
+          <property name="text">
+           <string>Selected By Index</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <property name="bottomMargin">
          <number>0</number>
@@ -175,6 +195,23 @@
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Step </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="stepBox">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>999</number>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -195,43 +232,6 @@
          <string>Create</string>
         </property>
        </widget>
-      </item>
-      <item row="3" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Step </string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSpinBox" name="stepBox">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>999</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>

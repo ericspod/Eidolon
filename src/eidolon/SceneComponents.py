@@ -31,7 +31,7 @@ from . import SceneUtils
 from . import Utils
 from . import VisualizerUI
 
-from renderer import vec3, rotator, transform, color, FT_TRILIST, FT_LINELIST, PT_GEOMETRY, PT_FRAGMENT, PT_VERTEX, PyVertexBuffer, PyIndexBuffer
+from renderer import vec3, rotator, transform, color, FT_TRILIST, FT_LINELIST, FT_TEXT, PT_GEOMETRY, PT_FRAGMENT, PT_VERTEX, PyVertexBuffer, PyIndexBuffer
 from .Utils import halfpi, epsilon, enum, first, clamp, frange, isMainThread, uniqueStr, EventType
 from .VisualizerUI import Qt, BaseSpectrumWidget, mapWidgetValues, setChecked, setColorButton
 from .SceneObject import SceneObject, SceneObjectRepr
@@ -820,14 +820,14 @@ class NodeSelectHandle(Handle3D):
     sphereScale=0.25
     materialName='Node'
     
-    def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,col=color(1,0,0,1)):
+    def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,text='',col=color(1,0,0,1)):
         '''
         Initialize the node to be located at the offset `positionOffset' from the parent representation's position, and
         storing user value `value'. The `radiusQuery' callback accepts a vec3 and radius value and returns indices of
         nodes within that radius and the node list itself. The nodes are expected to be nodes from the representation's 
         mesh. The `selectCallback' callable is called when the handle is dragged closer to another node or when the mouse
         is released, accepting as arguments the handle itself, the closest node index, and a boolean stating if the mouse
-        was released or not. Handle mesh color is given as `col'.
+        was released or not. If `text' is provided this is used as a text label. Handle mesh color is given as `col'.
         '''
         Handle3D.__init__(self)
         self.position=vec3()
@@ -835,6 +835,7 @@ class NodeSelectHandle(Handle3D):
         self.radiusQuery=radiusQuery
         self.value=value
         self.selectCallback=selectCallback
+        self.text=text
         self.col=col
 
         if NodeSelectHandle.sphereNodes is None:
@@ -872,6 +873,14 @@ class NodeSelectHandle(Handle3D):
         fig.fillData(vbuf,ibuf)
         fig.setOverlay(True)
         self.figs.append(fig)
+        
+        if self.text:
+            textfig=scene.createFigure(figname+'text',NodeSelectHandle.materialName,FT_TEXT)
+            textfig.setText(self.text)
+            textfig.setTextHeight(0.5)
+            textfig.setOverlay(True)
+            self.figs.append(textfig)
+        
         self.setPosition(self.position)
         
     def getAbsolutePosition(self):
@@ -879,7 +888,9 @@ class NodeSelectHandle(Handle3D):
     
     def setPosition(self,pos):
         self.position=pos
-        self.figs[0].setPosition(pos+self.positionOffset)
+        
+        for f in self.figs:
+            f.setPosition(pos+self.positionOffset)
         
     def mouseDrag(self,e,dragvec):
         if self.buttons==Qt.LeftButton: # translate relative to camera
