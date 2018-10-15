@@ -1132,10 +1132,22 @@ void OgreGlyphFigure::fillData(const VertexBuffer* vb, const IndexBuffer* ib,boo
 void TextRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
 {
 	OgreBaseRenderable::_notifyCurrentCamera(cam);
-	vec3 tocam=convert(cam->getDerivedPosition()-mParentNode->_getDerivedPosition());
-	rotator rot(vec3::Z(),tocam.norm());
-	mParentNode->setOrientation(convert(rotator(rot*vec3::Z(),vec3::Z())*rot));
-	//mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
+
+//	vec3 tocam=convert(cam->getDerivedPosition()-mParentNode->_getDerivedPosition()).norm();	
+//	rotator rot(vec3::Z(),tocam);
+//	
+//	//rotator camerarot=convert(cam->getDerivedOrientation());
+//	vec3 cameraup=convert(cam->getDerivedOrientation().yAxis());
+//	
+//	//rotator upy=rotator(tocam,(rot*vec3::Y()).angleTo(camerarot*vec3::Y()));
+//	
+//	vec3 v2=tocam.cross(rot*vec3::Y());
+//	vec3 v3=v2.cross(tocam);
+//	rotator upy=rotator(v3,cameraup);
+//	
+//	mParentNode->setOrientation(convert(upy*rot));
+	
+	mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
 }
 
 void TextRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
@@ -1289,12 +1301,12 @@ void TextRenderable::updateGeometry()
 			float ch=-textHeight;
 			
 			// define the 6 vertices for the 2 triangles representing the quad for this character 
-			buf[pos  ].set(left,   top,   uv.left, uv.top,   min,max); // top left
-			buf[pos+1].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
-			buf[pos+2].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
-			buf[pos+3].set(left+cw,top,   uv.right,uv.top,   min,max); // top right
-			buf[pos+4].set(left,   top+ch,uv.left, uv.bottom,min,max); // bottom left
-			buf[pos+5].set(left+cw,top+ch,uv.right,uv.bottom,min,max); // bottom right
+			buf[pos  ].set(left,   top,   0,uv.left, uv.top,   min,max); // top left
+			buf[pos+1].set(left,   top+ch,0,uv.left, uv.bottom,min,max); // bottom left
+			buf[pos+2].set(left+cw,top,   0,uv.right,uv.top,   min,max); // top right
+			buf[pos+3].set(left+cw,top,   0,uv.right,uv.top,   min,max); // top right
+			buf[pos+4].set(left,   top+ch,0,uv.left, uv.bottom,min,max); // bottom left
+			buf[pos+5].set(left+cw,top+ch,0,uv.right,uv.bottom,min,max); // bottom right
 			
 			left += cw; // move left by the character width
 			pos+=6; // advance to next quad

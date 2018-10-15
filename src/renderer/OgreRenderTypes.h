@@ -1763,11 +1763,11 @@ class TextRenderable : public OgreBaseRenderable
 	{
 		float x,y,z,u,v;
 		
-		void set(float _x, float _y, float _u, float _v,vec3& min, vec3& max)
+		void set(float _x, float _y, float _z, float _u, float _v, vec3& min, vec3& max)
 		{
 			x=_x;
 			y=_y;
-			z=5;
+			z=_z;
 			u=_u;
 			v=_v;
 			vec3 p(x,y,z);
@@ -1793,8 +1793,6 @@ public:
 	Ogre::HardwareVertexBufferSharedPtr colBuf;
 	
 	Ogre::Font *fontobj;
-	
-	Ogre::SceneNode *subnode;
 	
 	TextRenderable(const std::string &name,Ogre::SceneManager *mgr):
 		OgreBaseRenderable(name,"BaseWhite",Ogre::RenderOperation::OT_TRIANGLE_LIST ,mgr),isOverlay(false),
