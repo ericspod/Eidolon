@@ -1789,6 +1789,7 @@ public:
 	bool updateCols;
 	bool updateGeom;
 	bool isOverlay;
+	bool isCameraAligned;
 	
 	Ogre::HardwareVertexBufferSharedPtr colBuf;
 	
@@ -1796,8 +1797,8 @@ public:
 	
 	TextRenderable(const std::string &name,Ogre::SceneManager *mgr):
 		OgreBaseRenderable(name,"BaseWhite",Ogre::RenderOperation::OT_TRIANGLE_LIST ,mgr),isOverlay(false),
-		updateCols(true), updateGeom(true),valign(V_TOP), halign(H_LEFT),textHeight(1.0),spaceWidth(0),
-		fontname("DefaultFont"),fontobj(NULL),text("<NULL>")
+		updateCols(true), updateGeom(true),valign(V_TOP), halign(H_LEFT),textHeight(1.0),spaceWidth(0), 
+		isCameraAligned(true),fontname("DefaultFont"),fontobj(NULL),text("<NULL>")
 	{
 		movableType="MovableText";
 		internalMatName=name+"TextMat";
@@ -1853,6 +1854,8 @@ public:
 	virtual void setTextHeight(real height){ obj->textHeight=height;  obj->updateGeom=true; }
 	virtual void setSpaceWidth(real width) { obj->spaceWidth=width;  obj->updateGeom=true; }
 	
+	virtual void setCameraAlign(bool align) { obj->isCameraAligned = align; }
+	
 	virtual std::string getText() const { return obj->text;}
 	virtual std::string getFont() const { return obj->fontname;}
 	virtual color getColor() const { return obj->col; }
@@ -1861,6 +1864,8 @@ public:
 	virtual HAlignType getHAlign() const { return obj->halign; }
 	virtual real getTextHeight() const { return obj->textHeight; }
 	virtual real getSpaceWidth() const { return obj->spaceWidth; }
+	
+	virtual bool isCameraAligned() const { return obj->isCameraAligned; }
 	
 	//virtual void setMaterial(const std::string &m) throw(RenderException)
 	//{} // do not accept externally applied materials, this will mess up the internal material used to present text textures

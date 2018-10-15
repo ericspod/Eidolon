@@ -76,6 +76,13 @@ def generateTestMeshDS(etname,refine,pt=vec3(0.25)):
     return ds
 
 
+def generateArrowDS(refine):
+    nodes,inds=eidolon.generateArrow(refine)
+    ds=eidolon.PyDataSet('TestDS',nodes,[('inds',ElemType._Tri1NL,inds)])
+    ds.validateDataSet()
+    return ds
+
+
 def generateTimeSphereImages(step,dim=50):
     images=[]
     steps=frange(0,1.0+step,step)

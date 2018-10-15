@@ -878,7 +878,7 @@ class NodeSelectHandle(Handle3D):
             textfig=scene.createFigure(figname+'text',NodeSelectHandle.materialName,FT_TEXT)
             textfig.setText(self.text)
             textfig.setTextHeight(0.5)
-            textfig.setOverlay(True)
+            textfig.setOverlay(False)
             self.figs.append(textfig)
         
         self.setPosition(self.position)

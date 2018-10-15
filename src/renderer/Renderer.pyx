@@ -1932,6 +1932,9 @@ cdef class TextFigure(Figure):
         
     def setSpaceWidth(self,float width):
         self.tval.setSpaceWidth(width)
+        
+    def setCameraAlign(self,bint align):
+        self.tval.setCameraAlign(align)
     
     def getText(self):
         return self.tval.getText()
@@ -1953,6 +1956,9 @@ cdef class TextFigure(Figure):
         
     def getSpaceWidth(self):
         return self.tval.getSpaceWidth()
+      
+    def isCameraAligned(self):
+        return self.tval.isCameraAligned()
         
 
 cdef class Texture:

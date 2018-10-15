@@ -756,6 +756,8 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
         void setTextHeight(real height)
         void setSpaceWidth(real width)
         
+        void setCameraAlign(bint align)
+        
         string getText() const 
         string getFont() const
         color getColor() const
@@ -764,6 +766,8 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
         HAlignType getHAlign() const 
         real getTextHeight() const
         real getSpaceWidth() const
+        
+        bint isCameraAligned() const
 
 
     cdef cppclass Texture:

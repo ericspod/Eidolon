@@ -4007,6 +4007,8 @@ public:
 	virtual void setTextHeight(real height){}
 	virtual void setSpaceWidth(real width) {}
 	
+	virtual void setCameraAlign(bool align) {}
+	
 	virtual std::string getText() const { return "";}
 	virtual std::string getFont() const { return "";}
 	virtual color getColor() const { return color(); }
@@ -4015,6 +4017,8 @@ public:
 	virtual HAlignType getHAlign() const { return H_CENTER; }
 	virtual real getTextHeight() const { return 0; }
 	virtual real getSpaceWidth() const { return 0; }
+	
+	virtual bool isCameraAligned() const { return false; }
 };
 
 /** 
