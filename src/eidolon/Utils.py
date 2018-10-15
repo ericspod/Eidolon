@@ -486,10 +486,13 @@ class EventHandler(object):
             with self.handleLock:
                 self.suppressedEvents.remove(name)
 
-    def addEventHandler(self,name,cb):
-        '''Add the callback callable `cb' for event named `name'.'''
+    def addEventHandler(self,name,cb,isPriority=False):
+        '''Add the callback callable `cb' for event named `name'.if `isPriority', puts `cb' at the start of the event list.'''
         assert name in EventType
-        self.eventHandlers[name].append(cb)
+        if isPriority:
+            self.eventHandlers[name].insert(0,cb)
+        else:
+            self.eventHandlers[name].append(cb)
 
     def removeEventHandler(self,cb):
         '''Remove the callback `cb' from wherever it occurs.'''

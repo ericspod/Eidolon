@@ -191,8 +191,6 @@ def signalBlocker(*objs):
 def getWheelXY(qwheelevent):
     '''PyQt4/5 compatibility wrapper around the QWheelEvent wheel scroll angle, returns the (X,Y) scroll values.'''
     if QtVersion==4:
-        #sign=-1 if qwheelevent.orientation()==Qt.Horizontal else 1
-        #return qwheelevent.delta()*sign
         delta=qwheelevent.delta()
         if qwheelevent.orientation()==Qt.Horizontal:
             return delta,0

@@ -48,7 +48,8 @@ from . import ImageObject
 
 from renderer import vec3, color, TF_RGB24, TF_RGBA32,Spectrum, platformID, Material, Texture, PyVertexBuffer, PyIndexBuffer
 from .Camera2DView import Camera2DView
-from .Utils import avg, first, timing, uniqueStr, EventType, listSum, taskroutine, taskmethod,Future, FutureError, timeBackupFile, setTrace, TaskQueue
+from .Utils import (avg, first, timing, uniqueStr, EventType, listSum, taskroutine, taskmethod,Future, FutureError, 
+                    timeBackupFile, setTrace, TaskQueue)
 from .VisualizerUI import QtWidgets, Qt, screenshotWidget, setChecked, selectBoxIndex, setColorButton, fillList
 from .SceneObject import SceneObject, SceneObjectRepr, MeshSceneObject
 from .SceneComponents import LightType, CenterType, AxesType, SceneLight, ScriptWriter
@@ -324,7 +325,7 @@ class Project(object):
 
         table=prop.selTable
 
-        objs=list(self.mgr.enumSceneObjects())+list(self.mgr.enumSceneObjectReprs()) #listSum([o]+list(o.reprs) for o in self.mgr.enumSceneObjects())
+        objs=list(self.mgr.enumSceneObjects())+list(self.mgr.enumSceneObjectReprs()) 
 
         for i in range(table.rowCount()):
             item=table.item(i,0)
@@ -559,7 +560,8 @@ class SceneManager(TaskQueue):
 
     def _updateUI(self):
         if self.win and self.controller:
-            VisualizerUI.fillTable(self.controller.getPropTuples(),self.win.cameraProps) # TODO: causes jittering when rotating fast, replace with something faster
+            # TODO: causes jittering when rotating fast, replace with something faster
+            VisualizerUI.fillTable(self.controller.getPropTuples(),self.win.cameraProps) 
             self.setCameraConfig()
 
     def _updateManagedObjects(self):
@@ -584,6 +586,7 @@ class SceneManager(TaskQueue):
                     h.setPosition(pos)
                     h.setScale(vec3(scale)) # view distance kludge, should instead use overlayed ortho camera?
                     h.setRotation(*rep.getRotation(True))
+                    print(scale)
                 else:
                     h.setVisible(False)
 
@@ -1126,8 +1129,8 @@ class SceneManager(TaskQueue):
                 self.showExcept(e,'<<Player Thread>>')
                 self.stop()
 
-    def addEventHandler(self,name,cb):
-        self.evtHandler.addEventHandler(name,cb)
+    def addEventHandler(self,name,cb,isPriority=False):
+        self.evtHandler.addEventHandler(name,cb,isPriority)
 
     def removeEventHandler(self,cb):
         self.evtHandler.removeEventHandler(cb)
@@ -1985,7 +1988,8 @@ class SceneManager(TaskQueue):
 ##
 ##              traverseWidget(d,func) # add any pyqtgraph types to list
 
-        self.win.chooseScreenshotDialog(self.timestepMin,self.timestepMax,self.timeFPS,self.timeStepsPerSec,sources,lambda *args:self.addTasks(_save(*args)))
+        self.win.chooseScreenshotDialog(self.timestepMin,self.timestepMax,self.timeFPS,
+                                        self.timeStepsPerSec,sources,lambda *args:self.addTasks(_save(*args)))
 
     def _saveLogFileAction(self):
         '''Called when the user chooses a filename for a log file.'''

@@ -619,7 +619,7 @@ class Handle3D(Handle):
     '''
     def __init__(self):
         Handle.__init__(self)
-        self.figscale=1.0 # figure scale, multiplied by a distance scale by renderer
+        self.figscale=vec3(1.0) # figure scale, multiplied by a distance scale by renderer
         self.prevX=0 # previous position of the mouse while being dragged to a new position
         self.prevY=0
         self.buttons=None # which buttons were pressed when the handle was selected
@@ -871,14 +871,15 @@ class NodeSelectHandle(Handle3D):
 
         fig=scene.createFigure(figname,NodeSelectHandle.materialName,FT_TRILIST)
         fig.fillData(vbuf,ibuf)
-        fig.setOverlay(True)
+        #fig.setOverlay(True)
         self.figs.append(fig)
         
         if self.text:
             textfig=scene.createFigure(figname+'text',NodeSelectHandle.materialName,FT_TEXT)
             textfig.setText(self.text)
             textfig.setTextHeight(0.5)
-            textfig.setOverlay(False)
+            textfig.setOverlay(True)
+            #textfig.setTransparent(True)
             self.figs.append(textfig)
         
         self.setPosition(self.position)
@@ -1555,10 +1556,10 @@ class SingleCameraController(object):
         self._setCamera()
 
     def start(self,mgr):
-        mgr.addEventHandler(EventType._widgetResize,self._resizeCB)
-        mgr.addEventHandler(EventType._mousePress,self._mousePressCB)
-        mgr.addEventHandler(EventType._mouseMove,self._mouseMoveCB)
-        mgr.addEventHandler(EventType._mouseWheel,self._mouseWheelCB)
+        mgr.addEventHandler(EventType._widgetResize,self._resizeCB,True)
+        mgr.addEventHandler(EventType._mousePress,self._mousePressCB,True)
+        mgr.addEventHandler(EventType._mouseMove,self._mouseMoveCB,True)
+        mgr.addEventHandler(EventType._mouseWheel,self._mouseWheelCB,True)
 
     def stop(self,mgr):
         mgr.removeEventHandler(self._resizeCB)
@@ -1639,7 +1640,7 @@ class SingleCameraController(object):
         self.tScale=radius*0.00125
         self.radiusPower=Utils.getClosestPower(radius)-1
 
-        self.camera.setNearClip(clamp(radius*0.05,epsilon*100,1.0))
+        self.camera.setNearClip(clamp(radius*0.05,epsilon*100,100.0))
         self.camera.setFarClip(clamp(self.dist*10,2000.0,10000000.0))
 
         self._setCamera()

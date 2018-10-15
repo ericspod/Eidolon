@@ -1133,30 +1133,8 @@ void TextRenderable::_notifyCurrentCamera(Ogre::Camera* cam)
 {
 	OgreBaseRenderable::_notifyCurrentCamera(cam);
 
-	vec3 tocam=convert(cam->getDerivedPosition()-mParentNode->_getDerivedPosition()).norm();	
-	rotator crot(vec3::Z(),tocam);
-	
-	vec3 cup=convert(cam->getDerivedOrientation().yAxis());
-	rotator rup=rotator(crot*vec3::Y(),cup);
-	
-	mParentNode->setOrientation(convert(rup*crot));
-	
-//	
-//	//rotator camerarot=convert(cam->getDerivedOrientation());
-//	vec3 cameraup=convert(cam->getDerivedOrientation().yAxis());
-//	
-//	//rotator upy=rotator(tocam,(rot*vec3::Y()).angleTo(camerarot*vec3::Y()));
-//	
-//	vec3 v2=tocam.cross(rot*vec3::Y());
-//	vec3 v3=v2.cross(tocam);
-//	rotator upy=rotator(v3,cameraup);
-//	
-//	mParentNode->setOrientation(convert(upy*rot));
-
-
-
-//	if(isCameraAligned)
-//	    mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
+	if(isCameraAligned)
+	    mParentNode->setOrientation(cam->getDerivedOrientation()); // rotate to face camera
 }
 
 void TextRenderable::_updateRenderQueue(Ogre::RenderQueue* queue)
@@ -1331,7 +1309,9 @@ void TextRenderable::updateGeometry()
 
 OgreTextFigure::OgreTextFigure(const std::string& name,OgreRenderScene *scene) throw(RenderException)
 	: OgreBaseFigure(new TextRenderable(name,scene->mgr),scene->createNode(name),scene)
-{}
+{
+    setTransparent(true);
+}
 
 OgreTexture::~OgreTexture() 
 {
