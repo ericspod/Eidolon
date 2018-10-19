@@ -32,6 +32,10 @@ QAbstractItemView {
 	padding:0;
 }
 
+QMenuBar::item { 
+    background-color: rgb(0, 0, 0,0);
+}
+
 QTextEdit,QLineEdit,QPlainTextEdit {
 	color: #000;
 	background-color: rgb(200, 200, 200);
@@ -147,6 +151,11 @@ QDockWidget
 {
 	titlebar-close-icon: url(:/icons/close.png);
 	titlebar-normal-icon: url(:/icons/down.png);
+}
+
+QDockWidget::title {
+    background-color: rgb(100,100,100);
+    text-align: left;
 }
 
 QDockWidget::close-button, QDockWidget::float-button

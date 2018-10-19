@@ -22,7 +22,7 @@ sys.path.append(scriptdir+'..')
 from eidolon import MeshSceneObject,ElemType,ReprType
 from TestUtils import generateTestMeshDS
 
-ds=generateTestMeshDS(ElemType._Hex1NL,12)
+ds=generateTestMeshDS(ElemType._Hex1NL,15)
 
 obj=MeshSceneObject('Hexes',ds)
 mgr.addSceneObject(obj)
