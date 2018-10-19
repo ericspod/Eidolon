@@ -31,8 +31,6 @@ modules requiring PyQt types rather than from PyQt4/5 directly. Modules requirin
     
     from ui import Qt, QtCore, QtGui, QtWidgets, QtVersion
 '''
-
-
 import sys
 import os
 import glob
@@ -61,18 +59,17 @@ except ImportError:
 
 module=sys.modules[__name__] # this module
 restag=re.compile('<resources>.*</resources>',flags=re.DOTALL) # matches the resource tags in the ui files
+# list all .ui files, if there are none then attempt to load from a resource script file
+uifiles=glob.glob(os.path.join(os.path.dirname(__file__),'*.ui'))
 
 
 def loadUI(xmlstr):
     '''Load the given XML ui file data and store the created type as a member of this module.'''
-    s=str(xmlstr)
-    s=re.sub(restag,'',s) # get rid of the resources section in the XML
+    s=re.sub(restag,'',xmlstr) # get rid of the resources section in the XML
     uiclass,_=uic.loadUiType(StringIO(s)) # create a local type definition
     setattr(module,uiclass.__name__,uiclass) # store as module member
     
-
-# list all .ui files, if there are none then attempt to load from a resource script file
-uifiles=glob.glob(os.path.join(os.path.dirname(__file__),'*.ui'))
+    
 if len(uifiles)!=0:
     # load the class from each ui file and store it as a member of this module
     for ui in uifiles:
@@ -89,5 +86,6 @@ else:
     while it.hasNext():
         with contextlib.closing(QtCore.QFile(it.next())) as layout:
             if layout.open(QtCore.QFile.ReadOnly):
-                loadUI(layout.readAll())
+                xfile=layout.readAll()
+                loadUI(bytes(xfile).decode('utf-8'))
                 
