@@ -453,14 +453,15 @@ class EventHandler(object):
     passed in.
     '''
     def __init__(self):
-        self.eventHandlers=dict((i,[]) for i,j in EventType)
+        self.eventHandlers=collections.defaultdict(list)
+        self.eventPostHandlers=collections.defaultdict(list)
         self.handleLock=threading.Lock()
         self.suppressedEvents=set()
 
     def _triggerEvent(self,name,*args):
         '''
         Broadcast event to handler callback functions, stopping for any callback that returns True. For every callback
-        associated with event `name', call it expanding `args' as the arguments.
+        associated with event `name', call it expanding `args' as the arguments. This must be called in the main thread.
         '''
         assert isMainThread()
         discards=set()
@@ -469,7 +470,7 @@ class EventHandler(object):
             if name in self.suppressedEvents:
                 return
 
-            self.suppressedEvents.add(name)
+            self.suppressedEvents.add(name) # ensure events don't trigger themselves, thus causing an infinite loop
 
         try:
             for cb in self.eventHandlers[name]:
@@ -487,17 +488,18 @@ class EventHandler(object):
                 self.suppressedEvents.remove(name)
 
     def addEventHandler(self,name,cb,isPriority=False):
-        '''Add the callback callable `cb' for event named `name'.if `isPriority', puts `cb' at the start of the event list.'''
+        '''
+        Add the callback callable `cb' for event named `name'. If `isPriority', `cb' is placed at the start of the event 
+        list, and the end otherwise.
+        '''
         assert name in EventType
-        if isPriority:
-            self.eventHandlers[name].insert(0,cb)
-        else:
-            self.eventHandlers[name].append(cb)
+        events=self.eventHandlers[name]
+        events.insert(0 if isPriority else len(events),cb)
 
     def removeEventHandler(self,cb):
         '''Remove the callback `cb' from wherever it occurs.'''
         for cblist in self.eventHandlers.values():
-            if cb in cblist:
+            while cb in cblist:
                 cblist.remove(cb)
 
 

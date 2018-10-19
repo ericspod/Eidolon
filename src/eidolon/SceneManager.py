@@ -462,8 +462,8 @@ class SceneManager(TaskQueue):
         if self.conf.get(platformID,'renderhighquality').lower()=='true':
             self.setAlwaysHighQual(True)
 
-        self.addEventHandler(EventType._mouseMove,lambda e:self.repaint(False))
-        self.addEventHandler(EventType._mouseWheel,lambda e:self.repaint(False))
+        self.addEventHandler(EventType._mouseMove,lambda _:self.repaint(False))
+        self.addEventHandler(EventType._mouseWheel,lambda _:self.repaint(False))
 
         self.addEventHandler(EventType._widgetPreDraw,self._updateUI) # update UI when redrawing
         self.addEventHandler(EventType._widgetPreDraw,self._updateManagedObjects) # update boxes and handles before drawing
@@ -586,7 +586,6 @@ class SceneManager(TaskQueue):
                     h.setPosition(pos)
                     h.setScale(vec3(scale)) # view distance kludge, should instead use overlayed ortho camera?
                     h.setRotation(*rep.getRotation(True))
-                    print(scale)
                 else:
                     h.setVisible(False)
 
@@ -1134,6 +1133,9 @@ class SceneManager(TaskQueue):
 
     def removeEventHandler(self,cb):
         self.evtHandler.removeEventHandler(cb)
+
+    def _repaintEvent(self,*_):
+        self.repaint(False)
 
     def _triggerEvent(self,name,*args):
         self.callThreadSafe(self.evtHandler._triggerEvent,name,*args)

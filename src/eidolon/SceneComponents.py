@@ -820,7 +820,7 @@ class NodeSelectHandle(Handle3D):
     sphereScale=0.25
     materialName='Node'
     
-    def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,text='',col=color(1,0,0,1)):
+    def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,text='',col=color(1,0,0,1),selectCol=color(1,1,0,1)):
         '''
         Initialize the node to be located at the offset `positionOffset' from the parent representation's position, and
         storing user value `value'. The `radiusQuery' callback accepts a vec3 and radius value and returns indices of
@@ -837,6 +837,9 @@ class NodeSelectHandle(Handle3D):
         self.selectCallback=selectCallback
         self.text=text
         self.col=col
+        self.selectCol=selectCol
+        
+        self.selectFig=None
 
         if NodeSelectHandle.sphereNodes is None:
             NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds=generateSphere(2)
@@ -858,21 +861,22 @@ class NodeSelectHandle(Handle3D):
     def addToScene(self,mgr,scene):
         assert isMainThread()
 
+        nodes=[n*NodeSelectHandle.sphereScale for n in NodeSelectHandle.sphereNodes]
+        
+        def _createFig(col):
+            vbuf=PyVertexBuffer(nodes,NodeSelectHandle.sphereNorms,[col]*len(nodes))
+            ibuf=PyIndexBuffer(NodeSelectHandle.sphereInds)
+    
+            fig=scene.createFigure(figname,NodeSelectHandle.materialName,FT_TRILIST)
+            fig.fillData(vbuf,ibuf)
+            #fig.setOverlay(True)
+            return fig
+        
         figname='NodeSelectHandle%r'%(self.value,)
 #        mat=Handle._defaultMaterial(mgr)
 #        matname=mat.getName()
         
-        nodes=[n*NodeSelectHandle.sphereScale for n in NodeSelectHandle.sphereNodes]
-        inds=NodeSelectHandle.sphereInds
-        norms=NodeSelectHandle.sphereNorms
-        
-        vbuf=PyVertexBuffer(nodes,norms,[self.col]*len(nodes))
-        ibuf=PyIndexBuffer(inds)
-
-        fig=scene.createFigure(figname,NodeSelectHandle.materialName,FT_TRILIST)
-        fig.fillData(vbuf,ibuf)
-        #fig.setOverlay(True)
-        self.figs.append(fig)
+        self.figs+=[_createFig(self.selectCol),_createFig(self.col)]
         
         if self.text:
             textfig=scene.createFigure(figname+'text',NodeSelectHandle.materialName,FT_TEXT)
@@ -892,6 +896,11 @@ class NodeSelectHandle(Handle3D):
         
         for f in self.figs:
             f.setPosition(pos+self.positionOffset)
+        
+    def mousePress(self,camera,e):
+        Handle3D.mousePress(self,camera,e)
+        if self.isSelected():
+            self.figs[1].setVisible(False)
         
     def mouseDrag(self,e,dragvec):
         if self.buttons==Qt.LeftButton: # translate relative to camera
@@ -917,6 +926,7 @@ class NodeSelectHandle(Handle3D):
         Handle3D.mouseRelease(self,e)
         if self.isSelected():
             self.selectCallback(self,-1,True)
+            self.figs[1].setVisible(True)
 
 
 class TransformHandle(Handle3D):
@@ -1556,10 +1566,10 @@ class SingleCameraController(object):
         self._setCamera()
 
     def start(self,mgr):
-        mgr.addEventHandler(EventType._widgetResize,self._resizeCB,True)
-        mgr.addEventHandler(EventType._mousePress,self._mousePressCB,True)
-        mgr.addEventHandler(EventType._mouseMove,self._mouseMoveCB,True)
-        mgr.addEventHandler(EventType._mouseWheel,self._mouseWheelCB,True)
+        mgr.addEventHandler(EventType._widgetResize,self._resizeCB)
+        mgr.addEventHandler(EventType._mousePress,self._mousePressCB)
+        mgr.addEventHandler(EventType._mouseMove,self._mouseMoveCB)
+        mgr.addEventHandler(EventType._mouseWheel,self._mouseWheelCB)
 
     def stop(self,mgr):
         mgr.removeEventHandler(self._resizeCB)
