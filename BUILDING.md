@@ -5,71 +5,68 @@ Various additional components are needed to build for each platform.
 This assumes that the pre-built libraries are included.
 For all platforms the following are required either separately, as included with the source, or as part of Anaconda:
 
- * Ogre3D Development Files
- * PyQt Development Tools
- * Cython (specifically 0.24.1 for now)
+ * Ogre3D Development Files (included)
+ * Cython
  * g++/clang
  * make
  * git
 
-## Setup
-
-### Linux (Ubuntu 14, other distros) 
-
-**Ubuntu 14.*** version of Eidolon uses the Qt development tools and Cython:
-
-    sudo apt-get install pyqt4-dev-tools qt4-dev-tools
-
-Additionally for either platform, **g++** and **make** are needed to build the libraries, you should have these already. 
-
-The version of Cython you'll get with 14.\* is too old, download it (https://github.com/cython/cython/releases/tag/0.24.1) and install using the **setup.py** script in its source repository. 
-
-### OS X
-
-OS X must be setup with Xcode and the necessary Python frameworks, follow the instructions for installing on OSX using MacPorts and pip then the following:
-
-    sudo pip install Cython
-
-You will otherwise have to download and install the following:
-
- 1. Download and install Python2.7: http://www.python.org/download/ (most recent 2.* 64bit version)
- 2. Download and build PyQt: http://www.riverbankcomputing.co.uk/software/pyqt/download (source release)
- 3. Download and install Numpy and Scipy: http://www.scipy.org/install.html
- 4. Download and build Cython: http://cython.org/#download
-
-
-### Windows
-
-Compiling in Windows requires Anaconda with its associated **MinGW** distribution and GNU Make.
-
- 1. Install Cygwin from http://www.cygwin.org first, making sure to include **make** with the installation. Modify your config files to ensure the Anaconda executables are topmost in your **PATH**. 
-
-    **OR** 
+The following are instructions for building with Anaconda/Miniconda as the base Python environment as setup in INSTALLATION.md. 
  
-    Use the Windows shell or PowerShell to invoke the commands in the next 2 steps, and then calling **mingw32-make.exe** when building instead of **make**. Cygwin isn't necessary but is really handy.
+## Anaconda Setup
 
- 2. Next pip must be installed, go to https://pip.pypa.io/en/latest/installing.html to get the get-pip.py script and run it in your Cygwin terminal. 
+Install the necessary extra libraries using pip in a bash window (or Anaconda Prompt on Windows):
 
- 3. Install MinGW with the following:
+    conda install cython
+    
+#### Windows
 
-        pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
+Building Eidolon requires the use of a makefile which expects POSIX command line tools. The easiest way to get this is
+to install Cygwin 64-bit (https://www.cygwin.com/) and then run commands from its bash console.
 
+With Cygwin installed the **PATH** variable has to be set to include your Anaconda installed, for example:
+
+    export PATH="$HOME/Miniconda3:$HOME/Miniconda3/Scripts:$HOME/Miniconda3/Library/mingw-w64/bin:$PATH"
+    
+This assumes you installed Miniconda in your home directory, change the `$HOME/Miniconda3` if not.
+
+Install MinGW with the following in an Cygwin console:
+
+    conda install libpython m2w64-toolchain
+    
+This will install the needed development tools with the **make** command in this setup is called **mingw32-make**. 
+    
+#### Linux (Ubuntu 14 and other Debians, other distros) 
+
+Install **g++** and **make** (Debian-based):
+
+    sudo apt-get install g++ make
+    
+#### OS X
+
+OS X must be setup with Xcode and the necessary Python frameworks, follow the instructions for installing this from the App Store or wherever else.
 
 ## Building 
 
-To build in any platform, simply use the **make** command without any arguments (or **mingw32-make.exe** if not using Cygwin). 
-This will first run pyuic to generate Python from the Qt UI definition files, then builds with Cython to create the Python/C++ binding objects. 
+To build in any platform, simply use the **make** command without any arguments (or **mingw32-make** on Windows). 
+This will first generate resource files from the Qt UI definition files, then builds with Cython to create the Python/C++ binding objects. 
 This can be done with separate commands as follows:
 
     make ui 
     make renderer 
     make pyxlibs 
 
-Building in Windows is the same as the above using **Cygwin** as the environment in which you run make, and using the **MinGW** distribution installed with Anaconda.
+## Generating Applications With Pyinstaller
 
-### Building Ogre with MinGW 64-bit Supplied with Anaconda
+This program is used to generate standalone applications for Eidolon. On Windows this command must be run from a Cygwin terminal since it relies on 
+command line programs.
 
-Building Ogre with the MinGW specified above may require a few code tweaks.
-Read the following, the first is a step guide and the second is the changes to Ogre code necessary to get MinGW to work:
- * http://www.ogre3d.org/tikiwiki/tiki-index.php?page=Building+Ogre+with+boost+1.50+upwards+and+MinGW
- * http://www.ogre3d.org/tikiwiki/tiki-index.php?page=TDM+MinGW64+build+guide
+First install it with pip:
+
+    pip install pyinstaller
+    
+From a command line use **make** to generate the application:
+
+    make app
+    
+On Windows or Linux this will create a .zip file containing the app, on OSX it will be a .dmg mountable filesystem.

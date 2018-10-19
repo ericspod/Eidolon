@@ -9,13 +9,13 @@ Features include:
  * Interactive access to running application code through built-in Python console
  * Plugin-oriented architecture, script interface, and console allow easy user-extension to code 
  * Integration with Python scientific libraries including numpy and scipy
- * Multi-platform support, including Windows, OSX, Linux (Ubuntu 12/14 and others)
+ * Multi-platform support, including Windows, OSX, Linux (Ubuntu 16+ and others)
  * Project-oriented architecture helps organize data and extension features
- * Image processing, registration, and motion tracking provided through IRTK routines
+ * Image processing, registration, and motion tracking provided through MIRTK routines
 
 ## Installation
 
-The most current release will include zip files containing the code as well as standalone applications for Windows and OSX. 
+**The most current release will include zip files containing the code as well as standalone applications for Linux, Windows and OSX.**
 These apps do not require anything to be installed, however to run the application from the zip or a checkout, Python and the necessary components need to be installed.
 See INSTALLATION.md for details on how to run Eidolon from a git checkout. 
 
