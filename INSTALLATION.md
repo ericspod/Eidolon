@@ -39,7 +39,7 @@ Miniconda (https://conda.io/miniconda.html) can alternatively be installed which
 
 #### Windows
 
-Download the 64-bit executable and install by running it. Once installed this should become the default Python. 
+Download the 64-bit Anaconda/Miniconda executable and install by running it. Once installed this should become the default Python. 
 
 From the Start Menu open an **Anaconda Prompt** window and run the following:
 
@@ -53,7 +53,7 @@ In a Cygwin terminal, either `run.bat` or `run.sh` can be use to run Eidolon.
 
 #### Linux and OSX
 
-Download the 64-bit .sh file for Anaconda or Miniconda for your platform. Follow instructions for running the .sh file to install. 
+Download the 64-bit .sh file for Anaconda/Miniconda for your platform. Follow instructions for running the .sh file to install. 
 
 Both Linux and OSX versions of Anaconda will include a version of Numpy which uses Intel's Math Kernel Library (MKL). 
 Unfortunately this is not compatible with multi-process concurrency for some reason and so the non-MKL versions of libraries
