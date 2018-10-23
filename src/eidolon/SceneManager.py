@@ -462,8 +462,11 @@ class SceneManager(TaskQueue):
         if self.conf.get(platformID,'renderhighquality').lower()=='true':
             self.setAlwaysHighQual(True)
 
-        self.addEventHandler(EventType._mouseMove,lambda _:self.repaint(False))
-        self.addEventHandler(EventType._mouseWheel,lambda _:self.repaint(False))
+        # add the necessary repaint handlers to respond to mouse actions
+        self.addEventHandler(EventType._mousePress,lambda _:self.repaint(False),isPostEvent=True)
+        self.addEventHandler(EventType._mouseRelease,lambda _:self.repaint(False),isPostEvent=True)
+        self.addEventHandler(EventType._mouseMove,lambda _:self.repaint(False),isPostEvent=True)
+        self.addEventHandler(EventType._mouseWheel,lambda _:self.repaint(False),isPostEvent=True)
 
         self.addEventHandler(EventType._widgetPreDraw,self._updateUI) # update UI when redrawing
         self.addEventHandler(EventType._widgetPreDraw,self._updateManagedObjects) # update boxes and handles before drawing
@@ -1128,8 +1131,8 @@ class SceneManager(TaskQueue):
                 self.showExcept(e,'<<Player Thread>>')
                 self.stop()
 
-    def addEventHandler(self,name,cb,isPriority=False):
-        self.evtHandler.addEventHandler(name,cb,isPriority)
+    def addEventHandler(self,name,cb,isPriority=False,isPostEvent=False):
+        self.evtHandler.addEventHandler(name,cb,isPriority,isPostEvent)
 
     def removeEventHandler(self,cb):
         self.evtHandler.removeEventHandler(cb)

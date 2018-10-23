@@ -447,10 +447,12 @@ EventType=enum(
 
 class EventHandler(object):
     '''
-    An event broadcast class which invokes callable objects when an EventType event occurs. For every named event, this
+    Event broadcast class which invokes callable objects when an EventType event occurs. For every named event, this
     maintains a list of callback callable objects which accept a set of parameters specific for each event type. When
     _triggerEvent() is called, each callback associated with the given event name is called with the given arguments
-    passed in.
+    passed in. If the callback returns True then subsequent callbacks for that type are ignored. A second list of post
+    event handlers is also maintained which is processed after regular events with the return value ignored. This can be
+    used to register events which must occur last and which must not be skipped.
     '''
     def __init__(self):
         self.eventHandlers=collections.defaultdict(list)
@@ -460,11 +462,28 @@ class EventHandler(object):
 
     def _triggerEvent(self,name,*args):
         '''
-        Broadcast event to handler callback functions, stopping for any callback that returns True. For every callback
-        associated with event `name', call it expanding `args' as the arguments. This must be called in the main thread.
+        Broadcast event to handler callback functions, stopping for any regular callback that returns True. For every 
+        callback associated with event `name', call it expanding `args' as the arguments. This must be called in the 
+        main thread. Callbacks stored as post event handlers are called after regular ones with the stop feature ignored.
         '''
         assert isMainThread()
-        discards=set()
+        
+        def _triggerHandlers(handlers,allowBreak):
+            '''Trigger each handler in `handlers', allowing breaking the loop if `allowBreak'.'''
+            discards=set()
+            
+            try:
+                for cb in handlers:
+                    try:
+                        result=cb(*args)
+                        if allowBreak and result==True: # skip further handlers if returned True
+                            break
+                    except RuntimeError:
+                        discards.add(cb)
+            finally:
+                for d in discards: # throw out all handlers that raised RuntimeError
+                    handlers.remove(d)
+                    
 
         with self.handleLock:
             if name in self.suppressedEvents:
@@ -473,32 +492,25 @@ class EventHandler(object):
             self.suppressedEvents.add(name) # ensure events don't trigger themselves, thus causing an infinite loop
 
         try:
-            for cb in self.eventHandlers[name]:
-                try:
-                    result=cb(*args)
-                    if result==True:
-                        break
-                except RuntimeError:
-                    discards.add(cb)
+            _triggerHandlers(self.eventHandlers[name],True) # regular handlers
+            _triggerHandlers(self.eventPostHandlers[name],False) # post event handlers, don't allow breaking
         finally:
-            for d in discards:
-                self.eventHandlers[name].remove(d)
-
             with self.handleLock:
                 self.suppressedEvents.remove(name)
 
-    def addEventHandler(self,name,cb,isPriority=False):
+    def addEventHandler(self,name,cb,isPriority=False,isPostEvent=False):
         '''
         Add the callback callable `cb' for event named `name'. If `isPriority', `cb' is placed at the start of the event 
-        list, and the end otherwise.
+        list, and the end otherwise. If `isPostEvent' is True then `cb' is added as a post event callback which is then
+        called after regular callbacks with the return value ignored, ie. always gets called.
         '''
         assert name in EventType
-        events=self.eventHandlers[name]
+        events=self.eventPostHandlers[name] if isPostEvent else self.eventHandlers[name]
         events.insert(0 if isPriority else len(events),cb)
 
     def removeEventHandler(self,cb):
         '''Remove the callback `cb' from wherever it occurs.'''
-        for cblist in self.eventHandlers.values():
+        for cblist in list(self.eventHandlers.values())+list(self.eventPostHandlers.values()):
             while cb in cblist:
                 cblist.remove(cb)
 

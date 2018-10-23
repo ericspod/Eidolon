@@ -724,73 +724,111 @@ class Handle3D(Handle):
             f.setRotation(rot)
 
 
-class NodeDragHandle(Handle3D):
+class DragSphereHandle(Handle3D):
     '''
-    Handle for arbitrarily dragging a node around in the space. This is defined with initial position, position offset
-    from the origin of the associated representation, and user value, and a callback to be called whenever the node moves.
+    Specialized handle for dragging a sphere around. This creates a handle with two sphere figures in self.figs, first
+    is colored with self.col and second with self.selectCol. Normally only the first is visible but when selected the
+    second becomes visible, then reverts on mouse release. Thus a self.selectCol colored handle indicates selection.
     '''
     sphereNodes=None
     sphereInds=None
     sphereNorms=None
     sphereScale=0.25
+    materialName='Node'
     
-    def __init__(self,positionOffset,value,dragCallback=lambda h,r:None,col=color(1,0,0,1)):
+    def __init__(self,value,col,selectCol):
         '''
-        Initialize the handle with `positionOffset' as the handle's position relative to the parent representation, a
-        `value' to be stored in self.value, the callback function `dragCallback', and the handle's color `col'. The 
-        callback accepts as arguments the handle itself and a boolean value which is True when the handle has been 
-        released and False if dragged. It is called when the handle is dragged and upon mouse button release.
+        Initialize the handle with `value' as the stored self.value arbitrary per-handle value, normal color `col' and
+        selected color `selectCol'.
         '''
         Handle3D.__init__(self)
-        self.position=vec3()
-        self.positionOffset=positionOffset
         self.value=value
-        self.dragCallback=dragCallback
         self.col=col
+        self.selectCol=selectCol
 
-        if NodeDragHandle.sphereNodes is None:
-            NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds=generateSphere(2)
-            NodeDragHandle.sphereNorms=generateTriNormals(NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds)
-
+        if DragSphereHandle.sphereNodes is None:
+            DragSphereHandle.sphereNodes,DragSphereHandle.sphereInds=generateSphere(2)
+            DragSphereHandle.sphereNorms=generateTriNormals(DragSphereHandle.sphereNodes,DragSphereHandle.sphereInds)
+            
+    def getAbsolutePosition(self):
+        '''Returns the absolute position in space of this handle, which can be relative to a representation's position.'''
+        raise NotImplementedError('Need to provide an absolute position')
+    
+    def setPosition(self,pos):
+        apos=self.getAbsolutePosition()
+        for f in self.figs:
+            f.setPosition(apos)
+            
     def checkSelected(self,ray):
         assert isinstance(ray,renderer.Ray)
         self.lastIntersect=None
         
         if self.isVisible():
-            trans=transform(self.position+self.positionOffset,self.figscale*NodeDragHandle.sphereScale)
-            i,result=self.checkMeshIntersect(trans.inverse()*ray,NodeDragHandle.sphereNodes,NodeDragHandle.sphereInds)
+            trans=transform(self.getAbsolutePosition(),self.figscale*DragSphereHandle.sphereScale)
+            i,result=self.checkMeshIntersect(trans.inverse()*ray,DragSphereHandle.sphereNodes,DragSphereHandle.sphereInds)
             if i>-1:
                 self.lastIntersect=(i,result,ray)
                 return True
 
         return False
     
-    def setPosition(self,pos):
-        self.position=pos
-        self.figs[0].setPosition(pos+self.positionOffset)
-        
-    def getAbsolutePosition(self):
-        return self.position+self.positionOffset
-    
     def addToScene(self,mgr,scene):
         assert isMainThread()
 
-        figname='NodeDragHandle%r'%(self.value,)
-        mat=Handle._defaultMaterial(mgr)
-        matname=mat.getName()
+        nodes=[n*DragSphereHandle.sphereScale for n in DragSphereHandle.sphereNodes]
+        figname='DragSphereHandle%r'%(self.value,)
+        ibuf=PyIndexBuffer(DragSphereHandle.sphereInds)
         
-        nodes=[n*NodeDragHandle.sphereScale for n in NodeDragHandle.sphereNodes]
-        inds=NodeDragHandle.sphereInds
-        norms=NodeDragHandle.sphereNorms
-        
-        vbuf=PyVertexBuffer(nodes,norms,[self.col]*len(nodes))
-        ibuf=PyIndexBuffer(inds)
-
-        fig=scene.createFigure(figname,matname,FT_TRILIST)
-        fig.fillData(vbuf,ibuf)
-        fig.setOverlay(True)
-        self.figs.append(fig)
+        for col in (self.col,self.selectCol):
+            vbuf=PyVertexBuffer(nodes,DragSphereHandle.sphereNorms,[col]*len(nodes))
+            fig=scene.createFigure(figname,DragSphereHandle.materialName,FT_TRILIST)
+            fig.fillData(vbuf,ibuf)
+            self.figs.append(fig)
+            
         self.setPosition(self.position)
+        
+    def setVisible(self,isVisible):
+        Handle3D.setVisible(self,isVisible)
+        if isVisible:
+            self.figs[1].setVisible(False)
+                
+    def mouseRelease(self,e):
+        Handle3D.mouseRelease(self,e)
+        if self.isSelected():
+            self.figs[0].setVisible(True)
+            self.figs[1].setVisible(False)
+                    
+    def mousePress(self,camera,e):
+        Handle3D.mousePress(self,camera,e)
+        if self.isSelected():
+            self.figs[0].setVisible(False)
+            self.figs[1].setVisible(True)
+    
+
+class NodeDragHandle(DragSphereHandle):
+    '''
+    Handle for arbitrarily dragging a node around in the space. This is defined with initial position, position offset
+    from the origin of the associated representation, and user value, and a callback to be called whenever the node moves.
+    '''
+    
+    def __init__(self,positionOffset,value,dragCallback=lambda h,r:None,col=color(1,0,0,1),selectCol=color(1,1,0,1)):
+        '''
+        Initialize the handle with `positionOffset' as the handle's position relative to the parent representation, a
+        `value' to be stored in self.value, the callback function `dragCallback', and the handle's color `col'. The 
+        callback accepts as arguments the handle itself and a boolean value which is True when the handle has been 
+        released and False if dragged. It is called when the handle is dragged and upon mouse button release.
+        '''
+        DragSphereHandle.__init__(self,value,col,selectCol)
+        self.position=vec3()
+        self.positionOffset=positionOffset
+        self.dragCallback=dragCallback
+
+    def setPosition(self,pos):
+        self.position=pos
+        DragSphereHandle.setPosition(self,pos)
+        
+    def getAbsolutePosition(self):
+        return self.position+self.positionOffset
         
     def mouseDrag(self,e,dragvec):
         if self.buttons==Qt.LeftButton: # translate relative to camera
@@ -803,23 +841,16 @@ class NodeDragHandle(Handle3D):
                 self.dragCallback(self,False)
                 
     def mouseRelease(self,e):
-        Handle3D.mouseRelease(self,e)
+        DragSphereHandle.mouseRelease(self,e)
         if self.isSelected():
             self.dragCallback(self,True)
             
 
-class NodeSelectHandle(Handle3D):
+class NodeSelectHandle(DragSphereHandle):
     '''
     Handle for selecting a node/vertex from a set defined by a radius search query callback. This is used to select a 
     node from a mesh by moving the handle around.
     '''
-    
-    sphereNodes=None
-    sphereInds=None
-    sphereNorms=None
-    sphereScale=0.25
-    materialName='Node'
-    
     def __init__(self,positionOffset,value,radiusQuery,selectCallback=lambda h,i,r:None,text='',col=color(1,0,0,1),selectCol=color(1,1,0,1)):
         '''
         Initialize the node to be located at the offset `positionOffset' from the parent representation's position, and
@@ -829,61 +860,25 @@ class NodeSelectHandle(Handle3D):
         is released, accepting as arguments the handle itself, the closest node index, and a boolean stating if the mouse
         was released or not. If `text' is provided this is used as a text label. Handle mesh color is given as `col'.
         '''
-        Handle3D.__init__(self)
+        DragSphereHandle.__init__(self,value,col,selectCol)
         self.position=vec3()
         self.positionOffset=positionOffset
         self.radiusQuery=radiusQuery
-        self.value=value
         self.selectCallback=selectCallback
         self.text=text
-        self.col=col
-        self.selectCol=selectCol
         
         self.selectFig=None
 
-        if NodeSelectHandle.sphereNodes is None:
-            NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds=generateSphere(2)
-            NodeSelectHandle.sphereNorms=generateTriNormals(NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds)
-        
-    def checkSelected(self,ray):
-        assert isinstance(ray,renderer.Ray)
-        self.lastIntersect=None
-        
-        if self.isVisible():
-            trans=transform(self.position+self.positionOffset,self.figscale*NodeSelectHandle.sphereScale)
-            i,result=self.checkMeshIntersect(trans.inverse()*ray,NodeSelectHandle.sphereNodes,NodeSelectHandle.sphereInds)
-            if i>-1:
-                self.lastIntersect=(i,result,ray)
-                return True
-
-        return False
-    
     def addToScene(self,mgr,scene):
         assert isMainThread()
+        
+        DragSphereHandle.addToScene(self,mgr,scene)
 
-        nodes=[n*NodeSelectHandle.sphereScale for n in NodeSelectHandle.sphereNodes]
-        
-        def _createFig(col):
-            vbuf=PyVertexBuffer(nodes,NodeSelectHandle.sphereNorms,[col]*len(nodes))
-            ibuf=PyIndexBuffer(NodeSelectHandle.sphereInds)
-    
-            fig=scene.createFigure(figname,NodeSelectHandle.materialName,FT_TRILIST)
-            fig.fillData(vbuf,ibuf)
-            #fig.setOverlay(True)
-            return fig
-        
-        figname='NodeSelectHandle%r'%(self.value,)
-#        mat=Handle._defaultMaterial(mgr)
-#        matname=mat.getName()
-        
-        self.figs+=[_createFig(self.selectCol),_createFig(self.col)]
-        
         if self.text:
-            textfig=scene.createFigure(figname+'text',NodeSelectHandle.materialName,FT_TEXT)
+            textfig=scene.createFigure('NodeSelectHandletext',NodeSelectHandle.materialName,FT_TEXT)
             textfig.setText(self.text)
             textfig.setTextHeight(0.5)
             textfig.setOverlay(True)
-            #textfig.setTransparent(True)
             self.figs.append(textfig)
         
         self.setPosition(self.position)
@@ -893,14 +888,7 @@ class NodeSelectHandle(Handle3D):
     
     def setPosition(self,pos):
         self.position=pos
-        
-        for f in self.figs:
-            f.setPosition(pos+self.positionOffset)
-        
-    def mousePress(self,camera,e):
-        Handle3D.mousePress(self,camera,e)
-        if self.isSelected():
-            self.figs[1].setVisible(False)
+        DragSphereHandle.setPosition(self,pos)
         
     def mouseDrag(self,e,dragvec):
         if self.buttons==Qt.LeftButton: # translate relative to camera
@@ -923,10 +911,9 @@ class NodeSelectHandle(Handle3D):
                     self.positionOffset=nearnode
                     
     def mouseRelease(self,e):
-        Handle3D.mouseRelease(self,e)
+        DragSphereHandle.mouseRelease(self,e)
         if self.isSelected():
             self.selectCallback(self,-1,True)
-            self.figs[1].setVisible(True)
 
 
 class TransformHandle(Handle3D):
