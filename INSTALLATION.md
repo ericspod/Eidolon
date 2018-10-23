@@ -9,20 +9,17 @@ For all platforms it requires:
  * PyQt 4.10.4+ or 5.*
  * Numpy 1.8.0+
  * SciPy 0.13.3+ 
- * six (if not already present)
  * ImageIO (optional)
  * Pandas (optional)
- * Matplotlib (optional)
- * PyTables (optional)
  * coverage (optional)
+ * six (if not already present)
 
 The following will explain how to setup a Python environment with Anaconda/Miniconda. 
 To install using another Python distribution involves following the installation instructions for the base Python interpreter
 and then for the above libraries. These can be acquired from:
 
  * Python 2.7 64bit: http://www.python.org/download/
- * Numpy: http://sourceforge.net/projects/numpy/files/
- * SciPy: http://www.scipy.org/install.html (comes with Numpy, get a 64bit version)
+ * Numpy/SciPy: http://www.scipy.org/install.html 
  * PyQt 4/5: http://www.riverbankcomputing.com/software/pyqt/download
  
 or using the package manager of your system (apt-get or port).  
@@ -45,7 +42,7 @@ From the Start Menu open an **Anaconda Prompt** window and run the following:
 
     conda install python=3.6.3 numpy scipy pyqt six
     
-This will install the bare necessities for Anaconda or Miniconda, the extras can be installed by including `imageio pandas matplotlib pytables`
+This will install the bare necessities for Anaconda or Miniconda, the extras can be installed by including `imageio pandas`
 in the command.
 
 Once this is installed Eidolon can be run by double-clicking `run.bat` or running it from a terminal window.
@@ -62,5 +59,5 @@ Open a terminal and with the new installation in your PATH run the following:
 
     conda create -n nomkl python=3.6.3 nomkl numpy scipy pyqt six
 
-Adding `imageio pandas matplotlib pytables` will install the optional libraries.
+Adding `imageio pandas` will install the optional libraries.
 Once this is done the command `source activate nomkl` will activate this environment, then Eidolon can be run by executing `run.sh`.
