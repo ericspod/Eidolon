@@ -5,7 +5,7 @@ Eidolon works currently in Windows (7 definitely, 8 and 10 seem fine) and Linux 
 For these platforms you should not need to compile since shared objects are included in the repository.
 
 For all platforms it requires:
- * Python 3.6 (version 2.7 is technically supported but untested)
+ * Python 3.6 (version 2.7 is technically supported but considered legacy)
  * PyQt 4.10.4+ or 5.*
  * Numpy 1.8.0+
  * SciPy 0.13.3+ 
@@ -40,7 +40,7 @@ Download the 64-bit Anaconda/Miniconda executable and install by running it. Onc
 
 From the Start Menu open an **Anaconda Prompt** window and run the following:
 
-    conda install python=3.6.3 numpy scipy pyqt six
+    conda install python=3.6 numpy scipy pyqt six
     
 This will install the bare necessities for Anaconda or Miniconda, the extras can be installed by including `imageio pandas`
 in the command.
@@ -57,7 +57,7 @@ Unfortunately this is not compatible with multi-process concurrency for some rea
 must be used instead. The easiest way to do this is to create a new environment called **nomkl** and run Eidolon from that.
 Open a terminal and with the new installation in your PATH run the following:
 
-    conda create -n nomkl python=3.6.3 nomkl numpy scipy pyqt six
+    conda create -n nomkl python=3.6 nomkl numpy scipy pyqt six
 
 Adding `imageio pandas` will install the optional libraries.
 Once this is done the command `source activate nomkl` will activate this environment, then Eidolon can be run by executing `run.sh`.
