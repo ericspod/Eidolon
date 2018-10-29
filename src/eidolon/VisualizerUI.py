@@ -1474,6 +1474,10 @@ class RenderWidget(QtWidgets.QWidget):
 
 
 class JupyterWidget(RichJupyterWidget):
+    '''
+    Jupyter substitute widget for the internal console. This will be used by default if the relevant libraries are 
+    imported. As a drop-in replacement for ConsoleWidget its public interface is meant to be the same.
+    '''
     def __init__(self,win,conf,parent=None):
         RichJupyterWidget.__init__(self,parent=parent)
         self.win=win
@@ -1491,7 +1495,7 @@ class JupyterWidget(RichJupyterWidget):
         self.kernel_client = kernel_client
         
         self.updateLocals({'jpwidg':self})
-        self.setStyleSheet(win.styleSheet())
+        #self.setStyleSheet(win.styleSheet())
         
     def updateLocals(self,localvals):
         '''Override the local variable dictionary with the given dictionary.'''
@@ -1499,7 +1503,7 @@ class JupyterWidget(RichJupyterWidget):
         
     def sendInputBlock(self,block,printBlock=True):
         '''Interpret the given code `line'.'''
-        return self.execute(block,not printBlock) #self.kernel.shell.runcode(block)
+        return self.execute(block,not printBlock) 
     
 
 class ConsoleWidget(QtWidgets.QTextEdit):
