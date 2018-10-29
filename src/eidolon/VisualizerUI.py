@@ -42,6 +42,14 @@ from ui import Qt, QtCore, QtGui, QtWidgets, QtVersion
 from ui import Ui_MainWindow, Ui_ProjProp, Ui_ObjReprProp, Ui_ObjProp, Ui_matProp, Ui_LightProp, Ui_gpuProp,\
         Ui_Draw2DView, Ui_ScreenshotForm, Ui_ShowMsg #,loadGPUScript
 
+try:
+    from qtconsole.rich_jupyter_widget import RichJupyterWidget
+    from qtconsole.inprocess import QtInProcessKernelManager
+    jConsolePresent=True
+except ImportError:
+    jConsolePresent=False
+    RichJupyterWidget=object # bogus type definition to temporarily satisfy inheritance
+    
 
 globalApp=None # Global QApplication object, there must only be one of these
 globalWin=None # Global VisualizerWindow instance, there should really only be one of these but that could be changed
@@ -1465,6 +1473,35 @@ class RenderWidget(QtWidgets.QWidget):
             self.adapt.paint()
 
 
+class JupyterWidget(RichJupyterWidget):
+    def __init__(self,win,conf,parent=None):
+        RichJupyterWidget.__init__(self,parent=parent)
+        self.win=win
+        self.conf=conf
+        
+        kernel_manager = QtInProcessKernelManager()
+        kernel_manager.start_kernel(show_banner=False)
+        self.kernel = kernel_manager.kernel
+        self.kernel.gui = 'qt'
+    
+        kernel_client = kernel_manager.client()
+        kernel_client.start_channels()
+    
+        self.kernel_manager = kernel_manager
+        self.kernel_client = kernel_client
+        
+        self.updateLocals({'jpwidg':self})
+        self.setStyleSheet(win.styleSheet())
+        
+    def updateLocals(self,localvals):
+        '''Override the local variable dictionary with the given dictionary.'''
+        self.kernel.shell.push(localvals)
+        
+    def sendInputBlock(self,block,printBlock=True):
+        '''Interpret the given code `line'.'''
+        return self.execute(block,not printBlock) #self.kernel.shell.runcode(block)
+    
+
 class ConsoleWidget(QtWidgets.QTextEdit):
     '''
     Simulates a Python terminal in a QTextEdit widget. This is similar to code.InteractiveConsole in how it executes
@@ -2267,7 +2304,12 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
             self.assetRootMap[key].setText(0,name)
             self.assetRootMap[key].setToolTip(0,desc)
 
-        self.console=ConsoleWidget(self,conf)
+        if jConsolePresent and conf.get(ConfVars._usejupyter)!='false':
+            self.console=JupyterWidget(self,conf)
+        else:
+            self.console=ConsoleWidget(self,conf)
+        
+        
         self.consoleLayout.addWidget(self.console)
         self.consoleWidget.setVisible(False) # hide the console by default
 

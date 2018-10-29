@@ -336,7 +336,7 @@ class Future(object):
 
 ConfVars=enum(
     'all','shaders', 'resdir', 'shmdir', 'appdir', 'userappdir','userplugindir','logfile', 'preloadscripts', 'uistyle', 
-    'stylesheet', 'winsize', 'camerazlock', 'maxprocs', 'configfile', 
+    'stylesheet', 'winsize', 'camerazlock', 'maxprocs', 'configfile', 'usejupyter',
     'rtt_preferred_mode', 'vsync', 'rendersystem', # renderer related values
     'consolelogfile','consoleloglen', # console config values
     desc='Variables in the Config object loaded from config files, these should be present and keyed to platformID group'
@@ -2320,27 +2320,26 @@ def minmax(*items,**kwargs):
     if ranges:
         for i in items:
             ki=key(i)
-            if i==None or ki==None:
+            if i is None or ki is None:
                 continue
 
-            if minv==None:
+            if minv is None:
                 minv=i[0]
                 maxv=i[1]
-            else:
-                if ki[0]<mink:
-                    minv=i[0]
-                if ki[1]>maxk:
-                    maxv=i[1]
+            elif ki[0]<mink:
+                minv=i[0]
+            elif ki[1]>maxk:
+                maxv=i[1]
 
             mink=key(minv)
             maxk=key(maxv)
     else:
         for i in items:
             ki=key(i)
-            if i==None or ki==None:
+            if i is None or ki is None:
                 continue
 
-            if minv==None:
+            if minv is None:
                 minv=i
                 maxv=i
             elif ki<mink:
