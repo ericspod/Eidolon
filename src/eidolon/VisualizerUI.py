@@ -29,6 +29,7 @@ import contextlib
 import signal
 import codeop
 import textwrap
+import warnings
     
 import sip
 
@@ -1483,19 +1484,19 @@ class JupyterWidget(RichJupyterWidget):
         self.win=win
         self.conf=conf
         
-        kernel_manager = QtInProcessKernelManager()
-        kernel_manager.start_kernel(show_banner=False)
-        self.kernel = kernel_manager.kernel
+        self.kernel_manager = QtInProcessKernelManager()
+        self.kernel_manager.start_kernel(show_banner=False)
+        self.kernel = self.kernel_manager.kernel
         self.kernel.gui = 'qt'
     
-        kernel_client = kernel_manager.client()
-        kernel_client.start_channels()
+        self.kernel_client = self.kernel_manager.client()
+        self.kernel_client.start_channels()
     
-        self.kernel_manager = kernel_manager
-        self.kernel_client = kernel_client
+        self.setStyleSheet(win.styleSheet())
+        #self._call_tip_widget.setStyleSheet('QWidget{color:black;}')#win.styleSheet())
         
         self.updateLocals({'jpwidg':self})
-        #self.setStyleSheet(win.styleSheet())
+        self.sendInputBlock('from eidolon import *')
         
     def updateLocals(self,localvals):
         '''Override the local variable dictionary with the given dictionary.'''
@@ -2308,11 +2309,15 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
             self.assetRootMap[key].setText(0,name)
             self.assetRootMap[key].setToolTip(0,desc)
 
+        # create the console widget, which will be a Jupyter widget is requested and available, otherwise the internal widget
         if jConsolePresent and conf.get(ConfVars._usejupyter)!='false':
-            self.console=JupyterWidget(self,conf)
+            try:
+                self.console=JupyterWidget(self,conf)
+            except Exception as e:
+                warnings.warn('Cannot create Jupyter console widget, defaulting to internal console: %r'%e)
+                self.console=ConsoleWidget(self,conf)
         else:
             self.console=ConsoleWidget(self,conf)
-        
         
         self.consoleLayout.addWidget(self.console)
         self.consoleWidget.setVisible(False) # hide the console by default
