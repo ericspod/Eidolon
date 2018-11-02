@@ -44,12 +44,11 @@ from ui import Ui_MainWindow, Ui_ProjProp, Ui_ObjReprProp, Ui_ObjProp, Ui_matPro
         Ui_Draw2DView, Ui_ScreenshotForm, Ui_ShowMsg #,loadGPUScript
 
 try:
-    from qtconsole.rich_jupyter_widget import RichJupyterWidget
-    from qtconsole.inprocess import QtInProcessKernelManager
+    from qtconsole.inprocess import QtInProcessKernelManager, QtInProcessRichJupyterWidget
     jConsolePresent=True
 except ImportError:
+    QtInProcessRichJupyterWidget=object # bogus type definition to satisfy inheritance
     jConsolePresent=False
-    RichJupyterWidget=object # bogus type definition to temporarily satisfy inheritance
     
 
 globalApp=None # Global QApplication object, there must only be one of these
@@ -1474,15 +1473,17 @@ class RenderWidget(QtWidgets.QWidget):
             self.adapt.paint()
 
 
-class JupyterWidget(RichJupyterWidget):
+class JupyterWidget(QtInProcessRichJupyterWidget):
     '''
     Jupyter substitute widget for the internal console. This will be used by default if the relevant libraries are 
     imported. As a drop-in replacement for ConsoleWidget its public interface is meant to be the same.
     '''
     def __init__(self,win,conf,parent=None):
-        RichJupyterWidget.__init__(self,parent=parent)
+        QtInProcessRichJupyterWidget.__init__(self,parent=parent)
         self.win=win
         self.conf=conf
+        
+        self.custom_restart=True # prevent restarting the kernel?
         
         self.kernel_manager = QtInProcessKernelManager()
         self.kernel_manager.start_kernel(show_banner=False)
@@ -1493,7 +1494,6 @@ class JupyterWidget(RichJupyterWidget):
         self.kernel_client.start_channels()
     
         self.setStyleSheet(win.styleSheet())
-        #self._call_tip_widget.setStyleSheet('QWidget{color:black;}')#win.styleSheet())
         
         self.updateLocals({'jpwidg':self})
         self.sendInputBlock('from eidolon import *')
@@ -2310,7 +2310,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
             self.assetRootMap[key].setToolTip(0,desc)
 
         # create the console widget, which will be a Jupyter widget is requested and available, otherwise the internal widget
-        if jConsolePresent and conf.get(ConfVars._usejupyter)!='false':
+        if jConsolePresent and conf.get(ConfVars._usejupyter).lower()=='true':
             try:
                 self.console=JupyterWidget(self,conf)
             except Exception as e:

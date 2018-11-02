@@ -92,7 +92,7 @@ QFrame[frameShape="4"], QFrame[frameShape="5"]{
 }
 
 QStatusBar::item { 
-	border-color: None; 
+    border-color: None; 
 }
 
 QCheckBox,QGroupBox, QRadioButton {
@@ -109,7 +109,7 @@ QGroupBox::title {
 }
 
 QLabel {
-    color: rgb(120, 120, 120);
+    color: rgb(200, 200, 200);
 	background-color: None; 
 }
  
