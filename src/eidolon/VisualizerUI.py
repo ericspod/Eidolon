@@ -2310,13 +2310,15 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
             self.assetRootMap[key].setToolTip(0,desc)
 
         # create the console widget, which will be a Jupyter widget is requested and available, otherwise the internal widget
-        if jConsolePresent and conf.get(ConfVars._usejupyter).lower()=='true':
+        if jConsolePresent and conf.get(platformID,ConfVars._usejupyter).lower()=='true':
             try:
+                assert not Utils.isWindows, 'Jupyter console on Windows is currently bugged'
                 self.console=JupyterWidget(self,conf)
             except Exception as e:
                 warnings.warn('Cannot create Jupyter console widget, defaulting to internal console: %r'%e)
                 self.console=ConsoleWidget(self,conf)
         else:
+            warnings.warn('Using internal console'+('' if jConsolePresent else ', Jupyter QtConsole not present'))
             self.console=ConsoleWidget(self,conf)
         
         self.consoleLayout.addWidget(self.console)

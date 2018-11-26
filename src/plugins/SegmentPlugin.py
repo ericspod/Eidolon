@@ -21,8 +21,9 @@ import os
 import math
 
 from eidolon import (
-        enum, color, vec3, rotator, avg, timing, first, halfpi, clamp, frange, group, successive,indexList,listSum, taskroutine,
-        BoundBox, Ray, Camera2DView, PointChooseMixin, ElemType, ImageSceneObject, SceneObject, ScenePlugin, printFlush
+        enum, color, vec3, rotator, avg, timing, first, halfpi, clamp, frange, group, successive,indexList,listSum, 
+        taskroutine,BoundBox, Ray, Camera2DView, PointChooseMixin, ElemType, ImageSceneObject, SceneObject, ScenePlugin, 
+        printFlush,equalsEpsilon
 )
 import eidolon
 
@@ -98,11 +99,14 @@ def contoursCoplanar(con1,con2):
 
 def yieldContourIntersects(ray,contour):
     '''Yield each position in space where `ray' intersects a line segment between successive points in `contour'.'''
+    plane=getContourPlane(contour)
+    assert ray.getPosition(0).onPlane(*plane)
+    assert ray.getPosition(1).onPlane(*plane)
+    
     for c1,c2 in successive(contour,2,True):
-        t=ray.intersectsLineSeg(c1,c2)
-        p=ray.getPosition(t)
-        if t>=0:# and p!=c1 and p!=c2:
-            yield p
+        dist=ray.intersectsLineSeg(c1,c2)
+        if dist>=0:
+            yield ray.getPosition(dist)
 
 
 def pointInContour(pt,contour,plane=None,bb=None,center=None):
@@ -160,7 +164,8 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
     from the direction of `startdir'. The intersection points of these rays with the polygon are used as the control
     points for the resulting contour. The result is guaranteed to have coplanar points which are uniformly distributed
     in space, but is only an approximation of the shape defined by `contour'. This approximation becomes closer with
-    increasing values of both `refine' and `numnodes' (only one being large won't accomplish much).
+    increasing values of both `refine' and `numnodes' (only one being large won't accomplish much). The more circular
+    `contour' is the smoother and more accurate the result, but more than that `contour' cannot overlap itself.
     '''
     center,norm=getContourPlane(contour)
     step=1.0/(len(contour)*refine)
@@ -168,7 +173,7 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
     pts=[p.planeProject(center,norm) for p in pts1] # ensure the points lie on the plane for numerical accuracy reasons
     newcontour=[]
 
-    assert eidolon.equalsEpsilon(startdir.angleTo(norm),halfpi),'Start vector for contour reinterpolation not on contour plane'
+    assert equalsEpsilon(startdir.angleTo(norm),halfpi),'Start vector for contour reinterpolation not on contour plane (%f)'%(abs(startdir.angleTo(norm)-halfpi))
 
     for i in frange(0,1,1.0/numnodes):
         rdir=rotator(norm,i*2*math.pi)*startdir
@@ -179,7 +184,8 @@ def reinterpolateCircularContour(contour,elemtype,startdir,refine,numnodes):
             raise
             
         newpt=first(yieldContourIntersects(ray,pts))
-        assert newpt!=None,'Did not find an intersect when interpolating contour at regular rotational intervals, is this contour coplanar?'
+        
+        assert newpt!=None,'Did not find an intersect when interpolating contour at regular rotational intervals, is contour coplanar?'
         newcontour.append(newpt)
 
     assert len(newcontour)==numnodes,'%i != %i'%(len(newcontour),numnodes)
@@ -676,7 +682,8 @@ def generateDefaultHemisphereMesh(refine,center,scale,outerrad,innerrad,numctrls
 
 
 @timing
-def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinterpolateVal=0,calcAHA=False,elemtype=None,innerSurface=True,task=None):
+def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinterpolateVal=0,
+                              calcAHA=False,elemtype=None,innerSurface=True,task=None):
     '''
     Create a hemisphere triangle mesh for the contour set `contours' which are expected to define a tube for which an
     apex will be added. The contours will be sorted in order along a common axis with the largest topmost since this
@@ -731,7 +738,8 @@ def generateHemisphereSurface(name,contours,refine, startpos, apex=None, reinter
 
 
 @timing
-def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpolateVal=0,calcAHA=False,elemtype=None,innerOnly=True,task=None):
+def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpolateVal=0,
+                             calcAHA=False,elemtype=None,innerOnly=True,task=None):
     '''
     Create a hemisphere tetrahedral mesh for the contour set `contours' which are expected to define a tube for which an
     apex will be added. The contours will be sorted in order along a common axis with the largest topmost since this
@@ -816,7 +824,8 @@ def generateHemisphereVolume(name,contours,refine, startpos, apex=None,reinterpo
 def generateImageMaskRange(process,contours,contourtimes,planes,images,labelfunc):
     comp=compile(labelfunc,'labelfunc','eval')
     func=lambda pt,img,contours:float(eval(comp))
-
+    imagetimes=sorted(set(i.timestep for i in images))
+    
     for i in process.prange():
         img=images[i]
         img.img.fill(0)
@@ -825,7 +834,9 @@ def generateImageMaskRange(process,contours,contourtimes,planes,images,labelfunc
         # collect the contours that are on this image and transform them to the image reference space
         imgcontours=[]
         for con,ctime,plane in zip(contours,contourtimes,planes):
-            if eidolon.equalsEpsilon(ctime,img.timestep) and contourOnPlane(con,img.position,img.norm):
+            nearestts=min(imagetimes,key=lambda i:abs(ctime-i))
+            
+            if equalsEpsilon(nearestts,img.timestep) and contourOnPlane(con,img.position,img.norm):
                 transcon=[(trans*c)*vec3(1,1) for c in con]
                 box=BoundBox(transcon)
                 box=BoundBox([box.minv-vec3(0,0,1),box.maxv+vec3(0,0,1)])
@@ -1465,7 +1476,14 @@ class SegmentPlugin(ScenePlugin):
 
         if refine>1:
             elemtype=elemtype or ElemType.Line1PCR
-            contours=[reinterpolateCircularContour(c,elemtype,vec3.X(),refine,len(c)*refine) for c in contours]
+            newcontours=[]
+            
+            for c in contours:
+                startdir=getContourRelativeDir([c],vec3())
+                newcontours.append(reinterpolateCircularContour(c,elemtype,startdir,refine,len(c)*refine))
+            
+            contours=newcontours
+            #contours=[reinterpolateCircularContour(c,elemtype,vec3.X(),refine,len(c)*refine) for c in contours]
         
         mask=generateImageMask(name,contours,times,template,labelfunc,task)
         mask.source=None

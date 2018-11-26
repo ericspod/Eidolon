@@ -3320,6 +3320,12 @@ public:
 	/// Returns the distance from `v' to the projection of `v' on the ray, which is at getPosition(distTo(v)).
 	real distTo(const vec3 v) const { return dir.dot(v-pos); }
 	
+	/// Returns true if the ray is on the plane defined by the position `planept' and normal `planenorm'.
+	bool onPlane(const vec3& planept, const vec3& planenorm) const 
+	{ 
+	    return pos.onPlane(planept,planenorm) && (pos+dir).onPlane(planept,planenorm); 
+	}
+	
 	/**
 	 * Returns the `t' value where the ray intersects the plane defined by the given position and normal. If the
 	 * ray points away from the plane, the result is negative. If the ray is parallel with the plane and above it
@@ -3430,8 +3436,17 @@ public:
 	real intersectsLineSeg(const vec3& v1, const vec3& v2) const
 	{
 		real dist=intersectsPlane(v1,pos.planeNorm(v1,v2).cross(v2-v1));
-		if(dist>=0 && dist<realInf && equalsEpsilon(getPosition(dist).lineDist(v1,v2),0))
-				return dist;
+		
+		if(dist<0 || dist==realInf)
+		    return -1;
+		
+		vec3 lpos=getPosition(dist);
+		
+		if(lpos==v1 || lpos==v2 || equalsEpsilon(lpos.lineDist(v1,v2),0))
+		    return dist;
+		
+		//if(dist>=0 && dist<realInf && equalsEpsilon(lpos.lineDist(v1,v2),0))
+		//		return dist;
 		
 		return -1;
 	}

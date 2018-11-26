@@ -584,6 +584,9 @@ cdef class Ray:
 
     def distTo(self,vec3 v):
         return self.val.distTo(v.val)
+        
+    def onPlane(self,vec3 planept,vec3 planenorm):
+        return self.val.onPlane(planept.val,planenorm.val)
 
     def intersectsAABB(self,vec3 minv, vec3 maxv):
         cdef realpair r=self.val.intersectsAABB(minv.val,maxv.val)

@@ -412,6 +412,8 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
         void setDirection(vec3 &v) except +ValueError
 
         real distTo(const vec3 v) const
+        
+        bint onPlane(const vec3& planept, const vec3& planenorm) const
 
         realpair intersectsAABB(const vec3& minv, const vec3& maxv) const
         realpair intersectsSphere(const vec3& center, real rad) const

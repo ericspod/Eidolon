@@ -1601,7 +1601,7 @@ class SceneManager(TaskQueue):
         self._collect()
         
     def clearScene(self):
-        '''Removes all any Project and all SceneObject objects from the scene.'''
+        '''Removes any Project and all SceneObject objects from the scene.'''
         
         self.deleteProjectObj()
         

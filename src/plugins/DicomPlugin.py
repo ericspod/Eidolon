@@ -36,6 +36,7 @@ import itertools
 from collections import OrderedDict, namedtuple
 from random import randint
 import numpy as np
+from io import BytesIO
 
 try:
     from StringIO import StringIO
@@ -238,7 +239,7 @@ def loadDicomZipFile(filename, includeTags=False):
     
     with zipfile.ZipFile(filename) as z:
         for n in z.namelist():
-            s=StringIO.StringIO(z.read(n))
+            s=BytesIO(z.read(n))
             try:
                 ds=read_file(s)
             except:
@@ -346,6 +347,70 @@ def isPhaseImage(image):
 
     return phasevalue1 in imagetype or phasevalue2 in imagetype
 
+
+def extractOverlay(image):
+    '''
+    Given a SharedImage with its Dicom tags present, extract the overlay data and assign it to the image matrix of the
+    returned copy of `image'. If `image' doesn't have overlay data a blank copy of it is returned instead.
+    '''    
+    overlayData=Tag(0x60003000)
+    overlayRows=Tag(0x60000010)
+    overlayCols=Tag(0x60000011)
+    overlayOrig=Tag(0x60000050)
+    overlayType=Tag(0x60000040)
+    overlayBits=Tag(0x60000100)
+
+    tdesc,otype=image.tags.get(overlayType,(None,None))
+    _,obits=image.tags.get(overlayBits,(None,None))
+    
+    out=image.clone()
+    out.index=image.index
+    out.tags=image.tags
+    out.imageType=image.imageType
+    out.isSpatial=True
+    out.seriesID=image.seriesID
+    out.img.fill(0)
+    out.setMinMaxValues(0,0)
+        
+    if otype=='G' and obits==1:
+        rows=int(image.tags[overlayRows][1])
+        cols=int(image.tags[overlayCols][1])
+        y,x=image.tags[overlayOrig][1]
+        odat=image.tags[overlayData][1]
+        
+        
+#        dat=np.fromstring(odat,np.uint8)
+#        dat=np.unpackbits(dat).reshape(rows,cols)
+#        
+#        # swap unpacked bits around since they get stored in the wrong order
+#        for c in range(0,cols,8):
+#            dat[:,c:c+8]=np.fliplr(dat[:,c:c+8])
+        
+        
+        
+#        n_bits=8
+#        decoded_linear = np.zeros(len(odat)*n_bits)
+#        
+#        # Decoding data. Each bit is stored as array element
+#        for i in range(1,len(odat)):
+#            for k in range (0,n_bits):
+#                byte_as_int = ord(odat[i]) 
+#                decoded_linear[i*n_bits + k] = (byte_as_int >> k) & 0b1
+#        
+#        dat = np.reshape(decoded_linear,[rows,cols])
+        
+        
+        
+        dat=np.frombuffer(odat, dtype=np.uint8)
+        dat=np.unpackbits(dat)[:rows*cols] # truncate padding
+        dat=dat.reshape((-1,8)) # reshape to one byte's values per row
+        dat=np.fliplr(dat) # flip byte order
+        dat=dat.reshape((rows, cols)) # reshape to final
+        
+        out.img[y-1:y+rows,x-1:x+cols]=dat
+        out.setMinMaxValues(dat.min(),dat.max())
+        
+    return out
 
 def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,includeTags=False):
     '''
