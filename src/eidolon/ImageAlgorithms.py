@@ -93,7 +93,7 @@ def rescaleArray(arr,minv=0.0,maxv=1.0,dtype=np.float32):
 
 
 @contextlib.contextmanager
-def processImageNp(imgobj,writeBack=False,dtype=np.float):
+def processImageNp(imgobj,writeBack=False,dtype=np.float32):
     '''
     Given an ImageSceneObject instance `imgobj', this manager yields the 4D numpy array of type `dtype' containing the 
     image data in XYZT (column/row/depth/time) dimensional ordering. This allows the array to be modified which is then 

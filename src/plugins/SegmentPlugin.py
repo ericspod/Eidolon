@@ -51,18 +51,6 @@ SegViewPoints=enum(
 )
 
 
-class SegPropertyWidget(QtWidgets.QWidget,Ui_SegObjProp):
-    def __init__(self, parent=None):
-        QtWidgets.QWidget.__init__(self,parent)
-        self.setupUi(self)
-
-
-class Seg2DWidget(QtWidgets.QWidget,Ui_Seg2DView):
-    def __init__(self,parent=None):
-        QtWidgets.QWidget.__init__(self,parent)
-        self.setupUi(self)
-
-
 def getContourPlane(contour):
     '''
     Returns the plane definition for the contour points `contour'. The (center,normal) pair is the barycenter of the
@@ -463,7 +451,7 @@ def generateApexContours(contours,scale=0.5,givenapex=None):
     # define a middle ring of control points as the median between the initial apex point and the last contour
     midring=[eidolon.lerp(0.5,i,initialapex)+planeshift for i in c1]
     # define an inverted or crossed-over ring segment to allow interpolation to cross over the xi_2=1 boundary
-    invertring=[midring[(clen/2+i)%clen] for i in range(clen)]
+    invertring=[midring[(clen//2+i)%clen] for i in range(clen)]
 
     return finalapex,[midring,[finalapex]*clen,invertring]
 
@@ -878,11 +866,21 @@ def generateImageMask(name,contours,contourtimes,template,labelfunc='1',task=Non
 
     generateImageMaskRange(len(mask.images),proccount,task,contours,contourtimes,planes,mask.images,labelfunc)
     mask.setShared(False)
-
-    for i in mask.images:
-        i.imgmin,i.imgmax=eidolon.minmaxMatrixReal(i.img)
+    mask.calculateImageRange()
 
     return mask
+
+
+class SegPropertyWidget(QtWidgets.QWidget,Ui_SegObjProp):
+    def __init__(self, parent=None):
+        QtWidgets.QWidget.__init__(self,parent)
+        self.setupUi(self)
+
+
+class Seg2DWidget(QtWidgets.QWidget,Ui_Seg2DView):
+    def __init__(self,parent=None):
+        QtWidgets.QWidget.__init__(self,parent)
+        self.setupUi(self)
 
 
 class LVSeg2DMixin(eidolon.DrawContourMixin):
@@ -1437,7 +1435,7 @@ class SegmentPlugin(ScenePlugin):
                 rightpos=vec3(*segobj.get(SegViewPoints._rvAttach,(0,0,0))) # position in the rightwards direction
                 apex=None
 
-                contours=zip(*segobj.enumContours())[0]
+                contours=first(zip(*segobj.enumContours()))
                 contours=[list(itertools.starmap(vec3,c)) for c in contours] # convert to vec3
 
                 for c in contours:
@@ -1587,12 +1585,13 @@ class SegmentPlugin(ScenePlugin):
             msg='Cannot find source image object %r'%obj.get(DatafileParams.srcimage)
         elif len(conmap)==0:
             msg='Contour object is empty.'
-        elif any(l not in (0,1,2) for l in lens):
-            msg='All planes with contours must have 1 or 2 contours only.'
-        elif any(l not in (0,lens[0]) for l in lens):
-            msg='All planes with contours must have the same number of contours.'
-        elif lens[0]==1 and not prop.cavMaskButton.isChecked():
-            msg='Can only generate cavity mask if only 1 contour defined per plane.'
+        elif not prop.oddNumButton.isChecked():
+            if any(l not in (0,1,2) for l in lens):
+                msg='All planes with contours must have 1 or 2 contours only.'
+            elif any(l not in (0,lens[0]) for l in lens):
+                msg='All planes with contours must have the same number of contours.'
+            elif lens[0]==1 and not prop.cavMaskButton.isChecked():
+                msg='Can only generate cavity mask if only 1 contour defined per plane.'
 
         if msg:
             self.mgr.showMsg(msg,'Cannot Generate Mask')
@@ -1603,8 +1602,10 @@ class SegmentPlugin(ScenePlugin):
                 maskfunc='1 if len(contours)==%i else 0'%lens[0] # cavity mask, only put down a pixel if within all contours at once
             elif prop.hemcavButton.isChecked():
                 maskfunc='1'  # hemisphere+cavity mask, only put down a pixel if within any contours
-            else:
+            elif prop.label2Button.isChecked():
                 maskfunc='2 if len(contours)>1 else 3' # 2-label mask, put down 2 for hemisphere and 1 for cavity
+            elif prop.oddNumButton.isChecked():
+                maskfunc='len(contours)%2'
 
             f=self.createImageMask(obj,obj.getName()+'_Mask',imgobj,maskfunc,refine)
             self.mgr.checkFutureResult(f)

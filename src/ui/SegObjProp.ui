@@ -84,7 +84,7 @@
           <string>Name</string>
          </property>
          <property name="textAlignment">
-          <set>AlignLeft|AlignVCenter</set>
+          <set>AlignLeading|AlignVCenter</set>
          </property>
         </column>
         <column>
@@ -92,7 +92,7 @@
           <string>Value</string>
          </property>
          <property name="textAlignment">
-          <set>AlignLeft|AlignVCenter</set>
+          <set>AlignLeading|AlignVCenter</set>
          </property>
         </column>
        </widget>
@@ -427,6 +427,26 @@
         <property name="topMargin">
          <number>5</number>
         </property>
+        <item row="1" column="0">
+         <widget class="QRadioButton" name="hemcavButton">
+          <property name="toolTip">
+           <string>Generate a mask from 1/2 contours representing a filled hemisphere</string>
+          </property>
+          <property name="text">
+           <string>Hemi+Cavity Mask</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QRadioButton" name="label2Button">
+          <property name="toolTip">
+           <string>Generate a mask from 2 contours representing a hemisphere and cavity with different labels</string>
+          </property>
+          <property name="text">
+           <string>2 Label Mask</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QRadioButton" name="cavMaskButton">
           <property name="toolTip">
@@ -450,23 +470,13 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QRadioButton" name="label2Button">
+        <item row="2" column="0">
+         <widget class="QRadioButton" name="oddNumButton">
           <property name="toolTip">
-           <string>Generate a mask from 2 contours representing a hemisphere and cavity with different labels</string>
+           <string>Generate a mask by filling in pixels present within an odd number of contours</string>
           </property>
           <property name="text">
-           <string>2 Label Mask</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QRadioButton" name="hemcavButton">
-          <property name="toolTip">
-           <string>Generate a mask from 1/2 contours representing a filled hemisphere</string>
-          </property>
-          <property name="text">
-           <string>Hemi+Cavity Mask</string>
+           <string>Odd-Number Mask</string>
           </property>
          </widget>
         </item>
@@ -512,17 +522,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QSpinBox" name="marginBox">
-        <property name="toolTip">
-         <string>margin in XY around segmentation bound box</string>
-        </property>
-        <property name="value">
-         <number>5</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
+      <item row="3" column="1">
        <widget class="QPushButton" name="cropButton">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -537,6 +537,39 @@
          <string>Crop Image</string>
         </property>
        </widget>
+      </item>
+      <item row="1" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QSpinBox" name="marginBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>margin in XY around segmentation bound box</string>
+          </property>
+          <property name="maximum">
+           <number>9999</number>
+          </property>
+          <property name="value">
+           <number>5</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>pixels/voxels</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>

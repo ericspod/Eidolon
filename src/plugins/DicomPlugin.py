@@ -378,29 +378,6 @@ def extractOverlay(image):
         y,x=image.tags[overlayOrig][1]
         odat=image.tags[overlayData][1]
         
-        
-#        dat=np.fromstring(odat,np.uint8)
-#        dat=np.unpackbits(dat).reshape(rows,cols)
-#        
-#        # swap unpacked bits around since they get stored in the wrong order
-#        for c in range(0,cols,8):
-#            dat[:,c:c+8]=np.fliplr(dat[:,c:c+8])
-        
-        
-        
-#        n_bits=8
-#        decoded_linear = np.zeros(len(odat)*n_bits)
-#        
-#        # Decoding data. Each bit is stored as array element
-#        for i in range(1,len(odat)):
-#            for k in range (0,n_bits):
-#                byte_as_int = ord(odat[i]) 
-#                decoded_linear[i*n_bits + k] = (byte_as_int >> k) & 0b1
-#        
-#        dat = np.reshape(decoded_linear,[rows,cols])
-        
-        
-        
         dat=np.frombuffer(odat, dtype=np.uint8)
         dat=np.unpackbits(dat)[:rows*cols] # truncate padding
         dat=dat.reshape((-1,8)) # reshape to one byte's values per row
@@ -411,6 +388,7 @@ def extractOverlay(image):
         out.setMinMaxValues(dat.min(),dat.max())
         
     return out
+
 
 def DicomSharedImage(filename,index=-1,isShared=False,rescale=True,dcm=None,includeTags=False):
     '''

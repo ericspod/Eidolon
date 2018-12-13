@@ -316,6 +316,12 @@ class ImageSceneObject(SceneObject):
     def calculateAABB(self,overwrite=False):
         if overwrite or not self.aabb:
             self.aabb=BoundBox(Utils.matIter(s.getCorners() for s in self.images))
+            
+    def calculateImageRange(self):
+        self.imagerange=None
+        
+        for i in self.images:
+            i.setMinMaxValues(*minmaxMatrixReal(i.img))
 
     def clear(self):
         for i in self.images:
