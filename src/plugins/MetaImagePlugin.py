@@ -17,8 +17,16 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-from eidolon import *
+import eidolon
+from eidolon import (
+    enum, ImageScenePlugin, taskroutine, ensureExt, copyfileSafe, renameFile, splitPathExt, 
+    Future, vec3, rotator, ImageSceneObject,ImageSceneObjectRepr
+)
+
 import zlib
+import os
+import math
+import numpy as np
 
 
 MetaImageTypes=enum(
@@ -34,6 +42,7 @@ MetaImageTypes=enum(
     ('MET_ULONG','L'),  # C equivalent: unsigned long long or uint64_t
     desc='Maps the MetaImage pixel type to the equivalent Numpy datatype'
 )
+
 
 class MetaImagePlugin(ImageScenePlugin):
     # this defines the header ordering which appears to be sacred to some software
@@ -56,7 +65,7 @@ class MetaImagePlugin(ImageScenePlugin):
             metaload=mgr.conf.get('args','--metaimg').split(',')
             filereprs=[]
             for m in metaload:
-                if m in ReprType and len(filereprs)>0:
+                if m in eidolon.ReprType and len(filereprs)>0:
                     filereprs[-1][1]=m
                 else:
                     filereprs.append([m,None])
@@ -96,7 +105,7 @@ class MetaImagePlugin(ImageScenePlugin):
             copyfileSafe(files[1],os.path.join(sdir,os.path.basename(files[1])),overwrite)
 
     def renameObjFiles(self,obj,oldname,overwrite=False):
-        assert isinstance(obj,SceneObject) and obj.plugin==self
+        assert isinstance(obj,eidolon.SceneObject) and obj.plugin==self
         oldpath=obj.source['filename']
         rawfile=ensureExt(oldpath,'.raw',True)
         if os.path.isfile(rawfile):
@@ -128,12 +137,12 @@ class MetaImagePlugin(ImageScenePlugin):
             with f:
                 filename=Future.get(filename)
                 basename=name or os.path.basename(filename).split('.')[0]
-                name=uniqueStr(basename,[o.getName() for o in self.mgr.enumSceneObjects()]) # choose object name based on file name
+                name=eidolon.uniqueStr(basename,[o.getName() for o in self.mgr.enumSceneObjects()]) # choose object name based on file name
                 hdr={}
                 raw=''
 
                 # read each line of data, lines that don't have 2 nulls are header, all others data
-                with open(filename,'rb') as o:
+                with open(filename,'r') as o:
                     line=o.readline()
                     while line!='' and not _isBinaryLine(line): # lines that don't have 2 nulls are header lines
                         k,v=line.split('=')
@@ -192,7 +201,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 hdr['datfile']=datfile
                 hdr['filename']=filename
 
-                dat=np.ndarray(dimsize,dtype=np.dtype(MetaImageTypes[elemtype]),buffer=raw,order='F')
+                dat=np.ndarray(dimsize,dtype=np.dtype(MetaImageTypes[elemtype]),buffer=raw.encode(),order='F')
                 #dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
@@ -280,21 +289,27 @@ class MetaImagePlugin(ImageScenePlugin):
                 dat=dat[:,:,::-1,...] # since the top corner is the origin, invert the Z axis in the matrix
                 dat=np.squeeze(dat)
 
-                with open(path,'wb') as o:
+                with open(path,'w') as o:
                     for k in hdrnames:
                         v=hdr[k]
-                        if isinstance(v,str) or not isIterable(v):
+                        if isinstance(v,str) or not eidolon.isIterable(v):
                             sv=str(v)
                         else:
                             sv=' '.join(map(str,hdr[k]))
                         o.write('%s = %s\n'%(k,sv))
 
-                    if isOneFile:
-                        o.write(dat.tostring(order='F'))
-
-                if not isOneFile:
-                    with open(datfile,'wb') as o:
-                        o.write(dat.tostring(order='F'))
+#                    if isOneFile:
+#                        o.write(dat.tostring(order='F'))
+#
+#                if not isOneFile:
+#                    with open(datfile,'wb') as o:
+#                        o.write(dat.tostring(order='F'))
+                        
+                if isOneFile:
+                    datfile=path
+                    
+                with open(datfile,'ab' if isOneFile else 'wb') as o:
+                    o.write(dat.tostring(order='F'))
 
                 f.setObject((hdr,dat))
 
@@ -350,7 +365,7 @@ class MetaImagePlugin(ImageScenePlugin):
             else:
                 script= "%(varname)s=%(pname)s.createRepr(ReprType._%(reprtype)s,imgmat=%(matname)s)\n"
 
-        return setStrIndent(script % args).strip()+'\n'
+        return eidolon.setStrIndent(script % args).strip()+'\n'
 
 
-addPlugin(MetaImagePlugin())
+eidolon.addPlugin(MetaImagePlugin())
