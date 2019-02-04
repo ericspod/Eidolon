@@ -20,7 +20,7 @@
 import eidolon
 import multiprocessing
 
-eidolon.configEnviron() # configure environment variables before attempting to load plugins
+#eidolon.configEnviron() # configure environment variables before attempting to load plugins
 
 # necessary for now to include plugins here for multiprocessing
 import plugins.X4DFPlugin

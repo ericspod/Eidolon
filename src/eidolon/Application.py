@@ -41,20 +41,20 @@ if py3:
 else:
 	from SceneManager import SceneManager, LightType, globalPlugins, createSceneMgr
 
-from .__init__ import __version__, APPDIRVAR, CONFIGFILE
+from .__init__ import __version__, CONFIGFILE #APPDIRVAR
 
 
-def configEnviron():
-    '''
-    Set the APPDIR environment variable to the application directory if not set. This uses the sys._MEIPASS member
-    defined by PyInstaller if present, otherwise use the filename of this script to work it out. 
-    '''
-    if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
-        if getattr(sys,'_MEIPASS',None):
-            os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
-        else:
-            scriptdir= os.path.dirname(os.path.abspath(__file__))
-            os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
+#def configEnviron():
+#    '''
+#    Set the APPDIR environment variable to the application directory if not set. This uses the sys._MEIPASS member
+#    defined by PyInstaller if present, otherwise use the filename of this script to work it out. 
+#    '''
+#    if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
+#        if getattr(sys,'_MEIPASS',None):
+#            os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
+#        else:
+#            scriptdir= os.path.dirname(os.path.abspath(__file__))
+#            os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
             
 
 def readConfig(configfile,conf):
@@ -99,7 +99,7 @@ def generateConfig(inargs):
     configfile=''
     
     # set configuration default values for the current platform, these are overridden below when the config file is read
-    conf.set(platformID,APPDIRVAR,appdir) # store Eidolon's root directory, this is './' if the global variable isn't present
+#    conf.set(platformID,APPDIRVAR,appdir) # store Eidolon's root directory, this is './' if the global variable isn't present
     conf.set(platformID,ConfVars.resdir,appdir+'/res/') # store the resource directory
     conf.set(platformID,ConfVars.shmdir,'/dev/shm' if platformID=='Linux' else appdir+'/.shm/') # store shared memory segment ref count file directory
     conf.set(platformID,ConfVars.rtt_preferred_mode,'FBO') # PBO, PBuffer, Copy
@@ -212,13 +212,13 @@ def generateConfig(inargs):
     return conf
 
 
-def initDefault(conf):
+def initDefault(conf,initGui=True):
     '''
     Initialize the default components of Eidolon. This sets up tracing, concurrency, inits the UI, sets the
     style sheet, creates the main window, and finally creates the SceneManager. Returns the main window and manager.
     '''
     userappdir=conf.get(platformID,ConfVars.userappdir)
-    appdir=conf.get(platformID,APPDIRVAR)
+    appdir=Utils.getAppDir() #conf.get(platformID,APPDIRVAR)
     
     if userappdir and not os.path.exists(userappdir):
         Utils.printFlush('Creating user directory %r'%userappdir)
@@ -244,36 +244,40 @@ def initDefault(conf):
     # initialize the singleton instance of the ProcessServer type using the specified CPU count or the actual count if not present
     Concurrency.ProcessServer.createGlobalServer(int(conf.get(platformID,ConfVars.maxprocs) or Concurrency.cpu_count()))
 
-    # initialize the UI, for Qt this is creating the QApplication object
-    app=VisualizerUI.initUI()
-
-    if conf.hasValue(platformID,ConfVars.uistyle):
-        app.setStyle(conf.get(platformID,ConfVars.uistyle))
-
-    # If a stylesheet is specified, try to find it relative to the APPDIR directory if it isn't an absolute path,
-    # either way use it as the application-wide stylesheet.
-    if conf.hasValue(platformID,ConfVars.stylesheet):
-        sheet=conf.get(platformID,ConfVars.stylesheet)
+    if initGui:
+        # initialize the UI, for Qt this is creating the QApplication object
+        app=VisualizerUI.initUI()
+    
+        if conf.hasValue(platformID,ConfVars.uistyle):
+            app.setStyle(conf.get(platformID,ConfVars.uistyle))
+    
+        # If a stylesheet is specified, try to find it relative to the APPDIR directory if it isn't an absolute path,
+        # either way use it as the application-wide stylesheet.
+        if conf.hasValue(platformID,ConfVars.stylesheet):
+            sheet=conf.get(platformID,ConfVars.stylesheet)
+            try:
+                if not os.path.isabs(sheet):
+                    sheet=os.path.join(appdir,sheet)
+    
+                with open(sheet) as s:
+                    app.setStyleSheet(s.read())
+            except:
+                pass
+    
+        # attempt to set the window size based on config values, default to 1200x800 if the format is wrong
         try:
-            if not os.path.isabs(sheet):
-                sheet=os.path.join(conf.get(platformID,APPDIRVAR),sheet)
-
-            with open(sheet) as s:
-                app.setStyleSheet(s.read())
+            size=conf.get(platformID,ConfVars.winsize).split()
+            width=int(size[0])
+            height=int(size[1])
         except:
-            pass
-
-    # attempt to set the window size based on config values, default to 1200x800 if the format is wrong
-    try:
-        size=conf.get(platformID,ConfVars.winsize).split()
-        width=int(size[0])
-        height=int(size[1])
-    except:
-        width=1200
-        height=800
+            width=1200
+            height=800
+            
+        # create the main window and the manager object
+        win=VisualizerUI.createVizWin(conf,width,height)
+    else:
+        win=None # no GUI, every other part of Eidolon should expect this to be None in this case
         
-    # create the main window and the manager object
-    win=VisualizerUI.createVizWin(conf,width,height)
     mgr=createSceneMgr(win,conf)
 
     return win,mgr
@@ -400,9 +404,16 @@ def initDefaultAssets(mgr):
 
 def defaultMain(args=None):
     '''Default entry point for the application, calls the standard sequence of init steps and then starts the UI.'''
-    conf=generateConfig(args if args else sys.argv[1:])
+    conf=generateConfig(args or sys.argv[1:])
     win,mgr=initDefault(conf)
     initDefaultAssets(mgr)
     mgr.loadFilesTask(*conf.get('args','files').split('|'))
     VisualizerUI.execUI()
+    
 
+def noGuiMain(args=[]):
+    '''Default entry point for the application, calls the standard sequence of init steps and then starts the UI.'''
+    conf=generateConfig(args)
+    _,mgr=initDefault(conf,False)
+    initDefaultAssets(mgr)
+    mgr.loadFilesTask(*conf.get('args','files').split('|'))

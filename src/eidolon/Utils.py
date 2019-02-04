@@ -1092,7 +1092,7 @@ def getAppDir():
     else:
         import __init__
         
-    return os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
+    return __init__.__appdir__ # os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
 
 
 def setLogging(logfile='eidolon.log',filemode='a'):

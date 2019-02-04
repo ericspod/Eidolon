@@ -1144,6 +1144,9 @@ class SceneManager(TaskQueue):
         self.callThreadSafe(self.evtHandler._triggerEvent,name,*args)
 
     def createCamera(self,name=None,isSecondary=False):
+        if not self.scene:
+            return None
+        
         name=name or 'camera'
         if isSecondary:
             cam=self.scene.createCamera(name,0,0,0,0)
@@ -1162,6 +1165,9 @@ class SceneManager(TaskQueue):
         Creates main camera if none exist, creates a AxesCameraController object which is assed to self.controller and
         self.singleController, and is then returned. This object is used to control the main camera as the single view.
         '''
+        if not self.scene:
+            return None
+        
         if self.cameras==[]:
             self.cameras.append(self.scene.createCamera("main")) # camera 0 is the main camera that is never deleted
 
@@ -1228,10 +1234,13 @@ class SceneManager(TaskQueue):
     def setAmbientLight(self,col):
         '''Sets the scene's ambient light value.'''
         col=color(*col)
-        self.scene.setAmbientLight(col)
         self.ambientColor=col
+        
+        if self.scene:
+            self.scene.setAmbientLight(col)
+            
         if self.win:
-            self.win.callFuncUIThread(setColorButton,col,self.win.chooseAmbient)
+            self.callThreadSafe(setColorButton,col,self.win.chooseAmbient)
 
         self.repaint()
 
@@ -1246,7 +1255,7 @@ class SceneManager(TaskQueue):
         self.backgroundColor=col
 
         if self.win:
-            self.win.callFuncUIThread(setColorButton,col,self.win.chooseBackground)
+            self.callThreadSafe(setColorButton,col,self.win.chooseBackground)
 
         self.repaint()
 

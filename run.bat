@@ -13,10 +13,10 @@ IF "%InstallPath%" == "" FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY HKLM\SOFTW
 IF [%InstallPath%] == [] SET InstallPath=C:\Python36\
 
 :: PATH is needed for the DLL the render links to and the renderer plugin DLLs
-SET PATH=%APPDIR%EidolonLibs\win64_mingw\bin;%PATH%
+:: SET PATH=%APPDIR%EidolonLibs\win64_mingw\bin;%PATH%
 
 :: PYTHONPATH points to the source directory which contains the modules composing the framework
-SET PYTHONPATH=%APPDIR%src
+SET PYTHONPATH=%APPDIR%src;%PYTHONPATH%
 
 %InstallPath%\python.exe "%APPDIR%main.py" %*
 
