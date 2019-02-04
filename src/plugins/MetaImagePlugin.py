@@ -187,6 +187,7 @@ class MetaImagePlugin(ImageScenePlugin):
                     
                 if datfile=='LOCAL':
                     datfile=filename
+                    raw=raw.encode()
                 else:
                     datfile=os.path.join(os.path.split(filename)[0],datfile)
                     with open(datfile,'rb') as o:
@@ -201,7 +202,7 @@ class MetaImagePlugin(ImageScenePlugin):
                 hdr['datfile']=datfile
                 hdr['filename']=filename
 
-                dat=np.ndarray(dimsize,dtype=np.dtype(MetaImageTypes[elemtype]),buffer=raw.encode(),order='F')
+                dat=np.ndarray(dimsize,dtype=np.dtype(MetaImageTypes[elemtype]),buffer=raw,order='F')
                 #dat=eidolon.transposeRowsColsNP(dat) # transpose from row-column to column-row
 
                 obj=self.createObjectFromArray(name,dat,interval,toffset,position,rot,spacing,task=task)
@@ -298,13 +299,6 @@ class MetaImagePlugin(ImageScenePlugin):
                             sv=' '.join(map(str,hdr[k]))
                         o.write('%s = %s\n'%(k,sv))
 
-#                    if isOneFile:
-#                        o.write(dat.tostring(order='F'))
-#
-#                if not isOneFile:
-#                    with open(datfile,'wb') as o:
-#                        o.write(dat.tostring(order='F'))
-                        
                 if isOneFile:
                     datfile=path
                     
