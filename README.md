@@ -114,3 +114,6 @@ This tool does nothing else but render uncompressed Dicom images in a 2D window 
 | ![](python-powered-w-140x56.png) | ![](Ogre-logo.png) | ![](Python_and_Qt.png) | ![](numpyscipy.png) | ![](kcl.png) | 
 
 Copyright (c) 2016 Eric Kerfoot <eric.kerfoot@kcl.ac.uk>, King's College London, all rights reserved
+
+This research was partly supported by the National Institute for Health Research (NIHR) Biomedical Research Centre (BRC) at Guy's and St Thomas' NHS Foundation Trust.
+Views expressed are those of the authors and not necessarily of the NHS, the NIHR, or the Dept. of Health.
