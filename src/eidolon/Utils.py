@@ -553,7 +553,6 @@ class MutableDict(collections.MutableMapping, dict):
         return dict.values(self)
     
     def items(self):
-        #return dict.items(self)
         for k,v in dict.items(self):
             yield self.realkeys[k],v
             
@@ -561,6 +560,29 @@ class MutableDict(collections.MutableMapping, dict):
         return self.realkeys.values()
     
 
+class namedrecord(object):
+    '''Creates a mutable record type by converting non-callable class members to object members.'''
+    def __init__(self,*vals, **kwargs):
+        allmembers=inspect.getmembers(self)
+        membervals=[i for i in allmembers if not i[0].startswith('__') and not callable(getattr(self,i[0]))]
+        self._members=tuple(i for i,_ in membervals)
+        
+        for i,(n,v) in enumerate(membervals):
+            setattr(self,n,vals[i] if i<len(vals) else v)
+            
+        for k,v in kwargs.items():
+            assert k in self._members
+            setattr(self,k,v)
+            
+    @property
+    def members(self):
+        return self._members
+    
+    def __iter__(self):
+        for m in self.members:
+            yield getattr(self,m)
+            
+            
 class ObjectLocker(object):
     '''
     This maintains a dictionary relating weak references to threading.RLock objects. This allows a lock to be associated
