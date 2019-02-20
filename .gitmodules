@@ -1,3 +1,3 @@
 [submodule "EidolonLibs"]
-	path = EidolonLibs
+	path = eidolon/EidolonLibs
 	url = https://github.com/ericspod/EidolonLibs.git

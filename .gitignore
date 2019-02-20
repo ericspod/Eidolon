@@ -2,6 +2,7 @@
 #*
 *.pyc
 *.pickle
+**/.ipynb_checkpoints
 **/build/**
 .DS_Store
 screen.png

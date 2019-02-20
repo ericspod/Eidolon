@@ -31,11 +31,10 @@ else ifeq ($(findstring CYGWIN,$(KERNEL_NAME)),CYGWIN)
 endif
 
 LIB_HOME = ./EidolonLibs/$(PLAT)
-SRC=./src
-RESRC=$(SRC)/renderer
-PYSRC=$(SRC)/eidolon
-PLUGINS=$(SRC)/plugins
-UI=$(SRC)/ui
+PYSRC=./eidolon
+RESRC=$(PYSRC)/renderer
+PLUGINS=$(PYSRC)/plugins
+UI=$(PYSRC)/ui
 
 PYTHON=$(shell which python)
 PYINST?=pyinstaller
@@ -62,7 +61,7 @@ CYTHONVER=$(shell $(PYTHON) -c 'import cython;print(cython.__version__)')
 all: header ui renderer pyxlibs
 
 ui:
-	cd $(SRC)/ui && $(PYTHON) setup.py
+	cd $(UI) && $(PYTHON) setup.py
     
 renderer:
 	cd $(RESRC) && $(PYTHON) setup.py build_ext --inplace
@@ -129,9 +128,9 @@ clean:
 ifeq ($(PLAT),win64_mingw)
 	rm -rf $(SRC)/*/*.pyd
 else ifeq ($(PLAT),osx)
-	rm -rf $(SRC)/*/*.so.osx
+	rm -rf $(SRC)/*/*darwin.so
 else
-	rm -rf $(SRC)/*/*.so.linux 
+	rm -rf $(SRC)/*/*linux-gnu.so 
 endif
 
 header:
