@@ -870,7 +870,7 @@ class SceneManager(TaskQueue):
 
         self.scriptlocals['scriptdir']=os.path.split(os.path.abspath(filename))[0]+os.path.sep
         self.scriptlocals['task']=self.getCurrentTask()
-
+        
         scriptlocals=self.scriptlocals
         if not updateLocals: # if we're not updating local variables, copy `scriptlocals' so the stored version isn't changed
             scriptlocals=dict(scriptlocals)
@@ -1301,6 +1301,9 @@ class SceneManager(TaskQueue):
 
         if not filename or not camera_or_widget or not self.viz or not self.scene:
             return
+        
+        if not Utils.splitPathExt(filename)[2]:
+            filename=filename+'.png'
 
         def takeshot():
             self.repaint(True)
