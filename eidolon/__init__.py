@@ -43,12 +43,6 @@ __appdir__=getattr(sys,'_MEIPASS',os.path.abspath(_scriptdir+'/..'))
 # library directory
 __libdir__=os.path.join(_scriptdir,LIBSDIR)
 
-#if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
-#    if getattr(sys,'_MEIPASS',None):
-#        os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
-#    else:
-#        os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
-
 if isWindows:
     # add the library directory to PATH so that DLLs can be loaded whe the renderer is imported
     addPathVariable('PATH',os.path.abspath(os.path.join(__libdir__,'win64_mingw','bin')))
