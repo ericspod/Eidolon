@@ -1,4 +1,4 @@
-#cython: nonecheck=True
+#cython: nonecheck=True,c_string_type=str, c_string_encoding=ascii, language_level=3
 
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
@@ -1490,7 +1490,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
                         genpairs.add(line)
 
                         edgexis=facexis[face][edge] # get the (face-xis + elem-xis + coeffs) tuple for this edge
-                        coeffs=edgexis[(len(edgexis)/3)*2:]
+                        coeffs=edgexis[(len(edgexis)//3)*2:]
 
                         edgepoints=[elemtype.applyCoeffs(elemnodes,c) for c in coeffs]
 
@@ -1499,7 +1499,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
                         else:
                             edgeradii=defaultradii
 
-                        addSegment(edgepoints,edgeradii,edgexis[(len(edgexis)/3):(len(edgexis)/3)*2],elem,face,isExt)
+                        addSegment(edgepoints,edgeradii,edgexis[(len(edgexis)//3):(len(edgexis)//3)*2],elem,face,isExt)
 
     return shareMatrices(outnodes,outprops,outinds,outext)
 

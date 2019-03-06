@@ -1,4 +1,4 @@
-#cython: nonecheck=True, c_string_type=str, c_string_encoding=ascii
+#cython: nonecheck=True, c_string_type=str, c_string_encoding=ascii, language_level=3
 
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved
@@ -511,8 +511,8 @@ cdef class rotator:
     def __div__(rotator self,v):
         return vec3._new(self.val/(<vec3>v).val)
 
-    def __truediv__(rotator self,v):
-        return vec3._new(self.val/(<vec3>v).val)
+#    def __truediv__(rotator self,v):
+#        return vec3._new(self.val/(<vec3>v).val)
         
     def inverse(self):
         return rotator._new(self.val.inverse())
@@ -705,8 +705,8 @@ cdef class transform:
     def __div__(transform self,vec3 v):
         return vec3._new(self.val/v.val)
         
-    def __truediv__(transform self,vec3 v):
-        return vec3._new(self.val/v.val)
+#    def __truediv__(transform self,vec3 v):
+#        return vec3._new(self.val/v.val)
         
     def getTranslation(self):
         return vec3._new(self.val.getTranslation())

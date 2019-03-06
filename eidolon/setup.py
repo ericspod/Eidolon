@@ -33,6 +33,7 @@ import numpy as np
 scriptdir= os.path.dirname(os.path.abspath(__file__)) # path of the current file
 libraries=[]
 extra_compile_args=['-w','-O3']
+extra_link_args=[]
 #compiledirs={}
 
 #if sys.version_info.major == 3:
@@ -51,7 +52,8 @@ sysconfig._config_vars['CC']=sysconfig.get_config_var('CC') or 'gcc'
 
 if isDarwin:
     platdir='osx'
-    extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
+    extra_link_args+=['-stdlib=libc++', '-mmacosx-version-min=10.9']
+    extra_compile_args+=['-std=c++11','-mmacosx-version-min=10.9'] # Ogre was compiled with an older version of OSX for compatibility reasons
 elif isWindows:
     platdir='win64_mingw'
     sys.argv.append('--compiler=mingw32') # force the use of mingw, there must be a proper programmatic way
@@ -79,6 +81,7 @@ for i in glob.glob('./*.pyx'):
         include_dirs=includedirs,
         libraries=libraries,
         extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
 #        compiler_directives=compiledirs,
         language='c++'
     )

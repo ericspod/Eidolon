@@ -1,4 +1,4 @@
-#cython: nonecheck=True
+#cython: nonecheck=True,c_string_type=str, c_string_encoding=ascii, language_level=3
 
 # Eidolon Biomedical Framework
 # Copyright (C) 2016-8 Eric Kerfoot, King's College London, all rights reserved

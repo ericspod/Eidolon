@@ -103,8 +103,8 @@ if isDarwin:
     libraries=[] # linking with frameworks and not libraries
 
     # add frameworks to link with
-    extra_link_args+=['-framework', 'Ogre', '-framework','OgreOverlay']
-    extra_compile_args+=['-mmacosx-version-min=10.6.0'] # Ogre was compiled with an older version of OSX for compatibility reasons
+    extra_link_args+=['-stdlib=libc++', '-mmacosx-version-min=10.9','-framework', 'Ogre', '-framework','OgreOverlay']
+    extra_compile_args+=['-std=c++11','-mmacosx-version-min=10.9'] # Ogre was compiled with an older version of OSX for compatibility reasons
 
 elif isWindows:
     platdir='win64_mingw'
@@ -167,6 +167,11 @@ setup(ext_modules=ext)
 
 os.remove('Renderer.cpp')
 shutil.rmtree('build')
+
+# tweak the stupid framework linking stuff
+if isDarwin:
+    os.system('install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @loader_path/../EidolonLibs/osx/bin/Ogre.framework/Versions/1.10.0/Ogre Renderer.cpython-36m-darwin.so')
+    os.system('install_name_tool -change @executable_path/../Frameworks/OgreOverlay.framework/Versions/1.10.0/OgreOverlay @loader_path/../EidolonLibs/osx/bin/OgreOverlay.framework/Versions/1.10.0/OgreOverlay Renderer.cpython-36m-darwin.so')
 
 ## copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 #if not isWindows:
