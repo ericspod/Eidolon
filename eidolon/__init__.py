@@ -35,19 +35,13 @@ CONFIGFILE='config.ini' # config file name
 from eidolon.Utils import isWindows, isLinux, addPathVariable
 
 import os, sys
-scriptdir=os.path.dirname(os.path.abspath(__file__))
+_scriptdir=os.path.dirname(os.path.abspath(__file__))
 
 # the application directory is given by pyinstaller in _MEIPASS, if not present use the directory two levels up
-__appdir__=getattr(sys,'_MEIPASS',os.path.abspath(scriptdir+'/..')) 
+__appdir__=getattr(sys,'_MEIPASS',os.path.abspath(_scriptdir+'/..')) 
 
 # library directory
-__libdir__=os.path.join(scriptdir,LIBSDIR)
-
-#if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
-#    if getattr(sys,'_MEIPASS',None):
-#        os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
-#    else:
-#        os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
+__libdir__=os.path.join(_scriptdir,LIBSDIR)
 
 if isWindows:
     # add the library directory to PATH so that DLLs can be loaded whe the renderer is imported

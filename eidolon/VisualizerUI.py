@@ -302,7 +302,11 @@ def resizeScreenRelative(wind,w,h):
 
 def screenshotWidget(w,filename):
     '''Save a screenshot of the widget `w' to the file `filename'.'''
-    p=QtGui.QPixmap.grabWidget(w)
+    try:
+        p=QtGui.QPixmap.grabWidget(w)
+    except:
+        p=w.grab()
+        
     p.save(filename)
 
 
