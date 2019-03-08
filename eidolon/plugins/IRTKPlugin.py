@@ -187,7 +187,7 @@ class IRTKPluginMixin(object):
         self.Segment=mgr.getPlugin('Segment')
 
         self.serverdir=self.mgr.getUserAppDir()
-        self.irtkdir=os.path.join(getAppDir(),LIBSDIR,'IRTK')
+        self.irtkdir=os.path.join(getLibraryDir(),'IRTK')
 
         self.fixshort=os.path.join(self.irtkdir,'fixshort.txt')
         self.patient1e4=os.path.join(self.irtkdir,'patient_lambda1-1e-4.txt')
@@ -218,16 +218,16 @@ class IRTKPluginMixin(object):
 
         # setup MIRTK variables
         if isWindows:
-            self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Win64')
+            self.mirtkdir=os.path.join(getLibraryDir(),'MIRTK','Win64')
         elif isLinux:
-            self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','Linux')
+            self.mirtkdir=os.path.join(getLibraryDir(),'MIRTK','Linux')
             self.exesuffix=''
             addPathVariable(EnvironVars.LD_LIBRARY_PATH,self.mirtkdir)
         else:
-            self.mirtkdir=os.path.join(getAppDir(),LIBSDIR,'MIRTK','OSX')
+            self.mirtkdir=os.path.join(getLibraryDir(),'MIRTK','OSX')
             addPathVariable(EnvironVars.DYLD_LIBRARY_PATH,self.mirtkdir)
 
-        self.ffd_motion=os.path.join(getAppDir(),LIBSDIR,'MIRTK','ffd_motion.cfg')
+        self.ffd_motion=os.path.join(getLibraryDir(),'MIRTK','ffd_motion.cfg')
 
         self.register=os.path.join(self.mirtkdir,'register')+self.exesuffix
         self.info=os.path.join(self.mirtkdir,'info')+self.exesuffix
@@ -235,6 +235,7 @@ class IRTKPluginMixin(object):
         self.transpts=os.path.join(self.mirtkdir,'transform-points')+self.exesuffix
         self.editimage=os.path.join(self.mirtkdir,'edit-image')+self.exesuffix
         self.decimatesurf=os.path.join(self.mirtkdir,'decimate-surface')+self.exesuffix
+        self.convertdof=os.path.join(self.mirtkdir,'convert-dof')+self.exesuffix
 
     def getCWD(self):
         '''This method must be overridden to return the current working directory (ie. project directory).'''

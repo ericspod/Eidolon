@@ -41,20 +41,7 @@ if py3:
 else:
 	from SceneManager import SceneManager, LightType, globalPlugins, createSceneMgr
 
-from .__init__ import __version__, CONFIGFILE #APPDIRVAR
-
-
-#def configEnviron():
-#    '''
-#    Set the APPDIR environment variable to the application directory if not set. This uses the sys._MEIPASS member
-#    defined by PyInstaller if present, otherwise use the filename of this script to work it out. 
-#    '''
-#    if not os.environ.get(APPDIRVAR): # set the APPDIR environment variable if not set by the run script
-#        if getattr(sys,'_MEIPASS',None):
-#            os.environ[APPDIRVAR]=sys._MEIPASS # pyinstaller support
-#        else:
-#            scriptdir= os.path.dirname(os.path.abspath(__file__))
-#            os.environ[APPDIRVAR]=os.path.abspath(scriptdir+'/../..')
+from .__init__ import __version__, CONFIGFILE
             
 
 def readConfig(configfile,conf):
@@ -98,10 +85,7 @@ def generateConfig(inargs):
     conf=Config()
     configfile=''
     
-    print('appdir',appdir)
-    
     # set configuration default values for the current platform, these are overridden below when the config file is read
-#    conf.set(platformID,APPDIRVAR,appdir) # store Eidolon's root directory, this is './' if the global variable isn't present
     conf.set(platformID,ConfVars.resdir,appdir+'/res/') # store the resource directory
     conf.set(platformID,ConfVars.shmdir,'/dev/shm' if platformID=='Linux' else appdir+'/.shm/') # store shared memory segment ref count file directory
     conf.set(platformID,ConfVars.rtt_preferred_mode,'FBO') # PBO, PBuffer, Copy

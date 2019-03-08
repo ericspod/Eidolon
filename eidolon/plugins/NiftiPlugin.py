@@ -46,6 +46,16 @@ def processNifti(infile,outfile=None):
         outim = nibabel.Nifti1Image(dat, im.affine, im.header)
         nibabel.save(outim,outfile)
     
+    
+def readImageData(infile):
+    '''Read Nifti file `infile' and return the image data array.'''
+    return nibabel.load(infile).get_data()
+
+
+def writeImageData(img,outfile):
+    '''Write array `img' to Nifti file `outfile' with an identity transform and otherwise default header info.'''
+    nibabel.save(nibabel.Nifti1Image(img,np.eye(4)),outfile)
+    
 
 class NiftiPlugin(ImageScenePlugin):
     def __init__(self):

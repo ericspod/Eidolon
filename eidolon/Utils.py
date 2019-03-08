@@ -1108,13 +1108,23 @@ def setTrace():
 
 
 def getAppDir():
-    '''Returns the application's directory as stored in the APPDIRVAR environment variable.'''
+    '''Returns the application's directory as stored in the __init__.__appdir__t variable.'''
     if py3:
         from . import __init__
     else:
         import __init__
         
     return __init__.__appdir__ # os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
+
+
+def getLibraryDir():
+    '''Returns the application's shared object library directory as stored in the __init__.__libdir__ variable.'''
+    if py3:
+        from . import __init__
+    else:
+        import __init__
+        
+    return __init__.__libdir__ # os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
 
 
 def setLogging(logfile='eidolon.log',filemode='a'):
