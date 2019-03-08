@@ -18,9 +18,10 @@ function getFileDir() {
 export APPDIR=$(getFileDir "${BASH_SOURCE[0]}")
 
 export LIBSDIR="$APPDIR/eidolon/EidolonLibs"
+#export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
+
 export PYTHONPATH=$([ -z "$PYTHONPATH" ] && echo "$APPDIR" || echo "$PYTHONPATH:$APPDIR")
-export DYLD_FRAMEWORK_PATH=$LIBSDIR/osx/bin
-export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=$LIBSDIR/linux/bin:$LIBSDIR/IRTK:$LD_LIBRARY_PATH
 
 # generated executable, run this instead of the script
 if [ -f "$APPDIR/Eidolon" ] 

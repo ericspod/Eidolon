@@ -170,8 +170,9 @@ shutil.rmtree('build')
 
 # tweak the stupid framework linking stuff
 if isDarwin:
-    os.system('install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @loader_path/../EidolonLibs/osx/bin/Ogre.framework/Versions/1.10.0/Ogre Renderer.cpython-36m-darwin.so')
-    os.system('install_name_tool -change @executable_path/../Frameworks/OgreOverlay.framework/Versions/1.10.0/OgreOverlay @loader_path/../EidolonLibs/osx/bin/OgreOverlay.framework/Versions/1.10.0/OgreOverlay Renderer.cpython-36m-darwin.so')
+    for so in glob.glob('Renderer.cpython-*-darwin.so'):    
+        os.system('install_name_tool -change @executable_path/../Frameworks/Ogre.framework/Versions/1.10.0/Ogre @loader_path/../EidolonLibs/osx/bin/Ogre.framework/Ogre '+so)
+        os.system('install_name_tool -change @executable_path/../Frameworks/OgreOverlay.framework/Versions/1.10.0/OgreOverlay @loader_path/../EidolonLibs/osx/bin/OgreOverlay.framework/OgreOverlay '+so)
 
 ## copy the created .so file to the temporary filename in Eidolon directory, this will be symlinked by run.sh
 #if not isWindows:
