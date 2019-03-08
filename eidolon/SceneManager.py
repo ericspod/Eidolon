@@ -579,7 +579,7 @@ class SceneManager(TaskQueue):
             fig.setPosition(aabb.center)
             fig.setScale(aabb.maxv-aabb.minv)
 
-        campos=self.cameras[0].getPosition()
+        campos=self.cameras[0].getPosition() if self.cameras else vec3()
 
         for rep,handles in self.handlemap.items(): # transform handles
             for h in handles:
@@ -1251,7 +1251,9 @@ class SceneManager(TaskQueue):
             if not c.isSecondaryCamera():
                 c.setBGColor(col)
 
-        self.callThreadSafe(self.scene.setBGObject,col,True)
+        if self.scene:
+            self.callThreadSafe(self.scene.setBGObject,col,True)
+            
         self.backgroundColor=col
 
         if self.win:
@@ -1336,7 +1338,8 @@ class SceneManager(TaskQueue):
     def repaint(self,renderHighQual=True):
         '''Forces the scene to redraw. if `renderHighQual' is true a high quality render is done.'''
 
-        self.scene.setRenderHighQuality(renderHighQual)
+        if self.scene:
+            self.scene.setRenderHighQuality(renderHighQual)
 
         if self.win:
             self.win.repaintScene()
@@ -1349,7 +1352,9 @@ class SceneManager(TaskQueue):
         self.repaint(True)
 
     def setAlwaysHighQual(self,val):
-        self.scene.setAlwaysHighQuality(val)
+        if self.scene:
+            self.scene.setAlwaysHighQuality(val)
+            
         if self.win:
             setChecked(val,self.win.highqualCheck)
 
@@ -1668,11 +1673,11 @@ class SceneManager(TaskQueue):
 
     def createLight(self,lighttype,name=None,position=vec3(),direction=vec3(1,0,0)):
         assert lighttype in LightType
+        
+        if self.scene is None:
+            return None
 
-        if name==None:
-            name='Light'
-
-        name=uniqueStr(name,[l.name for l in self.lights])
+        name=uniqueStr(name or 'Light',[l.name for l in self.lights])
         sl=SceneLight(self.scene.createLight(),lighttype,name,position,direction)
 
         self.lights.append(sl)

@@ -282,7 +282,8 @@ def initDefaultAssets(mgr):
 
     # create a default directional light that follows the camera
     cl=mgr.createLight(LightType._cdir,'Camera Light')
-    cl.setColor(color(0.25,0.25,0.25))
+    if cl:
+        cl.setColor(color(0.25,0.25,0.25))
 
     res=mgr.conf.get(platformID,ConfVars.resdir)
     
@@ -401,5 +402,5 @@ def noGuiMain(args=[]):
     '''Default entry point for the application, calls the standard sequence of init steps and then starts the UI.'''
     conf=generateConfig(args)
     _,mgr=initDefault(conf,False)
-    initDefaultAssets(mgr)
+    #initDefaultAssets(mgr)
     mgr.loadFilesTask(*conf.get('args','files').split('|'))
