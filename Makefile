@@ -30,8 +30,8 @@ else ifeq ($(findstring CYGWIN,$(KERNEL_NAME)),CYGWIN)
 	PLAT=win64_mingw
 endif
 
-LIB_HOME = ./EidolonLibs/$(PLAT)
 PYSRC=./eidolon
+LIB_HOME = $(PYSRC)/EidolonLibs/$(PLAT)
 RESRC=$(PYSRC)/renderer
 PLUGINS=$(PYSRC)/plugins
 UI=$(PYSRC)/ui
