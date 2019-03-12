@@ -48,9 +48,9 @@ if isWindows:
     addPathVariable('PATH',os.path.abspath(os.path.join(__libdir__,'win64_mingw','bin')))
 elif isLinux:
     import glob,ctypes
-    
+
     # load all linux libraries so that LD_LIBRARY_PATH doesn't need to be set
-    for lib in glob.glob(os.path.join(__libdir__,'linux','lib','*.so*')):
+    for lib in glob.glob(os.path.join(__libdir__,'linux','lib','*.so*')): # will attempt to load libraries twice
         try:
             _=ctypes.cdll.LoadLibrary(lib)
         except OSError:
