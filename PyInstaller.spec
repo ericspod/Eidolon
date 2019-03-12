@@ -31,35 +31,35 @@ datas=[
 	('config.ini','.'), 
 	('tests','tests'), 
 	('tutorial','tutorial'),
-	('EidolonLibs/IRTK','EidolonLibs/IRTK'),
-	('EidolonLibs/python','EidolonLibs/python'),
-	('EidolonLibs/MIRTK/ffd_motion.cfg','EidolonLibs/MIRTK')
+	('eidolon/EidolonLibs/IRTK','eidolon/EidolonLibs/IRTK'),
+	('eidolon/EidolonLibs/python','eidolon/EidolonLibs/python'),
+	('eidolon/EidolonLibs/MIRTK/ffd_motion.cfg','eidolon/EidolonLibs/MIRTK')
 ]
 
 if compat.is_win:
 	binaries=[
-		('EidolonLibs/win64_mingw/bin/cg.dll','.'),
-		('EidolonLibs/win64_mingw/bin/Plugin_CgProgramManager.dll','.'),
-		('EidolonLibs/win64_mingw/bin/RenderSystem_GL.dll','.')
+		('eidolon/EidolonLibs/win64_mingw/bin/cg.dll','.'),
+		('eidolon/EidolonLibs/win64_mingw/bin/Plugin_CgProgramManager.dll','.'),
+		('eidolon/EidolonLibs/win64_mingw/bin/RenderSystem_GL.dll','.')
 	]
 
-	datas.append(('EidolonLibs/MIRTK/Win64','EidolonLibs/MIRTK/Win64'))
+	datas.append(('eidolon/EidolonLibs/MIRTK/Win64','eidolon/EidolonLibs/MIRTK/Win64'))
 	
 elif compat.is_darwin:
 	outname+='.app'
 	hiddenimports+=['appdirs','packaging','packaging.version','packaging.specifiers','packaging.requirements','packaging.utils','cProfile']	
 	datas+=[
-		('EidolonLibs/osx/bin/Ogre.framework','Contents/Frameworks/Ogre.framework'),
-		('EidolonLibs/osx/bin/OgreOverlay.framework','Contents/Frameworks/OgreOverlay.framework'),
-		('EidolonLibs/osx/bin/Cg.framework','Contents/Frameworks/Cg.framework'),
-		('EidolonLibs/osx/bin/Plugin_CgProgramManager.framework','Contents/Frameworks/Plugin_CgProgramManager.framework'),
-		('EidolonLibs/osx/bin/RenderSystem_GL.framework','Contents/Frameworks/RenderSystem_GL.framework'),
-		('EidolonLibs/MIRTK/OSX','EidolonLibs/MIRTK/OSX')
+		('eidolon/EidolonLibs/osx/bin/Ogre.framework','Contents/Frameworks/Ogre.framework'),
+		('eidolon/EidolonLibs/osx/bin/OgreOverlay.framework','Contents/Frameworks/OgreOverlay.framework'),
+		('eidolon/EidolonLibs/osx/bin/Cg.framework','Contents/Frameworks/Cg.framework'),
+		('eidolon/EidolonLibs/osx/bin/Plugin_CgProgramManager.framework','Contents/Frameworks/Plugin_CgProgramManager.framework'),
+		('eidolon/EidolonLibs/osx/bin/RenderSystem_GL.framework','Contents/Frameworks/RenderSystem_GL.framework'),
+		('eidolon/EidolonLibs/MIRTK/OSX','EidolonLibs/MIRTK/OSX')
 	]
 elif compat.is_linux:
 	hiddenimports+=['scipy._lib.messagestream']
-	binaries+=[(f,'.') for f in glob('EidolonLibs/linux/bin/*')]
-	datas.append(('EidolonLibs/MIRTK/Linux','EidolonLibs/MIRTK/Linux'))
+	binaries+=[(f,'.') for f in glob('eidolon/EidolonLibs/linux/bin/*')]
+	datas.append(('eidolon/EidolonLibs/MIRTK/Linux','eidolon/EidolonLibs/MIRTK/Linux'))
 
 a = Analysis(['main.py'],
              pathex=pathex,
