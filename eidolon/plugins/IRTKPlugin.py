@@ -1090,13 +1090,27 @@ class IRTKPluginMixin(object):
             
             if isFrameByFrame:
                 filelists=[]
-                startfile=objnii
-                numProcs=1
+#                startfile=objnii
+#                numProcs=1
+#                
+#                for i,dof in enumerate(trackfiles):
+#                    outfile='out%.4i.nii'%i
+#                    filelists.append((startfile,outfile,dof,-1))
+#                    startfile=outfile
+                    
+                mergeddofs=[trackfiles[0]]
                 
-                for i,dof in enumerate(trackfiles):
-                    outfile='out%.4i.nii'%i
-                    filelists.append((startfile,outfile,dof,-1))
-                    startfile=outfile
+                for i in range(2,len(trackfiles)+1):
+                    outfile='merged%i.dof.gz'%(i-1)
+                    mergeddofs.append(outfile)
+                    args=list(trackfiles[:i])+[outfile]
+                    r=execBatchProgram(self.composedofs,*args,cwd=trackdir,logfile='merged%i.log'%(i-1))
+                    
+                    if r[0]:
+                        raise IOError('Dof merge failed on step %i'%i)
+                        
+                filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(mergeddofs)]
+                
             else:
                 filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(trackfiles)]
                 
