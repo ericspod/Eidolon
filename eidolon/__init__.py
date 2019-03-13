@@ -56,6 +56,7 @@ elif isLinux:
         except OSError:
             pass
 
+
 from .renderer import *
 from .VisualizerUI import *
 from .Concurrency import *
@@ -72,4 +73,7 @@ from .SceneComponents import *
 from .Application import *
 
 
+#def defaultMain():
+#    print(repr(__appdir__),repr(__libdir__),repr(_scriptdir))
+#    print(vec3())
 

@@ -15,17 +15,18 @@
 # 
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
-
-block_cipher = None
-
 from PyInstaller import compat
 from glob import glob
 import platform
 
-pathex=['src']
-binaries=[]
-hiddenimports=['numpy', 'scipy','PyQt4.uic','_struct']
+exename='Eidolon.bin' if compat.is_darwin else 'Eidolon'
 outname='Eidolon'
+
+pathex=['.']
+binaries=[]
+hiddenimports=['numpy', 'scipy','PyQt4.uic','PyQt5.uic','_struct','eidolon','eidolon.renderer','eidolon.plugins','eidolon.ui']
+block_cipher = None
+
 datas=[
 	('res','res'), 
 	('config.ini','.'), 
@@ -73,22 +74,8 @@ a = Analysis(['main.py'],
              win_private_assemblies=False,
              cipher=block_cipher)
              
-pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
              
-exe = EXE(pyz,
-          a.scripts,
-          exclude_binaries=True,
-          name='Eidolon.bin' if compat.is_darwin else 'Eidolon',
-          debug=False,
-          strip=False,
-          upx=True,
-          console=True )
+exe = EXE(pyz, a.scripts, exclude_binaries=True, name=exename, debug=False, strip=False, upx=True, console=True )
           
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               name=outname)
+coll = COLLECT(exe,a.binaries, a.zipfiles, a.datas, strip=False, upx=True, name=outname)
