@@ -297,7 +297,10 @@ class MeasurementView(DrawLineMixin,DrawContourMixin,Camera2DView):
 
         self.handleNames={}
 
-        for mobj in self.sceneobj.enumObjects():
+        for mobj in tuple(self.sceneobj.enumObjects()):
+            if isinstance(mobj,tuple):
+                mobj=Measurement(*mobj)
+                
             self.addMeasurement(mobj)
             
         self.setActiveObject('') # select nothing

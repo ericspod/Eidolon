@@ -1090,29 +1090,21 @@ class IRTKPluginMixin(object):
             
             if isFrameByFrame:
                 filelists=[]
-#                startfile=objnii
-#                numProcs=1
-#                
-#                for i,dof in enumerate(trackfiles):
-#                    outfile='out%.4i.nii'%i
-#                    filelists.append((startfile,outfile,dof,-1))
-#                    startfile=outfile
-                    
                 mergeddofs=[trackfiles[0]]
                 
                 for i in range(2,len(trackfiles)+1):
-                    outfile='merged%i.dof.gz'%(i-1)
+                    os.makedirs(os.path.join(trackdir,'merged'),exist_ok=True)
+                    outfile=os.path.join('merged','merged%.4i.dof.gz'%(i-1))
                     mergeddofs.append(outfile)
                     args=list(trackfiles[:i])+[outfile]
-                    r=execBatchProgram(self.composedofs,*args,cwd=trackdir,logfile='merged%i.log'%(i-1))
+                    r=execBatchProgram(self.composedofs,*args,cwd=trackdir,logfile='merged%.4i.log'%(i-1))
                     
                     if r[0]:
                         raise IOError('Dof merge failed on step %i'%i)
                         
-                filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(mergeddofs)]
+                trackfiles=mergeddofs
                 
-            else:
-                filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(trackfiles)]
+            filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(trackfiles)]
                 
             self.mgr.runTasks(applyMotionTrackTask(self.transimage,trackdir,True,filelists,numProcs=numProcs))
 

@@ -17,22 +17,27 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
+import traceback
 import os.path
-import shutil
 from struct import unpack
 
-from eidolon import *
+import eidolon
+from eidolon import (
+    vec3, Vec3Matrix, IndexMatrix, RealMatrix, PyDataSet, GeomType, ElemType, StdProps, splitPathExt, MeshScenePlugin,
+    MeshSceneObject,SceneObject,SceneObjectRepr, Future, QtWidgets, ScenePlugin, Qt, BasisGenFuncs, toIterable,
+    taskroutine, first, copyfileSafe, getValidFilename, fillList, fillEnumTable
+)
 
 from ..ui import Ui_ObjDialog, Ui_DataDialog, Ui_TDDialog
 
 
-CheartKeywords=enum(
+CheartKeywords=eidolon.enum(
     ('loadargs','Argument values for loading mesh data','(.X filename list,.T filename,ElemType of topology,load sequential or not,# of copies for timesteps,filename of base .X file)'),
     ('datafieldargs','List of argument value for loading fields','(.D filename list,.T file,.D file dimensions,Elemtype of topology,name of spatial topology,load sequential or not)')
 )
 
 def readDataSet(xfile,tfile,typename, isBinary=False):
-    assert typename in MathDef.ElemType, 'Unknown typename '+typename
+    assert typename in ElemType, 'Unknown typename '+typename
 
     xdata,xheader=readXFile(open(xfile),splitPathExt(xfile)[1],isBinary)
     tdata,theader=readTFile(open(tfile),typename,splitPathExt(tfile)[1],isBinary)
@@ -45,7 +50,7 @@ def readXFile(data,buffname, isBinary=False,buff=None,task=None):
 
 
 def readTFile(data, typename,buffname,isBinary=False,buff=None,task=None):
-    tdata,theader= readCheartBuffer(data,int, MathDef.ElemType[typename].numNodes(),2,isBinary,buff,buffname,task,True)
+    tdata,theader= readCheartBuffer(data,int, ElemType[typename].numNodes(),2,isBinary,buff,buffname,task,True)
     tdata.setType(typename)
     return tdata,theader
 
@@ -186,7 +191,7 @@ def writeCheartBuffer(outfile,header,data,addVal=None):
 
 def guessTopologyType(tfile):
     '''Returns a guess of the (geom,order,basis) values for a given text topology file.'''
-    geom,order,basis=GeomType._Tet,1,BasisGenFuncs._NL # default if `tfile' is not text, has 4 values on the first line, or is otherwise bogus
+    geom,order,basis=GeomType._Tet,1,eidolon.BasisGenFuncs._NL # default if `tfile' is not text, has 4 values on the first line, or is otherwise bogus
 
     if os.path.isfile(tfile) and splitPathExt(tfile)[2]=='.T':
         with open(tfile) as o:
@@ -212,7 +217,7 @@ def guessTopologyType(tfile):
     return geom,order,basis
 
 
-@Concurrency.concurrent
+@eidolon.concurrent
 def loadFileSequenceRange(process,files,typename,dim):
     start=process.startval
     end=process.endval
@@ -235,7 +240,7 @@ def loadFileSequenceRange(process,files,typename,dim):
             buff.setShared(True)
             results.append((buff,header))
         except Exception as e:
-            printFlush(e)
+            eidolon.printFlush(e)
             traceback.print_exc()
             results.append((None,None))
 
@@ -251,12 +256,12 @@ def loadFileSequence(files,typename=None,dim=None,task=None):
     for f in files:
         assert os.path.isfile(f),'File not found:'+f
 
-    proccount=chooseProcCount(len(files),0,10)
+    proccount=eidolon.chooseProcCount(len(files),0,10)
     result=loadFileSequenceRange(len(files),proccount,task,files,typename,dim)
 
     filemap={}
 
-    for buff,header in listSum(result.values()):
+    for buff,header in eidolon.listSum(result.values()):
         filename=buff.meta(StdProps._filename)
         filemap[filename]=(buff,header)
 
@@ -526,7 +531,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
         newname=name or oldname
         prefixpath=os.path.join(dirpath,newname)
         
-        inds=max(filter(isSpatialIndex,obj.datasets[0].indices.values()),key=len)
+        inds=max(filter(eidolon.isSpatialIndex,obj.datasets[0].indices.values()),key=len)
         indsname=inds.getName()
         
         result=[prefixpath+'.T']
@@ -538,7 +543,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
             
         for fieldname in obj.getFieldNames():
             dfs=toIterable(obj.getDataField(fieldname))
-            spatial=dfs[0].meta(StdProps._spatial)
+#            spatial=dfs[0].meta(StdProps._spatial)
 
             # write out topology if needed
             topo=dfs[0].meta(StdProps._topology)
@@ -554,7 +559,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
             for i,df in enumerate(dfs):
                 dfname=getValidFilename(os.path.splitext(df.getName())[0])
                 if dfname.startswith(newname):
-                    dfprefix=os.path.join(prefixdir,dfname)
+                    dfprefix=os.path.join(dirpath,dfname)
                 else:
                     dfprefix=prefixpath+'_'+dfname
 
@@ -584,7 +589,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                 else:
                     newbasename='%s_%s'%(newname,newbasename)
                     
-                return renameFile(f,newbasename,overwriteFile=overwrite)
+                return eidolon.renameFile(f,newbasename,overwriteFile=overwrite)
 
         # if a topology's name has `oldname' in it, store the mapping between names in indexnames
         for ds in obj.datasets:
@@ -678,7 +683,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
         configSection=kwargs.get('configSection',False)
         namemap=kwargs.get('namemap',{})
         varname=namemap[obj]
-        scriptdir=kwargs['scriptdir']
+#        scriptdir=kwargs['scriptdir']
         convertpath=kwargs['convertPath']
 
         if isinstance(obj,MeshSceneObject):
@@ -738,7 +743,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                 args={'varname':varname,'timesteps':obj.getTimestepList()}
                 script+='%(varname)s.setTimestepList(%(timesteps)r)\n'
 
-            return setStrIndent(script % args).strip()+'\n'
+            return eidolon.setStrIndent(script % args).strip()+'\n'
         else:
             return MeshScenePlugin.getScriptCode(self,obj,**kwargs)
 
@@ -817,7 +822,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                 self.saveSceneObject(filename,obj)
 
     def loadObject(self,filename,name=None,**kwargs):
-        xfile=ensureExt(filename,'.X',True) # guess X filename based on T filename
+        xfile=eidolon.ensureExt(filename,'.X',True) # guess X filename based on T filename
         if not os.path.isfile(xfile):
             raise IOError('Cannot find X file to match %r'%filename)
             
@@ -846,7 +851,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                     basenames=list(map(os.path.basename,xfiles))
                     if tfile:
                         basenames.append(os.path.basename(tfile))
-                    common=getStrListCommonality(basenames)
+                    common=eidolon.getStrListCommonality(basenames)
                     if common>3:
                         if basenames[0][common-1]=='.':
                             common-=1
@@ -913,7 +918,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                     
                 if not inds:
                     # choose the largest spatial index, this is a kludge and obviously can cause problems
-                    inds=max(filter(isSpatialIndex,dds[0].indices.values()),key=len)
+                    inds=max(filter(eidolon.isSpatialIndex,dds[0].indices.values()),key=len)
                     indsname=inds.getName()
 
                 # names of topologies and the files they get stored in must match so change the topology names in each of dds
@@ -1006,7 +1011,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                     objname=''
 
                 # if no data topology name given, choose the first spatial topology for this field
-                spatialName=spatialName or first(i.getName() for i in ds.enumIndexSets() if isSpatialIndex(i))
+                spatialName=spatialName or first(i.getName() for i in ds.enumIndexSets() if eidolon.isSpatialIndex(i))
                 toponame=splitPathExt(tfile)[1] if tfile else spatialName
                 ind=ds.getIndexSet(toponame)
 
@@ -1040,7 +1045,7 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
                 # determine a field name from the commonality amongst the loaded field matrix names, used for time-dependent fields only
                 names=[d.getName() for d in datas]
                 fieldname=min(names,key=len)
-                common=getStrListCommonality(names) or len(fieldname)
+                common=eidolon.getStrListCommonality(names) or len(fieldname)
                 fieldname=fieldname[:common].rstrip('0')
 
                 for d in datas: # set each field matrix to have the same name
@@ -1072,5 +1077,5 @@ Usage: --cheartload=XFILE,TFILE,BASIS [--cheartfield=DFILE,DIM[,TFILE,BASIS]]
         return self.mgr.runTasks(_load(obj,dfiles,dim,tfile,typename,spatialName,loadSequential),f)
 
 
-addPlugin(CheartPlugin())
+eidolon.addPlugin(CheartPlugin())
 
