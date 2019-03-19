@@ -1095,9 +1095,10 @@ class IRTKPluginMixin(object):
                 for i in range(2,len(trackfiles)+1):
                     os.makedirs(os.path.join(trackdir,'merged'),exist_ok=True)
                     outfile=os.path.join('merged','merged%.4i.dof.gz'%(i-1))
+                    logfile=os.path.join('merged','merged%.4i.log'%(i-1))
                     mergeddofs.append(outfile)
                     args=list(trackfiles[:i])+[outfile]
-                    r=execBatchProgram(self.composedofs,*args,cwd=trackdir,logfile='merged%.4i.log'%(i-1))
+                    r=execBatchProgram(self.composedofs,*args,cwd=trackdir,logfile=logfile)
                     
                     if r[0]:
                         raise IOError('Dof merge failed on step %i'%i)
