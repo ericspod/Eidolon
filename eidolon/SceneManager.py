@@ -560,6 +560,12 @@ class SceneManager(TaskQueue):
                 oldKeyPressEvent(e)
 
         setattr(self.win.treeWidget,'keyPressEvent',keyPressEvent)
+        
+        def dropEvent(e):
+            filenames=[u.toLocalFile() for u in e.mimeData().urls()]
+            self.loadFilesTask(*filenames)
+            
+        setattr(self.win,'dropEvent',dropEvent)
 
     def _updateUI(self):
         if self.win and self.controller:

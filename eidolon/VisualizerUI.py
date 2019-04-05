@@ -2259,7 +2259,8 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle(mainTitleString%(eidolon.__appname__,eidolon.__version__))
         self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks)
-
+        self.setAcceptDrops(True)
+        
         self.objMap=Utils.MutableDict() # maps UI items to ObjMapTuple instances
         self.mgr=None # scene manager object, set later
         self.dockWidgets=[] # list of docked widget objects
@@ -2404,6 +2405,13 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
             self.close()
         else:
             QtWidgets.QMainWindow.keyPressEvent(self,e)
+            
+    def dragEnterEvent(self, e):
+        urls=e.mimeData().urls()
+        if urls and os.path.exists(urls[0].toLocalFile()):
+            e.accept()
+        else:
+            e.ignore()
 
     def callFuncUIThread(self,func,*args,**kwargs):
         '''
