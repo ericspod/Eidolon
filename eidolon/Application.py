@@ -404,3 +404,4 @@ def noGuiMain(args=[]):
     _,mgr=initDefault(conf,False)
     #initDefaultAssets(mgr)
     mgr.loadFilesTask(*conf.get('args','files').split('|'))
+    return mgr

@@ -1343,7 +1343,7 @@ class RenderWidget(QtWidgets.QWidget):
         
         self.conf=conf
         self.scene=None
-        self.evtHandler=None
+        self.evtHandler=Utils.EventHandler()
         self.eventTriggered=False # True if the next event was triggered by internal method calls rather than user input
         self.wid=None
         
@@ -1396,11 +1396,11 @@ class RenderWidget(QtWidgets.QWidget):
 
     def _triggerEvent(self,name,*args):
         '''
-        Calls self.evtHandler._triggerEvent with the given arguments if self.evtHandler isn't None. If the event is
-        widgetPostDraw, only send if the scene is set to render in low quality mode; since this event is used to
-        trigger a render in high quality after rendering in low quality, this prevents endless rendering loops.
+        Calls self.evtHandler._triggerEvent with the given arguments. If the event is widgetPostDraw, only send if the 
+        scene is set to render in low quality mode; since this event is used to trigger a render in high quality after 
+        rendering in low quality, this prevents endless rendering loops.
         '''
-        if self.evtHandler!=None and (name!=EventType._widgetPostDraw or not self.getRenderScene().getRenderHighQuality()):
+        if name!=EventType._widgetPostDraw or not self.getRenderScene().getRenderHighQuality():
             self.evtHandler._triggerEvent(name,*args)
 
     def paintEngine(self):

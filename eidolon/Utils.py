@@ -1360,7 +1360,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
     '''
     timeout=kwargs.get('timeout',None) # timeout time value in seconds
     cwd=kwargs.get('cwd',None)
-    env=kwargs.get('enc',None)
+    env=kwargs.get('env',None)
     exefile=os.path.abspath(exefile)
     output=''
     errcode=0

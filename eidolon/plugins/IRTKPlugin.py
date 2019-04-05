@@ -117,12 +117,6 @@ def isPositiveDefinite(mat):
     return np.all(np.linalg.eigvals(mat) >= 0)
 
 
-def fillMatrix(nmat,rmat):
-    w,h=nmat.shape
-    for n in range(min(h,rmat.n())):
-        rmat.setRow(n,*map(float,nmat[:,n]))
-
-
 def detagImage(obj,coresize,revert=False):
     with eidolon.processImageNp(obj,True) as im:
         xmax,ymax,zmax,tmax=im.shape
@@ -783,19 +777,6 @@ class IRTKPluginMixin(object):
                 f.setObject(obj)
 
         return self.mgr.runTasks([_createGrid(obj,w,h,d)],f,False)
-
-#   def createIsotropicStack(self,infile,outfile,isoargs=None,shapetype='None',logfile=None,cwd=None):
-#       args=[self.resample,infile,outfile,'-isotropic']
-#       if isoargs!=None:
-#           args.append(str(isoargs))
-#
-#       shapetype=shapetype.replace(' ','_') # strings from the UI will have _ replaced with spaces so undo this to match names in InterpTypes
-#       if shapetype in InterpTypes:
-#           args+=InterpTypes[shapetype].split()
-#
-#       f=self.mgr.execBatchProgramTask(*args,logfile=logfile,cwd=cwd)
-#       self._checkProgramTask(f)
-#       return f
 
     @taskmethod('Creating Isotropic Object')
     def createIsotropicObject(self,obj,cropEmpty,spacing=1.0,task=None):
@@ -1743,4 +1724,22 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
         printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
         app = QtWidgets.QApplication(sys.argv)
         mt=MotionTrackServerDialog(*sys.argv[-3:])
+        assert mt is not None
         sys.exit(app.exec_())
+
+### Basic plugin implementation using mixin
+
+class BasicIRTKPlugin(eidolon.ImageScenePlugin,IRTKPluginMixin):
+    '''Basic implementation of a plugin using the IRTKPluginMixin class.'''
+    def __init__(self):
+        eidolon.ImageScenePlugin.__init__(self,'IRTK')
+        self.project=None
+
+    def init(self,plugid,win,mgr):
+        eidolon.ImageScenePlugin.init(self,plugid,win,mgr)
+        IRTKPluginMixin.init(self,plugid,win,mgr)
+        
+        
+### Add plugin to environment
+
+eidolon.addPlugin(BasicIRTKPlugin())
