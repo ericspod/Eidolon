@@ -935,6 +935,7 @@ class DicomPlugin(ImageScenePlugin):
     @timing
     def loadSeriesImages(self,series,selection,crop=None,task=None):
         '''Load the actual image data from the files in `series' and store them as SharedImage objects in series.simgs.'''
+        
         # look for the series if `series' is a string 
         if isinstance(series,str):
             allseries=eidolon.listSum(dds.series for dds in self.dirobjs.values())
