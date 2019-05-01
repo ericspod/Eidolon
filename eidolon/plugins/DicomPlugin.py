@@ -977,7 +977,7 @@ class DicomPlugin(ImageScenePlugin):
         @taskroutine('Creating Scene Object')
         def createDicomObject(name,task):
             with f:
-                series=ff()
+                series=Future.get(ff)
                 # choose a unique name, based on the given name or the series description
                 name=eidolon.uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
                 self.loadedNames.append(name)

@@ -108,7 +108,7 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float32):
     for t,ts in enumerate(timeseqs): # each stack should represent a timestep which are given in temporal order
         for d,dd in enumerate(ts): # each stack is in bottom-up order so fill im with the data from the SharedImage matrix
             arr=np.asarray(imgobj.images[dd].img).astype(dtype).T # RealMatrix is stored in transposed order
-            assert arr.shape==shape[:2]
+            assert arr.shape==shape[:2],'Image size (%s) does not match expected size %s'%(arr.shape,shape[:2])
             im[:,:,d,t]=arr
     
     yield im
