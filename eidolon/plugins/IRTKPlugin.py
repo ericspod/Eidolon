@@ -19,6 +19,7 @@
 
 import os
 import sys
+import time
 import glob
 import math
 import subprocess
@@ -38,8 +39,12 @@ from contextlib import closing
 import numpy as np
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
 
-from eidolon import *
-from eidolon import enum, printFlush, taskroutine, taskmethod, execBatchProgram
+import eidolon
+from eidolon import (
+    QtWidgets, copyfileSafe,
+    enum, printFlush, taskroutine, taskmethod, execBatchProgram, concurrent, addPathVariable,isLinux, isWindows,
+    getLibraryDir, timing, first, vec3, Future, extendImage, readBasicConfig, MeshSceneObject, ImageSceneObject
+)
 
 from .SegmentPlugin import DatafileParams,SegSceneObject,SegmentTypes
 from ..ui import Ui_mtServerForm
@@ -92,7 +97,7 @@ def isTrackDir(path):
     a daemon thread. The function will block for up to 1 second and return False if an answer isn't calculated by then.
     This ensures the UI is not held up by a slow file system.
     '''
-    @asyncfunc
+    @eidolon.asyncfunc
     def _check():
         if not os.path.isdir(path):
             return False
@@ -112,14 +117,8 @@ def isPositiveDefinite(mat):
     return np.all(np.linalg.eigvals(mat) >= 0)
 
 
-def fillMatrix(nmat,rmat):
-    w,h=nmat.shape
-    for n in range(min(h,rmat.n())):
-        rmat.setRow(n,*map(float,nmat[:,n]))
-
-
 def detagImage(obj,coresize,revert=False):
-    with processImageNp(obj,True) as im:
+    with eidolon.processImageNp(obj,True) as im:
         xmax,ymax,zmax,tmax=im.shape
         xs = int(math.floor(xmax/2))
         ys = int(math.floor(ymax/2))
@@ -167,10 +166,13 @@ def applyMotionTrackRange(process,exefile,cwd,isInvert,filelists,extraArgs,envir
 
 
 @taskroutine('Applying Transformation')
-def applyMotionTrackTask(exefile,cwd,isInvert,filelists,extraArgs=[],task=None):
+def applyMotionTrackTask(exefile,cwd,isInvert,filelists,extraArgs=[],numProcs=0,task=None):
     environ={ev:os.environ[ev] for ev in map(first,EnvironVars) if ev in os.environ}
-    results=applyMotionTrackRange(len(filelists),0,task,exefile,cwd,isInvert,filelists,extraArgs,environ,partitionArgs=(filelists,))
-    for ret,out,args in sumResultMap(results):
+    
+    results=applyMotionTrackRange(len(filelists),numProcs,task,exefile,cwd,isInvert,
+                                  filelists,extraArgs,environ,partitionArgs=(filelists,))
+    
+    for ret,out,args in eidolon.sumResultMap(results):
         if ret!=0:
             raise IOError('Command failed with return code %r: %r\n%s'%(ret,' '.join([exefile]+list(args)),out))
 
@@ -206,7 +208,7 @@ class IRTKPluginMixin(object):
         self.irtkpath=localirtkpath
 
         # if the system-installed IRTK is present, use it instead
-        if isLinux and mgr.conf.get(platformID,'usesystemirtk').lower()!='false' and os.path.exists('/usr/bin/irtk-rreg'):
+        if isLinux and mgr.conf.get(eidolon.platformID,'usesystemirtk').lower()!='false' and os.path.exists('/usr/bin/irtk-rreg'):
             self.irtkpath=lambda i:('/usr/bin/irtk-'+i) if os.path.exists('/usr/bin/irtk-'+i) else localirtkpath(i)
         else:
             addPathVariable(EnvironVars.LD_LIBRARY_PATH,self.irtkdir)
@@ -236,6 +238,7 @@ class IRTKPluginMixin(object):
         self.editimage=os.path.join(self.mirtkdir,'edit-image')+self.exesuffix
         self.decimatesurf=os.path.join(self.mirtkdir,'decimate-surface')+self.exesuffix
         self.convertdof=os.path.join(self.mirtkdir,'convert-dof')+self.exesuffix
+        self.composedofs=os.path.join(self.mirtkdir,'compose-dofs')+self.exesuffix
 
     def getCWD(self):
         '''This method must be overridden to return the current working directory (ie. project directory).'''
@@ -243,11 +246,11 @@ class IRTKPluginMixin(object):
 
     def getNiftiFile(self,name):
         '''Get the NIfTI file in the current context starting with `name', '.nii' is appended to the filename.'''
-        return self.getLocalFile(ensureExt(name,'.nii'))
+        return self.getLocalFile(eidolon.ensureExt(name,'.nii'))
 
     def getLogFile(self,name):
         '''Get the log file in the current context starting with `name', '.log' is appended to the filename if not already present.'''
-        return self.getLocalFile(ensureExt(name,'.log'))
+        return self.getLocalFile(eidolon.ensureExt(name,'.log'))
 
     def getLocalFile(self,name):
         '''Get a file with name `name' in the current context (ie. project directory).'''
@@ -281,7 +284,7 @@ class IRTKPluginMixin(object):
                     newfilename=self.Nifti.decompressNifti(filename,self.getCWD())
                 else:
                     newfilename=self.getUniqueLocalFile(filename)
-                    copyfileSafe(filename,newfilename,True)
+                    eidolon.copyfileSafe(filename,newfilename,True)
                 filename=newfilename
 
             nobj=self.Nifti.loadObject(filename)
@@ -295,18 +298,18 @@ class IRTKPluginMixin(object):
         Returns an object name guaranteed to be unique, a valid filename, and not overwrite an existing file in the
         current context when saved.
         '''
-        name=getValidFilename(name)
-        filenames=[splitPathExt(i)[1] for i in glob.glob(self.getLocalFile('*'))]
+        name=eidolon.getValidFilename(name)
+        filenames=[eidolon.splitPathExt(i)[1] for i in glob.glob(self.getLocalFile('*'))]
         objnames=[o.getName() for o in self.mgr.enumSceneObjects()]
-        return uniqueStr(name,filenames+objnames)
+        return eidolon.uniqueStr(name,filenames+objnames)
 
     def getUniqueShortName(self,*comps,**kwargs):
         '''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
-        return self.getUniqueObjName(createShortName(*comps,**kwargs))
+        return self.getUniqueObjName(eidolon.createShortName(*comps,**kwargs))
 
     def getUniqueLocalFile(self,name):
         '''Get a version of the filename `name' which is guarranteed to be unique in the current context.'''
-        _,name,ext=splitPathExt(name)
+        _,name,ext=eidolon.splitPathExt(name)
         return self.getLocalFile(self.getUniqueObjName(name)+ext)
 
     def getServerAddrPort(self):
@@ -372,7 +375,7 @@ class IRTKPluginMixin(object):
 
             timesteps=sourceobj.getTimestepList()
             if makeProspective:
-                value=avgspan(timesteps)/2
+                value=eidolon.avgspan(timesteps)/2
                 timesteps=[ts+value for ts in timesteps]
 
             destobj.setTimestepList(timesteps)
@@ -428,13 +431,13 @@ class IRTKPluginMixin(object):
                 #isorthos=[o1.isOrthogonalTo(o2) or o1.isOrthogonalTo(o3) for o1,o2,o3 in successive(tso,3,True)]
 
                 if makeProspective: # prospective timing, add half the average difference between timesteps to each timestep
-                    value=avgspan(ts)/2
+                    value=eidolon.avgspan(ts)/2
                     ts=[t+value for t in ts]
 
                 # For each of the 3 orientations, take the magnitude images for that orientation and create a temporary
                 # image object. Each object will then have all the images over time for one of the tag orientations.
                 for o,olist in enumerate(tso.values()):
-                    oimages=indexList(olist,magimgs)
+                    oimages=eidolon.indexList(olist,magimgs)
                     plane=ImageSceneObject('%s_plane%i'%(tagged,o),tagobj.source,oimages,self,True)
                     plane.setTimestepList(ts)
                     plane.calculateAABB(True)
@@ -474,7 +477,7 @@ class IRTKPluginMixin(object):
                 tag.setTimestepList(ts)
 
                 mergefunc='(prod(v/100.0 for v in vals)**(1.0/len(vals)))*100.0'
-                mergeImages(objs,tag,mergefunc,task) # merge the plane-aligned series using the function
+                eidolon.mergeImages(objs,tag,mergefunc,task) # merge the plane-aligned series using the function
 
                 saveobjs=[tag]
                 loadnames=[self.getNiftiFile(tagged)]
@@ -529,7 +532,7 @@ class IRTKPluginMixin(object):
                 assert stack
 
                 if not trname: # if no name given, choose one based off `stack'
-                    trname=createShortName('TimeReg',stack.getName(),'to',template.getName())
+                    trname=eidolon.createShortName('TimeReg',stack.getName(),'to',template.getName())
                     if not loadObject: # if we're not reloading the object, ensure the name is unique
                         trname=self.getUniqueShortName(trname)
 
@@ -763,9 +766,9 @@ class IRTKPluginMixin(object):
                 obj=self.findObject(obj)
                 name=self.getUniqueShortName(obj.getName(),'Grid')
                 filename=self.getLocalFile(name+'.vtk')
-                nodes,inds=generateHexBox(w,h,d)
+                nodes,inds=eidolon.generateHexBox(w,h,d)
 
-                ds=PyDataSet(obj.getName()+'DS',nodes,[('inds',ElemType._Hex1NL,inds)])
+                ds=eidolon.PyDataSet(obj.getName()+'DS',nodes,[('inds',eidolon.ElemType._Hex1NL,inds)])
                 ds.getNodes().mul(obj.getVolumeTransform())
 
                 obj= MeshSceneObject(name,ds,self.VTK,filename=filename)
@@ -774,19 +777,6 @@ class IRTKPluginMixin(object):
                 f.setObject(obj)
 
         return self.mgr.runTasks([_createGrid(obj,w,h,d)],f,False)
-
-#   def createIsotropicStack(self,infile,outfile,isoargs=None,shapetype='None',logfile=None,cwd=None):
-#       args=[self.resample,infile,outfile,'-isotropic']
-#       if isoargs!=None:
-#           args.append(str(isoargs))
-#
-#       shapetype=shapetype.replace(' ','_') # strings from the UI will have _ replaced with spaces so undo this to match names in InterpTypes
-#       if shapetype in InterpTypes:
-#           args+=InterpTypes[shapetype].split()
-#
-#       f=self.mgr.execBatchProgramTask(*args,logfile=logfile,cwd=cwd)
-#       self._checkProgramTask(f)
-#       return f
 
     @taskmethod('Creating Isotropic Object')
     def createIsotropicObject(self,obj,cropEmpty,spacing=1.0,task=None):
@@ -799,7 +789,7 @@ class IRTKPluginMixin(object):
             obj=self.emptyCropObject(obj,False)
 
         isoobj=obj.plugin.createRespacedObject(obj,obj.getName()+'_Iso',vec3(spacing))
-        resampleImage(obj,isoobj)
+        eidolon.resampleImage(obj,isoobj)
         isoobj.plugin.saveObject(isoobj,outfile,setFilenames=True)
         self.addObject(isoobj)
 
@@ -841,7 +831,7 @@ class IRTKPluginMixin(object):
 
         if makeProspective:
             timesteps=sourceobj.getTimestepList()
-            avgdiff=avgspan(timesteps)
+            avgdiff=eidolon.avgspan(timesteps)
             value=avgdiff/2
 
         for i in sourceobj.images:
@@ -871,7 +861,7 @@ class IRTKPluginMixin(object):
                     reobj=reobj.plugin.createIntersectObject(name,[reobj,obj],len(tslist),vec3(min(obj.getVoxelSize())))
                     reobj.setTimestepList(tslist)
 
-                resampleImage(obj,reobj)
+                eidolon.resampleImage(obj,reobj)
 
                 filename=self.saveToNifti([reobj])
                 f.setObject(self.loadNiftiFiles(filename))
@@ -898,7 +888,7 @@ class IRTKPluginMixin(object):
         obj=self.findObject(srcname)
         timeinds=obj.getTimestepIndices()
         startind=min((abs(timeinds[i][0]-starttime),i) for i in range(len(timeinds)))[1]
-        rinds=rotateIndices(startind,len(timeinds))
+        rinds=eidolon.rotateIndices(startind,len(timeinds))
         images=[]
 
         for i,ri in enumerate(rinds):
@@ -917,7 +907,7 @@ class IRTKPluginMixin(object):
     def cropMotionObject(self,srcname,threshold,filtersize,task):
         imgobj=self.findObject(srcname)
         name=self.getUniqueShortName(srcname,'Crop')
-        cobj=cropMotionImage(imgobj,name,threshold,filtersize)
+        cobj=eidolon.cropMotionImage(imgobj,name,threshold,filtersize)
         filename=self.saveToNifti([cobj])
         return self.loadNiftiFiles(filename)
     
@@ -929,7 +919,7 @@ class IRTKPluginMixin(object):
                 imgobj=self.findObject(imgobj)
 
                 cropname=self.getUniqueShortName(imgobj.getName(),'Crop')
-                cobj=cropObjectEmptySpace(imgobj,cropname,20,False)
+                cobj=eidolon.cropObjectEmptySpace(imgobj,cropname,20,False)
                 if loadObj:
                     f.setObject(self.saveToNifti([cobj]))
                 else:
@@ -950,7 +940,7 @@ class IRTKPluginMixin(object):
 
                 imgobj=self.findObject(imgname)
                 ref=self.findObject(refname)
-                cropobj=cropRefImage(imgobj,ref,cropname,mx,my)
+                cropobj=eidolon.cropRefImage(imgobj,ref,cropname,mx,my)
                 self.addObject(cropobj)
 
                 f.setObject(self.saveToNifti([cropobj],True))
@@ -1043,7 +1033,7 @@ class IRTKPluginMixin(object):
 
                     for i,ff in enumerate(filenames):
                         nodes,_=self.readPolyNodes(ff)
-                        dds.append(PyDataSet('%sclone%i'%(objds.getName(),i+1),nodes,indices,fields))
+                        dds.append(eidolon.PyDataSet('%sclone%i'%(objds.getName(),i+1),nodes,indices,fields))
 
                     # if the dofs are frame-by-frame transformations, rejig the node data to reflect this transformation
                     # since the default is assuming each dof is the transformation from frame 0 to frame n
@@ -1072,13 +1062,33 @@ class IRTKPluginMixin(object):
 
             return self.mgr.runTasks(_loadSeq(obj,[ff[1] for ff in filelists],timesteps,resultname),f)
         else:
-            assert not isFrameByFrame,'Frame-by-frame not supported for images yet'
+#            assert not isFrameByFrame,'Frame-by-frame not supported for images yet'
 
-            objnii=self.getNiftiFile(obj.getName())
+            #objnii=self.getNiftiFile(obj.getName())
+            objnii=obj.getObjFiles()[0]
             resultnii=self.getNiftiFile(resultname)
-
+            numProcs=0
+            
+            if isFrameByFrame:
+                filelists=[]
+                mergeddofs=[trackfiles[0]]
+                
+                for i in range(2,len(trackfiles)+1):
+                    os.makedirs(os.path.join(trackdir,'merged'),exist_ok=True)
+                    outfile=os.path.join('merged','merged%.4i.dof.gz'%(i-1))
+                    logfile=os.path.join('merged','merged%.4i.log'%(i-1))
+                    mergeddofs.append(outfile)
+                    args=list(trackfiles[:i])+[outfile]
+                    r=execBatchProgram(self.composedofs,*args,cwd=trackdir,logfile=logfile)
+                    
+                    if r[0]:
+                        raise IOError('Dof merge failed on step %i'%i)
+                        
+                trackfiles=mergeddofs
+                
             filelists=[(objnii,'out%.4i.nii'%i,dof,-1) for i,dof in enumerate(trackfiles)]
-            self.mgr.runTasks(applyMotionTrackTask(self.transimage,trackdir,True,filelists))
+                
+            self.mgr.runTasks(applyMotionTrackTask(self.transimage,trackdir,True,filelists,numProcs=numProcs))
 
             @taskroutine('Loading Tracked Files')
             def _loadSeq(task):
@@ -1102,7 +1112,7 @@ class IRTKPluginMixin(object):
         Returns map of timesteps to motion tracked points at those times. This method blocks while the tracking
         is applied to the points so it shouldn't be expected to be instantaneous.
         '''
-        initobj=MeshSceneObject('proxy',PyDataSet('proxyds',pts))
+        initobj=MeshSceneObject('proxy',eidolon.PyDataSet('proxyds',pts))
         f=self.applyMotionTrack(initobj,dirname,False)
         trackobj=Future.get(f,None)
         return {ts:ds.getNodes()[:,0] for ts,ds in zip(trackobj.getTimestepList(),trackobj.datasets)}
@@ -1158,7 +1168,7 @@ class IRTKPluginMixin(object):
         while not startserver:
             try:
                 name,msg=self.sendServerMsg(ServerMsgs._Check,serveraddr=addr,serverport=newport) # throws an exception if the server isn't started
-                if msg[0]==getUsername(): # if this server is run by the current user, use it
+                if msg[0]==eidolon.getUsername(): # if this server is run by the current user, use it
                     break
                 else:
                     newport+=1 # otherwise increment the port number
@@ -1216,7 +1226,7 @@ class IRTKPluginMixin(object):
                 if maskname!=None:
                     mask=self.findObject(maskname)
                     maski=trackobj.plugin.extractTimesteps(trackobj,maskname+'I',timesteps=[0])
-                    resampleImage(mask,maski)
+                    eidolon.resampleImage(mask,maski)
                     maskfile=self.extendImageStack(maski,mz=4)[1][0]
                     #self._checkProgramTask(f2)
                 else:
@@ -1261,7 +1271,7 @@ class IRTKPluginMixin(object):
                 if maskname and maskname!='None':
                     mask=self.findObject(maskname)
                     maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
-                    resampleImage(mask,maski)
+                    eidolon.resampleImage(mask,maski)
                     maskfile=self.getUniqueLocalFile(maskname+'_I')
                     self.Nifti.saveObject(maski,maskfile)
 
@@ -1284,7 +1294,7 @@ class IRTKPluginMixin(object):
                     JobMetaValues._startdate    :time.asctime()
                 }
 
-                storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
+                eidolon.storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
 
 #               # dilate mask
 #               if os.path.isfile(maskfile):
@@ -1297,13 +1307,13 @@ class IRTKPluginMixin(object):
                     name='image%.4i'%i
                     filename=os.path.join(trackdir,name+'.nii')
                     names.append(filename)
-                    subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
+                    subobj=ImageSceneObject(name,imgobj.source,eidolon.indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
                     self.Nifti.saveObject(subobj,filename)
 
                 task.setMaxProgress(len(names)-1)
                 task.setLabel('Tracking Image With GPU NReg')
 
-                for i,(img1,img2) in enumerate(successive(names)):
+                for i,(img1,img2) in enumerate(eidolon.successive(names)):
                     logfile=os.path.join(trackdir,'%.4i.log'%i)
                     args=[img1,img2,'-parin',paramfile,'-dofout','%.4i.dof.gz'%i]
                     if maskfile and os.path.isfile(maskfile):
@@ -1347,7 +1357,7 @@ class IRTKPluginMixin(object):
             mask=self.findObject(maskname)
             maskfile=os.path.join(trackdir,maskname+'_I') #self.getUniqueLocalFile(maskname+'_I')
             maski=imgobj.plugin.extractTimesteps(imgobj,maskname+'I',timesteps=[0])
-            resampleImage(mask,maski)
+            eidolon.resampleImage(mask,maski)
             self.Nifti.saveObject(maski,maskfile)
             task.setLabel('Tracking Image With MIRTK register') # reset the label
 
@@ -1368,7 +1378,7 @@ class IRTKPluginMixin(object):
             JobMetaValues._enddate      :None
         }
 
-        storeBasicConfig(os.path.join(trackdir,trackconfname),conf) # store initial config values in the tracking ini file
+        eidolon.storeBasicConfig(os.path.join(trackdir,trackconfname),conf) # store initial config values in the tracking ini file
 
         if onefile:
             logfile=os.path.join(trackdir,'track.log')
@@ -1388,13 +1398,13 @@ class IRTKPluginMixin(object):
                 name='image%.4i'%i
                 filename=os.path.join(trackdir,name+'.nii')
                 names.append(filename)
-                subobj=ImageSceneObject(name,imgobj.source,indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
+                subobj=ImageSceneObject(name,imgobj.source,eidolon.indexList(tsinds[1],imgobj.images),imgobj.plugin,False)
                 self.Nifti.saveObject(subobj,filename)
 
             task.setMaxProgress(len(names)-1)
 
             # iterate over every successive timestep pairing and run register
-            for i,(img1,img2) in enumerate(successive(names)):
+            for i,(img1,img2) in enumerate(eidolon.successive(names)):
                 logfile=os.path.join(trackdir,'%.4i.log'%i)
                 args=[img1,img2,'-parin',paramfile,'-model',model,'-dofout','%.4i.dof.gz'%i]
 
@@ -1414,7 +1424,7 @@ class IRTKPluginMixin(object):
         # store the result code and end date in the tracking ini file
         conf[JobMetaValues._resultcode]=results[-1][0]
         conf[JobMetaValues._enddate]=time.asctime()
-        storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
+        eidolon.storeBasicConfig(os.path.join(trackdir,trackconfname),conf)
 
         if results[-1][0]:
             raise IOError('register failed with error code %i:\n%s'%results[-1])
@@ -1491,7 +1501,7 @@ class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
         self.jidfile=os.path.join(self.serverdir,'motion_jid.txt')
         self.serverport=int(serverport)
         self.motiontrackpath=motiontrackpath
-        self.username=getUsername()
+        self.username=eidolon.getUsername()
         self.runningProcs=[] # list of (Subprocess,jid,directory) triples
 
         if not os.path.exists(self.serverdir):
@@ -1510,7 +1520,7 @@ class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
 
         self.killButton.clicked.connect(self._killJob)
 
-        self.timer=QtCore.QTimer()
+        self.timer=eidolon.QtCore.QTimer()
         self.timer.timeout.connect(self._updateList)
         self.timer.start(3000)
 
@@ -1540,7 +1550,7 @@ class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
 
             if rcode!=None and conf[JobMetaValues._resultcode]==None: # update the stored result if necessary
                 conf[JobMetaValues._resultcode]=rcode
-                storeBasicConfig(conffile,conf)
+                eidolon.storeBasicConfig(conffile,conf)
 
             stat='Job %i, Status: '%jid
             if rcode==None:
@@ -1554,7 +1564,7 @@ class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
 
             statlist.append(stat)
 
-        fillList(self.jobList,statlist,self.jobList.currentRow())
+        eidolon.fillList(self.jobList,statlist,self.jobList.currentRow())
 
     def _killJob(self):
         ind=self.jobList.currentRow()
@@ -1682,7 +1692,7 @@ class MotionTrackServerWidget(QtWidgets.QWidget,Ui_mtServerForm):
             JobMetaValues._startdate   :time.asctime()
         })
 
-        storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
+        eidolon.storeBasicConfig(os.path.join(jobdir,trackconfname),conf)
         self.runningProcs.append((proc,jid,jobdir))
         return jid
 
@@ -1694,7 +1704,7 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
         self.show()
 
     def keyPressEvent(self,e):
-        if e.key() == Qt.Key_Escape:
+        if e.key() == eidolon.Qt.Key_Escape:
             self.close()
         else:
             QtWidgets.QDialog.keyPressEvent(self,e)
@@ -1714,4 +1724,22 @@ class MotionTrackServerDialog(MotionTrackServerWidget):
         printFlush('Starting MotionTrackServer on port',sys.argv[2],'using directory',sys.argv[1])
         app = QtWidgets.QApplication(sys.argv)
         mt=MotionTrackServerDialog(*sys.argv[-3:])
+        assert mt is not None
         sys.exit(app.exec_())
+
+### Basic plugin implementation using mixin
+
+class BasicIRTKPlugin(eidolon.ImageScenePlugin,IRTKPluginMixin):
+    '''Basic implementation of a plugin using the IRTKPluginMixin class.'''
+    def __init__(self):
+        eidolon.ImageScenePlugin.__init__(self,'IRTK')
+        self.project=None
+
+    def init(self,plugid,win,mgr):
+        eidolon.ImageScenePlugin.init(self,plugid,win,mgr)
+        IRTKPluginMixin.init(self,plugid,win,mgr)
+        
+        
+### Add plugin to environment
+
+eidolon.addPlugin(BasicIRTKPlugin())

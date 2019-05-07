@@ -30,8 +30,8 @@ else ifeq ($(findstring CYGWIN,$(KERNEL_NAME)),CYGWIN)
 	PLAT=win64_mingw
 endif
 
-LIB_HOME = ./EidolonLibs/$(PLAT)
 PYSRC=./eidolon
+LIB_HOME = $(PYSRC)/EidolonLibs/$(PLAT)
 RESRC=$(PYSRC)/renderer
 PLUGINS=$(PYSRC)/plugins
 UI=$(PYSRC)/ui
@@ -53,6 +53,7 @@ endif
 
 PYTHONVER=$(shell $(PYTHON) -V 2>&1)
 CYTHONVER=$(shell $(PYTHON) -c 'import cython;print(cython.__version__)')
+PYTHONLIB=$(shell $(PYTHON) -c 'import distutils.sysconfig,os;print(os.path.abspath(distutils.sysconfig.get_python_lib()+"/../.."))')
 
 #--------------------------------------------------------------------------------------
 
@@ -113,24 +114,24 @@ else ifeq ($(PLAT),osx)
 	cd dist && hdiutil create -size 1000000k -volname Eidolon -srcfolder Eidolon.app -ov -format UDZO -imagekey zlib-level=9 ../$(DISTNAME).dmg
 else
 	$(eval DISTNAME?=Eidolon_Linux64_$(shell ./run.sh --version 2>&1))
-	LD_LIBRARY_PATH=$(LIB_HOME)/bin $(PYINST) --clean PyInstaller.spec
+	LD_LIBRARY_PATH=$(PYTHONLIB):$(LIB_HOME)/bin $(PYINST) --clean PyInstaller.spec
 	rm -rf build
 	rm dist/Eidolon/res/*.png
-	rm dist/Eidolon/EidolonLibs/IRTK/*.exe
-	rm dist/Eidolon/EidolonLibs/IRTK/*.dll
-	find dist/Eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
+	rm dist/Eidolon/eidolon/EidolonLibs/IRTK/*.exe
+	rm dist/Eidolon/eidolon/EidolonLibs/IRTK/*.dll
+	find dist/Eidolon/eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 	cd dist/Eidolon && rm -rf libglib-2.0.so.0 libgobject-2.0.so.0 libgpg-error.so.0 share/icons
-	cp /usr/lib/x86_64-linux-gnu/libCg.so run.sh dist/Eidolon
-	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
+	cp eidolon/EidolonLibs/linux/lib/libCg.so run.sh dist/Eidolon
+	#-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 clean:
 ifeq ($(PLAT),win64_mingw)
-	rm -rf $(SRC)/*/*.pyd
+	rm -rf $(PYSRC)/*/*.pyd
 else ifeq ($(PLAT),osx)
-	rm -rf $(SRC)/*/*darwin.so
+	rm -rf $(PYSRC)/*/*darwin.so
 else
-	rm -rf $(SRC)/*/*linux-gnu.so 
+	rm -rf $(PYSRC)/*/*linux-gnu.so 
 endif
 
 header:
@@ -141,7 +142,7 @@ header:
 	@echo " Platform    : $(PLAT)           "
 	@echo " Arch        : $(ARCH)           "
 	@echo " Python      : $(PYTHON)         "
+	@echo " PYTHONLIB   : $(PYTHONLIB)      "
 	@echo " PYTHONVER   : $(PYTHONVER)      "
 	@echo " CYTHONVER   : $(CYTHONVER)      "
 	@echo "---------------------------------"
-

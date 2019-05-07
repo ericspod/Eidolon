@@ -37,39 +37,43 @@ from eidolon.Utils import isWindows, isLinux, addPathVariable
 import os, sys
 _scriptdir=os.path.dirname(os.path.abspath(__file__))
 
-# the application directory is given by pyinstaller in _MEIPASS, if not present use the directory two levels up
+# the application directory is given by pyinstaller in _MEIPASS, if not present use the directory one level up
 __appdir__=getattr(sys,'_MEIPASS',os.path.abspath(_scriptdir+'/..')) 
 
 # library directory
-__libdir__=os.path.join(_scriptdir,LIBSDIR)
+__libdir__=os.path.join(__appdir__,'eidolon',LIBSDIR)
 
 if isWindows:
-    # add the library directory to PATH so that DLLs can be loaded whe the renderer is imported
+    # add the library directory to PATH so that DLLs can be loaded when the renderer is imported
     addPathVariable('PATH',os.path.abspath(os.path.join(__libdir__,'win64_mingw','bin')))
 elif isLinux:
     import glob,ctypes
-    
+
     # load all linux libraries so that LD_LIBRARY_PATH doesn't need to be set
-    for lib in glob.glob(os.path.join(__libdir__,'linux','lib','*.so*')):
+    for lib in glob.glob(os.path.join(__libdir__,'linux','lib','*.so*')): # will attempt to load libraries twice
         try:
             _=ctypes.cdll.LoadLibrary(lib)
         except OSError:
             pass
 
-from .renderer import *
-from .VisualizerUI import *
-from .Concurrency import *
-from .SceneUtils import *
-from .MeshAlgorithms import *
-from .ImageAlgorithms import *
-from .ImageObject import *
-from .MathDef import *
-from .Camera2DView import *
-from .SceneManager import *
-from .SceneObject import *
-from .ScenePlugin import *
-from .SceneComponents import *
-from .Application import *
+
+from eidolon.renderer import *
+from eidolon.VisualizerUI import *
+from eidolon.Concurrency import *
+from eidolon.SceneUtils import *
+from eidolon.MeshAlgorithms import *
+from eidolon.ImageAlgorithms import *
+from eidolon.ImageObject import *
+from eidolon.MathDef import *
+from eidolon.Camera2DView import *
+from eidolon.SceneManager import *
+from eidolon.SceneObject import *
+from eidolon.ScenePlugin import *
+from eidolon.SceneComponents import *
+from eidolon.Application import *
 
 
+#def defaultMain():
+#    print(repr(__appdir__),repr(__libdir__),repr(_scriptdir))
+#    print(vec3())
 

@@ -368,7 +368,6 @@ class SceneManager(TaskQueue):
         TaskQueue.__init__(self)
         self.win=win
         self.conf=conf
-        self.viz=None
         self.scene=None
 
         self.evtHandler=Utils.EventHandler()
@@ -445,12 +444,11 @@ class SceneManager(TaskQueue):
         for plug in globalPlugins:
             self.scriptlocals[plug.name.replace(' ' ,'_')]=plug
 
-        if self.win: # window setup
+        if self.win is not None: # window setup
             self.win.mgr=self
             self.scene=self.win.scene
-            self.viz=self.win.viz
 
-            self.viz.evtHandler=self.evtHandler
+            self.evtHandler=self.win.viz.evtHandler
 
             if self.win.console:
                 self.win.console.updateLocals(self.scriptlocals)
@@ -560,6 +558,12 @@ class SceneManager(TaskQueue):
                 oldKeyPressEvent(e)
 
         setattr(self.win.treeWidget,'keyPressEvent',keyPressEvent)
+        
+        def dropEvent(e):
+            filenames=[u.toLocalFile() for u in e.mimeData().urls()]
+            self.loadFilesTask(*filenames)
+            
+        setattr(self.win,'dropEvent',dropEvent)
 
     def _updateUI(self):
         if self.win and self.controller:
@@ -1301,7 +1305,7 @@ class SceneManager(TaskQueue):
         filename=filename.strip()
         camera_or_widget=camera_or_widget or self.cameras[0]
 
-        if not filename or not camera_or_widget or not self.viz or not self.scene:
+        if not filename or not camera_or_widget or not self.scene:
             return
         
         if not Utils.splitPathExt(filename)[2]:

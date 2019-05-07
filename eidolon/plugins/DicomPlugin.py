@@ -726,8 +726,8 @@ class TimeMultiSeriesDialog(QtWidgets.QDialog,BaseCamera2DWidget,Ui_Dicom2DView)
                 crop=(minx,miny,maxx,maxy)
 
                 for i,series in enumerate(self.serieslist):
-                    simgs=self.plugin.loadSeriesImages(series,selection,False,crop)
-                    images+=simgs
+                    self.plugin.loadSeriesImages(series,selection,False,crop)
+                    images+=series.simgs
                     tslist=set(s.timestep for s in simgs)
                     
                     if len(tslist)==1 and first(tslist)<=eidolon.epsilon:
@@ -935,6 +935,15 @@ class DicomPlugin(ImageScenePlugin):
     @timing
     def loadSeriesImages(self,series,selection,crop=None,task=None):
         '''Load the actual image data from the files in `series' and store them as SharedImage objects in series.simgs.'''
+        
+        # look for the series if `series' is a string 
+        if isinstance(series,str):
+            allseries=eidolon.listSum(dds.series for dds in self.dirobjs.values())
+            series1=first(s for s in allseries if s.seriesID==series)
+            assert series1!=None,'Cannot find series %r'%series
+            series=series1
+
+        assert len(series.filenames)>0
         assert selection==None or all(s<len(series.filenames) for s in selection)
 
         if len(series.filenames)>0:
@@ -956,33 +965,23 @@ class DicomPlugin(ImageScenePlugin):
                 eidolon.checkResultMap(simgs)
                 series.addSharedImages(eidolon.sumResultMap(simgs)) # add new images, there isn't necessarily any order to this list
 
-        return series.simgs
+        return series
 
     def loadSeries(self,series,name=None,selection=None,loadSequential=False,isTimeDependent=None,crop=None):
         '''Loads the Dicom files for the given series object or series ID string `series' into a SceneObject subtype.'''
-
-        # look for the series of `series' is a string 
-        if isinstance(series,str):
-            allseries=eidolon.listSum(dds.series for dds in self.dirobjs.values())
-            series1=first(s for s in allseries if s.seriesID==series)
-            assert series1!=None,'Cannot find series %r'%series
-            series=series1
-
-        assert len(series.filenames)>0
-        assert selection==None or all(s<len(series.filenames) for s in selection)
-
         f=Future()
-
-        # choose a unique name, based on the given name or the series description
-        name=eidolon.uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
-        self.loadedNames.append(name)
 
         ff=self.loadSeriesImages(series,selection,crop)
         self.mgr.checkFutureResult(ff)
 
         @taskroutine('Creating Scene Object')
-        def createDicomObject(task):
+        def createDicomObject(name,task):
             with f:
+                series=Future.get(ff)
+                # choose a unique name, based on the given name or the series description
+                name=eidolon.uniqueStr(name or series.desc,[o.getName() for o in self.mgr.enumSceneObjects()]+self.loadedNames)
+                self.loadedNames.append(name)
+                
                 sel=selection or list(range(len(series.filenames)))
                 imgs=[series.getSharedImage(series.filenames[i]) for i in sel]
                 assert len(imgs)>0
@@ -1006,7 +1005,7 @@ class DicomPlugin(ImageScenePlugin):
 
                 f.setObject(obj)
 
-        return self.mgr.runTasks([createDicomObject()],f,loadSequential)
+        return self.mgr.runTasks([createDicomObject(name)],f,loadSequential)
 
     @timing
     def loadDigestFile(self,dirpath,task):
@@ -1067,25 +1066,26 @@ class DicomPlugin(ImageScenePlugin):
         self.dirobjs[dirpath]=dds
 
         # add the dataset as an asset to the UI
-        self.win.addAsset(dds,dirpath,eidolon.AssetType._dcm)
-        self.win.sync()
-        listitem=self.win.findWidgetItem(dds)
-
-        # add each series as a child of the dataset asset item
-        for s in dds.series:
-            prop=self.mgr.callThreadSafe(SeriesPropertyWidget)
-            self.win.addAsset(s,str(s),eidolon.AssetType._dcm,prop,self._updateSeriesPropBox)
+        if self.win:
+            self.win.addAsset(dds,dirpath,eidolon.AssetType._dcm)
             self.win.sync()
-            slistitem=self.win.findWidgetItem(s)
-            # reset the list item's parent by removing it and adding it to the new paren't child list
-            slistitem.parent().removeChild(slistitem)
-            listitem.addChild(slistitem)
-
-            # double lambda needed to capture local variables 'prop' and 's'
-            caplambda=lambda prop,ss: lambda:self._loadSeriesButton(prop,ss)
-            self.win.connect(prop.createButton.clicked,caplambda(prop,s))
-
-        listitem.setExpanded(True) # expand th list of series
+            listitem=self.win.findWidgetItem(dds)
+    
+            # add each series as a child of the dataset asset item
+            for s in dds.series:
+                prop=self.mgr.callThreadSafe(SeriesPropertyWidget)
+                self.win.addAsset(s,str(s),eidolon.AssetType._dcm,prop,self._updateSeriesPropBox)
+                self.win.sync()
+                slistitem=self.win.findWidgetItem(s)
+                # reset the list item's parent by removing it and adding it to the new paren't child list
+                slistitem.parent().removeChild(slistitem)
+                listitem.addChild(slistitem)
+    
+                # double lambda needed to capture local variables 'prop' and 's'
+                caplambda=lambda prop,ss: lambda:self._loadSeriesButton(prop,ss)
+                self.win.connect(prop.createButton.clicked,caplambda(prop,s))
+    
+            listitem.setExpanded(True) # expand th list of series
 
         return dds
 

@@ -65,3 +65,12 @@ Open a terminal and with the new installation in your PATH run the following:
 
 Adding `imageio pandas qtconsole` will install the optional libraries.
 Once this is done the command `source activate nomkl` will activate this environment, then Eidolon can be run by executing `run.sh`.
+
+## IPython
+
+Eidolon has support for the IPython console in place of the built-in console. There is a known issue with the recent version of the
+ipykernel package, thus installing an earlier version is needed. The conda command to do this (in the nomkl environment
+if you're using that) is the following:
+
+    conda install ipython qtconsole ipykernel=4.10
+    

@@ -85,6 +85,23 @@ def contoursCoplanar(con1,con2):
     return eidolon.equalPlanes(c1,n1,c2,n2)
 
 
+def adjustContoursToImage(seg,image):
+    planes=[(pv,pr*vec3.Z()) for pv,pr in image.getTimeOrientMap().keys()]
+    timesteps=image.getTimestepList()
+    
+    def planeproject(v):
+        '''Project `v` onto the nearest image plane.'''
+        v=vec3(*v)
+        minp=min(list(range(len(planes))),key=lambda i:abs(v.planeDist(*planes[i])))
+        return tuple(v.planeProject(*planes[minp]))
+    
+    for c,n,t in seg.enumContours():
+        cc=[planeproject(v) for v in c]
+        mintime=min(timesteps,key=lambda a:abs(a-t))
+        seg.setContour(n,mintime,cc)
+        
+
+
 def yieldContourIntersects(ray,contour):
     '''Yield each position in space where `ray' intersects a line segment between successive points in `contour'.'''
     plane=getContourPlane(contour)
@@ -1587,9 +1604,9 @@ class SegmentPlugin(ScenePlugin):
             msg='Contour object is empty.'
         elif not prop.oddNumButton.isChecked():
             if any(l not in (0,1,2) for l in lens):
-                msg='All planes with contours must have 1 or 2 contours only.'
+                msg='All planes with contours must have 1 or 2 contours only (%r).'%(lens,)
             elif any(l not in (0,lens[0]) for l in lens):
-                msg='All planes with contours must have the same number of contours.'
+                msg='All planes with contours must have the same number of contours (%r).'%(lens,)
             elif lens[0]==1 and not prop.cavMaskButton.isChecked():
                 msg='Can only generate cavity mask if only 1 contour defined per plane.'
 

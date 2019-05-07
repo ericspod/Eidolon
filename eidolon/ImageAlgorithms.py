@@ -108,7 +108,7 @@ def processImageNp(imgobj,writeBack=False,dtype=np.float32):
     for t,ts in enumerate(timeseqs): # each stack should represent a timestep which are given in temporal order
         for d,dd in enumerate(ts): # each stack is in bottom-up order so fill im with the data from the SharedImage matrix
             arr=np.asarray(imgobj.images[dd].img).astype(dtype).T # RealMatrix is stored in transposed order
-            assert arr.shape==shape[:2]
+            assert arr.shape==shape[:2],'Image size (%s) does not match expected size %s'%(arr.shape,shape[:2])
             im[:,:,d,t]=arr
     
     yield im
@@ -134,7 +134,7 @@ def transposeRowsColsNP(img):
 def reverseAxes(img):
     '''Reverse the axes of numpy array `img'.'''
     return np.transpose(img,list(reversed(range(img.ndim))))
-	
+
 
 def sampleImageRay(img,start,samplevec,numsamples):
     '''Sample `numsamples' values from `img' starting from `start' in direction of `samplevec' (both in matrix coords).'''
@@ -411,11 +411,27 @@ def isCTImageSeries(imgs=None,minv=None,maxv=None,hist=None):
     return len(maximi)>3
 
 
+def applySlopeIntercept(imgobj,slope=None,inter=None):
+    '''Apply the slope and intercept values to the image object `imgobj', each pixel i is replaced with i*slope+inter.'''
+    slope=float(slope if slope is not None else 1.0)
+    inter=float(inter if inter is not None else 0.0)
+    if slope==1.0 and inter==0.0:
+        return
+
+    for i in imgobj.images:
+        i.img.mul(slope)
+        i.img.add(inter)
+        i.setMinMaxValues(i.imgmin*slope+inter,i.imgmax*slope+inter)
+
+    imgobj.imagerange=None
+
+
 def getLargestMaskObject(mask):
     '''Given a numpy array `mask' containing a binary mask, returns an equivalent array with only the largest mask object.'''
     labeled,numfeatures=scipy.ndimage.label(mask) # generate a feature label
     sums=scipy.ndimage.sum(mask,labeled,list(range(numfeatures+1))) # sum the pixels under each label
     maxfeature=np.where(sums==max(sums)) # choose the maximum sum whose index will be the label number
+    
     return mask*(labeled==maxfeature)
 
 
@@ -458,11 +474,11 @@ def generateMotionMask(motion,percentile=90,filterSize=10):
     result=np.zeros_like(motion)
 
     for i in range(motion.shape[-1]):
-        m=motion[...,i]>np.percentile(motion[...,i],percentile)
-        m=scipy.ndimage.binary_erosion(m,iterations=1)
-        m=getLargestMaskObject(m)
-        m=scipy.ndimage.maximum_filter(m, size=filterSize)
-        m=generateMaskConvexHull(m)
+        m=motion[...,i]>np.percentile(motion[...,i],percentile) # threshold by percentile
+        m=scipy.ndimage.binary_erosion(m,iterations=1) # erode image slightly to fill in small gaps
+        m=getLargestMaskObject(m) # select out the largest single object in the image
+        m=scipy.ndimage.maximum_filter(m, size=filterSize) # smooth masks
+        m=generateMaskConvexHull(m) # generate convex hull to include all masked areas
         result[...,i]=m
     
     return result
@@ -483,21 +499,6 @@ def generateMaskConvexHull(mask):
     
     # reshape the points to the original's shape and mask by valid values
     return (simplexpts.reshape(origshape)!=-1).astype(mask.dtype) 
-
-
-def applySlopeIntercept(imgobj,slope=None,inter=None):
-    '''Apply the slope and intercept values to the image object `imgobj', each pixel i is replaced with i*slope+inter.'''
-    slope=float(slope if slope is not None else 1.0)
-    inter=float(inter if inter is not None else 0.0)
-    if slope==1.0 and inter==0.0:
-        return
-
-    for i in imgobj.images:
-        i.img.mul(slope)
-        i.img.add(inter)
-        i.setMinMaxValues(i.imgmin*slope+inter,i.imgmax*slope+inter)
-
-    imgobj.imagerange=None
 
 
 @timing
@@ -576,13 +577,20 @@ def cropMotionImage(obj,name,percentile=90,filterSize=10):
     return obj.plugin.cropXY(obj,name,inds[0].start, inds[1].start, inds[0].stop, inds[1].stop)
   
 
-def maskMotionImage(obj,name,percentile=90,filterSize=10):
-    motion=calculateMotionField(obj)
-    mask=generateMotionMask(motion,percentile,filterSize)
+def maskMotionImage(obj,firstStepOnly=True,percentile=90,filterSize=10):
+    if firstStepOnly:
+        masked=obj.extractTimesteps(obj.getName()+'_masked',timesteps=[0])
+    else:
+        masked=obj.clone(obj.getName()+'_masked')
     
-    out=obj.plugin.clone(obj,name)
+    with processImageNp(obj) as orig:
+        motion=calculateMotionFFT(orig)
+        mask=generateMotionMask(motion,percentile,filterSize)
+        
+        with processImageNp(masked,True) as m:
+            m[...]=m*np.repeat(mask[...,np.newaxis],m.shape[3],3)
     
-    return out
+    return masked,motion,mask
     
 
 def centerImagesLocalSpace(obj):

@@ -1360,7 +1360,7 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
     '''
     timeout=kwargs.get('timeout',None) # timeout time value in seconds
     cwd=kwargs.get('cwd',None)
-    env=kwargs.get('enc',None)
+    env=kwargs.get('env',None)
     exefile=os.path.abspath(exefile)
     output=''
     errcode=0
@@ -2098,7 +2098,7 @@ def successive(iterable,width=2,cyclic=False):
     assert width>1
     it=iter(iterable)
     val=tuple(next(it) for i in range(width)) # get the first `width' values
-
+    
     if cyclic: # if cyclic, make `it' into a chain that effectively sticks `val' (minus its last value) onto the end
         it=itertools.chain(it,iter(val[:-1]))
 
@@ -2321,6 +2321,11 @@ def stddev(vals,initial=0.0):
 
 def avgspan(vals):
     '''Returns the average difference between successive values derived from the given iterable.'''
+    it=iter(vals)
+    val=tuple(next(it) for i in range(2))
+    if len(val)!=2:
+        return 0.0
+    
     return avg(b-a for a,b in successive(vals))
 
 

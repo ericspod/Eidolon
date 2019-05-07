@@ -402,5 +402,6 @@ def noGuiMain(args=[]):
     '''Default entry point for the application, calls the standard sequence of init steps and then starts the UI.'''
     conf=generateConfig(args)
     _,mgr=initDefault(conf,False)
-    initDefaultAssets(mgr)
+    #initDefaultAssets(mgr)
     mgr.loadFilesTask(*conf.get('args','files').split('|'))
+    return mgr
