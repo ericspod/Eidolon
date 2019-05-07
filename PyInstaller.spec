@@ -24,7 +24,10 @@ outname='Eidolon'
 
 pathex=['.']
 binaries=[]
-hiddenimports=['numpy', 'scipy','PyQt4.uic','PyQt5.uic','_struct','eidolon','eidolon.renderer','eidolon.plugins','eidolon.ui']
+hiddenimports=[
+    'numpy', 'scipy','PyQt4.uic','PyQt5.uic','_struct','eidolon','eidolon.renderer',
+    'eidolon.plugins','eidolon.ui','ipykernel.datapub'
+]
 block_cipher = None
 
 datas=[
@@ -62,17 +65,19 @@ elif compat.is_linux:
 	binaries+=[(f,'.') for f in glob('eidolon/EidolonLibs/linux/bin/*')]
 	datas.append(('eidolon/EidolonLibs/MIRTK/Linux','eidolon/EidolonLibs/MIRTK/Linux'))
 
-a = Analysis(['main.py'],
-             pathex=pathex,
-             binaries=binaries,
-             datas=datas,
-             hiddenimports=hiddenimports,
-             hookspath=[],
-             runtime_hooks=[],
-             excludes=[],
-             win_no_prefer_redirects=False,
-             win_private_assemblies=False,
-             cipher=block_cipher)
+a = Analysis(
+    ['main.py'],
+    pathex=pathex,
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher
+)
              
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
              

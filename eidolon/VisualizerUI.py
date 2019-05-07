@@ -2323,7 +2323,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
                 warnings.warn('Cannot create Jupyter console widget, defaulting to internal console: %r'%e)
                 self.console=ConsoleWidget(self,conf)
         else:
-            warnings.warn('Using internal console'+('' if jConsolePresent else ', Jupyter QtConsole not present'))
+            warnings.warn('Using internal console'+('' if jConsolePresent else ', Jupyter QtConsole not present or disabled'))
             self.console=ConsoleWidget(self,conf)
         
         self.consoleLayout.addWidget(self.console)
