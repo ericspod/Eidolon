@@ -23,26 +23,26 @@ import multiprocessing
 #eidolon.configEnviron() # configure environment variables before attempting to load plugins
 
 # necessary for now to include plugins here for multiprocessing
-# import eidolon.plugins.X4DFPlugin
-# import eidolon.plugins.CheartPlugin
-# import eidolon.plugins.DicomPlugin
-# import eidolon.plugins.NiftiPlugin
-# import eidolon.plugins.MetaImagePlugin
-# import eidolon.plugins.VTKPlugin
-# import eidolon.plugins.MeditPlugin
-# import eidolon.plugins.STLPlugin
-# import eidolon.plugins.NRRDPlugin
-# import eidolon.plugins.ParRecPlugin
-# import eidolon.plugins.ImageStackPlugin
-# import eidolon.plugins.SlicePlugin
-# import eidolon.plugins.PlotPlugin
-# import eidolon.plugins.SegmentPlugin
-# import eidolon.plugins.ReportCardPlugin
-# import eidolon.plugins.MeasurementPlugin
-# import eidolon.plugins.CardiacMotionPlugin
-# import eidolon.plugins.ImageAlignPlugin
-# #import eidolon.plugins.CTMotionTrackPlugin
-# import eidolon.plugins.DeformPlugin
+import eidolon.plugins.X4DFPlugin
+import eidolon.plugins.CheartPlugin
+import eidolon.plugins.DicomPlugin
+import eidolon.plugins.NiftiPlugin
+import eidolon.plugins.MetaImagePlugin
+import eidolon.plugins.VTKPlugin
+import eidolon.plugins.MeditPlugin
+import eidolon.plugins.STLPlugin
+import eidolon.plugins.NRRDPlugin
+import eidolon.plugins.ParRecPlugin
+import eidolon.plugins.ImageStackPlugin
+import eidolon.plugins.SlicePlugin
+import eidolon.plugins.PlotPlugin
+import eidolon.plugins.SegmentPlugin
+import eidolon.plugins.ReportCardPlugin
+import eidolon.plugins.MeasurementPlugin
+import eidolon.plugins.CardiacMotionPlugin
+import eidolon.plugins.ImageAlignPlugin
+#import eidolon.plugins.CTMotionTrackPlugin
+import eidolon.plugins.DeformPlugin
 
 if __name__ == '__main__': # needed for Windows multiprocessing (unless you want fork bombs)
     multiprocessing.freeze_support()

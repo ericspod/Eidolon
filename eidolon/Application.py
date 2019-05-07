@@ -282,7 +282,8 @@ def initDefaultAssets(mgr):
 
     # create a default directional light that follows the camera
     cl=mgr.createLight(LightType._cdir,'Camera Light')
-    cl.setColor(color(0.25,0.25,0.25))
+    if cl:
+        cl.setColor(color(0.25,0.25,0.25))
 
     res=mgr.conf.get(platformID,ConfVars.resdir)
     
