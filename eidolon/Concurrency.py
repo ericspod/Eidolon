@@ -286,7 +286,7 @@ class AlgorithmProcess(Process):
         if isinstance(self.progress,Task):
             self.progress.setProgress(val)
         elif self.progress:
-            self.progress[self.index]=val
+            self.progress[self.index]=int(val)
 
     def _continueRunning(self):
         '''Returns True so long as the `stopEvent' is not set and the parent process has not exited.'''

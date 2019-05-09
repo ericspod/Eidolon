@@ -47,7 +47,7 @@ try:
     from qtconsole.inprocess import QtInProcessKernelManager, QtInProcessRichJupyterWidget
     jConsolePresent=True
 except ImportError:
-    QtInProcessRichJupyterWidget=object # bogus type definition to satisfy inheritance
+    QtInProcessRichJupyterWidget=QtWidgets.QWidget # bogus type definition to satisfy inheritance
     jConsolePresent=False
     
 
@@ -1483,7 +1483,7 @@ class JupyterWidget(QtInProcessRichJupyterWidget):
     imported. As a drop-in replacement for ConsoleWidget its public interface is meant to be the same.
     '''
     def __init__(self,win,conf,parent=None):
-        QtInProcessRichJupyterWidget.__init__(self,parent=parent)
+        super().__init__(self,parent=parent)
         self.win=win
         self.conf=conf
         

@@ -1399,7 +1399,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
                 elif i>=(capSize+ringSize*(len(xis)-2)):
                     xi=len(xis)-1
                 else:
-                    xi=(i-capSize)/ringSize
+                    xi=(i-capSize)//ringSize
 
                 outnodes.append(n,norms[i],xis[xi])
                 outprops.append(elem,face,indnum)
@@ -1450,7 +1450,7 @@ def calculateLineCylindersRange(process,IndexMatrix ind,IndexMatrix ext,Vec3Matr
             radius=newradius
 
         if radius!=None:
-            defaultradii=[float(radius)]*(len(facexis[0][0])/3)
+            defaultradii=[float(radius)]*(len(facexis[0][0])//3)
 
         for doExtFirst in genCycles: # generate for external edges first, then internal edges (if not externalOnly)
             for elem in process.nrange():
