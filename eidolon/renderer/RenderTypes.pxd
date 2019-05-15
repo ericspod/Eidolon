@@ -321,7 +321,10 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
 
         void toMatrix(real v[16]) const
 
-
+    cdef cppclass mat4:
+        real* getPointer() const
+        
+        
     cdef cppclass Matrix[T]:
         Matrix(const char* name,const char* type,sval n, sval m,bint isShared) except +MemoryError
         Matrix(const char* name,const char* type,const char* sharedname,const char* serialmeta,sval n, sval m) except +MemoryError
@@ -608,6 +611,9 @@ cdef extern from "RenderTypes.h" namespace "RenderTypes" nogil:
         vec3 getPosition()
         vec3 getLookAt()
         rotator getRotation()
+        
+        mat4 getViewMatrix() 
+        mat4 getProjMatrix() 
 
         vec3 getScreenPosition(vec3 pos)
         vec3 getWorldPosition(real x, real y, bint isAbsolute) const

@@ -36,7 +36,7 @@ from libc.string cimport memcpy
 cimport RenderTypes
 from RenderTypes cimport FigureType,BlendMode,TextureFormat,ProgramType,VAlignType, HAlignType
 from RenderTypes cimport real,rgba,sval,indexval,i32, u64, realpair, realtriple,indexpair,indextriple,intersect
-from RenderTypes cimport vec3 as ivec3, color as icolor, rotator as irotator, transform as itransform, Ray as iRay
+from RenderTypes cimport vec3 as ivec3, color as icolor, rotator as irotator, transform as itransform, mat4 as imat4, Ray as iRay
 from RenderTypes cimport Matrix as iMatrix, Vec3Matrix as iVec3Matrix, RealMatrix as iRealMatrix,IndexMatrix as iIndexMatrix, ColorMatrix as iColorMatrix
 from RenderTypes cimport Config as iConfig
 from RenderTypes cimport VertexBuffer as iVertexBuffer, IndexBuffer as iIndexBuffer, MatrixVertexBuffer as iMatrixVertexBuffer,MatrixIndexBuffer as iMatrixIndexBuffer
@@ -1545,7 +1545,21 @@ cdef class Camera:
     def getRotation(self):
         self._checkObjectNull()
         return rotator._new(self.val.getRotation())
-
+        
+    def getViewMatrix(self):
+        self._checkObjectNull()
+        cdef imat4 m4=self.val.getViewMatrix()
+        cdef real* m=m4.getPointer()
+        
+        return (m[0],m[1],m[2],m[3]),(m[4],m[5],m[6],m[7]),(m[8],m[9],m[10],m[11]),(m[12],m[13],m[14],m[15])
+        
+    def getProjMatrix(self):
+        self._checkObjectNull()
+        cdef imat4 m4=self.val.getProjMatrix()
+        cdef real* m=m4.getPointer()
+        
+        return (m[0],m[1],m[2],m[3]),(m[4],m[5],m[6],m[7]),(m[8],m[9],m[10],m[11]),(m[12],m[13],m[14],m[15])
+        
     def getScreenPosition(self,vec3 pos):
         self._checkObjectNull()
         return vec3._new(self.val.getScreenPosition(pos.val))

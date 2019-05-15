@@ -539,10 +539,10 @@ def cropObjectEmptySpace(obj,name,xymargins=0,zFilter=False):
     newobj=ImageSceneObject(name,obj.source,images,obj.plugin,obj.isTimeDependent)
     if clipsq!=(0,0,cols-1,rows-1):
         minx,miny,maxx,maxy=clipsq
-        minx=max(0,minx-xymargins/2)
-        miny=max(0,miny-xymargins/2)
-        maxx=min(cols-1,maxx+xymargins/2)
-        maxy=min(rows-1,maxy+xymargins/2)
+        minx=max(0,minx-xymargins//2)
+        miny=max(0,miny-xymargins//2)
+        maxx=min(cols-1,maxx+xymargins//2)
+        maxy=min(rows-1,maxy+xymargins//2)
         newobj=newobj.plugin.cropXY(newobj,name,minx,miny,maxx,maxy)
 
     return newobj

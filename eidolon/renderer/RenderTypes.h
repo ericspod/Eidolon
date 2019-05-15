@@ -890,6 +890,8 @@ public:
 
 	void clear() { memset(m,0,sizeof(real)*16); }
 	void ident() { clear(); m00=m11=m22=m33=1.0; }
+	
+	real* getPointer() const { return (real*)m; } 
 
 	vec3 operator * (const vec3& v) const
 	{
@@ -3788,6 +3790,9 @@ public:
 	virtual vec3 getPosition() const { return vec3();}
 	virtual vec3 getLookAt() const { return vec3();}
 	virtual rotator getRotation() const { return rotator(); }
+	
+	virtual mat4 getViewMatrix() const { return mat4(); }
+	virtual mat4 getProjMatrix() const { return mat4(); }
 
 	/// Returns the (x,y) screen coordinate of the vector `pos' as drawn with the current camera configuration.
 	virtual vec3 getScreenPosition(vec3 pos) const { return vec3(); }

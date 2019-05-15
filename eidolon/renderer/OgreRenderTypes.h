@@ -133,6 +133,18 @@ inline Ogre::RenderOperation::OperationType convert(FigureType type)
 	}
 }
 
+inline mat4 convert(const Ogre::Matrix4& m)
+{
+    mat4 out(
+        m[0][0],m[0][1],m[0][2],m[0][3],
+        m[1][0],m[1][1],m[1][2],m[1][3],
+        m[2][0],m[2][1],m[2][2],m[2][3],
+        m[3][0],m[3][1],m[3][2],m[3][3]
+    );
+    
+    return out;
+}
+
 /**
  * Base class used by specializations with the renderer to destroy and update resources within the render cycle. The name
  * of the creating object should be passed in the constructor for operations which might be performed after an object has
@@ -276,6 +288,20 @@ public:
 		real w=port->getActualWidth(),h=port->getActualHeight();
 
 		return vec3(fround(w*(0.5+0.5*(p.x/p.w))),fround(h*(0.5-0.5*(p.y/p.w))));
+	}
+	
+	virtual mat4 getViewMatrix() const 
+	{ 
+	    Ogre::Matrix4 m=camera->getViewMatrix();
+	    
+	    return convert(m);
+	}
+	
+	virtual mat4 getProjMatrix() const
+	{ 
+	    Ogre::Matrix4 m=camera->getProjectionMatrix();
+	    
+	    return convert(m);
 	}
 
 	virtual void setPosition(const vec3& v)
