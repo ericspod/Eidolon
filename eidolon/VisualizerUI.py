@@ -1500,14 +1500,14 @@ class JupyterWidget(QtInProcessRichJupyterWidget):
         self.setStyleSheet(win.styleSheet())
         
         self.updateLocals({'jpwidg':self})
-        self.sendInputBlock('from eidolon import *')
+        self.sendInputBlock('from eidolon import *',False)
         
     def updateLocals(self,localvals):
         '''Override the local variable dictionary with the given dictionary.'''
         self.kernel.shell.push(localvals)
         
     def sendInputBlock(self,block,printBlock=True):
-        '''Interpret the given code `line'.'''
+        '''Interpret the given code `block'.'''
         return self.execute(block,not printBlock) 
     
 

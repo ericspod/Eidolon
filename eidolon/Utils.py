@@ -1114,7 +1114,7 @@ def getAppDir():
     else:
         import __init__
         
-    return __init__.__appdir__ # os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
+    return __init__.__appdir__ 
 
 
 def getLibraryDir():
@@ -1124,7 +1124,7 @@ def getLibraryDir():
     else:
         import __init__
         
-    return __init__.__libdir__ # os.path.abspath(os.getenv(__init__.APPDIRVAR,'./'))
+    return __init__.__libdir__
 
 
 def setLogging(logfile='eidolon.log',filemode='a'):
@@ -1200,7 +1200,7 @@ def getVersionsFromRepoURL(url=None):
         except HTTPError:
             newver=None
 
-    return currentver,newver,(newver is None or currentver>newver)
+    return currentver,newver,(newver is None or currentver>=newver)
     
 
 def processExists(pid):
