@@ -459,7 +459,7 @@ class ImageSceneObject(SceneObject):
         '''
         Returns a map from (vec3,rotator) pairs to the indices of all images (in temporal order) having that
         position and orientation. Each value in the map thus indexes the images defining a 2D slice in time. The
-        ordering of the indices is depedent on the ordering of self.images if multiple colicated images have the 
+        ordering of the indices is depedent on the ordering of self.images if multiple colocated images have the 
         same timestep.
         '''
         timeorientmap={}
