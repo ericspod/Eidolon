@@ -32,6 +32,7 @@ class TestRotator(unittest.TestCase):
 			v=vec3(x,y,z)
 			r=rotator()
 			self.assertEqual(r*v,v)
+			self.assertEqual(r/v,v)
 			
 	def testIdent2(self):
 		'''Test a rotator specified as the angle around the zero vector is an identity transformation.'''
@@ -133,4 +134,4 @@ class TestRotator(unittest.TestCase):
 			y,p,r=randnums(3,-math.pi*2,math.pi*2)
 			r1=rotator(y,p,r)
 			self.assertEqual(r1*(r1/v),v)
-
+			
