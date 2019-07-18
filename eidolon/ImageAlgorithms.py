@@ -501,6 +501,23 @@ def generateMaskConvexHull(mask):
     return (simplexpts.reshape(origshape)!=-1).astype(mask.dtype) 
 
 
+def cropCenter(img,*cropDims):
+    '''
+    Crop the center of the given array `img' to produce an array with dimensions `cropDims'. For each axis i in `img', 
+    the result will have the dimension size given in cropDims[i]. If cropDims[i] is None or cropDims[i] is beyond the 
+    length of `cropDims', the original dimension size is retained. Eg. cropCenter(np.zeros((10,20,20)),None,15,30)
+    will return an array of dimensions (10,15,20).
+    '''
+    slices=[slice(None) for _ in range(img.ndim)]
+    
+    for i,cropdim in enumerate(cropDims):
+        if cropdim is not None and cropdim>0:
+            start = max(0,img.shape[i]//2-(cropdim//2)) # start of slice, 0 if img.shape[i]<cropdim 
+            slices[i]=slice(start,start+cropdim)
+    
+    return img[tuple(slices)]
+
+
 @timing
 def cropVolumeMask(imgobj,mask,threshold,task=None):
     '''
@@ -734,6 +751,21 @@ def resampleImage(srcobj,destobj):
             img=destobj.images[ind]
             renderer.interpolateImageStack(stackimgs,srctrans, img.img, img.getTransform())
             img.readMinMaxValues()
+
+
+def deformImage2D(img,defx,defy):
+    '''Deform 2D image `img' by the given X and Y deformation fields.'''
+    h,w = img.shape[:2]
+    
+    defx=scipy.ndimage.zoom(defx,(h/defx.shape[0],w/defx.shape[1]),order=3)
+    defy=scipy.ndimage.zoom(defy,(h/defy.shape[0],w/defy.shape[1]),order=3)
+    
+    y, x = np.meshgrid(np.arange(w), np.arange(h))
+    indices =  np.reshape(x+defx, (-1, 1)),np.reshape(y+defy, (-1, 1))
+
+    distorted_image = scipy.ndimage.map_coordinates(img, indices, order=3, mode='constant')
+
+    return distorted_image.reshape(img.shape[:2])
 
 
 @concurrent

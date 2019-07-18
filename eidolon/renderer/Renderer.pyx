@@ -508,15 +508,11 @@ cdef class rotator:
         else:
             raise TypeError('A rotator can be multiplied with vec3 or rotator instance only')
 
-#    def __div__(rotator self,v):
-#        return vec3._new(self.val/(<vec3>v).val)
+    def __floordiv__(rotator self,vec3 v):
+        return vec3._new(self.val.inverse()*v.val)
 
-    def __truediv__(rotator self,v):
-        cdef irotator r=self.val
-        cdef ivec3 vv=(<vec3>v).val
-        cdef ivec3 res=r.inverse()*vv
-        
-        return vec3._new(res)
+    def __truediv__(rotator self,vec3 v):
+        return vec3._new(self.val.inverse()*v.val)
         
     def inverse(self):
         return rotator._new(self.val.inverse())
@@ -706,12 +702,11 @@ cdef class transform:
         else:
             return vec3._new(self.val*(<vec3?>v).val)
 
-#    def __div__(transform self,vec3 v):
-#        return vec3._new(self.val/v.val)
+    def __floordiv__(transform self,vec3 v):
+        return vec3._new(self.val.inverse()*v.val)
         
     def __truediv__(transform self,vec3 v):
         return vec3._new(self.val.inverse()*v.val)
-        #return vec3._new(self.val/v.val)
         
     def getTranslation(self):
         return vec3._new(self.val.getTranslation())

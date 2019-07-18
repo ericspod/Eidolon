@@ -184,6 +184,12 @@ class NiftiPlugin(ImageScenePlugin):
                 ff.write(gf.read())
 
         return newfilename
+    
+    def readImageData(self,infile):
+        return readImageData(infile)
+    
+    def writeImageData(self,img,outfile):
+        writeImageData(img,outfile)
 
     def loadImage(self,filename,name=None,imgObj=None):
         '''Deprecated, for compatibility only.'''

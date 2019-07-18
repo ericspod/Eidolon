@@ -38,10 +38,11 @@ except:
 from contextlib import closing
 import numpy as np
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
+from scipy.ndimage.interpolation import zoom
 
 import eidolon
 from eidolon import (
-    QtWidgets, copyfileSafe,
+    QtWidgets, copyfileSafe, cropCenter, deformImage2D,
     enum, printFlush, taskroutine, taskmethod, execBatchProgram, concurrent, addPathVariable,isLinux, isWindows,
     getLibraryDir, timing, first, vec3, Future, extendImage, readBasicConfig, MeshSceneObject, ImageSceneObject
 )
@@ -970,6 +971,101 @@ class IRTKPluginMixin(object):
         self.saveToNifti([ext],True)
         self.addObject(ext)
         return ext
+    
+    def registerImage2D(self,src,tgt,tempDir=None,spacing=10,model='BSplineFFD'):
+        '''
+        Register the 2D image `src` to `tgt`, returning the X and Y deformation fields to do so. The `tmpdir` directory 
+        path is used for temporary information. The `plugin` object is expected to be an IRTK plugin instance. The 
+        `spacing` value specifies the spacing between control points. The `model` field is either 'BSplineFFD' or 
+        'Rigid' to specify the deformation model.
+        '''
+        def _run(*cmd):
+            cmd=tuple(str(c) for c in cmd)
+            rcode,stdout=execBatchProgram(*cmd,cwd=tempDir)
+            assert rcode==0,'Error: %r %r:\n%s'%(rcode,cmd,stdout)
+            return stdout
+            
+        tempDir=tempDir or self.mgr.getUserTempDir('tmp_interpolate')
+        
+        self.Nifti.writeImageData(src,os.path.join(tempDir,'src.nii'))
+        self.Nifti.writeImageData(tgt,os.path.join(tempDir,'tgt.nii'))
+        
+        _run(self.register,'tgt.nii','src.nii','-dofout','src-tgt.dof',
+             '-parout','reg.cfg',
+             '-par','Control point spacing',spacing,
+             '-par','Transformation model',model,
+             '-par','Allow rotations','Yes' if model!='Rigid' else 'No'
+            )
+        
+        if model=='Rigid':
+            _run(self.convertdof,'src-tgt.dof','src-tgt.txt','-target','src.nii')  
+        else:
+            _run(self.convertdof,'src-tgt.dof','src-tgt.txt')
+        
+#             _run(plugin.convertdof,'src-tgt.dof','src-tgt.nii','-format','nreg')
+        
+        dof=np.loadtxt(os.path.join(tempDir,'src-tgt.txt'),skiprows=1)
+        
+        # determine the dimensions of the deformation lattice which has the same aspect ratio as src
+        w,h=src.shape
+        ratio=dof.shape[0]/(w*h)
+        wd=int((h*ratio**0.5))
+        hd=dof.shape[0]//wd
+    
+        # resize the X and Y deformation components by the spacing value and crop the center
+        x=zoom(dof[:,3].reshape((wd,hd)).T,spacing)
+        x=cropCenter(x,*src.shape)
+        y=zoom(dof[:,4].reshape((wd,hd)).T,spacing)
+        y=cropCenter(y,*src.shape)
+        
+        return x,y
+    
+    def interpolateImages2D(self,im0,im1,numImgs,tempDir=None):
+        '''Generate an interpolation stack between 2D images `im0` and `im1` with `numImgs' total number of images.'''
+        assert numImgs>2
+        
+        tempDir=tempDir or self.mgr.getUserTempDir('tmp_interpolate')
+        
+        rx01,ry01=self.registerImage2D(im0,im1,tempDir)
+        rx10,ry10=self.registerImage2D(im1,im0,tempDir)
+        
+        out=np.zeros(tuple(im0.shape)+(numImgs,),dtype=im0.dtype)
+        
+        out[...,0]=im0
+        out[...,-1]=im1
+        
+        for i in range(1,numImgs-1):
+            z=i/numImgs
+            iz=1.0-z
+            out[...,i]=deformImage2D(im0*iz,rx01*z,ry01*z)+deformImage2D(im1*z,rx10*iz,ry10*iz)
+        
+        return out
+    
+    @taskmethod('Interpolating image object')
+    def interpolateImageObject(self,obj,numAddedSlices,tempDir=None,task=None):
+        tempDir=tempDir or self.mgr.getUserTempDir('tmp_interpolate')
+        
+        w,h,d,t=obj.getArrayDims()
+        trans=obj.getVolumeTransform()
+        scale=trans.getScale().abs()
+        numslices=d+(d-1)*numAddedSlices
+        skip=numAddedSlices+1
+        
+        spacing=scale/eidolon.vec3(w,h,numslices)
+        
+        out=obj.createRespacedObject(obj.getName()+'_Interp',spacing)
+        
+        with eidolon.processImageNp(obj) as imobj:
+            with eidolon.processImageNp(out,True) as imout:
+                for ts in range(t):
+                    for i in range(d-1):
+                        im0=imobj[:,:,i,ts]
+                        im1=imobj[:,:,i+1,ts]
+                        interp=self.interpolateImages2D(im0,im1,numAddedSlices+2,tempDir)
+                        
+                        imout[:,:,i*skip:i*skip+numAddedSlices+2,ts]=interp
+                
+        return out
 
     def applyMotionTrack(self,obj_or_name,trackname_or_dir,addObject=True):
         '''
