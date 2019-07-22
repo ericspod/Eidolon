@@ -122,7 +122,7 @@ else
 	find dist/Eidolon/eidolon/EidolonLibs/IRTK/ -type f  ! -name "*.*" -delete
 	cd dist/Eidolon && rm -rf libglib-2.0.so.0 libgobject-2.0.so.0 libgpg-error.so.0 share/icons
 	cp eidolon/EidolonLibs/linux/lib/libCg.so run.sh dist/Eidolon
-	#-cd dist && zip -r ../$(DISTNAME).zip Eidolon
+	-cd dist && zip -r ../$(DISTNAME).zip Eidolon
 endif
 
 clean:
