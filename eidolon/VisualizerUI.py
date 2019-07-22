@@ -1483,7 +1483,7 @@ class JupyterWidget(QtInProcessRichJupyterWidget):
     imported. As a drop-in replacement for ConsoleWidget its public interface is meant to be the same.
     '''
     def __init__(self,win,conf,parent=None):
-        super().__init__(self,parent=parent)
+        super().__init__(parent)
         self.win=win
         self.conf=conf
         
