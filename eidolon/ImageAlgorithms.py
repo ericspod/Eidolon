@@ -92,6 +92,12 @@ def rescaleArray(arr,minv=0.0,maxv=1.0,dtype=np.float32):
     return (norm*(maxv-minv))+minv # rescale by minv and maxv, which is the normalized array by default
 
 
+def rescaleArrayIntMax(arr,dtype=np.uint16):
+    '''Rescale the array `arr' to be between the minimum and maximum values of the type `dtype'.'''
+    info=np.iinfo(dtype)
+    return rescaleArray(arr,info.min,info.max).astype(dtype)
+
+
 @contextlib.contextmanager
 def processImageNp(imgobj,writeBack=False,dtype=np.float32):
     '''

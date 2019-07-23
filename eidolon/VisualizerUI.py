@@ -2158,6 +2158,30 @@ class BaseSpectrumWidget(QtWidgets.QWidget):
         p.end()
 
 
+class VizDockWidget(QtWidgets.QDockWidget):
+    def __init__(self,widg,title,w,h,parent):
+        super().__init__(parent)
+        self.w=w
+        self.h=h
+        self.widg=widg
+        self.setFloating(False)
+        self.setWindowTitle(title)
+        self.setWidget(widg)
+        self.setMinimumWidth(w*2) # initialize the minimum width to twice given so that the dock starts out larger
+        self.setMinimumHeight(h)
+        self.setAttribute(Qt.WA_DeleteOnClose, True)
+        
+    def closeEvent(self,e):
+        if hasattr(self.widg,'parentClosed'):
+            self.widg.parentClosed(e)
+        self.parent().dockWidgets.remove(self.widg)
+        self.parent().removeDockWidget(self)
+
+    def showEvent(self,e): 
+        # set the minimum size to what's actually wanted when the dock is shown
+        self.setMinimumWidth(self.w)
+        
+
 class ScreenshotDialog(QtWidgets.QDialog,Ui_ScreenshotForm):
     def __init__(self,win,start,end,fps,steps,cameras):
         QtWidgets.QDialog.__init__(self,win)
@@ -2630,28 +2654,14 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
     @signalmethod
     def createDock(self,name,widg,minw=200,minh=200):
-        '''Add the widget `widg' to the interface in its own docked subwindow with minimum dimensions (minw,minh).'''
-        d = QtWidgets.QDockWidget(self)
-        d.setFloating(False)
-        d.setWindowTitle(Utils.uniqueStr(name,[w.parent().windowTitle() for w in self.dockWidgets],' '))
-        d.setWidget(widg)
-        d.setMinimumWidth(minw*2) # initialize the minimum width to twice given so that the dock starts out larger
-        d.setMinimumHeight(minh)
-        d.setAttribute(Qt.WA_DeleteOnClose, True)
-
-        def closeEvent(e):
-            if hasattr(widg,'parentClosed'):
-                widg.parentClosed(e)
-            self.dockWidgets.remove(widg)
-            self.removeDockWidget(d)
-
-        def showEvent(e): # set the minimum size to what's actually wanted when the dock is shown
-            d.setMinimumWidth(minw)
-
-        setattr(d,'closeEvent',closeEvent)
-        setattr(d,'showEvent',showEvent)
-
-        self.addDockWidget(Qt.DockWidgetArea(2), d)
+        '''
+        Add the widget `widg' to the interface in its own docked subwindow with minimum dimensions (minw,minh). If 
+        `widg' has a parentClosed() method, this will be called when the dock is closed with the close event passed as 
+        the only argument.
+        '''
+        name=Utils.uniqueStr(name,[w.parent().windowTitle() for w in self.dockWidgets],' ')
+        dwidg=VizDockWidget(widg,name,minw,minh,self)
+        self.addDockWidget(Qt.DockWidgetArea(2), dwidg)
         self.dockWidgets.append(widg)
 
     def findWidgetItem(self,obj):

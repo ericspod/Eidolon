@@ -79,13 +79,17 @@ def convertNiftiTransform(img):
     spacing=vec3(pixdim[1],pixdim[2],qfac*pixdim[3])
 
     if int(hdr['qform_code'])>0:
-        position=vec3(-x,-y,z)
-        rot=rotator(-c,b,math.sqrt(max(0,1.0-(b*b+c*c+d*d))),-d)*rotator(vec3.Z(),halfpi)
+        position=vec3(x,y,z)
+        rot=rotator(-c,b,math.sqrt(max(0,1.0-(b*b+c*c+d*d))),-d)
     else:
         affine=img.get_affine()
-        position=vec3(-affine[0,3],-affine[1,3],affine[2,3])
+        position=vec3(affine[0,3],affine[1,3],affine[2,3])
         rmat=np.asarray([affine[0,:3]/-spacing.x(),affine[1,:3]/-spacing.y(),affine[2,:3]/spacing.z()])
-        rot=rotator(*rmat.flatten().tolist())*rotator(vec3.Z(),halfpi)
+        rot=rotator(*rmat.flatten().tolist())
+
+    # convert from nifti-space to real space
+    position=position*vec3(-1,-1,1)
+    rot=rot*rotator(vec3.Z(),halfpi)
 
     xyzunit=xyzt_units & 0x07 # isolate space units with a bitmask of 7
     tunit=xyzt_units & 0x38 # isolate time units with a bitmask of 56
@@ -112,7 +116,7 @@ def convertNiftiTransform(img):
         toffset/=1000.0
         interval/=1000.0
         
-    return position,rot,spacing, toffset,interval
+    return position, rot, spacing, toffset, interval
 
 
 class NiftiPlugin(ImageScenePlugin):
@@ -208,57 +212,6 @@ class NiftiPlugin(ImageScenePlugin):
 
                 hdr=dict(img.header)
                 hdr['filename']=filename
-
-#                pixdim=hdr['pixdim']
-#                xyzt_units=hdr['xyzt_units']
-#                x=float(hdr['qoffset_x'])
-#                y=float(hdr['qoffset_y'])
-#                z=float(hdr['qoffset_z'])
-#                b=float(hdr['quatern_b'])
-#                c=float(hdr['quatern_c'])
-#                d=float(hdr['quatern_d'])
-#                toffset=float(hdr['toffset'])
-#                interval=float(pixdim[4])
-#
-#                if interval==0.0 and len(img.shape)==4 and img.shape[-1]>1:
-#                    interval=1.0
-#
-#                qfac=float(pixdim[0]) or 1.0
-#                spacing=vec3(pixdim[1],pixdim[2],qfac*pixdim[3])
-#
-#                if int(hdr['qform_code'])>0:
-#                    position=vec3(-x,-y,z)
-#                    rot=rotator(-c,b,math.sqrt(max(0,1.0-(b*b+c*c+d*d))),-d)*rotator(vec3.Z(),halfpi)
-#                else:
-#                    affine=img.get_affine()
-#                    position=vec3(-affine[0,3],-affine[1,3],affine[2,3])
-#                    rmat=np.asarray([affine[0,:3]/-spacing.x(),affine[1,:3]/-spacing.y(),affine[2,:3]/spacing.z()])
-#                    rot=rotator(*rmat.flatten().tolist())*rotator(vec3.Z(),halfpi)
-#
-#                xyzunit=xyzt_units & 0x07 # isolate space units with a bitmask of 7
-#                tunit=xyzt_units & 0x38 # isolate time units with a bitmask of 56
-#
-#                if tunit==0: # if no tunit provided, try to guess
-#                    if interval<1.0:
-#                        tunit=unit_codes['sec']
-#                    elif interval>1000.0:
-#                        tunit=unit_codes['usec']
-#
-#                # convert to millimeters
-#                if xyzunit==unit_codes['meter']:
-#                    position*=1000.0
-#                    spacing*=1000.0
-#                elif xyzunit==unit_codes['micron']:
-#                    position/=1000.0
-#                    spacing/=1000.0
-#
-#                # convert to milliseconds
-#                if tunit==unit_codes['sec']:
-#                    toffset*=1000.0
-#                    interval*=1000.0
-#                elif tunit==unit_codes['usec']:
-#                    toffset/=1000.0
-#                    interval/=1000.0
                 
                 position,rot,spacing,toffset,interval=convertNiftiTransform(img)
 
@@ -268,11 +221,6 @@ class NiftiPlugin(ImageScenePlugin):
                 # reading file data directly is expected to be faster than using nibabel, specifically by using memmap
                 if filename.endswith('.gz'):
                     dat=img.get_data()
-                    #dat=np.asanyarray(dobj) # same as the above
-                    
-#                    with gzip.open(filename) as o: # TODO: not sure if this is any faster than the above
-#                        o.seek(dobj.offset) # seek beyond the header
-#                        dat=np.frombuffer(o.read(),dobj.dtype).reshape(datshape,order=dobj.order)
                 else:
                     # mmap the image data below the header in the file
                     dat=np.memmap(dobj.file_like,dobj.dtype,'r',dobj.offset,datshape,dobj.order)
@@ -338,7 +286,7 @@ class NiftiPlugin(ImageScenePlugin):
                     path+='.nii'
 
                 if 'datatype' in kwargs:
-                    datatype=kwargs.pop('datatype')
+                    datatype=kwargs.pop('datatype') or np.float32
                 elif isinstance(obj.source,dict) and 'datatype' in obj.source:
                     datatype=data_type_codes.dtype[int(obj.source['datatype'])]
                 else:
