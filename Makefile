@@ -47,13 +47,16 @@ ifeq ($(PLAT),win64_mingw)
 		REG="$(shell cat /proc/registry/HKEY_LOCAL_MACHINE/SOFTWARE/Python/PythonCore/$(WINVER)/InstallPath/@ 2>/dev/null)"
 	endif
 
-	PYTHON=$(shell cygpath -u '$(REG)')/python.exe
+	ifneq ($(REG),"")
+	    PYTHON=$(shell cygpath -u '$(REG)')/python.exe
+	endif
+	
 	SO_SUFFIX=.pyd
 endif
 
 PYTHONVER=$(shell $(PYTHON) -V 2>&1)
-CYTHONVER=$(shell $(PYTHON) -c 'import cython;print(cython.__version__)')
-PYTHONLIB=$(shell $(PYTHON) -c 'import distutils.sysconfig,os;print(os.path.abspath(distutils.sysconfig.get_python_lib()+"/../.."))')
+CYTHONVER=$(shell $(PYTHON) -c "import cython;print(cython.__version__)")
+PYTHONLIB=$(shell $(PYTHON) -c "import distutils.sysconfig,os;print(os.path.abspath(distutils.sysconfig.get_python_lib()+'/../..'))")
 
 #--------------------------------------------------------------------------------------
 
