@@ -46,7 +46,7 @@ From the Start Menu open an **Anaconda Prompt** window and run the following:
 
     conda install python=3.6 numpy scipy pyqt six
     
-This will install the bare necessities for Anaconda or Miniconda, the extras can be installed by including `imageio pandas qtconsole`
+This will install the bare necessities for Anaconda or Miniconda, the extras can be installed by including `imageio pandas`
 in the command.
 
 Once this is installed Eidolon can be run by double-clicking `run.bat` or running it from a terminal window.
@@ -63,10 +63,10 @@ Open a terminal and with the new installation in your PATH run the following:
 
     conda create -n nomkl python=3.6 nomkl numpy scipy pyqt six
 
-Adding `imageio pandas qtconsole` will install the optional libraries.
+Adding `imageio pandas` will install the optional libraries.
 Once this is done the command `source activate nomkl` will activate this environment, then Eidolon can be run by executing `run.sh`.
 
-## IPython
+## Jupyter/IPython
 
 Eidolon has support for the IPython console in place of the built-in console. There is a known issue with the recent version of the
 ipykernel package, thus installing an earlier version is needed. The conda command to do this (in the nomkl environment
