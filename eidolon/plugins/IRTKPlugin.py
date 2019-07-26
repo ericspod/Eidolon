@@ -257,6 +257,10 @@ class IRTKPluginMixin(object):
         '''Get a file with name `name' in the current context (ie. project directory).'''
         pass
 
+    def getUniqueObjName(self,name):
+        '''Get a unique object name which won't cause files to be overwritten.'''
+        pass
+
     def getTrackingDirs(self,root=None):
         '''Returns a list of absolute path directory names in the current context or in `root' containing tracking information.'''
         root=root or self.getLocalFile('.')
@@ -294,18 +298,8 @@ class IRTKPluginMixin(object):
 
         return objs
 
-    def getUniqueObjName(self,name):
-        '''
-        Returns an object name guaranteed to be unique, a valid filename, and not overwrite an existing file in the
-        current context when saved.
-        '''
-        name=eidolon.getValidFilename(name)
-        filenames=[eidolon.splitPathExt(i)[1] for i in glob.glob(self.getLocalFile('*'))]
-        objnames=[o.getName() for o in self.mgr.enumSceneObjects()]
-        return eidolon.uniqueStr(name,filenames+objnames)
-
     def getUniqueShortName(self,*comps,**kwargs):
-        '''Create a name guarranteed to be unique in the current context using the given arguments with createShortName() .'''
+        '''Create a name guaranteed to be unique in the current context using the given arguments with createShortName().'''
         return self.getUniqueObjName(eidolon.createShortName(*comps,**kwargs))
 
     def getUniqueLocalFile(self,name):
@@ -655,6 +649,60 @@ class IRTKPluginMixin(object):
         self.mgr.runTasks(_segmentMask(),f5)
 
         return f1,f2,f3,f4,f3
+    
+    def alignIntersectImages(self,volume,intersects,tempDir=None,numIters=1):
+        
+        def calculateVolShifts(vol1,vol2,tempDir):
+            with eidolon.processImageNp(vol1) as v1:
+                shifts=np.zeros((v1.shape[2],2))
+            
+                with eidolon.processImageNp(vol2) as v2:
+                    for d in range(v1.shape[2]):
+                        sx,sy=self.registerImage2D(v1[:,:,d,0],v2[:,:,d,0],tempDir=tempDir,model='Rigid')
+                        shifts[d]=-sx.mean(),-sy.mean()
+                        
+            return shifts
+    
+        tempDir=tempDir or self.mgr.getUserTempDir('alignIntersectImages')
+        vdims=volume.getArrayDims()
+        vshifts=np.zeros((vdims[2],2))
+        ishifts=np.zeros((len(intersects),2))
+        
+        vclone=volume.clone(volume.getName()+'_aligned') # shifted volume image
+        vtarget=volume.clone('vtarget') # register target temporary image
+        
+        iclones=[i.clone(i.getName()+'_aligned') for i in intersects] # shifted intersecting images
+        itargets=[i.clone('itarget') for i in intersects] # register target temporary images
+    
+        for i in range(numIters):
+            # shift the volume image
+            
+            eidolon.mergeImages(iclones,vtarget) # merge shifted intersect images into volume target
+            
+    #         with eidolon.processImageNp(vtarget,True) as im:
+    #             for d,t in np.ndindex(im.shape[2:]):
+    #                 im[:,:,d,t]=scipy.ndimage.grey_dilation(im[:,:,d,t],5)
+            
+            vs=calculateVolShifts(vclone,vtarget,tempDir) # calculate values to shift volume slices to match target
+            eidolon.shiftImageXY(vclone,vs)
+            vshifts=vshifts+vs
+            
+            print('Iter',i,np.sqrt(np.sum(vs**2,1)).mean())
+            
+            # shift each intersection image
+            for inter in range(len(intersects)):
+                interclone=iclones[inter]
+                intertarget=itargets[inter]
+                
+                eidolon.resampleImage(vclone,intertarget) # resample shifted volume into the target clone for this image
+                
+                vi=calculateVolShifts(interclone,intertarget,tempDir) # calculate the shift to match target
+                eidolon.shiftImageXY(interclone,vi)
+                ishifts[inter]=ishifts[inter]+vi[0]
+                
+                print('Iter',i,inter,np.sqrt(np.sum(vi**2,1)).mean())
+                
+        return vshifts,ishifts
 
     def rigidRegisterStack(self,subjectname,rtargetname,htargetname,finalname,doffile,paramfile,correctNifti):
         '''

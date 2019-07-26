@@ -1451,6 +1451,9 @@ class CardiacMotionPlugin(eidolon.ImageScenePlugin,IRTKPluginMixin):
 
     def getLocalFile(self,name):
         return self.project.getProjectFile(name)
+    
+    def getUniqueObjName(self,name):
+        return self.project.getUniqueObjName(name)
 
     def addObject(self,obj):
         self.project.addObject(obj)

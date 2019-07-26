@@ -774,6 +774,14 @@ def deformImage2D(img,defx,defy):
     return distorted_image.reshape(img.shape[:2])
 
 
+def shiftImageXY(img,shifts):
+    '''Shift the images of `img' in the XY dimension at each timestep by the given per-Z offsets in `shifts'.'''
+    with processImageNp(img,True) as im:
+        for d in range(im.shape[2]):
+            x,y=shifts[d]
+            im[:,:,d,:]=scipy.ndimage.shift(im[:,:,d,:],(x,y,0))
+            
+
 @concurrent
 def mergeColinearImagesRange(process,imglist,mergefunc):
     if isinstance(mergefunc,str):

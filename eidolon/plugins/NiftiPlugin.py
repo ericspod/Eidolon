@@ -207,7 +207,7 @@ class NiftiPlugin(ImageScenePlugin):
         def _loadNiftiFile(filename,name,imgObj,task):
             with f:
                 filename=Future.get(filename)
-                name=name or self.mgr.getUniqueObjName(splitPathExt(filename)[1])
+                name=name or self.mgr.getUniqueObjName(splitPathExt(filename,True)[1])
                 img=imgObj or nibabel.load(filename)
 
                 hdr=dict(img.header)
@@ -240,7 +240,7 @@ class NiftiPlugin(ImageScenePlugin):
         def _loadAnalyzeFile(filename,name,imgObj,task):
             with f:
                 filename=Future.get(filename)
-                name=name or self.mgr.getUniqueObjName(splitPathExt(filename)[1])
+                name=name or self.mgr.getUniqueObjName(splitPathExt(filename,True)[1])
                 img=imgObj or nibabel.load(filename)
 
                 dat=dat=np.asanyarray(img.dataobj)

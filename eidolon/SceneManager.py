@@ -154,7 +154,11 @@ class Project(object):
         self.mgr.win.dialogDir=self.getProjectDir()
 
     def addHandlers(self):
-        '''Call this in the constructor to add event handlers to capture relevant events.'''
+        '''
+        Call this in the constructor to add event handlers to capture relevant events. With the handlers in place the 
+        checkIncludeObject(), renameObject(), and removeObject() methods will be called when the object add, rename, and
+        remove events occur.
+        '''
         self.mgr.addEventHandler(EventType._objectRenamed,self.renameObject)
         self.mgr.addEventHandler(EventType._objectRemoved,self.removeObject)
         self.mgr.addEventHandler(EventType._objectAdded,self.checkIncludeObject)
@@ -202,6 +206,16 @@ class Project(object):
     def hasFile(self,path):
         '''Returns True if `path' refers to a file/directory within the project's directory.'''
         return os.path.abspath(path).startswith(self.getProjectDir())
+
+    def getUniqueObjName(self,name):
+        '''
+        Returns an object name based on `name' whic is guaranteed to be unique, a valid filename, and will not cause a
+        file to be overwritten in the current context when used to saved.
+        '''
+        name=Utils.getValidFilename(name)
+        filenames=[Utils.splitPathExt(i,True)[1] for i in glob.glob(self.getProjectFile('*'))]
+        objnames=[o.getName() for o in self.mgr.enumSceneObjects()]
+        return Utils.uniqueStr(name,filenames+objnames)
 
     def addObject(self,obj):
         '''Add an object to the project if not already there, if `obj' is a SceneObjectRepr its parent is also added.'''
