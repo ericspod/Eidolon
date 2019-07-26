@@ -38,7 +38,7 @@ except:
 from contextlib import closing
 import numpy as np
 from numpy.fft import fftn,ifftn,fftshift,ifftshift
-from scipy.ndimage.interpolation import zoom
+from scipy.ndimage import zoom,grey_dilation
 
 import eidolon
 from eidolon import (
@@ -650,7 +650,7 @@ class IRTKPluginMixin(object):
 
         return f1,f2,f3,f4,f3
     
-    def alignIntersectImages(self,volume,intersects,tempDir=None,numIters=1):
+    def alignIntersectImages(self,volume,intersects,tempDir=None,numIters=1,dilation=5,moveScale=0.1):
         
         def calculateVolShifts(vol1,vol2,tempDir):
             with eidolon.processImageNp(vol1) as v1:
@@ -661,7 +661,7 @@ class IRTKPluginMixin(object):
                         sx,sy=self.registerImage2D(v1[:,:,d,0],v2[:,:,d,0],tempDir=tempDir,model='Rigid')
                         shifts[d]=-sx.mean(),-sy.mean()
                         
-            return shifts
+            return shifts.round().astype(np.int32)
     
         tempDir=tempDir or self.mgr.getUserTempDir('alignIntersectImages')
         vdims=volume.getArrayDims()
@@ -679,11 +679,14 @@ class IRTKPluginMixin(object):
             
             eidolon.mergeImages(iclones,vtarget) # merge shifted intersect images into volume target
             
-    #         with eidolon.processImageNp(vtarget,True) as im:
-    #             for d,t in np.ndindex(im.shape[2:]):
-    #                 im[:,:,d,t]=scipy.ndimage.grey_dilation(im[:,:,d,t],5)
+            if dilation>0:
+                with eidolon.processImageNp(vtarget,True) as im:
+                    for d,t in np.ndindex(im.shape[2:]):
+                        im[:,:,d,t]=grey_dilation(im[:,:,d,t],dilation)
             
             vs=calculateVolShifts(vclone,vtarget,tempDir) # calculate values to shift volume slices to match target
+            vs=vs*moveScale
+            
             eidolon.shiftImageXY(vclone,vs)
             vshifts=vshifts+vs
             
@@ -697,11 +700,13 @@ class IRTKPluginMixin(object):
                 eidolon.resampleImage(vclone,intertarget) # resample shifted volume into the target clone for this image
                 
                 vi=calculateVolShifts(interclone,intertarget,tempDir) # calculate the shift to match target
+                vi=vi*moveScale
+                
                 eidolon.shiftImageXY(interclone,vi)
                 ishifts[inter]=ishifts[inter]+vi[0]
                 
                 print('Iter',i,inter,np.sqrt(np.sum(vi**2,1)).mean())
-                
+            
         return vshifts,ishifts
 
     def rigidRegisterStack(self,subjectname,rtargetname,htargetname,finalname,doffile,paramfile,correctNifti):

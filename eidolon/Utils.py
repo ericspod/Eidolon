@@ -1736,7 +1736,7 @@ def isIterable(obj):
 
 def toIterable(obj):
     '''Returns an iterable of objects, which is `obj' if it's not a string and iterable, otherwise (obj,).'''
-    return obj if not isinstance(obj,str) and isIterable(obj) else (obj,)
+    return obj if not isinstance(obj,(bytes,str)) and isIterable(obj) else (obj,)
 
 
 def memoized(converter=lambda i:i,initialmemo={}):
