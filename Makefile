@@ -94,9 +94,9 @@ app:
 	rm -rf dist
 ifeq ($(PLAT),win64_mingw)
 	$(eval DISTNAME?=Eidolon_Win64_$(shell ./run.sh --version 2>&1))
-	cp $(LIB_HOME)/bin/*.dll src/renderer
+	cp $(LIB_HOME)/bin/*.dll eidolon/renderer
 	$(PYINST) --clean PyInstaller.spec
-	rm -rf src/renderer/*.dll build
+	rm -rf eidolon/renderer/*.dll build
 	rm dist/Eidolon/res/*.png
 	rm dist/Eidolon/EidolonLibs/IRTK/*.so.1
 	rm dist/Eidolon/EidolonLibs/IRTK/*.bin
