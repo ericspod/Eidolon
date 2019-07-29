@@ -2278,7 +2278,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
     ObjMapTuple=collections.namedtuple('ObjMapTuple','obj propbox assettype updateFunc dblClickFunc menu menuFunc')
 
     def __init__(self,conf,width=1200,height=800):
-        super(VisualizerWindow, self).__init__()
+        super().__init__()
 
         self.setupUi(self)
         self.setWindowTitle(mainTitleString%(eidolon.__appname__,eidolon.__version__))
@@ -2341,10 +2341,9 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         # create the console widget, which will be a Jupyter widget is requested and available, otherwise the internal widget
         if jConsolePresent and conf.get(platformID,ConfVars._usejupyter).lower()=='true':
             try:
-                assert not Utils.isWindows, 'Jupyter console on Windows is currently bugged'
                 self.console=JupyterWidget(self,conf)
             except Exception as e:
-                warnings.warn('Cannot create Jupyter console widget, defaulting to internal console: %r'%e)
+                warnings.warn('Cannot create Jupyter console widget, defaulting to internal console:\n %r'%e)
                 self.console=ConsoleWidget(self,conf)
         else:
             warnings.warn('Using internal console'+('' if jConsolePresent else ', Jupyter QtConsole not present or disabled'))
