@@ -5,6 +5,7 @@
 **/.ipynb_checkpoints
 **/build/**
 .DS_Store
+.idea
 screen.png
 eidolon.log
 src/renderer/Renderer.cpp

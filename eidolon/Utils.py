@@ -100,26 +100,26 @@ py3 = sys.version_info.major == 3
 
 from codeop import compile_command
 from functools import wraps, reduce
-from threading import Thread, RLock, Event,currentThread,_MainThread
+from threading import Thread, RLock, Event, currentThread, _MainThread
 
-if py3: # Python 2/3 fix
+if py3:  # Python 2/3 fix
     import configparser
     import queue
 else:
     import ConfigParser as configparser
     import Queue as queue
 
-halfpi=math.pi/2.0
+halfpi = math.pi / 2.0
 
-epsilon=1.0e-8
+epsilon = 1.0e-8
 
-logFilename=None
+logFilename = None
 
-isDarwin=platform.system().lower()=='darwin'
-isWindows=platform.system().lower()=='windows'
-isLinux=platform.system().lower()=='linux'
+isDarwin = platform.system().lower() == 'darwin'
+isWindows = platform.system().lower() == 'windows'
+isLinux = platform.system().lower() == 'linux'
 
-assert isDarwin or isWindows or isLinux # only allow one of these platforms for now
+assert isDarwin or isWindows or isLinux  # only allow one of these platforms for now
 
 
 class enum(object):
@@ -147,56 +147,58 @@ class enum(object):
         e.baz_thunk  -> 5
         e.plonk      -> 'plonk'
     '''
-    def __init__(self,*vals,**kwargs):
-        if vals and isinstance(vals[0],enum):
-            kwargs['doc']=kwargs.get('doc',vals[0].doc)
-            kwargs['valtype']=kwargs.get('valtype',vals[0].valtype)
-            vals=list(vals[0])
 
-        if all(isinstance(v,str) for v in vals):
-            vals=[(v,) for v in vals]
+    def __init__(self, *vals, **kwargs):
+        if vals and isinstance(vals[0], enum):
+            kwargs['doc'] = kwargs.get('doc', vals[0].doc)
+            kwargs['valtype'] = kwargs.get('valtype', vals[0].valtype)
+            vals = list(vals[0])
 
-        assert all(isinstance(v,tuple) for v in vals)
-        object.__setattr__(self,'valdict',{})
-        object.__setattr__(self,'vals',[])
-        object.__setattr__(self,'doc',kwargs.get('doc',None))
-        object.__setattr__(self,'valtype',kwargs.get('valtype',None))
+        if all(isinstance(v, str) for v in vals):
+            vals = [(v,) for v in vals]
+
+        assert all(isinstance(v, tuple) for v in vals)
+        object.__setattr__(self, 'valdict', {})
+        object.__setattr__(self, 'vals', [])
+        object.__setattr__(self, 'doc', kwargs.get('doc', None))
+        object.__setattr__(self, 'valtype', kwargs.get('valtype', None))
 
         for v in vals:
             self.append(*v)
 
-    def append(self,name,*comps):
-        name=str(name)
-        if len(comps)==0:
-            val=name # if only the name is given, name is also the value
-        elif len(comps)==1:
-            val=comps[0] # if a single value is given, it is the value rather than a tuple containing only it
-            assert self.valtype==None or val==None or isinstance(val,self.valtype)
+    def append(self, name, *comps):
+        name = str(name)
+        if len(comps) == 0:
+            val = name  # if only the name is given, name is also the value
+        elif len(comps) == 1:
+            val = comps[0]  # if a single value is given, it is the value rather than a tuple containing only it
+            assert self.valtype == None or val == None or isinstance(val, self.valtype)
         else:
-            val=comps # otherwise the values minus the name becomes the value tuple
-            assert self.valtype==None or (len(val)==len(self.valtype) and all(v==None or isinstance(v,vt) for v,vt in zip(val,self.valtype))),'%r %r'%(self.valtype,val)
+            val = comps  # otherwise the values minus the name becomes the value tuple
+            assert self.valtype == None or (len(val) == len(self.valtype) and all(
+                v == None or isinstance(v, vt) for v, vt in zip(val, self.valtype))), '%r %r' % (self.valtype, val)
 
-        dname=name.replace(' ','_')
-        self.valdict[dname]=val
-        self.valdict['_'+dname]=name
-        self.vals.append((name,)+comps)
+        dname = name.replace(' ', '_')
+        self.valdict[dname] = val
+        self.valdict['_' + dname] = name
+        self.vals.append((name,) + comps)
 
-    def findName(self,item):
-        return first(n for n,i in self.valdict.items() if i==item)
+    def findName(self, item):
+        return first(n for n, i in self.valdict.items() if i == item)
 
-    def indexOf(self,name):
-        return first(i for i,v in enumerate(self.vals) if v[0]==name)
+    def indexOf(self, name):
+        return first(i for i, v in enumerate(self.vals) if v[0] == name)
 
-    def _getVal(self,i):
-        if isinstance(i,int):
+    def _getVal(self, i):
+        if isinstance(i, int):
             return self.vals[i]
         else:
             return self.valdict[i]
 
     def __str__(self):
-        res='Enum:\n Members: '+', '.join(n[0] for n in self.vals)
+        res = 'Enum:\n Members: ' + ', '.join(n[0] for n in self.vals)
         if self.doc:
-            res+='\n Doc: '+self.doc
+            res += '\n Doc: ' + self.doc
 
         return res
 
@@ -206,17 +208,17 @@ class enum(object):
     def __iter__(self):
         return iter(self.vals)
 
-    def __contains__(self,i):
+    def __contains__(self, i):
         try:
             self._getVal(i)
             return True
         except:
             return False
 
-    def __getitem__(self,i):
+    def __getitem__(self, i):
         return self._getVal(i)
 
-    def __getattr__(self,i):
+    def __getattr__(self, i):
         try:
             return self._getVal(i)
         except KeyError:
@@ -227,18 +229,19 @@ class enum(object):
 
 
 class FutureError(Exception):
-    def __init__(self,f,exc_type, exc_value, tb):
-        self.future=f
-        self.exc_type=exc_type
-        self.exc_value=exc_value
-        self.tb=tb
-        msg=''
+    def __init__(self, f, exc_type, exc_value, tb):
+        self.future = f
+        self.exc_type = exc_type
+        self.exc_value = exc_value
+        self.tb = tb
+        msg = ''
         if exc_value:
-            msg='Future object left control block with exception:\n'+'\n'.join(traceback.format_exception(exc_type, exc_value, tb))
+            msg = 'Future object left control block with exception:\n' + '\n'.join(
+                traceback.format_exception(exc_type, exc_value, tb))
         else:
-            msg='Future object left control block without a value'
+            msg = 'Future object left control block without a value'
 
-        Exception.__init__(self,msg)
+        Exception.__init__(self, msg)
 
 
 class Future(object):
@@ -253,18 +256,19 @@ class Future(object):
     left without a result being sent or if an exception is thrown. This is useful in preventing client deadlock when
     errors occur.
     '''
-    def __init__(self):
-        self.obj=None
-        self.event=Event()
 
-    def setObject(self,obj):
+    def __init__(self):
+        self.obj = None
+        self.event = Event()
+
+    def setObject(self, obj):
         '''Set the internal stored object to `obj' and set the event.'''
-        self.obj=obj
+        self.obj = obj
         self.event.set()
 
     def clear(self):
         '''Remove the internal object and clear the event.'''
-        self.obj=None
+        self.obj = None
         self.event.clear()
 
     def isSet(self):
@@ -275,7 +279,7 @@ class Future(object):
         '''Returns True if there is no result and the event is not set.'''
         return self.obj is None and not self.event.isSet()
 
-    def getObjectWait(self,timeout=10.0):
+    def getObjectWait(self, timeout=10.0):
         '''
         Return the stored object, waiting `timeout' seconds for the object to be set, returning None if this doesn't
         occur in this time. If the object is present and is an exception, this is raised instead. The `timeout'
@@ -283,26 +287,26 @@ class Future(object):
         and the return result is None, the timeout time was reached if isSet() returns False at this point, otherwise
         None was the set value.
         '''
-        res=self.event.wait(timeout)
+        res = self.event.wait(timeout)
 
-        if timeout!=None and not res: # if we timed out waiting, return None
+        if timeout != None and not res:  # if we timed out waiting, return None
             return None
 
         # if an exception was raised instead of setting a value, raise it
-        if isinstance(self.obj,FutureError) and self.obj.exc_value:
-            if py3: # Python3 compatibility
+        if isinstance(self.obj, FutureError) and self.obj.exc_value:
+            if py3:  # Python3 compatibility
                 raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
             else:
-                #raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
-                exec(compile('raise self.obj.exc_type,self.obj.exc_value,self.obj.tb','','exec'),locals())
+                # raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
+                exec(compile('raise self.obj.exc_type,self.obj.exc_value,self.obj.tb', '', 'exec'), locals())
 
-        elif isinstance(self.obj,Exception):
+        elif isinstance(self.obj, Exception):
             raise self.obj
 
         # return the stored value, or if the value is a Future get the stored value from it
-        return Future.get(self.obj,timeout)
+        return Future.get(self.obj, timeout)
 
-    def __call__(self,timeout=10.0):
+    def __call__(self, timeout=10.0):
         '''Same as getObjectWait().'''
         return self.getObjectWait(timeout)
 
@@ -314,47 +318,47 @@ class Future(object):
         '''
         return self
 
-    def __exit__(self,exc_type, exc_value, tb):
+    def __exit__(self, exc_type, exc_value, tb):
         '''Sets the stored object to a FutureError if block exits without a value or because of a raised exception.'''
-        if exc_value or self.isEmpty(): # if there's no value or an exception was raised, store a FutureError
-            self.setObject(FutureError(self,exc_type, exc_value, tb))
+        if exc_value or self.isEmpty():  # if there's no value or an exception was raised, store a FutureError
+            self.setObject(FutureError(self, exc_type, exc_value, tb))
 
         return True
 
     @staticmethod
-    def get(obj,timeout=10.0):
+    def get(obj, timeout=10.0):
         '''
         Retrieve the object from `obj' if it's a Future, otherwise return `obj' itself. This is useful for methods which
         may want to accept a Future containing an object or the object itself, depending on whether the use context is
         concurrent or not. The `timeout' value is only used if `obj' is a Future, and must then be a positive float.
         '''
-        if isinstance(obj,Future):
+        if isinstance(obj, Future):
             return obj(timeout)
         else:
             return obj
 
 
-ConfVars=enum(
-    'all','shaders', 'resdir', 'shmdir', 'appdir', 'userappdir','userplugindir','logfile', 'preloadscripts', 'uistyle', 
+ConfVars = enum(
+    'all', 'shaders', 'resdir', 'shmdir', 'appdir', 'userappdir', 'userplugindir', 'logfile', 'preloadscripts',
+    'uistyle',
     'stylesheet', 'winsize', 'camerazlock', 'maxprocs', 'configfile', 'usejupyter',
-    'rtt_preferred_mode', 'vsync', 'rendersystem', # renderer related values
-    'consolelogfile','consoleloglen', # console config values
+    'rtt_preferred_mode', 'vsync', 'rendersystem',  # renderer related values
+    'consolelogfile', 'consoleloglen',  # console config values
     desc='Variables in the Config object loaded from config files, these should be present and keyed to platformID group'
 )
 
-
-ParamType=enum(
-    ('int','Integer'),
-    ('real','Real'),
-    ('bool','Boolean'),
-    ('vec3','3D Vector'),
-    ('field','Field Name'),
-    ('str','String'),
-    ('strlist','String List'),
-#   ('choice','Choice Option'),
-    ('valuefunc','Value Function'),
-    ('vecfunc','Vector Function'),
-    ('unitfunc','Unit Function'),
+ParamType = enum(
+    ('int', 'Integer'),
+    ('real', 'Real'),
+    ('bool', 'Boolean'),
+    ('vec3', '3D Vector'),
+    ('field', 'Field Name'),
+    ('str', 'String'),
+    ('strlist', 'String List'),
+    #   ('choice','Choice Option'),
+    ('valuefunc', 'Value Function'),
+    ('vecfunc', 'Vector Function'),
+    ('unitfunc', 'Unit Function'),
     doc='Types of parameters the ParamDef class can represent.',
     valtype=(str,)
 )
@@ -368,79 +372,80 @@ class ParamDef(object):
     parameters, this can be used to define a generic interface for parameters into objects and to automatically define
     GUI elements for inputting these values.
     '''
-    def __init__(self,name,desc,ptype,default=None,minv=None,maxv=None,step=None,notNone=False):
-        assert ptype in ParamType
-        self.name=name
-        self.desc=desc
-        self.ptype=ptype
-        self.default=default
-        self.minv=minv
-        self.maxv=maxv
-        self.step=step
-        self.notNone=notNone
 
-    def getErrorStr(self,val):
-        errstr="Incorrect value for '%s' (%s): " %(self.desc,self.name)
-        if val==None and self.notNone:
+    def __init__(self, name, desc, ptype, default=None, minv=None, maxv=None, step=None, notNone=False):
+        assert ptype in ParamType
+        self.name = name
+        self.desc = desc
+        self.ptype = ptype
+        self.default = default
+        self.minv = minv
+        self.maxv = maxv
+        self.step = step
+        self.notNone = notNone
+
+    def getErrorStr(self, val):
+        errstr = "Incorrect value for '%s' (%s): " % (self.desc, self.name)
+        if val == None and self.notNone:
             return errstr + 'A value must be provided (not None)'
 
         if isIterable(self.minv):
-            ival=val if isIterable(val) else (val,)
+            ival = val if isIterable(val) else (val,)
 
-            if val!=None and self.minv!=None and all(v<mv for v,mv in zip(ival,self.minv)):
-                return errstr + "Parameter is below minimum value of '%s' (value: %s)"%(str(self.minv),str(val))
+            if val != None and self.minv != None and all(v < mv for v, mv in zip(ival, self.minv)):
+                return errstr + "Parameter is below minimum value of '%s' (value: %s)" % (str(self.minv), str(val))
 
-            if val!=None and self.maxv!=None and all(v>mv for v,mv in zip(ival,self.maxv)):
-                return errstr + "Parameter is above maximum value of '%s' (value: %s)"%(str(self.maxv),str(val))
+            if val != None and self.maxv != None and all(v > mv for v, mv in zip(ival, self.maxv)):
+                return errstr + "Parameter is above maximum value of '%s' (value: %s)" % (str(self.maxv), str(val))
         else:
-            if val!=None and self.minv!=None and val<self.minv:
-                return errstr + "Parameter is below minimum value of '%s' (value: %s)"%(str(self.minv),str(val))
+            if val != None and self.minv != None and val < self.minv:
+                return errstr + "Parameter is below minimum value of '%s' (value: %s)" % (str(self.minv), str(val))
 
-            if val!=None and self.maxv!=None and val>self.maxv:
-                return errstr + "Parameter is above maximum value of '%s' (value: %s)"%(str(self.maxv),str(val))
+            if val != None and self.maxv != None and val > self.maxv:
+                return errstr + "Parameter is above maximum value of '%s' (value: %s)" % (str(self.maxv), str(val))
 
         return None
 
     def __repr__(self):
-        s='ParamDef(name=%s,desc="%s",type=%s' %(self.name,self.desc,self.ptype)
-        if self.default!=None:
-            s+=',default='+str(self.default)
-        if self.minv!=None:
-            s+=',range=[%s,%s]' %(str(self.minv),str(self.maxv))
-        if self.step!=None:
-            s+=',step='+str(self.step)
+        s = 'ParamDef(name=%s,desc="%s",type=%s' % (self.name, self.desc, self.ptype)
+        if self.default != None:
+            s += ',default=' + str(self.default)
+        if self.minv != None:
+            s += ',range=[%s,%s]' % (str(self.minv), str(self.maxv))
+        if self.step != None:
+            s += ',step=' + str(self.step)
         if self.notNone:
-            s+=',Not None'
+            s += ',Not None'
 
-        return s+')'
+        return s + ')'
 
     @staticmethod
-    def validateArgMap(params,argmap):
-        errlist=[]
+    def validateArgMap(params, argmap):
+        errlist = []
         for p in params:
-            result=p.getErrorStr(argmap.get(p.name,None))
-            if result!=None:
+            result = p.getErrorStr(argmap.get(p.name, None))
+            if result != None:
                 errlist.append(result)
 
         return errlist
 
 
-EventType=enum(
-    ('mousePress','Mouse Button Pressed'),
-    ('mouseRelease','Mouse Button Released'),
-    ('mouseDoubleClick','Mouse Button Double Clicked'),
-    ('mouseMove','Mouse Moved With Key Pressed'),
-    ('mouseWheel','Mouse Wheel Moved'),
-    ('keyPress','Keyboard Key Pressed'),
-    ('keyRelease','Keyboard Key Released'),
-    ('widgetResize','Widget Resized/Shown'),
-    ('widgetPreDraw','Widget to drawn'),
-    ('widgetPostDraw','Widget Redrawn'),
-    ('objectAdded','Object Added to Scene'),
-    ('objectRemoved','Object Removed from Scene'),
-    ('objectUpdated','Object Updated in Scene'),
-    ('objectSelected','Object Selected in Scene'),
-    ('objectRenamed','Object Renamed'),
+EventType = enum(
+    ('mousePress', 'Mouse Button Pressed'),
+    ('mouseRelease', 'Mouse Button Released'),
+    ('mouseDoubleClick', 'Mouse Button Double Clicked'),
+    ('mouseMove', 'Mouse Moved With Key Pressed'),
+    ('mouseWheel', 'Mouse Wheel Moved'),
+    ('keyPress', 'Keyboard Key Pressed'),
+    ('keyRelease', 'Keyboard Key Released'),
+    ('widgetResize', 'Widget Resized/Shown'),
+    ('widgetPreDraw', 'Widget to drawn'),
+    ('widgetPostDraw', 'Widget Redrawn'),
+    ('objectAdded', 'Object Added to Scene'),
+    ('objectRemoved', 'Object Removed from Scene'),
+    ('objectUpdated', 'Object Updated in Scene'),
+    ('objectSelected', 'Object Selected in Scene'),
+    ('objectRenamed', 'Object Renamed'),
     doc='Event types triggered by the rendering widget, used to signal draw events, input operations, etc'
 )
 
@@ -454,63 +459,63 @@ class EventHandler(object):
     event handlers is also maintained which is processed after regular events with the return value ignored. This can be
     used to register events which must occur last and which must not be skipped.
     '''
-    def __init__(self):
-        self.eventHandlers=collections.defaultdict(list)
-        self.eventPostHandlers=collections.defaultdict(list)
-        self.handleLock=threading.Lock()
-        self.suppressedEvents=set()
 
-    def _triggerEvent(self,name,*args):
+    def __init__(self):
+        self.eventHandlers = collections.defaultdict(list)
+        self.eventPostHandlers = collections.defaultdict(list)
+        self.handleLock = threading.Lock()
+        self.suppressedEvents = set()
+
+    def _triggerEvent(self, name, *args):
         '''
         Broadcast event to handler callback functions, stopping for any regular callback that returns True. For every 
         callback associated with event `name', call it expanding `args' as the arguments. This must be called in the 
         main thread. Callbacks stored as post event handlers are called after regular ones with the stop feature ignored.
         '''
         assert isMainThread()
-        
-        def _triggerHandlers(handlers,allowBreak):
+
+        def _triggerHandlers(handlers, allowBreak):
             '''Trigger each handler in `handlers', allowing breaking the loop if `allowBreak'.'''
-            discards=set()
-            
+            discards = set()
+
             try:
                 for cb in handlers:
                     try:
-                        result=cb(*args)
-                        if allowBreak and result==True: # skip further handlers if returned True
+                        result = cb(*args)
+                        if allowBreak and result == True:  # skip further handlers if returned True
                             break
                     except RuntimeError:
                         discards.add(cb)
             finally:
-                for d in discards: # throw out all handlers that raised RuntimeError
+                for d in discards:  # throw out all handlers that raised RuntimeError
                     handlers.remove(d)
-                    
 
         with self.handleLock:
             if name in self.suppressedEvents:
                 return
 
-            self.suppressedEvents.add(name) # ensure events don't trigger themselves, thus causing an infinite loop
+            self.suppressedEvents.add(name)  # ensure events don't trigger themselves, thus causing an infinite loop
 
         try:
-            _triggerHandlers(self.eventHandlers[name],True) # regular handlers
-            _triggerHandlers(self.eventPostHandlers[name],False) # post event handlers, don't allow breaking
+            _triggerHandlers(self.eventHandlers[name], True)  # regular handlers
+            _triggerHandlers(self.eventPostHandlers[name], False)  # post event handlers, don't allow breaking
         finally:
             with self.handleLock:
                 self.suppressedEvents.remove(name)
 
-    def addEventHandler(self,name,cb,isPriority=False,isPostEvent=False):
+    def addEventHandler(self, name, cb, isPriority=False, isPostEvent=False):
         '''
         Add the callback callable `cb' for event named `name'. If `isPriority', `cb' is placed at the start of the event 
         list, and the end otherwise. If `isPostEvent' is True then `cb' is added as a post event callback which is then
         called after regular callbacks with the return value ignored, ie. always gets called.
         '''
         assert name in EventType
-        events=self.eventPostHandlers[name] if isPostEvent else self.eventHandlers[name]
-        events.insert(0 if isPriority else len(events),cb)
+        events = self.eventPostHandlers[name] if isPostEvent else self.eventHandlers[name]
+        events.insert(0 if isPriority else len(events), cb)
 
-    def removeEventHandler(self,cb):
+    def removeEventHandler(self, cb):
         '''Remove the callback `cb' from wherever it occurs.'''
-        for cblist in list(self.eventHandlers.values())+list(self.eventPostHandlers.values()):
+        for cblist in list(self.eventHandlers.values()) + list(self.eventPostHandlers.values()):
             while cb in cblist:
                 cblist.remove(cb)
 
@@ -521,68 +526,70 @@ class MutableDict(collections.MutableMapping, dict):
     the actual dict implementation uses the values returned by id() as keys, which is a value assumed never to change
     throughout an object's life so mutability isn't a concern for correctness.
     '''
-    def __init__(self,*pairs,**kwargs):
-        self.realkeys={}
-        for k,v in pairs:
-            self[k]=v
-            
-        for k,v in kwargs.items():
-            self[k]=v
-            
+
+    def __init__(self, *pairs, **kwargs):
+        self.realkeys = {}
+        for k, v in pairs:
+            self[k] = v
+
+        for k, v in kwargs.items():
+            self[k] = v
+
     def __len__(self):
         return dict.__len__(self)
-    
+
     def __iter__(self):
         return dict.__iter__(self)
-    
+
     def __contains__(self, key):
         return dict.__contains__(self, id(key))
-   
+
     def __getitem__(self, key):
         return dict.__getitem__(self, id(key))
-    
+
     def __setitem__(self, key, value):
         dict.__setitem__(self, id(key), value)
-        self.realkeys[id(key)]=key
-    
+        self.realkeys[id(key)] = key
+
     def __delitem__(self, key):
         dict.__delitem__(self, id(key))
         del self.realkeys[id(key)]
-    
+
     def values(self):
         return dict.values(self)
-    
+
     def items(self):
-        for k,v in dict.items(self):
-            yield self.realkeys[k],v
-            
+        for k, v in dict.items(self):
+            yield self.realkeys[k], v
+
     def keys(self):
         return self.realkeys.values()
-    
+
 
 class namedrecord(object):
     '''Creates a mutable record type by converting non-callable class members to object members.'''
-    def __init__(self,*vals, **kwargs):
-        allmembers=inspect.getmembers(self)
-        membervals=[i for i in allmembers if not i[0].startswith('__') and not callable(getattr(self,i[0]))]
-        self._members=tuple(i for i,_ in membervals)
-        
-        for i,(n,v) in enumerate(membervals):
-            setattr(self,n,vals[i] if i<len(vals) else v)
-            
-        for k,v in kwargs.items():
+
+    def __init__(self, *vals, **kwargs):
+        allmembers = inspect.getmembers(self)
+        membervals = [i for i in allmembers if not i[0].startswith('__') and not callable(getattr(self, i[0]))]
+        self._members = tuple(i for i, _ in membervals)
+
+        for i, (n, v) in enumerate(membervals):
+            setattr(self, n, vals[i] if i < len(vals) else v)
+
+        for k, v in kwargs.items():
             assert k in self._members
-            setattr(self,k,v)
-            
+            setattr(self, k, v)
+
     @property
     def members(self):
         return self._members
-    
+
     def __iter__(self):
         for m in self.members:
-            yield getattr(self,m)
-            
-            
+            yield getattr(self, m)
+
+
 class ObjectLocker(object):
     '''
     This maintains a dictionary relating weak references to threading.RLock objects. This allows a lock to be associated
@@ -591,28 +598,28 @@ class ObjectLocker(object):
     the dictonary. The global instance `globalLocker` is created to provide a global default lock for the decorators
     which rely on this type.
     '''
-    globalLocker=None
+    globalLocker = None
 
     def __init__(self):
-        self.objLocks={} # map of objects to locks used to store unique locks for every requested object
-        self.thisLock=RLock() # a lock for this object
+        self.objLocks = {}  # map of objects to locks used to store unique locks for every requested object
+        self.thisLock = RLock()  # a lock for this object
 
-    def getLock(self,obj):
+    def getLock(self, obj):
         '''
         Get a threading.RLock object uniquely associated with `obj'. If this method is subsequently called with the
         same object, the same lock is returned. When `obj' is removed by the collector, the lock will also be removed.
         '''
         with self.thisLock:
-            lock=first(self.objLocks[w] for w in self.objLocks if id(w())==id(obj))
+            lock = first(self.objLocks[w] for w in self.objLocks if id(w()) == id(obj))
 
             if not lock:
-                w=weakref.ref(obj,self._removeLock)
-                lock=RLock()
-                self.objLocks[w]=lock
+                w = weakref.ref(obj, self._removeLock)
+                lock = RLock()
+                self.objLocks[w] = lock
 
             return lock
 
-    def _removeLock(self,obj):
+    def _removeLock(self, obj):
         with self.thisLock:
             self.objLocks.pop(obj)
 
@@ -620,46 +627,48 @@ class ObjectLocker(object):
     def getGlobalLocker():
         '''Returns the global locker object, instantiating it if necessary.'''
         if ObjectLocker.globalLocker is None:
-            ObjectLocker.globalLocker=ObjectLocker()
+            ObjectLocker.globalLocker = ObjectLocker()
 
         return ObjectLocker.globalLocker
 
 
-def lockobj(obj,locker=None):
+def lockobj(obj, locker=None):
     '''
     Returns a lock object which is be globally unique per input object. This lock can be used to synchronize access
     to any arbitrary object. It uses weak references to ensure previously locked objects can be collected.
     This function is thread-safe.
     '''
-    locker=locker or ObjectLocker.getGlobalLocker()
+    locker = locker or ObjectLocker.getGlobalLocker()
     return locker.getLock(obj)
 
 
-def locking(func,locker=None):
+def locking(func, locker=None):
     '''
     This is a locking method decorator which uses 'lockobj' to synchronize access to the current object. This ensures
     that calls to decorated methods are restricted to one thread at a time, which doesn't necessarily ensure exclusive
     access to the all of the receiving object's members. A calling thread having a lock to the receiver already through
     'lockobj' will be able to call decorated methods as well.
     '''
+
     @wraps(func)
-    def funcwrap(self,*args,**kwargs):
-        with lockobj(self,locker):
-            return func(self,*args,**kwargs)
+    def funcwrap(self, *args, **kwargs):
+        with lockobj(self, locker):
+            return func(self, *args, **kwargs)
 
     return funcwrap
 
 
-def trylocking(func,locker=None):
+def trylocking(func, locker=None):
     '''
     Same as 'locking' except it only attempts to acquire the lock without blocking, and does nothing if the acquire fails.
     '''
+
     @wraps(func)
-    def funcwrap(self,*args,**kwargs):
-        lock=lockobj(self,locker)
+    def funcwrap(self, *args, **kwargs):
+        lock = lockobj(self, locker)
         if lock.acquire(False):
             try:
-                return func(self,*args,**kwargs)
+                return func(self, *args, **kwargs)
             finally:
                 lock.release()
 
@@ -676,54 +685,55 @@ class Task(object):
     Task object can have a parent Task, which occurs when the body of one task invokes an operation that normally adds 
     a task to a queue. When this occurs the progress and label methods call into the parent Task object.
     '''
+
     @staticmethod
     def Null():
-        return Task('NullTask',lambda *args,**kwargs:None)
+        return Task('NullTask', lambda *args, **kwargs: None)
 
-    def __init__(self,label,func=None,args=(),kwargs={},selfName=None,parentTask=None):
-        self.curprogress=0
-        self.maxprogress=0
-        self.result=None
-        self.completed=False
-        self.started=False
-        self.flushQueue=False # set to true if the queue is to be task flushed when this task finishes
-        self.parentTask=parentTask # if this task is being run within another task, call that task's methods instead so that it is used to indicate status
+    def __init__(self, label, func=None, args=(), kwargs={}, selfName=None, parentTask=None):
+        self.curprogress = 0
+        self.maxprogress = 0
+        self.result = None
+        self.completed = False
+        self.started = False
+        self.flushQueue = False  # set to true if the queue is to be task flushed when this task finishes
+        self.parentTask = parentTask  # if this task is being run within another task, call that task's methods instead so that it is used to indicate status
 
-        kwargs=dict(kwargs)
+        kwargs = dict(kwargs)
         if selfName:
-            kwargs[selfName]=self
+            kwargs[selfName] = self
 
-        self.func=func
-        self.args=args
-        self.kwargs=kwargs
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
         self.setLabel(label)
 
-    def start(self,useThread=False):
+    def start(self, useThread=False):
         '''
         Perform the execution of the task. This will set the label, set self.started to True, and then set self.result to
         the result of calling self.func with self.args and self.kwargs as arguments. Finally self.complete is set to True 
         once this is done.
         '''
-        oldlabel=self.getLabel()
+        oldlabel = self.getLabel()
         self.setLabel(self.label)
-        self.started=True
+        self.started = True
         try:
-            self.result=self.func(*self.args,**self.kwargs)
-            self.completed=True
+            self.result = self.func(*self.args, **self.kwargs)
+            self.completed = True
         finally:
             if oldlabel and self.parentTask:
-                self.parentTask.setLabel(oldlabel) # restore the old label of the parent task if present
+                self.parentTask.setLabel(oldlabel)  # restore the old label of the parent task if present
 
     def isDone(self):
         '''Returns True if the task has started and self.complete is True.'''
         return self.started and self.completed
 
-    def setLabel(self,label):
+    def setLabel(self, label):
         '''Set the task's label (or that of the parent if present), this will be used by UI to indicate current task.'''
         if self.parentTask:
             self.parentTask.setLabel(label)
         else:
-            self.label=label
+            self.label = label
 
     def getLabel(self):
         '''Get the task's label, or that of the parent if present.'''
@@ -732,30 +742,30 @@ class Task(object):
         else:
             return self.label
 
-    def setProgress(self,curprogress):
+    def setProgress(self, curprogress):
         '''Set the progress of this or the parent task to the integer value `curprogress'.'''
         if self.parentTask:
             self.parentTask.setProgress(curprogress)
         else:
-            self.curprogress=curprogress
+            self.curprogress = curprogress
 
-    def setMaxProgress(self,maxprogress):
+    def setMaxProgress(self, maxprogress):
         '''Set the max progress value of this or the parent task to the integer value `maxprogress'.'''
         if self.parentTask:
             self.parentTask.setMaxProgress(maxprogress)
         else:
-            self.maxprogress=maxprogress
-            self.curprogress=min(self.curprogress,self.maxprogress)
+            self.maxprogress = maxprogress
+            self.curprogress = min(self.curprogress, self.maxprogress)
 
     def getProgress(self):
         '''Returns the current progress value and maximum value, or that of the parent if present, or (0,0) if unknown.'''
         if self.parentTask:
             return self.parentTask.getProgress()
         else:
-            return self.curprogress,self.maxprogress
+            return self.curprogress, self.maxprogress
 
     def __repr__(self):
-        return 'Task<%s>' %self.label
+        return 'Task<%s>' % self.label
 
 
 class TaskQueue(object):
@@ -764,11 +774,12 @@ class TaskQueue(object):
     handles executing each task in sequence and handling any exceptions that occur. The expected use case is that this
     class will be mixed in with another responsible for maintaining tasks and other system-level facilities.
     '''
+
     def __init__(self):
-        self.tasklist=[] # list of queued Task objects
-        self.finishedtasks=[] # list of completed Task objects
-        self.currentTask=None # the current running task, None if there is none
-        self.doProcess=True # loop condition in processTaskQueue
+        self.tasklist = []  # list of queued Task objects
+        self.finishedtasks = []  # list of completed Task objects
+        self.currentTask = None  # the current running task, None if there is none
+        self.doProcess = True  # loop condition in processTaskQueue
 
     def processTaskQueue(self):
         '''
@@ -780,47 +791,47 @@ class TaskQueue(object):
             try:
                 # remove the first task, using the self lock to prevent interference while doing so
                 with lockobj(self):
-                    if len(self.tasklist)>0:
-                        self.currentTask=self.tasklist.pop(0)
+                    if len(self.tasklist) > 0:
+                        self.currentTask = self.tasklist.pop(0)
 
                 # attempt to run the task by calling its start() method, on exception report and clear the queue
                 try:
                     if self.currentTask:
-                        self.currentTask.start() # run the task's operation
+                        self.currentTask.start()  # run the task's operation
                         self.finishedtasks.append(self.currentTask)
                     else:
                         time.sleep(0.1)
                 except FutureError as fe:
-                    exc=fe.exc_value
-                    while exc!=fe and isinstance(exc,FutureError):
-                        exc=exc.exc_value
+                    exc = fe.exc_value
+                    while exc != fe and isinstance(exc, FutureError):
+                        exc = exc.exc_value
 
-                    self.taskExcept(fe,exc,'Exception from queued task '+self.currentTask.getLabel())
-                    self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+                    self.taskExcept(fe, exc, 'Exception from queued task ' + self.currentTask.getLabel())
+                    self.currentTask.flushQueue = True  # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
                 except Exception as e:
-                    if self.currentTask: # if no current task then some non-task exception we don't care about has occurred
-                        self.taskExcept(e,'','Exception from queued task '+self.currentTask.getLabel())
-                        self.currentTask.flushQueue=True # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+                    if self.currentTask:  # if no current task then some non-task exception we don't care about has occurred
+                        self.taskExcept(e, '', 'Exception from queued task ' + self.currentTask.getLabel())
+                        self.currentTask.flushQueue = True  # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
                 finally:
                     # set the current task to None, using self lock to prevent inconsistency with updatethread
                     with lockobj(self):
                         # clear the queue if there's a task and it wants to remove all current tasks
-                        if self.currentTask!=None and self.currentTask.flushQueue:
+                        if self.currentTask != None and self.currentTask.flushQueue:
                             del self.tasklist[:]
 
-                        self.currentTask=None
+                        self.currentTask = None
             except:
-                pass # ignore errors during shutdown
+                pass  # ignore errors during shutdown
 
     @locking
-    def addTasks(self,*tasks):
+    def addTasks(self, *tasks):
         '''Adds the given tasks to the task queue whether called in another task or not.'''
-        assert all(isinstance(t,Task) for t in tasks)
-        self.tasklist+=list(tasks)
+        assert all(isinstance(t, Task) for t in tasks)
+        self.tasklist += list(tasks)
 
-    def addFuncTask(self,func,name=None):
+    def addFuncTask(self, func, name=None):
         '''Creates a task object (named 'name' or the function name if None) to call the function when executed.'''
-        self.addTasks(Task(name or func.__name__,func))
+        self.addTasks(Task(name or func.__name__, func))
 
     @locking
     def listTasks(self):
@@ -832,7 +843,7 @@ class TaskQueue(object):
         '''Returns the number of queued tasks.'''
         return len(self.tasklist)
 
-    def taskExcept(self,ex,msg,title):
+    def taskExcept(self, ex, msg, title):
         '''Called when the task queue encounters exception `ex' with message `msg' and report window title `title'.'''
         pass
 
@@ -845,28 +856,28 @@ class DelayThread(Thread):
     elements are manipulated and then deferred if further operations are performed soon after.
     '''
 
-    globalDelayMap={}
+    globalDelayMap = {}
 
-    def __init__(self,delay,target):
+    def __init__(self, delay, target):
         Thread.__init__(self)
-        self.target=target
-        self.args=()
-        self.kwargs={}
-        self.delay=float(delay)
-        self.decDelayVal=0.05
-        self.currentDelay=0.0
-        self.evt=Event()
-        self.daemon=True
+        self.target = target
+        self.args = ()
+        self.kwargs = {}
+        self.delay = float(delay)
+        self.decDelayVal = 0.05
+        self.currentDelay = 0.0
+        self.evt = Event()
+        self.daemon = True
 
     def stop(self):
-        self.delay=-1
+        self.delay = -1
         self.evt.set()
 
     @locking
-    def callTargetDelayed(self,args,kwargs):
-        self.currentDelay=self.delay
-        self.args=args
-        self.kwargs=kwargs
+    def callTargetDelayed(self, args, kwargs):
+        self.currentDelay = self.delay
+        self.args = args
+        self.kwargs = kwargs
         self.evt.set()
 
     @locking
@@ -875,42 +886,42 @@ class DelayThread(Thread):
 
     @locking
     def decCurrentDelay(self):
-        self.currentDelay-=self.decDelayVal
+        self.currentDelay -= self.decDelayVal
 
     def run(self):
         while True:
             self.evt.wait()
-            if self.delay<0:
+            if self.delay < 0:
                 break
 
-            while self.getCurrentDelay()>0:
+            while self.getCurrentDelay() > 0:
                 self.decCurrentDelay()
                 time.sleep(self.decDelayVal)
 
             try:
                 self.target(*self.args, **self.kwargs)
-                self.args=None
-                self.kwargs=None
+                self.args = None
+                self.kwargs = None
             except:
                 # on exception remove self from the global map
-                t=first(t for t,d in DelayThread.globalDelayMap.items() if d==self)
+                t = first(t for t, d in DelayThread.globalDelayMap.items() if d == self)
                 del DelayThread.globalDelayMap[t]
                 return
 
             self.evt.clear()
 
     @staticmethod
-    def callGlobalTarget(delay,target,args,kwargs):
+    def callGlobalTarget(delay, target, args, kwargs):
         if target not in DelayThread.globalDelayMap:
-            DelayThread.globalDelayMap[target]=DelayThread(delay,target)
+            DelayThread.globalDelayMap[target] = DelayThread(delay, target)
             DelayThread.globalDelayMap[target].start()
 
-        DelayThread.globalDelayMap[target].callTargetDelayed(args,kwargs)
+        DelayThread.globalDelayMap[target].callTargetDelayed(args, kwargs)
 
     @staticmethod
     def removeGlobalTarget(target):
         for d in DelayThread.globalDelayMap:
-            if d.target==target:
+            if d.target == target:
                 del DelayThread.globalDelayMap[d]
                 break
 
@@ -959,15 +970,18 @@ def wrapper(func):
             return func(*args,**kwargs)
             
     '''
+
     @wraps(func)
-    def _newdecorator(*args,**kwargs):
+    def _newdecorator(*args, **kwargs):
         '''This defines the new argument decorator which replaces `func'.'''
+
         def _outer(func1):
             '''This is the argumentless decorator around the wrapper produced by the replaced version of `func'.'''
+
             @wraps(func1)
-            def _wrapper(*wargs,**wkwargs):
+            def _wrapper(*wargs, **wkwargs):
                 '''This is the actual wrapper function which calls `func' passing in the decorator and call arguments.'''
-                return func(func1,wargs,wkwargs,*args,**kwargs)
+                return func(func1, wargs, wkwargs, *args, **kwargs)
 
             return _wrapper
 
@@ -977,11 +991,11 @@ def wrapper(func):
 
 
 @wrapper
-def delayedcall(func,args,kwargs,delay):
-    DelayThread.callGlobalTarget(delay,func,args,kwargs)
+def delayedcall(func, args, kwargs, delay):
+    DelayThread.callGlobalTarget(delay, func, args, kwargs)
 
 
-def delayedMethodWeak(obj,methname,delay=0):
+def delayedMethodWeak(obj, methname, delay=0):
     '''
     Replaces the method named `methname' of object `obj' with an equivalent delayed call with a delay value of `delay'.
     The new method assigned to `obj' replaces `methname' but keeps only a weak reference to `obj'. Once `obj' has been
@@ -990,18 +1004,18 @@ def delayedMethodWeak(obj,methname,delay=0):
     methods, otherwise using delayedcall() directly means a thread is assigned to a method which is shared amongst all
     instances. Using the weak reference prevents the delay mechanism from affecting collection behaviour.
     '''
-    wself=weakref.ref(obj)
-    meth=getattr(type(obj),methname)
+    wself = weakref.ref(obj)
+    meth = getattr(type(obj), methname)
 
     @delayedcall(delay)
-    def newmeth(*args,**kwargs):
-        meth(wself(),*args,**kwargs)
+    def newmeth(*args, **kwargs):
+        meth(wself(), *args, **kwargs)
 
-    setattr(obj,methname,newmeth)
+    setattr(obj, methname, newmeth)
 
 
 @wrapper
-def taskroutine(func,args,kwargs,taskLabel=None,selfName='task'):
+def taskroutine(func, args, kwargs, taskLabel=None, selfName='task'):
     '''
     Routine decorator which produces a wrapper function returning a task that will execute the original function when
     processedby the task queue. The first argument indicates the name of the variable used to pass the Task instance
@@ -1009,11 +1023,11 @@ def taskroutine(func,args,kwargs,taskLabel=None,selfName='task'):
     when the function is called no value for it must be provided, thus it must have a default value (usually None).
     The optional second argument defines whether the task is a threaded one or not (default is False).
     '''
-    return Task(taskLabel or func.__name__,func=func,args=args,kwargs=kwargs,selfName=selfName)
+    return Task(taskLabel or func.__name__, func=func, args=args, kwargs=kwargs, selfName=selfName)
 
 
 @wrapper
-def taskmethod(meth,args,kwargs,taskLabel=None,taskName='task',mgrName='mgr'):
+def taskmethod(meth, args, kwargs, taskLabel=None, taskName='task', mgrName='mgr'):
     '''
     Wraps a given method such that it will execute the method's body in a task and store the result in a returned
     Future object. This assumes the method's receiver has a member named by `mgrName' which references a TaskQueue
@@ -1037,70 +1051,71 @@ def taskmethod(meth,args,kwargs,taskLabel=None,taskName='task',mgrName='mgr'):
         def meth(self,*args,**kwargs):
             return doSomething()
     '''
-    self,args=args[0],args[1:]
-    mgr=getattr(self,mgrName,self)
-    f=Future()
+    self, args = args[0], args[1:]
+    mgr = getattr(self, mgrName, self)
+    f = Future()
 
-    def _task(task=None): # task proxy function, calls `meth' storing results/exceptions in f
+    def _task(task=None):  # task proxy function, calls `meth' storing results/exceptions in f
         with f:
-            kwargs[taskName]=task
-            f.setObject(meth(self,*args,**kwargs))
+            kwargs[taskName] = task
+            f.setObject(meth(self, *args, **kwargs))
 
-    return mgr.runTasks(Task(taskLabel or meth.__name__,func=_task,selfName=taskName),f)
+    return mgr.runTasks(Task(taskLabel or meth.__name__, func=_task, selfName=taskName), f)
 
 
-def readBasicConfig(filename,evalfunc=ast.literal_eval):
+def readBasicConfig(filename, evalfunc=ast.literal_eval):
     '''
     Read the config (.ini) file `filename' into a map of name/value pairs. The values must be acceptable inputs to
     `evalfunc' which is ast.literal_eval() by default, ie. literals. Using literal_eval is for security since eval() 
     on untrusted input can do interesting things.
     '''
-    cparser=configparser.RawConfigParser()
-    cparser.optionxform=str
-    results=cparser.read(filename)
+    cparser = configparser.RawConfigParser()
+    cparser.optionxform = str
+    results = cparser.read(filename)
 
-    if len(results)!=1:
-        raise IOError('Cannot parse config file %r' %filename)
+    if len(results) != 1:
+        raise IOError('Cannot parse config file %r' % filename)
 
-    sections=list(cparser.sections())+[configparser.DEFAULTSECT]
-    results={}
+    sections = list(cparser.sections()) + [configparser.DEFAULTSECT]
+    results = {}
     for s in sections:
-        for n,v in cparser.items(s):
-            results[n]=evalfunc(v)
+        for n, v in cparser.items(s):
+            results[n] = evalfunc(v)
 
     return results
 
 
-def storeBasicConfig(filename,values):
+def storeBasicConfig(filename, values):
     '''
     Store the name/value map `values' into file `filename' as a config (.ini) file. The keys of `values' must be
     strings and the values must be literal types. All values go into the DEFAULT section of the file.
     '''
-    cparser=configparser.RawConfigParser()
-    cparser.optionxform=str
-    for k,v in sorted(values.items()):
-        cparser.set(None,str(k),repr(v))
+    cparser = configparser.RawConfigParser()
+    cparser.optionxform = str
+    for k, v in sorted(values.items()):
+        cparser.set(None, str(k), repr(v))
 
-    with open(filename,'w+') as o:
+    with open(filename, 'w+') as o:
         cparser.write(o)
 
 
 def setTrace():
     '''Enables tracing for the calling thread. This behaviour is unreliable and spews to logs or stdout.'''
+
     def trace(frame, event, arg):
         try:
-            filename=frame.f_code.co_filename
-            threadname=currentThread().getName()
+            filename = frame.f_code.co_filename
+            threadname = currentThread().getName()
 
-            if 'threading' in filename: # ignore thread code tracing
+            if 'threading' in filename:  # ignore thread code tracing
                 return None
 
-            if logging.getLogger().getEffectiveLevel()==logging.DEBUG:
-                logging.debug("%s:%s:%d: %s",threadname,filename, frame.f_lineno,event)
+            if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+                logging.debug("%s:%s:%d: %s", threadname, filename, frame.f_lineno, event)
             else:
-                printFlush("%s:%s:%d: %s"%(threadname,filename, frame.f_lineno,event))
+                printFlush("%s:%s:%d: %s" % (threadname, filename, frame.f_lineno, event))
         except:
-            pass # modules get nullified at shutdown so suppress that exception
+            pass  # modules get nullified at shutdown so suppress that exception
 
         return trace
 
@@ -1113,8 +1128,8 @@ def getAppDir():
         from . import __init__
     else:
         import __init__
-        
-    return __init__.__appdir__ 
+
+    return __init__.__appdir__
 
 
 def getLibraryDir():
@@ -1123,19 +1138,19 @@ def getLibraryDir():
         from . import __init__
     else:
         import __init__
-        
+
     return __init__.__libdir__
 
 
-def setLogging(logfile='eidolon.log',filemode='a'):
+def setLogging(logfile='eidolon.log', filemode='a'):
     '''Enables logging to the given file (by default same file as the renderer writes to) with the given filemode.'''
 
-    if os.path.split(logfile)[0].strip()=='': # if the logfile is a relative path, put it in Eidolon directory
-        logfile=os.path.join(getAppDir(),logfile)
+    if os.path.split(logfile)[0].strip() == '':  # if the logfile is a relative path, put it in Eidolon directory
+        logfile = os.path.join(getAppDir(), logfile)
 
     global logFilename
 
-    logFilename=logfile
+    logFilename = logfile
 
     logging.basicConfig(
         format='%(asctime)s %(message)s',
@@ -1146,33 +1161,33 @@ def setLogging(logfile='eidolon.log',filemode='a'):
     )
     logging.getLogger().setLevel(logging.DEBUG)
     logging.info('Start log')
-    logging.raiseExceptions=False # stop exception prints about the log file being closed when writing traces
+    logging.raiseExceptions = False  # stop exception prints about the log file being closed when writing traces
 
 
-def addLibraryFile(lib,append=True):
+def addLibraryFile(lib, append=True):
     '''Add the nominated egg/wheel file to the end of the system path, assuming this is in ${APPDIR}/Libs/python.'''
     if py3:
         from . import __init__
     else:
         import __init__
-        
-    lib=os.path.join(__init__.__libdir__,'python',lib)
-    egg=ensureExt(lib,'.egg')
-    whl=ensureExt(lib,'.whl')
-    
+
+    lib = os.path.join(__init__.__libdir__, 'python', lib)
+    egg = ensureExt(lib, '.egg')
+    whl = ensureExt(lib, '.whl')
+
     if os.path.exists(egg):
         if append:
             sys.path.append(egg)
         else:
-            sys.path.insert(0,egg)
-            
+            sys.path.insert(0, egg)
+
     elif os.path.exists(whl):
         if append:
             sys.path.append(whl)
         else:
-            sys.path.insert(0,whl)
+            sys.path.insert(0, whl)
     else:
-        raise ValueError('Library file %s.egg/.whl does not exist'%lib)
+        raise ValueError('Library file %s.egg/.whl does not exist' % lib)
 
 
 def getVersionsFromRepoURL(url=None):
@@ -1187,27 +1202,27 @@ def getVersionsFromRepoURL(url=None):
     else:
         import __init__
         from urllib2 import urlopen, HTTPError
-        
-    currentver=__init__.__version__
-    newver=None
-    
+
+    currentver = __init__.__version__
+    newver = None
+
     if url:
         try:
-            jreq=urlopen(url).read()
-            req=json.loads(jreq)
-            newver=max(rel['tag_name'] for rel in req)
-            newver=str(newver)[1:]
+            jreq = urlopen(url).read()
+            req = json.loads(jreq)
+            newver = max(rel['tag_name'] for rel in req)
+            newver = str(newver)[1:]
         except HTTPError:
-            newver=None
+            newver = None
 
-    return currentver,newver,(newver is None or currentver>=newver)
-    
+    return currentver, newver, (newver is None or currentver >= newver)
+
 
 def processExists(pid):
     '''Returns true if the process identified by `pid' is running and active, false if it doesn't exist or has crashed.'''
-    if isWindows: # adapted from http://www.madebuild.org/blog/?p=30
-        _PROCESS_QUERY_INFORMATION=1024 # OpenProcess requires this access rights specifier
-        _STILL_ACTIVE = 259 # GetExitCodeProcess uses a special exit code to indicate that the process is still running.
+    if isWindows:  # adapted from http://www.madebuild.org/blog/?p=30
+        _PROCESS_QUERY_INFORMATION = 1024  # OpenProcess requires this access rights specifier
+        _STILL_ACTIVE = 259  # GetExitCodeProcess uses a special exit code to indicate that the process is still running.
 
         import ctypes
         import ctypes.wintypes
@@ -1219,14 +1234,14 @@ def processExists(pid):
 
         # If the process exited recently, a handle may still exist for the pid. So, check if we can get the exit code.
         exitcode = ctypes.wintypes.DWORD()
-        result = kernel32.GetExitCodeProcess(handle, ctypes.byref(exitcode)) # returns 0 if failed
+        result = kernel32.GetExitCodeProcess(handle, ctypes.byref(exitcode))  # returns 0 if failed
         kernel32.CloseHandle(handle)
 
         # See if we couldn't get the exit code or the exit code indicates that the process is still running.
-        return result!=0 and exitcode.value == _STILL_ACTIVE
-    else: # non-Windows platforms, kill is supported in Windows as of 2.7 but doesn't detect crashed processes correctly
+        return result != 0 and exitcode.value == _STILL_ACTIVE
+    else:  # non-Windows platforms, kill is supported in Windows as of 2.7 but doesn't detect crashed processes correctly
         try:
-            os.kill(pid, 0) # signal 0 does nothing but still raises an exception if the process doesn't exist
+            os.kill(pid, 0)  # signal 0 does nothing but still raises an exception if the process doesn't exist
             return True
         except OSError:
             return False
@@ -1235,42 +1250,42 @@ def processExists(pid):
 def getWinDrives():
     '''Returns available Windows drive letters.'''
     import win32api
-    d=win32api.GetLogicalDriveStrings()
+    d = win32api.GetLogicalDriveStrings()
     return [dd[0] for dd in d.split('\x00') if dd]
 
 
 def getUsername():
     '''Returns the username in a portable and secure way which works with 'su' and non-terminal processes.'''
     if isWindows:
-        import win32api,win32con
-        hostuname=win32api.GetUserNameEx(win32con.NameSamCompatible)
+        import win32api, win32con
+        hostuname = win32api.GetUserNameEx(win32con.NameSamCompatible)
         return str(hostuname.split('\\')[-1])
     else:
         import pwd
         return pwd.getpwuid(os.getuid()).pw_name
 
 
-def addPathVariable(varname,path,append=True):
+def addPathVariable(varname, path, append=True):
     '''
     Add the string `path' to the environment variable `varname' by appending (if `append` is True) or prepending `path'
     using os.pathsep as the separator. This assumes `varname' is a path variable like PATH. Blank paths present in the
     original variable are moved to the end to prevent consecutive os.pathsep characters appearing in the variable. If
     `varname' does not name a variable with text it will be set to `path'.
     '''
-    var=os.environ.get(varname,'').strip()
+    var = os.environ.get(varname, '').strip()
 
-    if var: # if the variable exists and has text
-        paths=[p.strip() for p in var.split(os.pathsep)] # split by the separator and strip whitespace just in case
-        paths.insert(len(paths) if append else 0,path) # append or prepend `path'
-        if '' in paths: # need to move the blank path to the end to prevent :: from appearing in the variable
-            paths=list(filter(bool,paths))+['']
+    if var:  # if the variable exists and has text
+        paths = [p.strip() for p in var.split(os.pathsep)]  # split by the separator and strip whitespace just in case
+        paths.insert(len(paths) if append else 0, path)  # append or prepend `path'
+        if '' in paths:  # need to move the blank path to the end to prevent :: from appearing in the variable
+            paths = list(filter(bool, paths)) + ['']
     else:
-        paths=[path] # variable is new so only text is `path'
+        paths = [path]  # variable is new so only text is `path'
 
-    os.environ[varname]=os.pathsep.join(paths)
+    os.environ[varname] = os.pathsep.join(paths)
 
 
-def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
+def execfileExc(file_or_path, localvars, storeExcepts=True, streams=None):
     '''
     Executes the file or file path `file_or_path' in the same manner as execfile() with `localvars' as the local variable
     environment. If `storeExcepts' is True, whenever the code encounters an exception it is added to a list and the
@@ -1279,74 +1294,76 @@ def execfileExc(file_or_path,localvars,storeExcepts=True,streams=None):
     a triple of objects suitable to substitute for the streams (sys.stdin, sys.stdout, sys.stderr) which are temporarily 
     reassigned for the duration of execution.
     '''
-    exclist=[]
-    linebuffer=[]
-    lastindent=0
-    templine=None
-    openedfile=False
-    filename='<script>'
-    count=1
+    exclist = []
+    linebuffer = []
+    lastindent = 0
+    templine = None
+    openedfile = False
+    filename = '<script>'
+    count = 1
 
-    if isinstance(file_or_path,str): # open the file
-        openedfile=True
-        filename=file_or_path
-        file_or_path=open(file_or_path)
+    if isinstance(file_or_path, str):  # open the file
+        openedfile = True
+        filename = file_or_path
+        file_or_path = open(file_or_path)
 
-    if streams: # substitute the IO streams
-        sys.stdin,sys.stdout,sys.stderr=streams
+    if streams:  # substitute the IO streams
+        sys.stdin, sys.stdout, sys.stderr = streams
 
     try:
-        line=file_or_path.readline()
+        line = file_or_path.readline()
         while line:
-            line=line.rstrip() # strip right side empty space including the trailing newline
+            line = line.rstrip()  # strip right side empty space including the trailing newline
 
-            #indent=first(i for i,c in enumerate(line) if c not in string.whitespace) if line else 0
-            indent=len(line)-len(line.lstrip())
+            # indent=first(i for i,c in enumerate(line) if c not in string.whitespace) if line else 0
+            indent = len(line) - len(line.lstrip())
 
-            if indent==0 and lastindent>0 and line: # complete an indented block if this line of code has indentation
-                templine=line # the current line shouldn't be executed with the finished block, save for next loop
-                lastindent=0
-            elif line: # otherwise if the line isn't empty add it to the buffer of lines
+            if indent == 0 and lastindent > 0 and line:  # complete an indented block if this line of code has indentation
+                templine = line  # the current line shouldn't be executed with the finished block, save for next loop
+                lastindent = 0
+            elif line:  # otherwise if the line isn't empty add it to the buffer of lines
                 linebuffer.append(line)
-                lastindent=indent
+                lastindent = indent
 
             try:
-                if indent==0 and line: # only attempt to execute whole code blocks
-                    lineadd=['']*(count-len(linebuffer)) # add blank lines before the code to ensure line numbers of stack traces are correct
-                    c=compile_command('\n'.join(lineadd+linebuffer)+'\n',filename,'exec') # raises syntax exceptions
+                if indent == 0 and line:  # only attempt to execute whole code blocks
+                    lineadd = [''] * (count - len(
+                        linebuffer))  # add blank lines before the code to ensure line numbers of stack traces are correct
+                    c = compile_command('\n'.join(lineadd + linebuffer) + '\n', filename,
+                                        'exec')  # raises syntax exceptions
                     if c:
-                        linebuffer=[] # clear the buffer since a complete command has now been compiled and does not needs its pieces buffered
-                        exec(c,localvars) # raises execution exceptions 
-                        #Note: exec tuple syntax encounters parser bug on python versions below 2.7.9 if list comprehensions with conditions are present
+                        linebuffer = []  # clear the buffer since a complete command has now been compiled and does not needs its pieces buffered
+                        exec(c, localvars)  # raises execution exceptions
+                        # Note: exec tuple syntax encounters parser bug on python versions below 2.7.9 if list comprehensions with conditions are present
 
             except Exception as e:
-                linebuffer=[] # any exception means the stored code is possibly bogus so reject
-                if storeExcepts: # store the whole stack trace
-                    format_exc=traceback.format_exc()
-                    exclist.append((e,format_exc))
+                linebuffer = []  # any exception means the stored code is possibly bogus so reject
+                if storeExcepts:  # store the whole stack trace
+                    format_exc = traceback.format_exc()
+                    exclist.append((e, format_exc))
                 else:
                     raise
 
             # line becomes templine if it's present (ie. execute the code that ended a block next time around)
-            if templine!=None:
-                line=templine
-                templine=None
-            else: # otherwise line becomes the next line in the file
-                line=file_or_path.readline()
-                count+=1
-                if not line and linebuffer: # ensure the last code line/block is executed
-                    line='\n'
+            if templine != None:
+                line = templine
+                templine = None
+            else:  # otherwise line becomes the next line in the file
+                line = file_or_path.readline()
+                count += 1
+                if not line and linebuffer:  # ensure the last code line/block is executed
+                    line = '\n'
 
         return exclist
     finally:
-        if streams: # replace the original IO streams
-            sys.stdin,sys.stdout,sys.stderr=sys.__stdin__,sys.__stdout__,sys.__stderr__
+        if streams:  # replace the original IO streams
+            sys.stdin, sys.stdout, sys.stderr = sys.__stdin__, sys.__stdout__, sys.__stderr__
 
-        if openedfile: # close the file only if we've opened it
+        if openedfile:  # close the file only if we've opened it
             file_or_path.close()
 
 
-def execBatchProgram(exefile,*exeargs,**kwargs):
+def execBatchProgram(exefile, *exeargs, **kwargs):
     '''
     Executes the program `exefile' with the string arguments `exeargs' as a batch process. The return result is a return
     code and output string pair. The integer return code is taken from the program, in the usual case 0 indicating a
@@ -1358,72 +1375,72 @@ def execBatchProgram(exefile,*exeargs,**kwargs):
     will be piped to that file. An environment map can be provided as `env' which will be used to override the inherited
     environment during the execution.
     '''
-    timeout=kwargs.get('timeout',None) # timeout time value in seconds
-    cwd=kwargs.get('cwd',None)
-    env=kwargs.get('env',None)
-    exefile=os.path.abspath(exefile)
-    output=''
-    errcode=0
+    timeout = kwargs.get('timeout', None)  # timeout time value in seconds
+    cwd = kwargs.get('cwd', None)
+    env = kwargs.get('env', None)
+    exefile = os.path.abspath(exefile)
+    output = ''
+    errcode = 0
 
     if isWindows:
-        exefile=ensureExt(exefile,'.exe')
+        exefile = ensureExt(exefile, '.exe')
 
-    if kwargs.pop('logcmd',False):
-        printFlush(exefile,exeargs,kwargs)
+    if kwargs.pop('logcmd', False):
+        printFlush(exefile, exeargs, kwargs)
 
     if not os.path.isfile(exefile):
-        raise IOError('Cannot find program %r' %exefile)
+        raise IOError('Cannot find program %r' % exefile)
 
     # if log file given, open it to receive output, otherwise send output to pipe
     if 'logfile' in kwargs:
-        stdout=open(kwargs['logfile'],'w+')
+        stdout = open(kwargs['logfile'], 'w+')
     else:
-        stdout=subprocess.PIPE
-        
-    if env is not None:
-        origenv=dict(os.environ)
-        origenv.update(env)
-        env=origenv
+        stdout = subprocess.PIPE
 
-    proc=subprocess.Popen([exefile]+list(exeargs),stderr = subprocess.STDOUT, stdout = stdout,cwd=cwd,env=env)
+    if env is not None:
+        origenv = dict(os.environ)
+        origenv.update(env)
+        env = origenv
+
+    proc = subprocess.Popen([exefile] + list(exeargs), stderr=subprocess.STDOUT, stdout=stdout, cwd=cwd, env=env)
 
     # if timeout is present, kill the process and throw an exception if the program doesn't finish beforehand
-    if timeout!=None and timeout>0:
-        tm=float(timeout)
-        lasttime=time.time()
-        while proc.poll()==None and tm>0:
-            curtime=time.time()
-            tm-=curtime-lasttime
-            lasttime=curtime
+    if timeout != None and timeout > 0:
+        tm = float(timeout)
+        lasttime = time.time()
+        while proc.poll() == None and tm > 0:
+            curtime = time.time()
+            tm -= curtime - lasttime
+            lasttime = curtime
             time.sleep(0.01)
 
-        if tm<=0:
+        if tm <= 0:
             proc.kill()
-            output='Process %r failed to complete after %.3f seconds\n' %(exefile,timeout)
-            errcode=1
+            output = 'Process %r failed to complete after %.3f seconds\n' % (exefile, timeout)
+            errcode = 1
 
-    out,_ = proc.communicate()
-    returncode= errcode if errcode!=0 and proc.returncode==0 else proc.returncode # choose errcode if the process was killed
+    out, _ = proc.communicate()
+    returncode = errcode if errcode != 0 and proc.returncode == 0 else proc.returncode  # choose errcode if the process was killed
 
     # if a log file was specified, read it into `out' since it will be empty in this case
     if 'logfile' in kwargs:
         stdout.seek(0)
-        out=stdout.read()
+        out = stdout.read()
         stdout.close()
 
     try:
-        out=out.decode('utf-8')
+        out = out.decode('utf-8')
     except:
         pass
 
-    return (returncode,output+(out or ''))
+    return (returncode, output + (out or ''))
 
 
 def enumAllFiles(rootdir):
     '''Yields all absolute path regular files in the given directory.'''
     for root, dirs, files in os.walk(rootdir):
         for f in sorted(files):
-            yield os.path.join(root,f)
+            yield os.path.join(root, f)
 
 
 def checkValidPath(path):
@@ -1432,8 +1449,8 @@ def checkValidPath(path):
     otherwise is a valid path, 1 if not accessible, 2 if the filename component contains invalid characters, and 3 if
     the extension contains invalid characters.
     '''
-    pdir,basename,ext=splitPathExt(path)
-    invalidchars='\\/:;*?!<>|"\'\0'
+    pdir, basename, ext = splitPathExt(path)
+    invalidchars = '\\/:;*?!<>|"\'\0'
 
     if os.path.exists(path):
         return 0
@@ -1452,65 +1469,65 @@ def getValidFilename(name):
     return re.sub('[\.\s\<\>?:;!*/\|%\'\"]', '_', name)
 
 
-def hasExtension(path,*exts):
+def hasExtension(path, *exts):
     '''Returns True if the filename `path' has any of the extensions in `exts', which can start with a period or not.'''
-    return any(path.endswith(('' if e[0]=='.' else '.')+e) for e in exts)
+    return any(path.endswith(('' if e[0] == '.' else '.') + e) for e in exts)
 
 
-def ensureExt(path,ext,replaceExt=False):
+def ensureExt(path, ext, replaceExt=False):
     '''
     Ensures the returned path ends with extension `ext'. If the path doesn't have `ext' as its extension, this returns
     `path' with `ext' appended, replacing any existing extension if `replaceExt' is True. Eg. ensureExt('foo','.bar')
     returns 'foo.bar' as does ensureExt('foo.baz','.bar',True), but ensureExt('foo.baz','.bar') returns 'foo.baz.bar'.
     '''
-    namepart,extpart=os.path.splitext(path)
-    if namepart and extpart!=ext:
-        path=(namepart if replaceExt else path)+ext
+    namepart, extpart = os.path.splitext(path)
+    if namepart and extpart != ext:
+        path = (namepart if replaceExt else path) + ext
 
     return path
 
 
-def splitPathExt(path,fullExt=False):
+def splitPathExt(path, fullExt=False):
     '''
     For the given path, return the containing directory, filename without extension, and extension. If `fullExt' is
     True, consider everything to the right of the first period as the extension rather than from the last. For example,
     splitPathExt('foo.bar.baz')[2] produces '.baz' whereas splitPathExt('foo.bar.baz',True)[2] produces '.bar.baz'.
     '''
-    path,basename=os.path.split(path)
+    path, basename = os.path.split(path)
 
     if fullExt and '.' in basename:
-        basename,ext=basename.split('.',1) # consider everything to the right of the first . as the extension
-        ext='.'+ext
+        basename, ext = basename.split('.', 1)  # consider everything to the right of the first . as the extension
+        ext = '.' + ext
     else:
-        basename,ext=os.path.splitext(basename) # consider everything to the right of the last . as the extension
+        basename, ext = os.path.splitext(basename)  # consider everything to the right of the last . as the extension
 
-    return path,basename,ext
+    return path, basename, ext
 
 
-def timeBackupFile(filename,backDir=None):
+def timeBackupFile(filename, backDir=None):
     '''
     Copies `filename' if it exists to the same directory (or `backDir' if not None) with the system time and ".old"
     appended to the name. The new base filename is returned if this was done, otherwise None.
     '''
     if os.path.exists(filename):
-        root,name=os.path.split(filename)
-        backDir=backDir or root
-        timefile='%s.%s.old' %(name,time.time())
-        shutil.copyfile(filename,os.path.join(backDir,timefile))
+        root, name = os.path.split(filename)
+        backDir = backDir or root
+        timefile = '%s.%s.old' % (name, time.time())
+        shutil.copyfile(filename, os.path.join(backDir, timefile))
         return timefile
 
 
-def sortFilenameList(names,sortIndex,regex=None):
+def sortFilenameList(names, sortIndex, regex=None):
     '''
     Sort the list of filenames `names' based on a common numerical component. This assumes the files have a sequential
     numbering scheme which may not prefix numbers with zeros and so the alphabetical ordering is not the same as numerical.
     This function parses out the numerical component of each name and sorts using these as integer values.
     '''
-    sortorder=getStrSortIndices([os.path.split(n)[1] for n in names],sortIndex,regex)
-    return indexList(sortorder,names)
+    sortorder = getStrSortIndices([os.path.split(n)[1] for n in names], sortIndex, regex)
+    return indexList(sortorder, names)
 
 
-def isSameFile(src,dst):
+def isSameFile(src, dst):
     '''Returns True if the files `src' and `dst' refer to the same extant file.'''
     if not os.path.exists(src) or not os.path.exists(dst):
         return False
@@ -1524,25 +1541,25 @@ def isSameFile(src,dst):
     return False
 
 
-def isTextFile(filename,bufferlen=512):
+def isTextFile(filename, bufferlen=512):
     '''Checks the first `bufferlen' characters in `filename' to assess whether the file is a text file or not.'''
-    buf=open(filename).read(bufferlen)
-    return '\0' not in buf # maybe something a bit more involved than just checking for null characters?
+    buf = open(filename).read(bufferlen)
+    return '\0' not in buf  # maybe something a bit more involved than just checking for null characters?
 
 
-def copyfileSafe(src,dst,overwriteFile=False):
+def copyfileSafe(src, dst, overwriteFile=False):
     '''
     Copy file from path `src' to path `dst' only if they are not the same file. If `overwriteFile' is True, raise an
     IOError if `dst' already exists.
     '''
-    if not isSameFile(src,dst):
+    if not isSameFile(src, dst):
         if not overwriteFile and os.path.exists(dst):
-            raise IOError('File already exists: %r'%dst)
+            raise IOError('File already exists: %r' % dst)
 
-        shutil.copyfile(src,dst)
+        shutil.copyfile(src, dst)
 
 
-def renameFile(oldpath,newname,moveFile=True,overwriteFile=False):
+def renameFile(oldpath, newname, moveFile=True, overwriteFile=False):
     '''
     Replace the basename without extension in `oldpath' with `newname' and keeping the old extension. If `moveFile' is
     True, copy the old file to the new location and overwrite existing file if `overwriteFile' is True; IOError
@@ -1550,29 +1567,30 @@ def renameFile(oldpath,newname,moveFile=True,overwriteFile=False):
     allows a "dry run" where the checks are performed but the file isn't moved. Returns the new path.
     Eg. renameFile('/foo/bar.baz.plonk','thunk') -> '/foo/thunk.baz.plonk'
     '''
-    olddir,oldname,ext=splitPathExt(oldpath,True)
-    newpath=os.path.join(olddir,newname+ext)
+    olddir, oldname, ext = splitPathExt(oldpath, True)
+    newpath = os.path.join(olddir, newname + ext)
 
     if not os.path.exists(oldpath):
-        raise IOError('Cannot move %r to %r, source file does not exist'%(oldpath,newpath))
+        raise IOError('Cannot move %r to %r, source file does not exist' % (oldpath, newpath))
     elif os.path.exists(newpath) and not overwriteFile:
-        raise IOError('Cannot move %r to %r, destination file already exists'%(oldpath,newpath))
-    elif isSameFile(oldpath,newpath):
-        raise IOError('File names %r and %r refer to the same file'%(oldpath,newpath))
+        raise IOError('Cannot move %r to %r, destination file already exists' % (oldpath, newpath))
+    elif isSameFile(oldpath, newpath):
+        raise IOError('File names %r and %r refer to the same file' % (oldpath, newpath))
     elif moveFile:
-        shutil.move(oldpath,newpath)
+        shutil.move(oldpath, newpath)
 
     return newpath
 
 
-cumulativeTimes={}
+cumulativeTimes = {}
 
-def addCumulativeTime(name,val):
+
+def addCumulativeTime(name, val):
     global cumulativeTimes
-    if len(cumulativeTimes)==0:
+    if len(cumulativeTimes) == 0:
         atexit.register(printCumulativeTimes)
 
-    cumulativeTimes[name]=val+cumulativeTimes.get(name,0.0)
+    cumulativeTimes[name] = val + cumulativeTimes.get(name, 0.0)
 
 
 def printCumulativeTimes():
@@ -1580,7 +1598,7 @@ def printCumulativeTimes():
     global cumulativeTimes
     printFlush('Total Global dT (s):')
     for i in cumulativeTimes.items():
-        printFlush(' %s = %f'% i)
+        printFlush(' %s = %f' % i)
 
 
 def timing(func):
@@ -1588,13 +1606,14 @@ def timing(func):
     This simple timing function decorator prints to stdout/logfile (it uses printFlush) how many seconds a call to the
     original function took to execute, as well as the name before and after the call.
     '''
+
     @wraps(func)
-    def timingwrap(*args,**kwargs):
+    def timingwrap(*args, **kwargs):
         printFlush(func.__name__)
-        start=time.time()
-        res=func(*args,**kwargs)
-        end=time.time()
-        printFlush(func.__name__, 'dT (s) =',(end-start))
+        start = time.time()
+        res = func(*args, **kwargs)
+        end = time.time()
+        printFlush(func.__name__, 'dT (s) =', (end - start))
         return res
 
     return timingwrap
@@ -1602,43 +1621,45 @@ def timing(func):
 
 def cumulativeTime(func):
     '''Add the time taken to execute `func' to a stored cumulative time counter for that function.'''
+
     @wraps(func)
-    def timingwrap(*args,**kwargs):
-        start=time.time()
-        res=func(*args,**kwargs)
-        end=time.time()
-        addCumulativeTime(func.__name__,end-start)
+    def timingwrap(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        end = time.time()
+        addCumulativeTime(func.__name__, end - start)
         return res
 
     return timingwrap
 
 
 @contextlib.contextmanager
-def timingBlock(name,printEntry=True,addCumulative=False):
+def timingBlock(name, printEntry=True, addCumulative=False):
     '''
     Provides a timing facility for 'with' code blocks. Argument `name' is printed when entering if `printEntry', and
     always printed when exiting. If `addCumulative' is True then add the value to the cumulative time counter.
     The yielded value is the starting time of the block.
     '''
     if printEntry:
-        printFlush('>',name)
-    start=time.time()
+        printFlush('>', name)
+    start = time.time()
     yield start  # execute code in 'with' block
-    end=time.time()
-    printFlush('<',name,'dT (s) =',(end-start))
+    end = time.time()
+    printFlush('<', name, 'dT (s) =', (end - start))
     if addCumulative:
-        addCumulativeTime(name,end-start)
+        addCumulativeTime(name, end - start)
 
 
 def argtiming(func):
     '''This decorator is the same as timing() except it will additionally print the arguments and return value.'''
+
     @wraps(func)
-    def _wrap(*args,**kwargs):
-        printFlush(func.__name__,'(',args,kwargs,')')
-        start=time.time()
-        res=func(*args,**kwargs)
-        end=time.time()
-        printFlush(func.__name__, 'dT (s) =',(end-start),res)
+    def _wrap(*args, **kwargs):
+        printFlush(func.__name__, '(', args, kwargs, ')')
+        start = time.time()
+        res = func(*args, **kwargs)
+        end = time.time()
+        printFlush(func.__name__, 'dT (s) =', (end - start), res)
         return res
 
     return _wrap
@@ -1646,25 +1667,26 @@ def argtiming(func):
 
 def tracing(func):
     '''This decorator prints a stack trace when the wrapped function is called.'''
+
     @wraps(func)
-    def _wrap(*args,**kwargs):
-        trace=inspect.stack()
-        lastfile=None
-        for _,filename,line,routine,_,_ in trace[1:]:
-            filename=os.path.basename(filename)
-            if filename!=lastfile:
+    def _wrap(*args, **kwargs):
+        trace = inspect.stack()
+        lastfile = None
+        for _, filename, line, routine, _, _ in trace[1:]:
+            filename = os.path.basename(filename)
+            if filename != lastfile:
                 printFlush(filename)
-                lastfile=filename
+                lastfile = filename
 
-            printFlush(' %i: %s'%(line,routine))
+            printFlush(' %i: %s' % (line, routine))
 
-        printFlush(args,kwargs)
-        return func(*args,**kwargs)
+        printFlush(args, kwargs)
+        return func(*args, **kwargs)
 
     return _wrap
 
 
-def setmethod(obj,methname=None):
+def setmethod(obj, methname=None):
     '''
     Applying this decorator to a routine replaces the method of `obj' with name `methname' (or the name of the applied
     routine if this is None) with the routine. 
@@ -1679,34 +1701,35 @@ def setmethod(obj,methname=None):
         x.foo()
         >>> "<class '__main__.test'>"
     '''
+
     def setfunc(func):
-        mname=str(methname or func.__name__)
-        oldfunc=getattr(obj,mname,None)
+        mname = str(methname or func.__name__)
+        oldfunc = getattr(obj, mname, None)
         if oldfunc:
-            setattr(obj,'__old__'+mname,oldfunc)
-            
-        setattr(obj,mname,func)
-        
+            setattr(obj, '__old__' + mname, oldfunc)
+
+        setattr(obj, mname, func)
+
         return func
-    
+
     return setfunc
 
 
-def traverseObj(obj,func,visited=()):
+def traverseObj(obj, func, visited=()):
     '''
     Attempt to visit every member of `obj' and every member of members etc. recursively. The callable `func' is applied
     to `obj' to determine when to stop traversing, returning False if a stop is requested. The set `visited' is the
     recursive accumulated list of visited objects used to prevent cycles.
     '''
-    result=func(obj)
-    visited=set(visited)
+    result = func(obj)
+    visited = set(visited)
     visited.add(obj)
 
-    if result!=False:
+    if result != False:
         for d in dir(obj):
-            at=getattr(obj,d)
+            at = getattr(obj, d)
             if not d.startswith('__') and at not in visited:
-                traverseObj(at,func,visited)
+                traverseObj(at, func, visited)
 
 
 def isPicklable(obj):
@@ -1720,8 +1743,10 @@ def isPicklable(obj):
 
 def isIterable(obj):
     '''Returns True if `obj' is iterable container type, ie. list, tuple, dict.'''
-    return isinstance(obj, (list,tuple,dict))
-#TODO: is this definition sufficient?
+    return isinstance(obj, (list, tuple, dict))
+
+
+# TODO: is this definition sufficient?
 #    if isinstance(obj,(bytes,str)):
 #        return False
 #    
@@ -1736,10 +1761,10 @@ def isIterable(obj):
 
 def toIterable(obj):
     '''Returns an iterable of objects, which is `obj' if it's not a string and iterable, otherwise (obj,).'''
-    return obj if not isinstance(obj,(bytes,str)) and isIterable(obj) else (obj,)
+    return obj if not isinstance(obj, (bytes, str)) and isIterable(obj) else (obj,)
 
 
-def memoized(converter=lambda i:i,initialmemo={}):
+def memoized(converter=lambda i: i, initialmemo={}):
     '''
     Produces a memoized version of the applied function. This is only useful for functions which always return the
     same result for given arguments. When the function is called, the memo dictionary is checked to see if there's a
@@ -1748,14 +1773,15 @@ def memoized(converter=lambda i:i,initialmemo={}):
     function into a storable form (eg. use `tuple' to store results from generators). All arguments must be hashable.
     The dictionary `initialmemo' can be used to initialize the stored memo with given arg-result value pairs.
     '''
+
     def funcwrap(func):
-        memo=dict(initialmemo) # distinct instance of this is created for each function and is bound in its scope
+        memo = dict(initialmemo)  # distinct instance of this is created for each function and is bound in its scope
 
         @wraps(func)
-        def memoizedfunc(*args,**kwargs):
-            memokey=args+tuple(kwargs.values())
+        def memoizedfunc(*args, **kwargs):
+            memokey = args + tuple(kwargs.values())
             if memokey not in memo:
-                memo[memokey]=converter(func(*args,**kwargs))
+                memo[memokey] = converter(func(*args, **kwargs))
 
             return memo[memokey]
 
@@ -1766,7 +1792,7 @@ def memoized(converter=lambda i:i,initialmemo={}):
 
 def isMainThread():
     '''Returns true if the call thread is the main thread. This relies on checking against the type _MainThread.'''
-    return isinstance(currentThread(),_MainThread)
+    return isinstance(currentThread(), _MainThread)
 
 
 def asyncfunc(func):
@@ -1775,60 +1801,62 @@ def asyncfunc(func):
     return value is the threading.Thread object executing the callable, with an extra member `result' containing the
     Future object which will eventually store the return value or raised exception from calling `func'.
     '''
+
     @wraps(func)
-    def funcwrap(*args,**kwargs):
-        f=Future()
+    def funcwrap(*args, **kwargs):
+        f = Future()
+
         def _call():
             with f:
-                f.setObject(func(*args,**kwargs))
+                f.setObject(func(*args, **kwargs))
 
-        t=Thread(target=_call)
-        t.daemon=True
-        t.result=f
+        t = Thread(target=_call)
+        t.daemon = True
+        t.result = f
         t.start()
         return t
 
     return funcwrap
 
 
-def partitionSequence(maxval,part,numparts):
+def partitionSequence(maxval, part, numparts):
     '''
     Calculate the begin and end indices in the sequence [0,maxval) for partition `part' out of `numparts' total
     partitions. This is used to equally divide a sequence of numbers (eg. matrix rows or array indices) so that they
     may be assigned to multiple procs/threads. The result `start,end' defines a sequence [start,end) of numbers.
     '''
-    partsize=maxval/float(numparts)
-    start=math.floor(part*partsize)
-    end=math.floor((part+1)*partsize)
-    if (maxval-end)<partsize:
-        end=maxval
+    partsize = maxval / float(numparts)
+    start = math.floor(part * partsize)
+    end = math.floor((part + 1) * partsize)
+    if (maxval - end) < partsize:
+        end = maxval
 
-    return int(start),int(end)
+    return int(start), int(end)
 
 
-def createShortName(*comps,**kwargs):
+def createShortName(*comps, **kwargs):
     '''Creates a string by joining components `comps' with _, shortening each component to max length `complen' or 10.'''
-    complen=kwargs.get('complen',10)
-    return '_'.join(n[:complen] if len(n)>complen else n for n in comps)
+    complen = kwargs.get('complen', 10)
+    return '_'.join(n[:complen] if len(n) > complen else n for n in comps)
 
 
-def uniqueStr(name,namelist,spacer='_'):
+def uniqueStr(name, namelist, spacer='_'):
     '''
     Derive a string from `name' guaranteed to not be in `namelist'. If `name' isn't in `namelist', it will be returned
     unmodified, otherwise the created name will be `name' followed by `spacer' and a number which makes it unique.
     '''
-    count=1
-    newname=name
-    namelist=set(namelist)
+    count = 1
+    newname = name
+    namelist = set(namelist)
 
     while newname in namelist:
-        newname='%s%s%.2i'%(name,spacer,count)
-        count+=1
+        newname = '%s%s%.2i' % (name, spacer, count)
+        count += 1
 
     return newname
 
 
-def getStrSortIndices(strs,sortIndex,regex=None):
+def getStrSortIndices(strs, sortIndex, regex=None):
     '''
     Determine the sort order of iterable `strs' based on the component indexed by `sortIndex'. Each string is split
     using `regex' as the regular expression to use with re.split (by default it splits names by _-\. | characters),
@@ -1836,13 +1864,13 @@ def getStrSortIndices(strs,sortIndex,regex=None):
     through string comparison if it isn't a number. The result is the index list specifying the sorted ordering, or is
     the empty list if `strs' is an empty sequence.
     '''
-    strcomps=[re.split(regex or '\||_|-|\.|\ ',n) for n in strs]
+    strcomps = [re.split(regex or '\||_|-|\.|\ ', n) for n in strs]
     if not strcomps:
         return []
 
-    minlen=min(len(n) for n in strcomps)
-    if sortIndex>=minlen or sortIndex<-minlen:
-        raise IndexError("`sortIndex' value %i is outside possible range [%i,%i]"%(sortIndex,-minlen,minlen-1))
+    minlen = min(len(n) for n in strcomps)
+    if sortIndex >= minlen or sortIndex < -minlen:
+        raise IndexError("`sortIndex' value %i is outside possible range [%i,%i]" % (sortIndex, -minlen, minlen - 1))
 
     def convertFunc(n):
         try:
@@ -1850,10 +1878,10 @@ def getStrSortIndices(strs,sortIndex,regex=None):
         except:
             return n[sortIndex]
 
-    return sortIndices(list(map(convertFunc,strcomps)))
+    return sortIndices(list(map(convertFunc, strcomps)))
 
 
-def getStrCommonality(str1,str2):
+def getStrCommonality(str1, str2):
     '''
     Returns the maximal length initial substring that the two arguments strings have in common and the percentage of
     the minimal length this value represents. A result of (0,0.0) indicates the two strings have nothing in common. A
@@ -1861,21 +1889,21 @@ def getStrCommonality(str1,str2):
     Eg. getStrCommonality('foo','foul') = (2,0.6666666) indicating that the first 2 letters of 'foo' are common and
     represent 2/3rds of its length.
     '''
-    minlen=min(len(str1),len(str2))
-    index=first(i for i in range(minlen) if str1[i]!=str2[i])
-    if index==None:
-        index=minlen
+    minlen = min(len(str1), len(str2))
+    index = first(i for i in range(minlen) if str1[i] != str2[i])
+    if index == None:
+        index = minlen
 
-    return index,index/float(minlen)
+    return index, index / float(minlen)
 
 
 def getStrListCommonality(strs):
     '''Returns the index of the first character which is not common in all the strings of the list `strs'.'''
-    sets=zip(*strs)
-    return first(i for i,s in enumerate(sets) if len(set(s))>1)
+    sets = zip(*strs)
+    return first(i for i, s in enumerate(sets) if len(set(s)) > 1)
 
 
-def findGlobMatch(globname,names):
+def findGlobMatch(globname, names):
     '''
     If `globname' is a globulated name (that is one ending with *) then return the first string in `names' which
     begins with `globname' minus the *, or None if there is no match. If `globname' doesn't end with * it is returned.
@@ -1883,36 +1911,36 @@ def findGlobMatch(globname,names):
     '''
     if globname in names:
         return globname
-    elif globname[-1]=='*':
-        gn=globname[:-1]
+    elif globname[-1] == '*':
+        gn = globname[:-1]
         return first(n for n in names if n.startswith(gn))
     else:
         return None
 
 
-def printFlush(*args,**kwargs):
+def printFlush(*args, **kwargs):
     '''
     Converts each element of 'args' into a string and prints them to a stream separated by spaces. The same string is
     also printed to the log. The keyword argument `end' is used to specify the end string, the default is '\n'. If the
     keyword argument `stream' is omitted the string is printed to sys.stdout, otherwise this argument can be used to
     supply a different object with write() and flush() methods.
     '''
-    msg=' '.join(map(str,args))
-    stream=kwargs.get('stream',sys.stdout)
-    stream.write(msg+kwargs.get('end','\n'))
+    msg = ' '.join(map(str, args))
+    stream = kwargs.get('stream', sys.stdout)
+    stream.write(msg + kwargs.get('end', '\n'))
     stream.flush()
     logging.info(msg)
 
 
-def setStrIndent(s,indent=0,useTab=False):
+def setStrIndent(s, indent=0, useTab=False):
     '''
     Remove the indentation from the code string `s' and set the leading indentation to be `indent' number of characters,
     spaces if `useTab' is False, tabs otherwise.
     '''
-    ss=[l.strip()+'\n' for l in s.split('\n')]
-    spacer=('\t' if useTab else ' ')*indent
+    ss = [l.strip() + '\n' for l in s.split('\n')]
+    spacer = ('\t' if useTab else ' ') * indent
 
-    return spacer.join(['']+ss).rstrip()
+    return spacer.join([''] + ss).rstrip()
 
 
 def getUnitValue(val):
@@ -1920,29 +1948,29 @@ def getUnitValue(val):
     Given a size `val' in bytes, returns a string with the size rounded to the nearest base 2 unit (B, kB, MB, etc.)
     with the appropriate unit suffix addded to the end. These are base-2 units, ie. MB is given in stead of MiB.
     '''
-    suffixes=['B','kB','MB','GB','TB','PB']
-    power=0
+    suffixes = ['B', 'kB', 'MB', 'GB', 'TB', 'PB']
+    power = 0
 
-    while val>1000 and (power+1)<len(suffixes):
-        val/=1024.0
-        power+=1
+    while val > 1000 and (power + 1) < len(suffixes):
+        val /= 1024.0
+        power += 1
 
-    return '%.2f%s' % (val,suffixes[power])
+    return '%.2f%s' % (val, suffixes[power])
 
 
-def getPaddedNum(val,maxval):
+def getPaddedNum(val, maxval):
     '''Return the string form of `val' with enough pad zeros for as many digits as `maxval'.'''
-    power=len(str(int(maxval)))
-    result='%0*i'%(power,int(val))
+    power = len(str(int(maxval)))
+    result = '%0*i' % (power, int(val))
 
-    if isinstance(val,float):
-        power=len(str(maxval).split('.')[-1])
-        result+='%0.*f'%(power,val-int(val))
+    if isinstance(val, float):
+        power = len(str(maxval).split('.')[-1])
+        result += '%0.*f' % (power, val - int(val))
 
     return result
 
 
-def parseSequenceSpec(spec,maxval):
+def parseSequenceSpec(spec, maxval):
     '''
     Creates a list of integer values based on the sequence string specification. The specifier string `spec' is a
     comma-separated list of specifiers, which are either a integer number, an integer range N-M for integers N and M-1
@@ -1950,50 +1978,50 @@ def parseSequenceSpec(spec,maxval):
     For example: "1,6-8,9-2-14,16-*" yields [1, 6, 7, 9, 11, 13, 16, 17, 18, 19] for a `maxval' of 20. The resulting
     list is sorted with duplicates removed.
     '''
-    selected=set()
+    selected = set()
 
     for part in spec.split(','):
         try:
-            ipart=int(part)
+            ipart = int(part)
             selected.add(ipart)
         except:
-            rpart=part.split('-')
+            rpart = part.split('-')
 
-            if len(rpart) not in (2,3):
-                raise ValueError("Bad sequence specifier '"+part+"'")
+            if len(rpart) not in (2, 3):
+                raise ValueError("Bad sequence specifier '" + part + "'")
 
-            if rpart[-1]=='*':
-                rpart[-1]=maxval
+            if rpart[-1] == '*':
+                rpart[-1] = maxval
 
-            if len(rpart)==2:
+            if len(rpart) == 2:
                 rpart.append(1)
             else:
-                rpart[1],rpart[2]=rpart[2],rpart[1]
+                rpart[1], rpart[2] = rpart[2], rpart[1]
 
-            rpart=list(map(int,rpart))
+            rpart = list(map(int, rpart))
 
-            if rpart[0]>rpart[1]:
-                raise ValueError("Bad sequence specifier '"+part+"'")
+            if rpart[0] > rpart[1]:
+                raise ValueError("Bad sequence specifier '" + part + "'")
 
             selected.update(range(*rpart))
 
-    selected=sorted(list(selected))
+    selected = sorted(list(selected))
 
-    if selected[0]<0 or selected[-1]>=maxval:
-        raise ValueError('Values must be in range 0 to '+str(maxval))
+    if selected[0] < 0 or selected[-1] >= maxval:
+        raise ValueError('Values must be in range 0 to ' + str(maxval))
 
     return selected
 
 
 def epsilonZero(val):
     '''Return 0.0 if `val' is within 'epsilon' of 0.0, otherwise return 'val' converted to a float value.'''
-    val=float(val)
-    return 0.0 if abs(val)<epsilon else val
+    val = float(val)
+    return 0.0 if abs(val) < epsilon else val
 
 
-def isInEpsilonRange(val,minv,maxv):
+def isInEpsilonRange(val, minv, maxv):
     '''Returns true if `val' is in the range [minv,maxv] expanded in both directions by 'epsilon'.'''
-    return (minv-epsilon)<=val<=(maxv+epsilon)
+    return (minv - epsilon) <= val <= (maxv + epsilon)
 
 
 def checkNan(val):
@@ -2002,92 +2030,92 @@ def checkNan(val):
     return val
 
 
-def indexList(indices,lst):
+def indexList(indices, lst):
     '''Returns a list containing `lst'[i] for each index i in `indices'. '''
-    assert all(0<=i<len(lst) for i in indices)
+    assert all(0 <= i < len(lst) for i in indices)
     return [lst[i] for i in indices]
 
 
-def rotateIndices(start,numinds):
+def rotateIndices(start, numinds):
     '''Produces the indices for a list `numinds' long rotated so that index `start' is the new first index.'''
-    return [(i+start)%numinds for i in range(numinds)]
+    return [(i + start) % numinds for i in range(numinds)]
 
 
 def sortIndices(lst):
     '''Returns a list of indices into iterable `lst' which index the members of `lst' in sorted order.'''
-    return sorted(range(len(lst)),key=lambda i:lst[i])
+    return sorted(range(len(lst)), key=lambda i: lst[i])
 
 
-def sortedInsert(lst,val):
+def sortedInsert(lst, val):
     '''Given a sorted list `lst', insert `val' in the first position in `lst' which maintains the ordering.'''
-    i=first(i for i,v in enumerate(lst) if v>=val)
-    if i!=None:
-        lst[i:i]=[val]
+    i = first(i for i, v in enumerate(lst) if v >= val)
+    if i != None:
+        lst[i:i] = [val]
     else:
         lst.append(val)
 
 
 def minmaxIndices(lst):
     '''Returns the lowest indices of the minimal and maximal values in iterable `lst'.'''
-    it=iter(lst)
-    minind=0
-    maxind=0
-    minval=next(it)
-    maxval=minval
+    it = iter(lst)
+    minind = 0
+    maxind = 0
+    minval = next(it)
+    maxval = minval
 
-    for i,v in enumerate(it):
-        if v<minval:
-            minval=v
-            minind=i+1
-        elif v>maxval:
-            maxval=v
-            maxind=i+1
+    for i, v in enumerate(it):
+        if v < minval:
+            minval = v
+            minind = i + 1
+        elif v > maxval:
+            maxval = v
+            maxind = i + 1
 
-    return minind,maxind
+    return minind, maxind
 
 
 def fcomp(*funcs):
     '''Functional composition operator, fcomp(f0,f1,...,fn) is equivalent to lambda i:f0(f1(...fn(i)...)).'''
-    return lambda i:reduce(lambda v,f:f(v),reversed(funcs),i)
+    return lambda i: reduce(lambda v, f: f(v), reversed(funcs), i)
 
 
-def first(iterable,default=None):
+def first(iterable, default=None):
     '''Returns the first item in the given iterable, meaningful mostly with 'for' expressions.'''
     for i in iterable:
         return i
     return default
 
 
-def last(iterable,default=None):
+def last(iterable, default=None):
     '''Returns the last item in the given iterable, meaningful mostly with 'for' expressions.'''
-    result=default
+    result = default
     for i in iterable:
-        result=i
+        result = i
     return result
 
 
-def prod(i,initial=1):
+def prod(i, initial=1):
     '''Returns the product of the given iterable, starting with the given initial value.'''
-    return reduce(operator.mul,i,initial)
+    return reduce(operator.mul, i, initial)
 
 
 def listSum(lists):
     '''Sums the iterable of lists into one long list.'''
-    return sum(map(list,lists),[])
+    return sum(map(list, lists), [])
 
 
-def zipWith(op,*vals):
+def zipWith(op, *vals):
     '''Starmap `op' to each tuple derived from zipping the iterables in `vals'.'''
-    return itertools.starmap(op,zip(*vals))
+    return itertools.starmap(op, zip(*vals))
 
 
-def mulsum(ls,rs):
+def mulsum(ls, rs):
     '''Returns the sum of each element of `ls' multiplied by the equivalent element in `rs'.'''
-    muls=zipWith(operator.mul,ls,rs)
-    return sum(muls,next(muls)) # need to choose an initial value if the first member of muls cannot be added to 0
+    muls = zipWith(operator.mul, ls, rs)
+    return sum(muls, next(muls))  # need to choose an initial value if the first member of muls cannot be added to 0
 
 
-def successive(iterable,width=2,cyclic=False):
+def successive(iterable, width=2, cyclic=False):
     '''
     Yields tuples of `width' values in order from `iterable' starting from the first value, then from the second value,
     etc. If `cyclic' is True then `iterable' is treated as a cycle of values and the last `width' tuples will have
@@ -2095,31 +2123,33 @@ def successive(iterable,width=2,cyclic=False):
     Eg. successive(range(5))        -> (0, 1), (1, 2), (2, 3), (3, 4)
         successive(range(5),3,True) -> (0, 1, 2), (1, 2, 3), (2, 3, 4), (3, 4, 0), (4, 0, 1)
     '''
-    assert width>1
-    it=iter(iterable)
-    val=tuple(next(it) for i in range(width)) # get the first `width' values
-    
-    if cyclic: # if cyclic, make `it' into a chain that effectively sticks `val' (minus its last value) onto the end
-        it=itertools.chain(it,iter(val[:-1]))
+    assert width > 1
+    it = iter(iterable)
+    val = tuple(next(it) for i in range(width))  # get the first `width' values
 
-    while True: # The Pythonic Way?
+    if cyclic:  # if cyclic, make `it' into a chain that effectively sticks `val' (minus its last value) onto the end
+        it = itertools.chain(it, iter(val[:-1]))
+
+    while True:  # The Pythonic Way?
         yield val
-        val=val[1:]+(next(it),) # eventually next() will raise an exception if `iterable' is finite and the loop will exit
+        val = val[1:] + (
+        next(it),)  # eventually next() will raise an exception if `iterable' is finite and the loop will exit
 
 
-def group(iterable,width=2):
+def group(iterable, width=2):
     '''
     Groups successive items from `iterable' into `width' size tuples and yields each sequentially. If the number of items
     in `iterable' isn't a multiple of `width', the last shortened group is discarded. Eg. group(range(5)) -> (0,1), (2,3)
     '''
-    assert width>0
-    it=iter(iterable)
-    rng=list(range(width))
+    assert width > 0
+    it = iter(iterable)
+    rng = list(range(width))
 
-    p=tuple(next(it) for i in rng) # get `width' values
-    while len(p)==width: # loops so long as `iterable' has enough values, needed since exception from next() is suppressed by tuple()
+    p = tuple(next(it) for i in rng)  # get `width' values
+    while len(
+            p) == width:  # loops so long as `iterable' has enough values, needed since exception from next() is suppressed by tuple()
         yield p
-        p=tuple(next(it) for i in rng) # get the next `width' values
+        p = tuple(next(it) for i in rng)  # get the next `width' values
 
 
 def matIter(mat):
@@ -2129,18 +2159,18 @@ def matIter(mat):
             yield mm
 
 
-def matIndices(mat,start=0):
+def matIndices(mat, start=0):
     '''Returns a matrix with the same dimensions as `mat' with ascending value entries starting from `start'.'''
-    result=[]
-    count=start
+    result = []
+    count = start
     for m in mat:
-        result.append(list(range(count,count+len(m))))
-        count+=len(m)
+        result.append(list(range(count, count + len(m))))
+        count += len(m)
 
     return result
 
 
-def arrayIndex(inds,dims,circular):
+def arrayIndex(inds, dims, circular):
     '''
     For an array of dimensions `dims' flattened into a 1D list, get the index in that list corresponding to array
     indices `inds'. All arguments must be lists/tuples of the same length. For each i in `inds' with corresponding
@@ -2151,17 +2181,18 @@ def arrayIndex(inds,dims,circular):
     For example, for an array of dimensions (4,4,4) flattened into a 1D array of length 64, the index in the 1D array
     for position (1,2,3) in the 3D array is given by arrayIndex((1,2,3),(4,4,4),[False]*3) which is 57.
     '''
-    #clampfunc=lambda i,d:clamp(i,0,d-1)
-    #funcs=[(operator.mod if circular[ind] else clampfunc) for ind in range(len(inds))]
-    #return sum(funcs[ind](i,d)*prod(dims[:ind]) for ind,(i,d) in enumerate(zip(inds,dims)))
 
-    def _clampfunc(ind,dim,circ):
-        return ind%dim if circ else clamp(ind,0,dim-1)
+    # clampfunc=lambda i,d:clamp(i,0,d-1)
+    # funcs=[(operator.mod if circular[ind] else clampfunc) for ind in range(len(inds))]
+    # return sum(funcs[ind](i,d)*prod(dims[:ind]) for ind,(i,d) in enumerate(zip(inds,dims)))
 
-    return sum(_clampfunc(i,d,c)*prod(dims[:ind]) for ind,(i,d,c) in enumerate(zip(inds,dims,circular)))
+    def _clampfunc(ind, dim, circ):
+        return ind % dim if circ else clamp(ind, 0, dim - 1)
+
+    return sum(_clampfunc(i, d, c) * prod(dims[:ind]) for ind, (i, d, c) in enumerate(zip(inds, dims, circular)))
 
 
-def xisToPiecewiseXis(xis,dims,limits=None):
+def xisToPiecewiseXis(xis, dims, limits=None):
     '''
     Given a set of xi values `xis' and assuming a piecewise basis function on an grid of control points with dimensions
     `dim', calculate the xi values for the local element to apply to the basis function, and the indices for the control
@@ -2174,49 +2205,49 @@ def xisToPiecewiseXis(xis,dims,limits=None):
     from the edges/faces of the grid are control points. If `limits' is None the the value [(1,1)]*len(dims) is used which
     implies that the first and last values in the grid in every dimension are control points.
     '''
-    limits=limits or [(1,1)]*len(dims)
-    pxis=[]
-    indices=[]
-    for x,d,(lmin,lmax) in zip(xis,dims,limits):
-        xx=x*(d-lmax-lmin-1)
-        ixx=int(xx)
-        pxis.append(xx-ixx)
-        indices.append(ixx+lmin)
+    limits = limits or [(1, 1)] * len(dims)
+    pxis = []
+    indices = []
+    for x, d, (lmin, lmax) in zip(xis, dims, limits):
+        xx = x * (d - lmax - lmin - 1)
+        ixx = int(xx)
+        pxis.append(xx - ixx)
+        indices.append(ixx + lmin)
 
-    return pxis,indices
+    return pxis, indices
 
 
-def frange(start,stop=None,step=None):
+def frange(start, stop=None, step=None):
     '''Same as 'range', just with floats.'''
     if not stop:
-        stop=start
-        start=0.0
+        stop = start
+        start = 0.0
 
     if not step:
-        step=1.0
+        step = 1.0
 
-    start=epsilonZero(start)
-    stop=epsilonZero(stop)
-    step=epsilonZero(step)
+    start = epsilonZero(start)
+    stop = epsilonZero(stop)
+    step = epsilonZero(step)
 
-    if abs(stop-start)<=epsilon:
+    if abs(stop - start) <= epsilon:
         return
 
-    if step<=0:
+    if step <= 0:
         raise ValueError('Step must be positive and non-zero (step=%s)' % (str(step),))
 
-    if stop<0 or start<0:
-        raise ValueError('All arguments must be positive (start=%s, stop=%s)' % (str(start),str(stop)))
+    if stop < 0 or start < 0:
+        raise ValueError('All arguments must be positive (start=%s, stop=%s)' % (str(start), str(stop)))
 
-    if stop<start:
-        raise ValueError('Stop value must be greater than start value (start=%s, stop=%s)' % (str(start),str(stop)))
+    if stop < start:
+        raise ValueError('Stop value must be greater than start value (start=%s, stop=%s)' % (str(start), str(stop)))
 
     # Kahan algorithm (W. Kahan. 1965. Pracniques: further remarks on reducing truncation errors. Commun. ACM 8)
 
-    comp=0.0 # compensation value for low order bits
-    total=start # running total
+    comp = 0.0  # compensation value for low order bits
+    total = start  # running total
 
-    while total < stop-epsilon:
+    while total < stop - epsilon:
         yield total
         y = step - comp
         temp = total + y
@@ -2234,16 +2265,16 @@ def trange(*vals):
     Eg. list(trange((0,6,2),(0.0,0.6,0.2))) yields
        [(0, 0.0), (0, 0.2), (0, 0.4), (2, 0.0), (2, 0.2), (2, 0.4), (4, 0.0), (4, 0.2), (4, 0.4)]
     '''
-    ranges=[]
+    ranges = []
     for v in vals:
-        if isinstance(v,tuple) and len(v) in (2,3):
-            if any(isinstance(vv,float) for vv in v):
+        if isinstance(v, tuple) and len(v) in (2, 3):
+            if any(isinstance(vv, float) for vv in v):
                 ranges.append(frange(*v))
             else:
                 ranges.append(range(*v))
         elif isIterable(v):
             ranges.append(v)
-        elif isinstance(v,float):
+        elif isinstance(v, float):
             ranges.append(frange(v))
         else:
             ranges.append(range(v))
@@ -2251,185 +2282,185 @@ def trange(*vals):
     return itertools.product(*ranges)
 
 
-def binom(n,k):
+def binom(n, k):
     '''
     Calculates the binomial coefficient (n choose k) using the multiplicative formula.
     This is equivalent to the expression n!/(k!(n-k)!) but faster.
     '''
-    result=1
+    result = 1
 
-    for i in range(1,k+1):
-        result=(result*(n-(k-i)))/i
+    for i in range(1, k + 1):
+        result = (result * (n - (k - i))) / i
 
     return result
 
 
-def bern(n,i,u):
+def bern(n, i, u):
     '''Bernstein coefficient, (n choose i)*(u**i)*((1-u)**(n-i))'''
-    return binom(n,i)*(u**i)*((1-u)**(n-i))
+    return binom(n, i) * (u ** i) * ((1 - u) ** (n - i))
 
 
-def clamp(val,minv,maxv):
+def clamp(val, minv, maxv):
     '''Returns minv if val<minv, maxv if val>maxv, otherwise val.'''
-    if val>maxv:
+    if val > maxv:
         return maxv
-    if val<minv:
+    if val < minv:
         return minv
     return val
 
 
-def lerp(val,v1,v2):
+def lerp(val, v1, v2):
     '''Linearly interpolate between `v1' and `v2', val==0 results in `v1'.'''
-    return v1+(v2-v1)*val
+    return v1 + (v2 - v1) * val
 
 
-def lerpXi(val,minv,maxv):
+def lerpXi(val, minv, maxv):
     '''
     Calculates the linear interpolation xi value corresponding to `val' if interpolated over the range [minv,maxv],
     ie. if lerpXi(V,A,B)==X then lerp(X,A,B)==V assuming A<B. If minv>=maxv then `val' is returned.
     '''
-    return val if minv>=maxv else float(val-minv)/float(maxv-minv)
+    return val if minv >= maxv else float(val - minv) / float(maxv - minv)
 
 
-def avg(vals,initial=0.0):
+def avg(vals, initial=0.0):
     '''Returns the average of the values derived from the iterable `vals', or `initial' if there are none.'''
-    l=0.0
-    sumv=initial
+    l = 0.0
+    sumv = initial
     for v in vals:
-        sumv=v+sumv # if v overrides + this allows it to be used to accumulate the sumv value, instead of "sumv+=v" which does not
-        l+=1.0
+        sumv = v + sumv  # if v overrides + this allows it to be used to accumulate the sumv value, instead of "sumv+=v" which does not
+        l += 1.0
 
-    return initial if l==0.0 else sumv/l
+    return initial if l == 0.0 else sumv / l
 
 
 def mag(vals):
     '''Return the magnitude of the n-dimensional vector `vals'.'''
-    return math.sqrt(sum(x*x for x in vals))
+    return math.sqrt(sum(x * x for x in vals))
 
 
-def stddev(vals,initial=0.0):
+def stddev(vals, initial=0.0):
     '''Returns the standard deviation of the values derived from the iterable `vals', or `initial' if there are fewer than 2.'''
-    a=avg(vals,initial)
-    sumv=initial
-    l=0.0
+    a = avg(vals, initial)
+    sumv = initial
+    l = 0.0
     for v in vals:
-        sumv=((v-a)**2)+sumv
-        l+=1.0
+        sumv = ((v - a) ** 2) + sumv
+        l += 1.0
 
-    return math.sqrt(sumv/(l-1)) if l>1 else initial
+    return math.sqrt(sumv / (l - 1)) if l > 1 else initial
 
 
 def avgspan(vals):
     '''Returns the average difference between successive values derived from the given iterable.'''
-    it=iter(vals)
-    val=tuple(next(it) for i in range(2))
-    if len(val)!=2:
+    it = iter(vals)
+    val = tuple(next(it) for i in range(2))
+    if len(val) != 2:
         return 0.0
-    
-    return avg(b-a for a,b in successive(vals))
+
+    return avg(b - a for a, b in successive(vals))
 
 
-def minmaxval(minv,maxv,val):
+def minmaxval(minv, maxv, val):
     '''Returns min(val,minv),max(val,maxv) or val,val if either `minv' or `maxv' is None.'''
     if minv is None or maxv is None:
-        return val,val
+        return val, val
     else:
-        return min(val,minv),max(val,maxv)
+        return min(val, minv), max(val, maxv)
 
 
-def minmax(*items,**kwargs):
+def minmax(*items, **kwargs):
     '''
     Returns the minimum and maximum values, like a combined min and max. If the keyword argument `ranges' is True then
     the members of `items' are treated as (min value, max value) pairs and the result is the minimal of the min values
     and the maximal of the max values.
     '''
-    minv=None
-    maxv=None
-    mink=None
-    maxk=None
+    minv = None
+    maxv = None
+    mink = None
+    maxk = None
 
-    key=kwargs.get('key',lambda i:i)
-    ranges=kwargs.get('ranges',False)
+    key = kwargs.get('key', lambda i: i)
+    ranges = kwargs.get('ranges', False)
 
-    if len(items)==1:
-        items=items[0]
+    if len(items) == 1:
+        items = items[0]
 
     if ranges:
         for i in items:
-            ki=key(i)
+            ki = key(i)
             if i is None or ki is None:
                 continue
 
             if minv is None:
-                minv=i[0]
-                maxv=i[1]
-            elif ki[0]<mink:
-                minv=i[0]
-            elif ki[1]>maxk:
-                maxv=i[1]
+                minv = i[0]
+                maxv = i[1]
+            elif ki[0] < mink:
+                minv = i[0]
+            elif ki[1] > maxk:
+                maxv = i[1]
 
-            mink=key(minv)
-            maxk=key(maxv)
+            mink = key(minv)
+            maxk = key(maxv)
     else:
         for i in items:
-            ki=key(i)
+            ki = key(i)
             if i is None or ki is None:
                 continue
 
             if minv is None:
-                minv=i
-                maxv=i
-            elif ki<mink:
-                minv=i
-            elif ki>maxk:
-                maxv=i
+                minv = i
+                maxv = i
+            elif ki < mink:
+                minv = i
+            elif ki > maxk:
+                maxv = i
 
-            mink=key(minv)
-            maxk=key(maxv)
+            mink = key(minv)
+            maxk = key(maxv)
 
-    return minv,maxv
+    return minv, maxv
 
 
 def radCircularConvert(rad):
     '''Converts the given rad angle value to the equivalent angle on the interval [-pi,pi].'''
-    while rad>math.pi:
-        rad-=math.pi*2
+    while rad > math.pi:
+        rad -= math.pi * 2
 
-    while rad<-math.pi:
-        rad+=math.pi*2
+    while rad < -math.pi:
+        rad += math.pi * 2
 
     return rad
 
 
 def radClamp(rad):
     '''Clamps the given value between pi*0.5 and pi*-0.5.'''
-    return clamp(rad,-halfpi,halfpi)
+    return clamp(rad, -halfpi, halfpi)
 
 
 def getClosestPower(val):
     '''returns the power of 10 closest to the absolute value of `val'.'''
-    val=abs(val)
+    val = abs(val)
 
-    if val>=1:
-        p=0
-        val1=val
-        while val1>1.0:
-            p+=1
-            val1/=10.0
+    if val >= 1:
+        p = 0
+        val1 = val
+        while val1 > 1.0:
+            p += 1
+            val1 /= 10.0
 
-        return p if val>(10**p)*0.5 else (p-1)
+        return p if val > (10 ** p) * 0.5 else (p - 1)
     else:
-        p=0
-        val1=val
-        while val1<1.0:
-            p-=1
-            val1*=10.0
+        p = 0
+        val1 = val
+        while val1 < 1.0:
+            p -= 1
+            val1 *= 10.0
 
-        return p if val<(10**(p+1))*0.5 else (p+1)
+        return p if val < (10 ** (p + 1)) * 0.5 else (p + 1)
 
 
 # try http://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf for better http://bost.ocks.org/mike/algorithms/
-def generatePoisson2D(width,height,ptscount,mindist=None,startpt=None):
+def generatePoisson2D(width, height, ptscount, mindist=None, startpt=None):
     '''
     Generates a randomly distributed set of 2D points across the rectangle defined by `width' and `height'. The
     `mindist' distance is the closest any two points can be and `ptscount' value is the maximum number of points
@@ -2439,147 +2470,148 @@ def generatePoisson2D(width,height,ptscount,mindist=None,startpt=None):
     the rectangle, otherwise a random point is chosen. This value and the returned points are all float pairs.
     '''
 
-    if ptscount==0:
+    if ptscount == 0:
         return []
 
-    if mindist==None:
+    if mindist == None:
         # this value seems to distribute `ptscount' points evenly over the whole rectangle
-        mindist=math.sqrt((width*height)/ptscount)/(math.pi/math.e)
+        mindist = math.sqrt((width * height) / ptscount) / (math.pi / math.e)
 
-    assert width>0
-    assert height>0
-    assert mindist>0
-    assert ptscount>0
+    assert width > 0
+    assert height > 0
+    assert mindist > 0
+    assert ptscount > 0
 
     random.seed(ptscount)
 
-    cellsize=mindist/math.sqrt(2)
+    cellsize = mindist / math.sqrt(2)
 
-    gw=int(math.ceil(width/cellsize))
-    gh=int(math.ceil(height/cellsize))
+    gw = int(math.ceil(width / cellsize))
+    gh = int(math.ceil(height / cellsize))
 
-    grid=arrayV(None,gw,gh)
+    grid = arrayV(None, gw, gh)
 
-    processlist=[]
-    samplepts=[]
+    processlist = []
+    samplepts = []
 
-    def toGrid(x,y):
-        return int(x/cellsize),int(y/cellsize)
+    def toGrid(x, y):
+        return int(x / cellsize), int(y / cellsize)
 
-    def generatePtAround(x,y):
-        radius=mindist*(random.random()+1)
-        angle=2*math.pi*random.random()
-        return x+(radius*math.cos(angle)),y+(radius*math.sin(angle))
+    def generatePtAround(x, y):
+        radius = mindist * (random.random() + 1)
+        angle = 2 * math.pi * random.random()
+        return x + (radius * math.cos(angle)), y + (radius * math.sin(angle))
 
     def addPoint(pt):
         processlist.append(pt)
         samplepts.append(pt)
-        i,j=toGrid(*pt)
-        grid[i][j]=pt
+        i, j = toGrid(*pt)
+        grid[i][j] = pt
 
-    def inNeighbourhood(x,y):
-        gpt=toGrid(x,y)
+    def inNeighbourhood(x, y):
+        gpt = toGrid(x, y)
 
-        for i,j in trange((gpt[0]-1,gpt[0]+2),(gpt[1]-1,gpt[1]+2)):
-            if 0<=i<gw and 0<=j<gh:
-                g=grid[i][j]
-                if g!=None and math.sqrt((g[0]-x)**2+(g[1]-y)**2)<mindist:
+        for i, j in trange((gpt[0] - 1, gpt[0] + 2), (gpt[1] - 1, gpt[1] + 2)):
+            if 0 <= i < gw and 0 <= j < gh:
+                g = grid[i][j]
+                if g != None and math.sqrt((g[0] - x) ** 2 + (g[1] - y) ** 2) < mindist:
                     return True
 
         return False
 
-    if startpt!=None:
+    if startpt != None:
         addPoint(startpt)
     else:
-        addPoint((random.randint(0,width-1),random.randint(0,height-1)))
+        addPoint((random.randint(0, width - 1), random.randint(0, height - 1)))
 
-    if ptscount>1:
-        while len(processlist)>0 and len(samplepts)<ptscount:
-            pos=random.randint(0,len(processlist)-1)
-            pt=processlist.pop(pos)
+    if ptscount > 1:
+        while len(processlist) > 0 and len(samplepts) < ptscount:
+            pos = random.randint(0, len(processlist) - 1)
+            pt = processlist.pop(pos)
             for i in range(ptscount):
-                nx,ny=generatePtAround(*pt)
-                if 0<=nx<=width and 0<=ny<=height and not inNeighbourhood(nx,ny):
-                    addPoint((nx,ny))
-                    if len(samplepts)==ptscount:
+                nx, ny = generatePtAround(*pt)
+                if 0 <= nx <= width and 0 <= ny <= height and not inNeighbourhood(nx, ny):
+                    addPoint((nx, ny))
+                    if len(samplepts) == ptscount:
                         return samplepts
 
     return samplepts
 
 
-def generatePoisson3D(width,height,depth,ptscount,mindist=None,startpt=None):
+def generatePoisson3D(width, height, depth, ptscount, mindist=None, startpt=None):
     '''
     Generates a randomly distributed set of 3D points across the rectangle defined by `width', `height', and `depth'.
     The other arguments and general behaviour of this algorithm are the same as that for generatePoisson2D() except
     return values and `startpt' are float triples.
     '''
 
-    if ptscount==0:
+    if ptscount == 0:
         return []
 
-    if mindist==None:
+    if mindist == None:
         # this value seems to distribute `ptscount' points evenly over the whole rectangle
-        mindist=math.sqrt((width*height*depth)/ptscount)/(math.pi/math.e)
+        mindist = math.sqrt((width * height * depth) / ptscount) / (math.pi / math.e)
 
-    assert width>0
-    assert height>0
-    assert depth>0
-    assert mindist>0
-    assert ptscount>0
+    assert width > 0
+    assert height > 0
+    assert depth > 0
+    assert mindist > 0
+    assert ptscount > 0
 
     random.seed(ptscount)
 
-    cellsize=mindist/math.sqrt(2)
+    cellsize = mindist / math.sqrt(2)
 
-    gw=int(math.ceil(width/cellsize))
-    gh=int(math.ceil(height/cellsize))
-    gd=int(math.ceil(depth/cellsize))
+    gw = int(math.ceil(width / cellsize))
+    gh = int(math.ceil(height / cellsize))
+    gd = int(math.ceil(depth / cellsize))
 
-    grid=arrayV(None,gw,gh,gd)
-    processlist=[]
-    samplepts=[]
+    grid = arrayV(None, gw, gh, gd)
+    processlist = []
+    samplepts = []
 
-    def toGrid(x,y,z):
-        return int(x/cellsize),int(y/cellsize),int(z/cellsize)
+    def toGrid(x, y, z):
+        return int(x / cellsize), int(y / cellsize), int(z / cellsize)
 
-    def generatePtAround(x,y,z):
-        radius=mindist*(random.random()+1)
-        angle1=2*math.pi*random.random()
-        angle2=2*math.pi*random.random()
-        sin2=math.sin(angle2)
-        return x+(radius*math.cos(angle1)*sin2),y+(radius*math.sin(angle1)*sin2),z+(radius*math.cos(angle2))
+    def generatePtAround(x, y, z):
+        radius = mindist * (random.random() + 1)
+        angle1 = 2 * math.pi * random.random()
+        angle2 = 2 * math.pi * random.random()
+        sin2 = math.sin(angle2)
+        return x + (radius * math.cos(angle1) * sin2), y + (radius * math.sin(angle1) * sin2), z + (
+                    radius * math.cos(angle2))
 
     def addPoint(pt):
         processlist.append(pt)
         samplepts.append(pt)
-        i,j,k=toGrid(*pt)
-        grid[i][j][k]=pt
+        i, j, k = toGrid(*pt)
+        grid[i][j][k] = pt
 
-    def inNeighbourhood(x,y,z):
-        gpt=toGrid(x,y,z)
+    def inNeighbourhood(x, y, z):
+        gpt = toGrid(x, y, z)
 
-        for i,j,k in trange((gpt[0]-1,gpt[0]+2),(gpt[1]-1,gpt[1]+2),(gpt[2]-1,gpt[2]+2)):
-            if 0<=i<gw and 0<=j<gh and 0<=k<gd:
-                g=grid[i][j]
-                if g!=None and math.sqrt((g[0]-x)**2+(g[1]-y)**2+(g[2]-z)**2)<mindist:
+        for i, j, k in trange((gpt[0] - 1, gpt[0] + 2), (gpt[1] - 1, gpt[1] + 2), (gpt[2] - 1, gpt[2] + 2)):
+            if 0 <= i < gw and 0 <= j < gh and 0 <= k < gd:
+                g = grid[i][j]
+                if g != None and math.sqrt((g[0] - x) ** 2 + (g[1] - y) ** 2 + (g[2] - z) ** 2) < mindist:
                     return True
 
         return False
 
-    if startpt!=None:
+    if startpt != None:
         addPoint(startpt)
     else:
-        addPoint((random.randint(0,width-1),random.randint(0,height-1),random.randint(0,depth-1)))
+        addPoint((random.randint(0, width - 1), random.randint(0, height - 1), random.randint(0, depth - 1)))
 
-    if ptscount>1:
-        while len(processlist)>0 and len(samplepts)<ptscount:
-            pos=random.randint(0,len(processlist)-1)
-            pt=processlist.pop(pos)
+    if ptscount > 1:
+        while len(processlist) > 0 and len(samplepts) < ptscount:
+            pos = random.randint(0, len(processlist) - 1)
+            pt = processlist.pop(pos)
             for i in range(ptscount):
-                nx,ny,nz=generatePtAround(*pt)
-                if 0<=nx<=width and 0<=ny<=height and 0<=nz<=depth and not inNeighbourhood(nx,ny,nz):
-                    addPoint((nx,ny,nz))
-                    if len(samplepts)==ptscount:
+                nx, ny, nz = generatePtAround(*pt)
+                if 0 <= nx <= width and 0 <= ny <= height and 0 <= nz <= depth and not inNeighbourhood(nx, ny, nz):
+                    addPoint((nx, ny, nz))
+                    if len(samplepts) == ptscount:
                         return samplepts
 
     return samplepts
@@ -2590,15 +2622,15 @@ def unitWave2RGB(vis_range):
     Returns the colour value corresponding to the position in the visible spectrum designated by the unit value
     'vis_range'. If vis_range==0.0 then the colour is equivalent to 380nm, if vis_range==1.0 the colour is 780nm.
     '''
-    return wave2RGB(380+400*clamp(vis_range,0.0,1.0))
+    return wave2RGB(380 + 400 * clamp(vis_range, 0.0, 1.0))
 
 
 def wave2RGB(wavelength):
     '''Converts a wavelength value between 380nm and 780nm into a RGB color tuple. Requires 380 <= wavelength <= 780.'''
     w = int(wavelength)
-    R=0.0
-    G=0.0
-    B=0.0
+    R = 0.0
+    G = 0.0
+    B = 0.0
 
     # colour
     if w >= 380 and w < 440:
@@ -2621,196 +2653,20 @@ def wave2RGB(wavelength):
 
     # intensity correction
     if w >= 380 and w < 420:
-        SSS = 0.3 + 0.7*(w - 350) / (420 - 350)
+        SSS = 0.3 + 0.7 * (w - 350) / (420 - 350)
     elif w >= 420 and w <= 700:
         SSS = 1.0
     elif w > 700 and w <= 780:
-        SSS = 0.3 + 0.7*(780 - w) / (780 - 700)
+        SSS = 0.3 + 0.7 * (780 - w) / (780 - 700)
     else:
         SSS = 0.0
 
-    return (R*SSS,G*SSS,B*SSS)
+    return (R * SSS, G * SSS, B * SSS)
 
 
-def matZero(n,m):
-    '''Return a list of lists with the given dimensions containing zeros.'''
-    return [[0]*m for i in range(n)]
-
-
-def matIdent(n):
-    '''Return a list of lists defining the identity matrix of rank `n'.'''
-    mat=matZero(n,n)
-    for nn in range(n):
-        mat[nn][nn]=1.0
-
-    return mat
-
-
-def assertMatDim(mat,n,m):
-    '''Assert that `mat' has dimensions (n,m).'''
-    assert len(mat)==n
-    assert all(len(row)==m for row in mat)
-
-
-def arrayV(val,*dims):
+def arrayV(val, *dims):
     '''Return an array composed of lists containing copies of `val' of dimensions `dims'.'''
-    if len(dims)==0:
+    if len(dims) == 0:
         return val
 
-    return [arrayV(val,*dims[1:]) for i in range(dims[0])]
-
-
-def transpose(mat):
-    '''Return the transpose of list of list `mat'.'''
-    n=len(mat)
-    m=len(mat[0])
-
-    result=matZero(m,n)
-
-    for i in range(n):
-        for j in range(m):
-#    for i,j in trange(n,m):
-            result[j][i]=mat[i][j]
-
-    return result
-
-
-def mat2Det(a,b,c,d):
-    return a*d-b*c
-
-
-def mat3Det(a,b,c,d,e,f,g,h,i):
-    return a*(e*i-f*h)+b*(f*g-i*d)+c*(d*h-e*g)
-
-
-def mat4Det(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p):
-    return (l * o * b * e - k * p * b * e - l * n * c * e + j * p * c * e + k * n * d * e - j * o * d * e
-        - a * l * o * f + a * k * p * f + l * m * c * f - k * m * d * f + a * l * n * g - a * j * p * g
-        - l * m * b * g + j * m * d * g - a * k * n * h + a * j * o * h + k * m * b * h - j * m * c * h
-        - p * c * f * i + o * d * f * i + p * b * g * i - n * d * g * i - o * b * h * i + n * c * h * i)
-
-
-def mat2Inv(a,b,c,d):
-    det=mat2Det(a,b,c,d)
-    return ((d/det,-b/det),(-c/det,a/det))
-
-
-def mat3Inv(a,b,c,d,e,f,g,h,i):
-    det=mat3Det(a,b,c,d,e,f,g,h,i)
-    A=e*i-f*h
-    B=f*g-d*i
-    C=d*h-e*g
-    D=c*h-b*i
-    E=a*i-c*g
-    F=g*b-a*h
-    G=b*f-c*e
-    H=c*d-a*f
-    I=a*e-b*d
-
-    return ((A/det,D/det,G/det),(B/det,E/det,H/det),(C/det,F/det,I/det))
-
-
-def mat4Inv(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p):
-    s0 = a * f - e * b
-    s1 = a * g - e * c
-    s2 = a * h - e * d
-    s3 = b * g - f * c
-    s4 = b * h - f * d
-    s5 = c * h - g * d
-
-    c5 = k * p - o * l
-    c4 = j * p - n * l
-    c3 = j * o - n * k
-    c2 = i * p - m * l
-    c1 = i * o - m * k
-    c0 = i * n - m * j
-
-    invdet = 1.0 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0)
-
-    b00 = ( f * c5 - g * c4 + h * c3) * invdet
-    b01 = (-b * c5 + c * c4 - d * c3) * invdet
-    b02 = ( n * s5 - o * s4 + p * s3) * invdet
-    b03 = (-j * s5 + k * s4 - l * s3) * invdet
-
-    b10 = (-e * c5 + g * c2 - h * c1) * invdet
-    b11 = ( a * c5 - c * c2 + d * c1) * invdet
-    b12 = (-m * s5 + o * s2 - p * s1) * invdet
-    b13 = ( i * s5 - k * s2 + l * s1) * invdet
-
-    b20 = ( e * c4 - f * c2 + h * c0) * invdet
-    b21 = (-a * c4 + b * c2 - d * c0) * invdet
-    b22 = ( m * s4 - n * s2 + p * s0) * invdet
-    b23 = (-i * s4 + j * s2 - l * s0) * invdet
-
-    b30 = (-e * c3 + f * c1 - g * c0) * invdet
-    b31 = ( a * c3 - b * c1 + c * c0) * invdet
-    b32 = (-m * s3 + n * s1 - o * s0) * invdet
-    b33 = ( i * s3 - j * s1 + k * s0) * invdet
-
-    return ((b00,b01,b02,b03),(b10,b11,b12,b13),(b20,b21,b22,b23),(b30,b31,b32,b33))
-
-def matDet(mat):
-    n=len(mat)
-    assert all(len(m)==n for m in mat)
-
-    if n in (2,3,4):
-        if n==2:
-            det=mat2Det
-        elif n==3:
-            det=mat3Det
-        else:
-            det=mat4Det
-
-        return det(*(mat[i][j] for i,j in trange(n,n)))
-    else:
-        sign=1
-        result=0
-        for j in range(n):
-            result+=sign*mat[0][j]*matDet(matCrossOut(mat,0,j))
-            sign*=-1
-
-        return result
-    
-    
-def matCrossOut(mat,i,j):
-    '''Returns matrix 'mat' with row 'i' and column 'j' removed.'''
-    return [row[:j] + row[j+1:] for row in (mat[:i]+mat[i+1:])]
-
-
-def matCoFactors(mat):
-    n=len(mat)
-    cofactors=matZero(n,n)
-    
-    for i in range(n):
-        for j in range(n):
-#    for i,j in trange(n,n):
-            sign=1-((i+j)%2)*2 # -1 if (i+j)%2==1 else 1
-            cofactors[i][j]=matDet(matCrossOut(mat,i,j))*sign
-
-    return cofactors
-
-
-def matInv(mat):
-    n=len(mat)
-    assert all(len(m)==n for m in mat)
-
-    if n in (2,3,4):
-        if n==2:
-            inv=mat2Inv
-        elif n==3:
-            inv=mat3Inv
-        else:
-            inv=mat4Inv
-
-        return inv(*(mat[i][j] for i,j in itertools.product(range(n),repeat=2)))
-    else:
-        detinv=1.0/matDet(mat)
-        comat=matCoFactors(mat)
-        inv=matZero(n,n)
-
-        for i in range(n):
-            for j in range(n):
-#        for i,j in trange(n,n):
-                inv[i][j]=comat[j][i]*detinv
-
-    return inv
+    return [arrayV(val, *dims[1:]) for i in range(dims[0])]

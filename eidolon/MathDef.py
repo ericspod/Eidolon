@@ -79,8 +79,8 @@ import math
 import numpy as np
 
 from .Utils import (
-    enum, transpose, prod, matZero, trange,xisToPiecewiseXis,arrayIndex,bern,binom,matIdent,isIterable,
-    assertMatDim,mulsum,lerp,lerpXi,epsilon, #matInv
+    enum, transpose, prod, trange, xisToPiecewiseXis, arrayIndex, bern, binom, isIterable,
+    assertMatDim, mulsum, lerp, lerpXi, epsilon
 )
 
 
@@ -418,13 +418,12 @@ def lagrangeAlpha(beta,xicoords):
     '''
     K=len(xicoords)
     d=len(xicoords[0])
-    a=matZero(K,K)
+    a=np.zeros((K,K))
 
     for i,j in trange(K,K):
-        a[i][j]=prod(xicoords[i][k]**beta[k][j] for k in range(d))
+        a[i,j]=prod(xicoords[i][k]**beta[k][j] for k in range(d))
 
-    return np.linalg.inv(np.asarray(a)).T.tolist()
-#    return transpose(matInv(a))
+    return np.linalg.inv(a).T.tolist()
 
 
 def lagrangeBeta(order,isSimplex,dim):
@@ -690,7 +689,7 @@ def spectralBasisType(geom,desc,order):
     powers=list(reversed(list(range(order+1))))
 
     if isSimplex:
-        coeffs=matIdent(dim+1)
+        coeffs=np.eye(dim+1)
         coeffs[0]=[1.0]+[-1.0]*dim
     else:
         xi=get1DSpectralCoords(order)
