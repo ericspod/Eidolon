@@ -172,11 +172,11 @@ class enum(object):
             val = name  # if only the name is given, name is also the value
         elif len(comps) == 1:
             val = comps[0]  # if a single value is given, it is the value rather than a tuple containing only it
-            assert self.valtype == None or val == None or isinstance(val, self.valtype)
+            assert self.valtype is None or val is None or isinstance(val, self.valtype)
         else:
             val = comps  # otherwise the values minus the name becomes the value tuple
-            assert self.valtype == None or (len(val) == len(self.valtype) and all(
-                v == None or isinstance(v, vt) for v, vt in zip(val, self.valtype))), '%r %r' % (self.valtype, val)
+            assert self.valtype is None or (len(val) == len(self.valtype) and all(
+                v is None or isinstance(v, vt) for v, vt in zip(val, self.valtype))), '%r %r' % (self.valtype, val)
 
         dname = name.replace(' ', '_')
         self.valdict[dname] = val
@@ -289,7 +289,7 @@ class Future(object):
         '''
         res = self.event.wait(timeout)
 
-        if timeout != None and not res:  # if we timed out waiting, return None
+        if timeout is not None and not res:  # if we timed out waiting, return None
             return None
 
         # if an exception was raised instead of setting a value, raise it
@@ -386,33 +386,33 @@ class ParamDef(object):
 
     def getErrorStr(self, val):
         errstr = "Incorrect value for '%s' (%s): " % (self.desc, self.name)
-        if val == None and self.notNone:
+        if val is None and self.notNone:
             return errstr + 'A value must be provided (not None)'
 
         if isIterable(self.minv):
             ival = val if isIterable(val) else (val,)
 
-            if val != None and self.minv != None and all(v < mv for v, mv in zip(ival, self.minv)):
+            if val is not None and self.minv is not None and all(v < mv for v, mv in zip(ival, self.minv)):
                 return errstr + "Parameter is below minimum value of '%s' (value: %s)" % (str(self.minv), str(val))
 
-            if val != None and self.maxv != None and all(v > mv for v, mv in zip(ival, self.maxv)):
+            if val is not None and self.maxv is not None and all(v > mv for v, mv in zip(ival, self.maxv)):
                 return errstr + "Parameter is above maximum value of '%s' (value: %s)" % (str(self.maxv), str(val))
         else:
-            if val != None and self.minv != None and val < self.minv:
+            if val is not None and self.minv is not None and val < self.minv:
                 return errstr + "Parameter is below minimum value of '%s' (value: %s)" % (str(self.minv), str(val))
 
-            if val != None and self.maxv != None and val > self.maxv:
+            if val is not None and self.maxv is not None and val > self.maxv:
                 return errstr + "Parameter is above maximum value of '%s' (value: %s)" % (str(self.maxv), str(val))
 
         return None
 
     def __repr__(self):
         s = 'ParamDef(name=%s,desc="%s",type=%s' % (self.name, self.desc, self.ptype)
-        if self.default != None:
+        if self.default is not None:
             s += ',default=' + str(self.default)
-        if self.minv != None:
+        if self.minv is not None:
             s += ',range=[%s,%s]' % (str(self.minv), str(self.maxv))
-        if self.step != None:
+        if self.step is not None:
             s += ',step=' + str(self.step)
         if self.notNone:
             s += ',Not None'
@@ -424,7 +424,7 @@ class ParamDef(object):
         errlist = []
         for p in params:
             result = p.getErrorStr(argmap.get(p.name, None))
-            if result != None:
+            if result is not None:
                 errlist.append(result)
 
         return errlist
@@ -816,7 +816,7 @@ class TaskQueue(object):
                     # set the current task to None, using self lock to prevent inconsistency with updatethread
                     with lockobj(self):
                         # clear the queue if there's a task and it wants to remove all current tasks
-                        if self.currentTask != None and self.currentTask.flushQueue:
+                        if self.currentTask is not None and self.currentTask.flushQueue:
                             del self.tasklist[:]
 
                         self.currentTask = None
@@ -1345,7 +1345,7 @@ def execfileExc(file_or_path, localvars, storeExcepts=True, streams=None):
                     raise
 
             # line becomes templine if it's present (ie. execute the code that ended a block next time around)
-            if templine != None:
+            if templine is not None:
                 line = templine
                 templine = None
             else:  # otherwise line becomes the next line in the file
@@ -1405,10 +1405,10 @@ def execBatchProgram(exefile, *exeargs, **kwargs):
     proc = subprocess.Popen([exefile] + list(exeargs), stderr=subprocess.STDOUT, stdout=stdout, cwd=cwd, env=env)
 
     # if timeout is present, kill the process and throw an exception if the program doesn't finish beforehand
-    if timeout != None and timeout > 0:
+    if timeout is not None and timeout > 0:
         tm = float(timeout)
         lasttime = time.time()
-        while proc.poll() == None and tm > 0:
+        while proc.poll() is None and tm > 0:
             curtime = time.time()
             tm -= curtime - lasttime
             lasttime = curtime
@@ -1891,7 +1891,7 @@ def getStrCommonality(str1, str2):
     '''
     minlen = min(len(str1), len(str2))
     index = first(i for i in range(minlen) if str1[i] != str2[i])
-    if index == None:
+    if index is None:
         index = minlen
 
     return index, index / float(minlen)
@@ -2049,7 +2049,7 @@ def sortIndices(lst):
 def sortedInsert(lst, val):
     '''Given a sorted list `lst', insert `val' in the first position in `lst' which maintains the ordering.'''
     i = first(i for i, v in enumerate(lst) if v >= val)
-    if i != None:
+    if i is not None:
         lst[i:i] = [val]
     else:
         lst.append(val)
@@ -2473,7 +2473,7 @@ def generatePoisson2D(width, height, ptscount, mindist=None, startpt=None):
     if ptscount == 0:
         return []
 
-    if mindist == None:
+    if mindist is None:
         # this value seems to distribute `ptscount' points evenly over the whole rectangle
         mindist = math.sqrt((width * height) / ptscount) / (math.pi / math.e)
 
@@ -2514,12 +2514,12 @@ def generatePoisson2D(width, height, ptscount, mindist=None, startpt=None):
         for i, j in trange((gpt[0] - 1, gpt[0] + 2), (gpt[1] - 1, gpt[1] + 2)):
             if 0 <= i < gw and 0 <= j < gh:
                 g = grid[i][j]
-                if g != None and math.sqrt((g[0] - x) ** 2 + (g[1] - y) ** 2) < mindist:
+                if g is not None and math.sqrt((g[0] - x) ** 2 + (g[1] - y) ** 2) < mindist:
                     return True
 
         return False
 
-    if startpt != None:
+    if startpt is not None:
         addPoint(startpt)
     else:
         addPoint((random.randint(0, width - 1), random.randint(0, height - 1)))
@@ -2548,7 +2548,7 @@ def generatePoisson3D(width, height, depth, ptscount, mindist=None, startpt=None
     if ptscount == 0:
         return []
 
-    if mindist == None:
+    if mindist is None:
         # this value seems to distribute `ptscount' points evenly over the whole rectangle
         mindist = math.sqrt((width * height * depth) / ptscount) / (math.pi / math.e)
 
@@ -2593,12 +2593,12 @@ def generatePoisson3D(width, height, depth, ptscount, mindist=None, startpt=None
         for i, j, k in trange((gpt[0] - 1, gpt[0] + 2), (gpt[1] - 1, gpt[1] + 2), (gpt[2] - 1, gpt[2] + 2)):
             if 0 <= i < gw and 0 <= j < gh and 0 <= k < gd:
                 g = grid[i][j]
-                if g != None and math.sqrt((g[0] - x) ** 2 + (g[1] - y) ** 2 + (g[2] - z) ** 2) < mindist:
+                if g is not None and math.sqrt((g[0] - x) ** 2 + (g[1] - y) ** 2 + (g[2] - z) ** 2) < mindist:
                     return True
 
         return False
 
-    if startpt != None:
+    if startpt is not None:
         addPoint(startpt)
     else:
         addPoint((random.randint(0, width - 1), random.randint(0, height - 1), random.randint(0, depth - 1)))
@@ -2670,3 +2670,9 @@ def arrayV(val, *dims):
         return val
 
     return [arrayV(val, *dims[1:]) for i in range(dims[0])]
+
+
+def assertMatDim(mat,n,m):
+    '''Assert that `mat' has dimensions (n,m).'''
+    assert len(mat)==n
+    assert all(len(row)==m for row in mat)

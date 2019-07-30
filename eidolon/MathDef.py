@@ -79,7 +79,7 @@ import math
 import numpy as np
 
 from .Utils import (
-    enum, transpose, prod, trange, xisToPiecewiseXis, arrayIndex, bern, binom, isIterable,
+    enum, prod, trange, xisToPiecewiseXis, arrayIndex, bern, binom, isIterable,
     assertMatDim, mulsum, lerp, lerpXi, epsilon
 )
 
@@ -464,7 +464,7 @@ def lagrangeBeta(order,isSimplex,dim):
     if dim>1: # 1D and points don't use CHeart node ordering apparently
         vals.sort(key=functools.cmp_to_key(sortCHeart))
 
-    return transpose(vals)
+    return np.swapaxes(vals,0,1).tolist()
 
 
 def xiCoords(order,beta):
@@ -501,6 +501,7 @@ def nodalLagrangeType(geom,desc,order):
     xis=xiCoords(order,beta)
     alpha=lagrangeAlpha(beta,xis)
     basis=lagrangeBasis(len(xis),dim,alpha,beta)
+    vertices=list(range(numVertices))
 
     # determine faces and face basis function(s)
     faces=[]
@@ -515,7 +516,7 @@ def nodalLagrangeType(geom,desc,order):
     if dim==3: # TODO: this assumes all faces the same shape, change if this isn't true anymore (eg. prisms)
         facetype=nodalLagrangeType(GeomType._Tri if isSimplex else GeomType._Quad,'Face type',order)
 
-    return ElemTypeDef(geom,'NL',desc,order,xis,list(range(numVertices)),faces,internalxis,basis,pointSearchElem,facetype)
+    return ElemTypeDef(geom,'NL',desc,order,xis,vertices,faces,internalxis,basis,pointSearchElem,facetype)
 
 
 def jacobiPoly(n,a,b,x):
