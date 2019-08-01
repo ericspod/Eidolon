@@ -440,10 +440,11 @@ class SceneManager(TaskQueue):
             for n in names:
                 self.scriptlocals[n]=self.conf.get('var',n)
         
-        def exception_hook(exctype, value, tb):
+        def exceptionHook(exctype, value, tb):
             msg='\n'.join(traceback.format_exception(exctype, value, tb))
-            self.showExcept(msg,str(value),'Unhandled Exception')
-        sys.excepthook = exception_hook
+            self.showExcept(value,str(value),'Unhandled Exception',msg)
+
+        sys.excepthook = exceptionHook
 
         # create default plugins for meshes and images added to the manager without one provided
         self.meshplugin=ScenePlugin.MeshScenePlugin('MeshPlugin')
@@ -1746,13 +1747,13 @@ class SceneManager(TaskQueue):
             prog=self.scene.createGPUProgram(name,progtype,lang)
             self.programs.append(prog)
 
-            if profiles!=None:
+            if profiles is not None:
                 prog.setProfiles(profiles)
 
-            if src!=None:
+            if src is not None:
                 prog.setSourceCode(src)
 
-            if entry!=None:
+            if entry is not None:
                 prog.setEntryPoint(entry)
 
             self.progcontrol.addProgram(prog)
@@ -1814,7 +1815,7 @@ class SceneManager(TaskQueue):
 
         assert mat!=None
 
-        name=uniqueStr(name if name!=None else mat.getName(), self.listMaterialNames())
+        name=uniqueStr(name if name is not None else mat.getName(), self.listMaterialNames())
         mmat=mat.clone(name)
 
         self.mats.append(mmat)

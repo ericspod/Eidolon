@@ -650,7 +650,7 @@ class IRTKPluginMixin(object):
 
         return f1,f2,f3,f4,f3
     
-    def alignIntersectImages(self,volume,intersects,tempDir=None,numIters=1,dilation=5,moveScale=0.1):
+    def alignIntersectImages(self,volume,intersects,tempDir=None,numIters=1,dilation=5,moveScale=0.1,task=None):
         
         def calculateVolShifts(vol1,vol2,tempDir):
             with eidolon.processImageNp(vol1) as v1:
@@ -673,6 +673,10 @@ class IRTKPluginMixin(object):
         
         iclones=[i.clone(i.getName()+'_aligned') for i in intersects] # shifted intersecting images
         itargets=[i.clone('itarget') for i in intersects] # register target temporary images
+
+        if task:
+            task.setMaxProgress(numIters)
+            task.setLabel('Alignment iterations')
     
         for i in range(numIters):
             # shift the volume image
@@ -690,7 +694,7 @@ class IRTKPluginMixin(object):
             eidolon.shiftImageXY(vclone,vs)
             vshifts=vshifts+vs
             
-            print('Iter',i,np.sqrt(np.sum(vs**2,1)).mean())
+            eidolon.printFlush('Iter',i,np.sqrt(np.sum(vs**2,1)).mean())
             
             # shift each intersection image
             for inter in range(len(intersects)):
@@ -705,7 +709,10 @@ class IRTKPluginMixin(object):
                 eidolon.shiftImageXY(interclone,vi)
                 ishifts[inter]=ishifts[inter]+vi[0]
                 
-                print('Iter',i,inter,np.sqrt(np.sum(vi**2,1)).mean())
+                eidolon.printFlush('IterI',i,inter,np.sqrt(np.sum(vi**2,1)).mean())
+
+            if task:
+                task.setProgress((i+1))
             
         return vshifts,ishifts
 

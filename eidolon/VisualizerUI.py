@@ -2824,7 +2824,7 @@ class VisualizerWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         Shows the string `msg' in a message dialog with the given title. If `text' is not None, this is displayed in
         a text box within a message dialog that recalls previous messages, otherwise a simple dialog is used.
         '''
-        if text==None:
+        if text is None:
             box=QtWidgets.QMessageBox(self)
             box.setText(msg)
             box.setWindowTitle(title)
