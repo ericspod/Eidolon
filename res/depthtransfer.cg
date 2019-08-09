@@ -10,6 +10,7 @@ void main
 {
 	//color=tex3D(dataTex,texCoord);
 	//color.a=color.a*0.1;
-	color.rgb=pos.www;
+	//color.rgb=pos.www;
+	color.rgb=1-length(camPos-pos);
 	color.a=1.0;
 }
