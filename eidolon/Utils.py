@@ -212,7 +212,7 @@ class enum(object):
         try:
             self._getVal(i)
             return True
-        except:
+        except KeyError:
             return False
 
     def __getitem__(self, i):

@@ -319,9 +319,9 @@ def calculateImageStackHistogram(imgs,minv=None,maxv=None,task=None):
     #   minv,maxv=minmax(((i.imgmin,i.imgmax) for i in imgs),ranges=True)
 
     imgmin,imgmax=minmax(((i.imgmin,i.imgmax) for i in imgs),ranges=True)
-    if minv!=None:
+    if minv is not None:
         imgmin=min(imgmin,minv)
-    if maxv!=None:
+    if maxv is not None:
         imgmax=max(imgmax,maxv)
 
     results=calculateImageStackHistogramRange(len(imgs),0,task,imgs,int(imgmin),int(imgmax),partitionArgs=(imgs,))

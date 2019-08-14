@@ -4,6 +4,7 @@ void main
 	uniform sampler3D dataTex,
 	uniform float4 texSize,
 	in float3 texCoord : TEXCOORD0,
+	in float4 camPos : TEXCOORD3,
 	in float4 pos : TEXCOORD5,
 	out float4 color : COLOR
 )
