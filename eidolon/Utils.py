@@ -212,7 +212,7 @@ class enum(object):
         try:
             self._getVal(i)
             return True
-        except KeyError:
+        except:
             return False
 
     def __getitem__(self, i):
@@ -297,7 +297,6 @@ class Future(object):
             if py3:  # Python3 compatibility
                 raise self.obj.exc_type(self.obj.exc_value).with_traceback(self.obj.tb)
             else:
-                # raise self.obj.exc_type,self.obj.exc_value,self.obj.tb
                 exec(compile('raise self.obj.exc_type,self.obj.exc_value,self.obj.tb', '', 'exec'), locals())
 
         elif isinstance(self.obj, Exception):
@@ -2122,34 +2121,52 @@ def successive(iterable, width=2, cyclic=False):
     values starting from the end of the sequence then looping back to the beginning.
     Eg. successive(range(5))        -> (0, 1), (1, 2), (2, 3), (3, 4)
         successive(range(5),3,True) -> (0, 1, 2), (1, 2, 3), (2, 3, 4), (3, 4, 0), (4, 0, 1)
+        successive([],2)            -> nil
     '''
     assert width > 1
+    
+    canContinue=True
     it = iter(iterable)
-    val = tuple(next(it) for i in range(width))  # get the first `width' values
-
-    if cyclic:  # if cyclic, make `it' into a chain that effectively sticks `val' (minus its last value) onto the end
-        it = itertools.chain(it, iter(val[:-1]))
-
-    while True:  # The Pythonic Way?
-        yield val
-        val = val[1:] + (
-        next(it),)  # eventually next() will raise an exception if `iterable' is finite and the loop will exit
-
+    
+    try:
+        val = [next(it) for i in range(width)]  # get the first `width' values
+    except StopIteration:
+        pass # yield nothing if `iterable' has fewer than `width' values
+    else:
+        if cyclic:  # if cyclic, make `it' into a chain that sticks `val' (minus its last value) onto the end
+            it = itertools.chain(it, iter(val[:-1]))
+                    
+        while canContinue:
+            yield tuple(val)
+            try:
+                # eventually next() will raise StopIteration if `iterable' is finite and the loop will exit
+                val = val[1:] + [next(it)]
+            except StopIteration:
+                canContinue=False
+    
 
 def group(iterable, width=2):
     '''
-    Groups successive items from `iterable' into `width' size tuples and yields each sequentially. If the number of items
-    in `iterable' isn't a multiple of `width', the last shortened group is discarded. Eg. group(range(5)) -> (0,1), (2,3)
+    Groups successive items from `iterable' into `width' size tuples and yields each sequentially. If the number of 
+    items in `iterable' isn't a multiple of `width', the last shortened group is discarded. 
+    Eg. group(range(5))    -> (0,1), (2,3)
+        group(range(10))   -> (0, 1), (2, 3), (4, 5), (6, 7), (8, 9)
+        group(range(10),3) -> (0, 1, 2), (3, 4, 5), (6, 7, 8)
+        group(range(2),3)  -> nil
     '''
-    assert width > 0
+    assert width > 1
+    
+    canContinue=True
     it = iter(iterable)
-    rng = list(range(width))
+    rng = tuple(range(width))
 
-    p = tuple(next(it) for i in rng)  # get `width' values
-    while len(
-            p) == width:  # loops so long as `iterable' has enough values, needed since exception from next() is suppressed by tuple()
-        yield p
-        p = tuple(next(it) for i in rng)  # get the next `width' values
+    # loops so long as `iterable' has enough values
+    while canContinue:  
+        try: # try to extract `width' number of values from it, stop if fewer or none are available
+            p=[next(it) for i in rng] # will raise StopIteration and not hide it behind RuntimeError like tuple()
+            yield tuple(p)
+        except StopIteration:
+            canContinue=False
 
 
 def matIter(mat):
@@ -2353,9 +2370,15 @@ def stddev(vals, initial=0.0):
 def avgspan(vals):
     '''Returns the average difference between successive values derived from the given iterable.'''
     it = iter(vals)
-    val = tuple(next(it) for i in range(2))
-    if len(val) != 2:
+    
+    try: # verify there are at least 2 values in `vals', return 0.0 if not
+        valtest=next(it),next(it)
+    except StopIteration:
         return 0.0
+    
+#    val = tuple(next(it) for i in range(2))
+#    if len(val) != 2:
+#        return 0.0
 
     return avg(b - a for a, b in successive(vals))
 

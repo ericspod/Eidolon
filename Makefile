@@ -137,6 +137,10 @@ else
 	rm -rf $(PYSRC)/*/*linux-gnu.so 
 endif
 
+docker:
+	docker build -t eidolon .
+
+
 header:
 	@echo "---------------------------------"
 	@echo " Eidolon Makefile Variables      "

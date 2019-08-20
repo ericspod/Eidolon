@@ -354,7 +354,8 @@ class PointHandle2D(Handle2D):
         self.pt=n
 
     def updatePositions(self):
-        self.figs[0].setPosition(self.widg2D.getOrthoPosition(self.pt))
+        orthopt=self.widg2D.getOrthoPosition(self.pt)
+        self.figs[0].setPosition(orthopt)
         self.figs[1].setPosition(self.pt)
         self.figs[1].setVisible(self.isVisible3D())
 
@@ -807,8 +808,8 @@ class DragSphereHandle(Handle3D):
 
 class NodeDragHandle(DragSphereHandle):
     '''
-    Handle for arbitrarily dragging a node around in the space. This is defined with initial position, position offset
-    from the origin of the associated representation, and user value, and a callback to be called whenever the node moves.
+    Handle for arbitrarily dragging a node around in 3D space. This is defined with initial position, position offset
+    from the origin of the associated representation, and user value, and a callback to be called when the node moves.
     '''
     
     def __init__(self,positionOffset,value,dragCallback=lambda h,r:None,col=color(1,0,0,1),selectCol=color(1,1,0,1)):
@@ -833,10 +834,10 @@ class NodeDragHandle(DragSphereHandle):
     def mouseDrag(self,e,dragvec):
         if self.buttons==Qt.LeftButton: # translate relative to camera
             norm=self.getCameraDirection()
-            r=self.getCameraRay()
-            rdist=r.intersectsPlane(self.getAbsolutePosition(),norm)
+            ray=self.getCameraRay()
+            rdist=ray.intersectsPlane(self.getAbsolutePosition(),norm)
             if rdist>0:
-                self.positionOffset=r.getPosition(rdist)-self.position
+                self.positionOffset=ray.getPosition(rdist)-self.position
                 self.setPosition(self.position)
                 self.dragCallback(self,False)
                 
