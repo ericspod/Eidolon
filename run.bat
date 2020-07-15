@@ -17,10 +17,10 @@ IF "%InstallPath%" == "" FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY HKLM\SOFTW
 IF [%InstallPath%] == [] SET InstallPath=C:\Python37\
 
 :: PATH is needed for the DLL the render links to and the renderer plugin DLLs
-SET PATH=%APPDIR%EidolonLibs\win64_mingw\bin;%PATH
+SET PATH=%APPDIR%\eidolon\EidolonLibs\win64_mingw\bin;%PATH%
 
 :: set the Anaconda paths, if the PATH variable isn't set this is needed, if using other distributions you'll have to change this to include your DLLs
-SET PATH=%InstallPath%;%InstallPath%\Library\mingw-w64\bin;%InstallPath%\Library\usr\bin;%InstallPath%\Library\bin;%InstallPath%\Scripts;%InstallPath%\bin;%InstallPath%\condabin;%PATH%
+SET PATH=%PATH%;%InstallPath%;%InstallPath%\Library\mingw-w64\bin;%InstallPath%\Library\usr\bin;%InstallPath%\Library\bin;%InstallPath%\Scripts;%InstallPath%\bin;%InstallPath%\condabin
 
 %InstallPath%\python.exe "%APPDIR%main.py" %*
 
