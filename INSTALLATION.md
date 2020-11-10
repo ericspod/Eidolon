@@ -5,8 +5,8 @@ Eidolon works currently in Windows (7 definitely, 8 and 10 seem fine) and Linux 
 For these platforms you should not need to compile since shared objects are included in the repository.
 
 For all platforms it requires:
- * Python 3.6 (version 2.7 is technically supported but considered legacy)
- * PyQt 4.10.4+ or 5.*
+ * Python 3.6 or 3.7
+ * PyQt 5.*
  * Numpy 1.8.0+
  * SciPy 0.13.3+ 
  * Imageio (optional)
@@ -19,9 +19,9 @@ The following will explain how to setup a Python environment with Anaconda/Minic
 To install using another Python distribution involves following the installation instructions for the base Python interpreter
 and then for the above libraries. These can be acquired from:
 
- * Python 2.7 64bit: http://www.python.org/download/
+ * Python 3.6+ 64bit: http://www.python.org/download/
  * Numpy/SciPy: http://www.scipy.org/install.html 
- * PyQt 4/5: http://www.riverbankcomputing.com/software/pyqt/download
+ * PyQt: http://www.riverbankcomputing.com/software/pyqt/download
  * Imageio: https://imageio.github.io/
  * Pandas: https://pandas.pydata.org/
  * Jupyter QtConsole: https://github.com/jupyter/qtconsole
