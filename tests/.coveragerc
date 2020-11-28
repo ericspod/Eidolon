@@ -1,10 +1,9 @@
 [run]
 
 source=
-    ../src
+    ../eidolon
 
 omit=
-    *_rc4.py
     *_rc5.py
     */__init__.py
     */setup.py
