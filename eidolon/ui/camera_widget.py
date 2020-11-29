@@ -16,24 +16,41 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from enum import Enum
 from PyQt5 import QtGui, QtCore, QtWidgets
-
 from ..renderer.manager import Manager
+from ..utils.event_dispatcher import EventDispatcher
+
+__all__ = ["CameraWidget", "CameraWidgetEvents"]
+
+
+class CameraWidgetEvents(Enum):
+    KEY_PRESSED = {"widget": QtWidgets.QWidget, "event": QtGui.QKeyEvent}
+    KEY_RELEASED = {"widget": QtWidgets.QWidget, "event": QtGui.QKeyEvent}
+    MOUSE_PRESSED = {"widget": QtWidgets.QWidget, "event": QtGui.QMouseEvent}
+    MOUSE_DOUBLE_CLICKED = {"widget": QtWidgets.QWidget, "event": QtGui.QMouseEvent}
+    MOUSE_RELEASED = {"widget": QtWidgets.QWidget, "event": QtGui.QMouseEvent}
+    MOUSE_MOVED = {"widget": QtWidgets.QWidget, "event": QtGui.QMouseEvent}
+    SHOWN = {"widget": QtWidgets.QWidget, "event": QtGui.QShowEvent}
+    RESIZED = {"widget": QtWidgets.QWidget, "event": QtGui.QResizeEvent}
+    PRE_PAINT = {"widget": QtWidgets.QWidget, "event": QtGui.QPaintEvent}
+    POST_PAINT = {"widget": QtWidgets.QWidget, "event": QtGui.QPaintEvent}
 
 
 class CameraWidget(QtWidgets.QWidget):
-    def __init__(self, mgr: Manager, camera, controller, parent=None):
+    def __init__(self, mgr: Manager, camera, parent=None):
         super().__init__(parent)
         self.mgr: Manager = mgr
         self.camera = camera
-        self.controller = controller
 
         self.painter = QtGui.QPainter()
+        self.events = EventDispatcher()
 
     def minimumSizeHint(self):
         return QtCore.QSize(400, 300)
 
     def paintEvent(self, evt: QtGui.QPaintEvent):
+        self._trigger_event(CameraWidgetEvents.PRE_PAINT, evt)
         texture = self.camera.texture
 
         if texture.might_have_ram_image():
@@ -43,6 +60,8 @@ class CameraWidget(QtWidgets.QWidget):
             self.painter.begin(self)
             self.painter.drawImage(0, 0, img)
             self.painter.end()
+
+        self._trigger_event(CameraWidgetEvents.POST_PAINT, evt)
 
     def repaint_on_ready(self):
         if self.mgr.is_ready():
@@ -54,17 +73,32 @@ class CameraWidget(QtWidgets.QWidget):
         if do_update:
             self.mgr.update()
 
+    def _trigger_event(self, name, evt):
+        self.events.trigger_event(name, event=evt)
+
     def resizeEvent(self, evt: QtGui.QResizeEvent):
         self._resize(evt.size(), True)
+        self._trigger_event(CameraWidgetEvents.RESIZED, evt)
 
     def showEvent(self, evt: QtGui.QShowEvent):
         self._resize(self.size(), True)
+        self._trigger_event(CameraWidgetEvents.SHOWN, evt)
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
-        self.controller.last_pos = None
-        self.repaint()
+        self._trigger_event(CameraWidgetEvents.MOUSE_PRESSED, a0)
+
+    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
+        self._trigger_event(CameraWidgetEvents.MOUSE_DOUBLE_CLICKED, a0)
+
+    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
+        self._trigger_event(CameraWidgetEvents.MOUSE_RELEASED, a0)
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
-        self.controller.drag(a0.x(), a0.y())
-        self.controller.set_camera_position()
+        self._trigger_event(CameraWidgetEvents.MOUSE_MOVED, a0)
         self.repaint_on_ready()
+
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        self._trigger_event(CameraWidgetEvents.KEY_PRESSED, a0)
+
+    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+        self._trigger_event(CameraWidgetEvents.KEY_RELEASED, a0)

@@ -31,6 +31,8 @@ from panda3d.core import (
 
 from .manager import Manager
 
+__all__ = ["OffscreenCamera"]
+
 
 class OffscreenCamera:
 
@@ -69,7 +71,7 @@ class OffscreenCamera:
             self.buffer.set_sort(sort)
             self.camera = self.mgr.make_camera(self.buffer, camName=name)
 
-            self.nodepath:NodePath = NodePath(name + "_nodepath")
+            self.nodepath: NodePath = NodePath(name + "_nodepath")
             self.camera.reparent_to(self.nodepath)
 
             self.camera_node = self.camera.node()

@@ -32,6 +32,8 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
+__all__ = ["create_geom", "Mesh"]
+
 
 def create_geom(vertices, norms, colors, indices, uvcoords):
     vformat = GeomVertexFormat.get_v3n3c4t2()

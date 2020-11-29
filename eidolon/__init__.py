@@ -59,3 +59,4 @@ elif is_linux:
             _ = ctypes.cdll.LoadLibrary(lib)
         except OSError:
             pass
+

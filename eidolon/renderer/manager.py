@@ -22,6 +22,8 @@ from panda3d.core import loadPrcFileData, Thread
 
 from direct.showbase.ShowBase import ShowBase
 
+__all__ = ["Manager"]
+
 
 class Manager(ShowBase):
     def __init__(self, width=800, height=600):

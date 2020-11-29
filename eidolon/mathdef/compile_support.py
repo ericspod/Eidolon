@@ -23,5 +23,8 @@ try:
 except ImportError:
     warnings.warn("Numba not found, code will not be compiled")
 
+
     def njit(func):
         return func
+
+__all__ = ["njit"]

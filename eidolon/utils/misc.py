@@ -95,19 +95,12 @@ import ast
 import inspect
 import collections
 import json
-
-py3 = sys.version_info.major == 3
-
+import configparser
+import queue
 from codeop import compile_command
 from functools import wraps, reduce
-from threading import Thread, RLock, Event, currentThread, _MainThread
+from threading import Thread, RLock, Event, currentThread
 
-if py3:  # Python 2/3 fix
-    import configparser
-    import queue
-else:
-    import ConfigParser as configparser
-    import Queue as queue
 
 halfpi = math.pi / 2.0
 
@@ -2640,16 +2633,16 @@ def generatePoisson3D(width, height, depth, ptscount, mindist=None, startpt=None
     return samplepts
 
 
-def unitWave2RGB(vis_range):
+def unit_wave_to_rgb(vis_range):
     '''
     Returns the colour value corresponding to the position in the visible spectrum designated by the unit value
     'vis_range'. If vis_range==0.0 then the colour is equivalent to 380nm, if vis_range==1.0 the colour is 780nm.
     '''
-    return wave2RGB(380 + 400 * clamp(vis_range, 0.0, 1.0))
+    return wave_to_rgb(380 + 400 * clamp(vis_range, 0.0, 1.0))
 
 
-def wave2RGB(wavelength):
-    '''Converts a wavelength value between 380nm and 780nm into a RGB color tuple. Requires 380 <= wavelength <= 780.'''
+def wave_to_rgb(wavelength):
+    """Converts a wavelength value between 380nm and 780nm into a RGB color tuple. Requires 380 <= wavelength <= 780."""
     w = int(wavelength)
     R = 0.0
     G = 0.0
@@ -2686,16 +2679,3 @@ def wave2RGB(wavelength):
 
     return (R * SSS, G * SSS, B * SSS)
 
-
-def arrayV(val, *dims):
-    '''Return an array composed of lists containing copies of `val' of dimensions `dims'.'''
-    if len(dims) == 0:
-        return val
-
-    return [arrayV(val, *dims[1:]) for i in range(dims[0])]
-
-
-def assertMatDim(mat,n,m):
-    '''Assert that `mat' has dimensions (n,m).'''
-    assert len(mat)==n
-    assert all(len(row)==m for row in mat)
