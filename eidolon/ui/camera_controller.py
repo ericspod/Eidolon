@@ -16,39 +16,67 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from typing import Union
+
 from PyQt5 import QtGui, QtCore
 
 from .camera_widget import CameraWidget, CameraWidgetEvents
-from ..mathdef.mathtypes import vec3, rotator, transform
-from ..mathdef.mathtypes import rad_clamp, rad_circular_convert
+from ..renderer import OffscreenCamera
+from ..mathdef.mathtypes import vec3, rotator
+from ..mathdef.utils import rad_clamp, rad_circular_convert
 
-__all__=["CameraController"]
+__all__ = ["CameraController"]
+
 
 class CameraController:
-    def __init__(self, camera, position, theta, phi, dist):
-        self.camera = camera
-        self.position = position
-        self.theta = theta
-        self.phi = phi
-        self.dist = dist
+    def __init__(self, camera: OffscreenCamera, position: vec3, theta: float, phi: float, dist: float):
+        self.camera: OffscreenCamera = camera
+        self.position: vec3 = position
+        self.theta: float = theta
+        self.phi: float = phi
+        self.dist: float = dist
         self.last_pos = None
         self.free_rotator = None
         self._is_z_locked = True
-        self.phisub = 1e-5
-        self.rscale = 5e-1
+        self.phisub: float = 1e-5
+        self.rscale: float = 5e-3
+        self.tscale: float = 1e-1
+        self.zscale: float = 1e-1
+
+        self.apply_camera_position()
 
     def attach_events(self, events):
-        pass
+        events.add_handler(CameraWidgetEvents.MOUSE_PRESSED, self._mouse_pressed)
+        events.add_handler(CameraWidgetEvents.MOUSE_MOVED, self._mouse_moved)
+        events.add_handler(CameraWidgetEvents.MOUSE_WHEEL, self._mouse_wheel)
 
     def detach_events(self, events):
-        pass
+        events.remove_handler(self._mouse_pressed)
+        events.remove_handler(self._mouse_moved)
+        events.remove_handler(self._mouse_wheel)
 
-    def _mouse_pressed(self, widget: CameraWidget, evt: QtGui.QMouseEvent):
-        self.last_pos = (evt.x(), evt.y())
+    def _mouse_pressed(self, widget: CameraWidget, event: QtGui.QMouseEvent):
+        self.last_pos = (event.x(), event.y())
 
-    def _mouse_moved(self, widget: CameraWidget, evt: QtGui.QMouseEvent):
-        if evt.button() == QtCore.Qt.LeftButton:
-            self.drag_rotate_to(evt.x(), evt.y())
+    def _mouse_moved(self, widget: CameraWidget, event: QtGui.QMouseEvent):
+        dx = event.x() - self.last_pos[0]
+        dy = event.y() - self.last_pos[1]
+
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.rotate(dx, dy)
+        elif event.buttons() == QtCore.Qt.RightButton:
+            self.translate_camera_relative(-dx, 0, dy)
+        elif event.buttons() == QtCore.Qt.MiddleButton:
+            self.translate_camera_relative(0, -dy, 0)
+
+        self.apply_camera_position()
+        widget.repaint_on_ready()
+        self.last_pos = (event.x(), event.y())
+
+    def _mouse_wheel(self, widget: CameraWidget, event: QtGui.QWheelEvent):
+        self.zoom(-event.angleDelta().y())
+        self.apply_camera_position()
+        widget.repaint_on_ready()
 
     @property
     def z_lock(self) -> bool:
@@ -60,10 +88,23 @@ class CameraController:
             self._is_z_locked = True
             self.free_rotator = None
         else:
-            self.free_rotator = self.get_rotator()
+            self.free_rotator = self.get_rotation()
             self._is_z_locked = False
 
-    def get_rotator(self):
+    def get_position(self):
+        return self.position
+
+    def set_position(self, position):
+        self.position = position
+        self.apply_camera_position()
+
+    def get_dist(self):
+        return self.dist
+
+    def set_dist(self,dist):
+        self.dist=max(5 * self.zscale, dist)
+
+    def get_rotation(self):
         """
         Get the rotator for the camera based on self.theta and self.phi or self.freerotator. This represents the
         rotation applied to orient the camera to face the look at position and a given up direction from the initial
@@ -75,7 +116,7 @@ class CameraController:
         else:
             return self.free_rotator
 
-    def set_rotation(self, theta_r, phi=0):
+    def set_rotation(self, theta_r: float, phi: float = 0):
         """
         Sets rotational parameters. If z_lock is True, `theta_r' and  `phi' are polar rotation values, these are
         used to set self.theta and self.phi contrained within their respective ranges and tolerances. If z_lock
@@ -93,7 +134,7 @@ class CameraController:
 
         # self.set_camera_position()
 
-    def rotate(self, dx_r, dy=0):
+    def rotate(self, dx_r: Union[float, rotator], dy: float = 0):
         """
         Rotate the camera using the given arguments. If the camera is Z-locked (z_lock is True), `dx_r' is a
         float value scaled by self.rScale*0.005 then added to self.theta and `dy' is also a float scaled by
@@ -101,22 +142,24 @@ class CameraController:
         camera's rotation.
         """
         if self._is_z_locked:
-            self.set_rotation(self.theta + float(dx_r) * 0.005 * self.rscale,
-                              self.phi + float(dy) * 0.005 * self.rscale)
+            self.set_rotation(self.theta + dx_r * self.rscale, self.phi + dy * self.rscale)
         else:
             self.set_rotation(dx_r * self.free_rotator)
 
-    def set_camera_position(self):
-        rot = self.get_rotator()
+    def translate(self, trans: vec3):
+        self.set_position(self.get_position() + trans)
+
+    def translate_camera_relative(self, dx, dy, dz):
+        """Translate relative to the orientation (Y-forward, Z-up) defined by the camera's rotator."""
+        rot = self.get_rotation()
+        self.translate(rot * (vec3(dx, dy, dz) * self.tscale))
+
+    def zoom(self,dz:float):
+        self.set_dist(self.get_dist()+dz*self.zscale)
+
+    def apply_camera_position(self):
+        rot = self.get_rotation()
         campos = (rot * vec3(0, -self.dist, 0)) + self.position
 
         self.camera.camera.set_pos(*campos)
         self.camera.camera.look_at(*self.position)
-
-    def drag_rotate_to(self, dx, dy):
-        if self.last_pos is not None:
-            lx, ly = self.last_pos
-            self.rotate(dx - lx, dy - ly)
-
-        self.last_pos = (dx, dy)
-        # self.set_camera_position()

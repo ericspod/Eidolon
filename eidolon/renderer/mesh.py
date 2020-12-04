@@ -19,6 +19,7 @@
 from typing import List
 
 from ..mathdef.mathtypes import vec3, transform
+from panda3d.core import LQuaternionf
 
 from panda3d.core import (
     NodePath,
@@ -32,10 +33,10 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
-__all__ = ["create_geom", "Mesh"]
+__all__ = ["create_simple_geom", "Mesh", "SimpleMesh"]
 
 
-def create_geom(vertices, norms, colors, indices, uvcoords):
+def create_simple_geom(vertices, norms, colors, indices, uvcoords):
     vformat = GeomVertexFormat.get_v3n3c4t2()
     vdata = GeomVertexData("square", vformat, Geom.UHDynamic)
 
@@ -61,14 +62,15 @@ def create_geom(vertices, norms, colors, indices, uvcoords):
 
 
 class Mesh:
-    def __init__(self, name: str, vertices, norms, colors, uvcoods, indices):
+    def __init__(self, name: str, *geoms: Geom):
         self.name: str = name
-        self.geom: Geom = create_geom(vertices, norms, colors, indices, uvcoods)
         self.node: GeomNode = GeomNode(name + "_node")
-        self.node.addGeom(self.geom)
         self.camnodes: List[NodePath] = []
         self._visible: bool = True
         self._transform: transform = transform()
+
+        for geom in geoms:
+            self.add_geom(geom)
 
     @property
     def position(self):
@@ -84,12 +86,29 @@ class Mesh:
     def orientation(self):
         return self._transform.rot
 
+    @orientation.setter
+    def orientation(self, rot):
+        self._transform = transform(self._transform.trans, self._transform.scale, rot)
+        x, y, z, w = rot
+        rf = LQuaternionf(w, x, y, z)
+        for camnode in self.camnodes:
+            camnode.set_quat(rf)
+
     @property
     def scale(self):
         return self._transform.scale
 
+    @scale.setter
+    def scale(self, scale):
+        self._transform = transform(self._transform.trans, scale, self._transform.rot)
+        for camnode in self.camnodes:
+            camnode.set_scale(*scale)
+
     def get_tranform(self):
         return self._transform
+
+    def add_geom(self, geom):
+        self.node.add_geom(geom)
 
     def attach(self, camera):
         cnode: NodePath = camera.nodepath.attach_new_node(self.node)
@@ -111,8 +130,16 @@ class Mesh:
     def visible(self, visible):
         self._visible = visible
 
-        for cm in self.camnodes:
+        for camnode in self.camnodes:
             if visible:
-                cm.show()
+                camnode.show()
             else:
-                cm.hide()
+                camnode.hide()
+
+
+class SimpleMesh(Mesh):
+    def __init__(self, name: str, vertices, indices, norms=None, colors=None, uvcoords=None):
+        norms = norms or [vec3.Z] * len(vertices)
+        colors = colors or [(1, 1, 1, 1)] * len(vertices)
+        uvcoords = uvcoords or [(0, 0)] * len(vertices)
+        super().__init__(name, create_simple_geom(vertices, norms, colors, indices, uvcoords))

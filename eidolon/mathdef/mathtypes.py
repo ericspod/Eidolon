@@ -19,14 +19,10 @@
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
-from math import sin, cos, acos, asin, atan2, sqrt, pi, inf
+from math import sin, cos, acos, atan2, sqrt, pi, inf
 from typing import Union, Optional
 
-from .utils import (
-    FEPSILON, finv, fequals_eps, fclamp, fsign, rad_clamp, rad_circular_convert, len3, lensq3, rotator_pitch,
-    rotator_roll, rotator_yaw
-)
+from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, rotator_pitch, rotator_roll, rotator_yaw)
 
 __all__ = ["vec3", "rotator", "ray", "transform"]
 
@@ -575,31 +571,3 @@ class transform:
             out[:3, 3] = tuple(self._trans)
 
         return out
-
-
-if __name__ == "__main__":
-    v = vec3(1, -2, 3)
-    print(v, v.inv(), v.cross(vec3(1, -2, 0)))
-    print(abs(v))
-    print(2.1 * (v + 1))
-    print(list(v))
-    print((v + 1) == vec3(2, -1, 4), (v + 1) > v)
-
-    print(vec3(0, 0, 0).in_aabb(vec3(-1, -1, -1), vec3(1, 1, 1)))
-    print(vec3.X)
-
-    print(~rotator(1, 0, 1, 1))
-    print(rotator(1, 0, 1, 1).yaw())
-
-    print(rotator.from_axis(vec3.X, 0.5).to_matrix())
-
-    print(transform(vec3(1, 2, 3), vec3(1, 2, 3), rotator.from_axis(vec3.one, 0.5)).to_matrix())
-
-    t1 = transform(vec3(1, 2, -3), vec3(1.1, 1.2, 1.3), rotator.from_axis(vec3.one, 0.5))
-
-    m1 = t1.to_matrix()
-    m2 = (~t1).to_matrix()
-
-    print(m1)
-    print(m2)
-    print(np.matmul(m1, m2))

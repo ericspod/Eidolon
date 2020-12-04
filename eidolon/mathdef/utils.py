@@ -21,11 +21,17 @@ from math import asin, atan2, sqrt, pi
 from .compile_support import njit
 
 __all__ = [
-    "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp", "rad_circular_convert",
-    "rotator_yaw", "rotator_roll", "rotator_pitch"
+    "FEPSILON", "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp", "rad_circular_convert",
+    "rotator_yaw", "rotator_roll", "rotator_pitch","frange"
 ]
 
 FEPSILON: float = 1e-10
+
+
+def epsilon_zero(val):
+    """Return 0.0 if `val' is within 'epsilon' of 0.0, otherwise return 'val' converted to a float value."""
+    val = float(val)
+    return 0.0 if abs(val) < FEPSILON else val
 
 
 @njit
@@ -65,10 +71,18 @@ def fclamp(v: float, vmin: float, vmax: float) -> float:
 @njit
 def rad_circular_convert(rad: float) -> float:
     """Converts the given rad angle value to the equivalent angle on the interval [-pi,pi]."""
-    if rad > pi:
-        rad -= pi * 2 * rad // (pi * 2)
-    elif rad < -pi:
-        rad += pi * 2 * abs(rad) // (pi * 2)
+    # if rad > pi:
+    #     rad -= pi * 2 * rad // (pi * 2)
+    # elif rad < -pi:
+    #     rad += pi * 2 * abs(rad) // (pi * 2)
+    #
+    # return rad
+
+    while rad > pi:
+        rad -= pi * 2
+
+    while rad < -pi:
+        rad += pi * 2
 
     return rad
 
@@ -117,3 +131,41 @@ def rotator_roll(x: float, y: float, z: float, w: float) -> float:
     y1: float = 2 * y * w - 2 * x * z
     x1: float = 1 - 2 * y ** 2 - 2 * z ** 2
     return atan2(y1, x1)
+
+
+def frange(start, stop=None, step=None):
+    """Same as 'range', just with floats."""
+    if not stop:
+        stop = start
+        start = 0.0
+
+    if not step:
+        step = 1.0
+
+    start = epsilon_zero(start)
+    stop = epsilon_zero(stop)
+    step = epsilon_zero(step)
+
+    if abs(stop - start) <= FEPSILON:
+        return
+
+    if step <= 0:
+        raise ValueError('Step must be positive and non-zero (step=%s)' % (str(step),))
+
+    if stop < 0 or start < 0:
+        raise ValueError('All arguments must be positive (start=%s, stop=%s)' % (str(start), str(stop)))
+
+    if stop < start:
+        raise ValueError('Stop value must be greater than start value (start=%s, stop=%s)' % (str(start), str(stop)))
+
+    # Kahan algorithm (W. Kahan. 1965. Pracniques: further remarks on reducing truncation errors. Commun. ACM 8)
+
+    comp = 0.0  # compensation value for low order bits
+    total = start  # running total
+
+    while total < stop - FEPSILON:
+        yield total
+        y = step - comp
+        temp = total + y
+        comp = (temp - total) - y
+        total = temp
