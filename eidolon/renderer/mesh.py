@@ -18,47 +18,20 @@
 
 from typing import List
 
-from ..mathdef.mathtypes import vec3, transform
+from .utils import create_simple_geom
+from .camera import OffscreenCamera
+from ..mathdef.mathtypes import vec3, rotator, transform
 from panda3d.core import LQuaternionf
 
 from panda3d.core import (
     NodePath,
     GeomNode,
     Geom,
-    GeomVertexFormat,
-    GeomVertexData,
-    GeomVertexWriter,
-    LVector3,
-    GeomTriangles,
     TransparencyAttrib,
+    Texture
 )
 
-__all__ = ["create_simple_geom", "Mesh", "SimpleMesh"]
-
-
-def create_simple_geom(vertices, norms, colors, indices, uvcoords):
-    vformat = GeomVertexFormat.get_v3n3c4t2()
-    vdata = GeomVertexData("square", vformat, Geom.UHDynamic)
-
-    vertex = GeomVertexWriter(vdata, "vertex")
-    normal = GeomVertexWriter(vdata, "normal")
-    color = GeomVertexWriter(vdata, "color")
-    texcoord = GeomVertexWriter(vdata, "texcoord")
-
-    for i in range(len(vertices)):
-        vertex.addData3f(*vertices[i])
-        normal.addData3f(LVector3(*norms[i]).normalized())
-        color.addData4f(*colors[i])
-        texcoord.addData2f(*uvcoords[i])
-
-    tris = GeomTriangles(Geom.UHDynamic)
-
-    for i in range(len(indices)):
-        tris.addVertices(*indices[i])
-
-    geom = Geom(vdata)
-    geom.addPrimitive(tris)
-    return geom
+__all__ = ["Mesh", "SimpleMesh"]
 
 
 class Mesh:
@@ -77,45 +50,48 @@ class Mesh:
         return self._transform.trans
 
     @position.setter
-    def position(self, pos):
-        self._transform = transform(pos, self._transform.scale, self._transform.rot)
-        for camnode in self.camnodes:
-            camnode.set_pos(*pos)
+    def position(self, pos: vec3):
+        self.set_transform(transform(pos, self._transform.scale, self._transform.rot))
 
     @property
     def orientation(self):
         return self._transform.rot
 
     @orientation.setter
-    def orientation(self, rot):
-        self._transform = transform(self._transform.trans, self._transform.scale, rot)
-        x, y, z, w = rot
-        rf = LQuaternionf(w, x, y, z)
-        for camnode in self.camnodes:
-            camnode.set_quat(rf)
+    def orientation(self, rot: rotator):
+        self.set_transform(transform(self._transform.trans, self._transform.scale, rot))
 
     @property
     def scale(self):
         return self._transform.scale
 
     @scale.setter
-    def scale(self, scale):
-        self._transform = transform(self._transform.trans, scale, self._transform.rot)
-        for camnode in self.camnodes:
-            camnode.set_scale(*scale)
+    def scale(self, scale: vec3):
+        self.set_transform(transform(self._transform.trans, scale, self._transform.rot))
 
-    def get_tranform(self):
+    def get_transform(self):
         return self._transform
 
-    def add_geom(self, geom):
+    def set_transform(self, trans: transform):
+        self._transform = trans
+        x, y, z, w = trans.rot
+        rf = LQuaternionf(w, x, y, z)
+
+        for camnode in self.camnodes:
+            camnode.set_pos(*trans.trans)
+            camnode.set_quat(rf)
+            camnode.set_scale(*trans.scale)
+
+    def add_geom(self, geom: Geom):
         self.node.add_geom(geom)
 
-    def attach(self, camera):
+    def attach(self, camera: OffscreenCamera):
         cnode: NodePath = camera.nodepath.attach_new_node(self.node)
         cnode.set_transparency(TransparencyAttrib.M_alpha)
         self.camnodes.append(cnode)
+        self.set_transform(self._transform)
 
-    def detach(self, camera):
+    def detach(self, camera: OffscreenCamera):
         for i in range(len(self.camnodes)):
             if self.camnodes[i] in camera.nodepath.children:
                 self.camnodes[i].detach_node()
@@ -127,7 +103,7 @@ class Mesh:
         return self._visible
 
     @visible.setter
-    def visible(self, visible):
+    def visible(self, visible: bool):
         self._visible = visible
 
         for camnode in self.camnodes:
@@ -136,10 +112,11 @@ class Mesh:
             else:
                 camnode.hide()
 
+    def set_texture(self, tex: Texture):
+        for camnode in self.camnodes:
+            camnode.set_texture(tex)
+
 
 class SimpleMesh(Mesh):
     def __init__(self, name: str, vertices, indices, norms=None, colors=None, uvcoords=None):
-        norms = norms or [vec3.Z] * len(vertices)
-        colors = colors or [(1, 1, 1, 1)] * len(vertices)
-        uvcoords = uvcoords or [(0, 0)] * len(vertices)
-        super().__init__(name, create_simple_geom(vertices, norms, colors, indices, uvcoords))
+        super().__init__(name, create_simple_geom(vertices, indices, norms, colors, uvcoords))

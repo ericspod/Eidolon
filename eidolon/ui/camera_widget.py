@@ -35,8 +35,8 @@ class CameraWidgetEvents(Enum):
     MOUSE_WHEEL = 6, {"widget": QtWidgets.QWidget, "event": QtGui.QWheelEvent}
     SHOWN = 7, {"widget": QtWidgets.QWidget, "event": QtGui.QShowEvent}
     RESIZED = 8, {"widget": QtWidgets.QWidget, "event": QtGui.QResizeEvent}
-    PRE_PAINT = 9, {"widget": QtWidgets.QWidget, "event": QtGui.QPaintEvent}
-    POST_PAINT = 10, {"widget": QtWidgets.QWidget, "event": QtGui.QPaintEvent}
+    PRE_PAINT = 9, {"widget": QtWidgets.QWidget, "event": None}
+    POST_PAINT = 10, {"widget": QtWidgets.QWidget, "event": None}
 
 
 class CameraWidget(QtWidgets.QWidget):
@@ -61,7 +61,6 @@ class CameraWidget(QtWidgets.QWidget):
         return QtCore.QSize(400, 300)
 
     def paintEvent(self, evt: QtGui.QPaintEvent):
-        self._trigger_event(CameraWidgetEvents.PRE_PAINT, evt)
         texture = self.camera.texture
 
         if texture.might_have_ram_image():
@@ -72,19 +71,19 @@ class CameraWidget(QtWidgets.QWidget):
             self.painter.drawImage(0, 0, img)
             self.painter.end()
 
-        self._trigger_event(CameraWidgetEvents.POST_PAINT, evt)
-
     def repaint_on_ready(self):
         if self.mgr.is_ready():
+            self._trigger_event(CameraWidgetEvents.PRE_PAINT)
             self.mgr.update()
             self.repaint()
+            self._trigger_event(CameraWidgetEvents.POST_PAINT)
 
     def _resize(self, size: QtCore.QSize, do_update: bool):
         self.camera.resize(size.width(), size.height())
         if do_update:
             self.repaint_on_ready()
 
-    def _trigger_event(self, name, evt):
+    def _trigger_event(self, name, evt=None):
         self.events.trigger_event(name, widget=self, event=evt)
 
     def resizeEvent(self, evt: QtGui.QResizeEvent):

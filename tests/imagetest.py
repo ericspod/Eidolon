@@ -1,11 +1,15 @@
 import sys
 from PyQt5 import QtWidgets
+import numpy as np
 
 import eidolon
 import eidolon.renderer
 import eidolon.ui
 
 from eidolon.mathdef import vec3
+from eidolon.renderer import create_texture_np
+
+from scipy.misc import face
 
 
 def main():
@@ -17,18 +21,18 @@ def main():
     verts = [(0, 0, 0), (10, 0, 0), (0, 0, 10), (10, 0, 10)]
     inds = [(0, 1, 2), (1, 3, 2)]
     norms = [(0, 0, 1)] * len(verts)
-    colors = [
-        (1.0, 0.0, 0.0, 1.0),
-        (0.0, 1.0, 0.0, 1.0),
-        (0.0, 0.0, 1.0, 1.0),
-        (1.0, 1.0, 1.0, 0.0),
-    ]
-    uvs = [(0, 0)] * len(verts)
+    uvs = [(0, 1), (1, 1), (0, 0), (1, 0)]
 
-    mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, colors, uvs)
+    tex = create_texture_np(face())
+
+    mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, None, uvs)
     mesh.attach(cam)
 
-    mesh.position = vec3(-5, -5, 0)
+    mesh.position = vec3(-5, 0, -5)
+    # mesh.orientation = rotator.from_axis(vec3.X, np.pi / 2)
+    # mesh.scale = vec3.one * 10
+
+    mesh.set_texture(tex)
 
     app = QtWidgets.QApplication(sys.argv)
 

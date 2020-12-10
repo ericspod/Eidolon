@@ -19,3 +19,5 @@
 from .manager import *
 from .camera import *
 from .mesh import *
+from .light import *
+from .utils import *

@@ -4,6 +4,7 @@ from .mathtypes import vec3, rotator
 from .utils import frange
 
 __all__ = [
+    "generate_plane",
     "calculate_bound_box", "generate_cylinder", "generate_arrow",
     "generate_axes_arrows", "generate_tri_normals", "add_indices"
 ]
@@ -52,6 +53,37 @@ def generate_tri_normals(nodes, indices):
         norms[c] += norm
 
     return [n.norm() for n in norms]
+
+
+def generate_plane(refine):
+    """
+    Generates a plane of triangles on the XY plane centered at the origin with edges length 1. The argument 'refine'
+    states how many divisions to used in defining the plane, a value of 0 yields a plane defined by 2 triangles. The
+    triangle winding order indicates the triangles face in the Z+ direction.
+    """
+    refine += 1
+    nl = 1.0 / refine
+    indices = []
+    r2 = (refine - 1) / 2.0
+
+    pt_indices = list(np.ndindex(refine + 1, refine + 1))
+
+    nodes = [vec3(nl * i - 0.5, nl * (refine - j) - 0.5, 0) for j, i in pt_indices]
+    xis = [vec3(nl * i, nl * j, 0) for j, i in pt_indices]
+
+    for j, i in np.ndindex(refine, refine):
+        a = pt_indices.index((j, i))
+        b = pt_indices.index((j, i + 1))
+        c = pt_indices.index((j + 1, i))
+        d = pt_indices.index((j + 1, i + 1))
+
+        # mirror quadrants of the plane so that long edges of triangles point toward the center
+        if (j < r2 and i < r2) or (j >= r2 and i >= r2):
+            indices += [(a, c, b), (b, c, d)]
+        else:
+            indices += [(b, a, d), (a, c, d)]
+
+    return nodes, indices, xis
 
 
 def generate_cylinder(ctrls, radii, refine=0, start_cap=True, end_cap=True, align_rings=True):
@@ -143,7 +175,7 @@ def generate_arrow(refine=1):
 
 def generate_axes_arrows(refine=5, length=10):
     zverts, zinds = generate_arrow(refine)
-    zverts = [(v + vec3(0, 0, 1)) * vec3(1, 1, length/2) for v in zverts]
+    zverts = [(v + vec3(0, 0, 1)) * vec3(1, 1, length / 2) for v in zverts]
 
     xr = rotator.from_axis(vec3.Y, math.pi / 2)
     xverts = [xr * v for v in zverts]

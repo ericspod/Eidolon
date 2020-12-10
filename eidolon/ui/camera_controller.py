@@ -25,6 +25,8 @@ from ..renderer import OffscreenCamera
 from ..mathdef.mathtypes import vec3, rotator
 from ..mathdef.utils import rad_clamp, rad_circular_convert
 
+from ..utils import timing
+
 __all__ = ["CameraController"]
 
 
@@ -131,8 +133,6 @@ class CameraController:
                 self.free_rotator = theta_r
             else:
                 self.free_rotator = rotator.from_axis(vec3.Z, theta_r)
-
-        # self.set_camera_position()
 
     def rotate(self, dx_r: Union[float, rotator], dy: float = 0):
         """

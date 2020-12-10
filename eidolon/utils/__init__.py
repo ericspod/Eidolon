@@ -19,3 +19,24 @@
 from .event_dispatcher import *
 # from .misc import *
 from .platform import *
+
+from time import perf_counter
+from functools import wraps
+
+
+def timing(func):
+    """
+    This simple timing function decorator prints to stdout/logfile (it uses printFlush) how many seconds a call to the
+    original function took to execute, as well as the name before and after the call.
+    """
+
+    @wraps(func)
+    def _wrapper(*args, **kwargs):
+        print(func.__name__, flush=True)
+        start = perf_counter()
+        res = func(*args, **kwargs)
+        end = perf_counter()
+        print(func.__name__, 'dT (s) =', (end - start), flush=True)
+        return res
+
+    return _wrapper

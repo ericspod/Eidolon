@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import warnings
 
 try:
-    from numba import njit
+    from numba import njit as _njit
+    from functools import partial
+
+    njit = partial(_njit, cache=True)
+
 except ImportError:
+    import warnings
+
     warnings.warn("Numba not found, code will not be compiled")
 
 

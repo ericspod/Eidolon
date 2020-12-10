@@ -1,11 +1,19 @@
 import sys
 from PyQt5 import QtWidgets
+import numpy as np
 
 import eidolon
 import eidolon.renderer
 import eidolon.ui
 
-from eidolon.mathdef import vec3
+from eidolon.mathdef import vec3, rotator, transform
+from eidolon.renderer import create_texture_np
+
+
+
+def get_circle2d(w, h, r):
+    x, y = np.meshgrid(np.linspace(-1, 1, w), np.linspace(-1, 1, h))
+    return ((x ** 2 + y ** 2) <= r ** 2).astype(np.float32)
 
 
 def main():
@@ -23,12 +31,20 @@ def main():
         (0.0, 0.0, 1.0, 1.0),
         (1.0, 1.0, 1.0, 0.0),
     ]
-    uvs = [(0, 0)] * len(verts)
+    uvs = [(0, 0), (1, 0), (0, 1), (1, 1)]
+
+    circle_img = get_circle2d(128, 128, 0.8)[:, :, None].repeat(2, 2)
+
+    tex = create_texture_np(circle_img)
 
     mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, colors, uvs)
     mesh.attach(cam)
 
     mesh.position = vec3(-5, -5, 0)
+    # mesh.orientation = rotator.from_axis(vec3.X, np.pi / 2)
+    # mesh.scale = vec3.one * 10
+
+    mesh.set_texture(tex)
 
     app = QtWidgets.QApplication(sys.argv)
 
