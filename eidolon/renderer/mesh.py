@@ -88,8 +88,9 @@ class Mesh:
     def attach(self, camera: OffscreenCamera):
         cnode: NodePath = camera.nodepath.attach_new_node(self.node)
         cnode.set_transparency(TransparencyAttrib.M_alpha)
+        cnode.set_two_sided(True)
+
         self.camnodes.append(cnode)
-        self.set_transform(self._transform)
 
     def detach(self, camera: OffscreenCamera):
         for i in range(len(self.camnodes)):

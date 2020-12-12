@@ -18,10 +18,10 @@
 
 
 try:
-    from numba import njit as _njit
+    from numba import jit as _jit
     from functools import partial
 
-    njit = partial(_njit, cache=True)
+    jit = partial(_jit, nopython=True, cache=True)
 
 except ImportError:
     import warnings
@@ -29,7 +29,7 @@ except ImportError:
     warnings.warn("Numba not found, code will not be compiled")
 
 
-    def njit(func):
+    def jit(func):
         return func
 
-__all__ = ["njit"]
+__all__ = ["jit"]

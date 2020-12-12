@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from typing import Optional
 
 import numpy as np
 
@@ -30,6 +31,7 @@ from panda3d.core import (
 )
 
 from .manager import Manager
+from ..mathdef import vec3
 
 __all__ = ["OffscreenCamera"]
 
@@ -69,7 +71,7 @@ class OffscreenCamera:
 
             self.buffer.add_render_texture(self.texture, GraphicsOutput.RTMCopyRam)
             self.buffer.set_sort(sort)
-            self.camera = self.mgr.make_camera(self.buffer, camName=name)
+            self.camera: NodePath = self.mgr.make_camera(self.buffer, camName=name)
 
             self.nodepath: NodePath = NodePath(name + "_nodepath")
             self.camera.reparent_to(self.nodepath)
@@ -79,7 +81,7 @@ class OffscreenCamera:
 
             self.set_clear_color(clear_color)
 
-    def set_clear_color(self, clear_color):
+    def set_clear_color(self, clear_color: LVecBase4f):
         if clear_color is None:
             self.buffer.set_clear_active(GraphicsOutput.RTPColor, False)
         else:
@@ -99,3 +101,11 @@ class OffscreenCamera:
     def resize(self, width, height):
         self.lens.set_film_size(width, height)
         self.buffer.set_size(width, height)
+
+    def set_camera_lookat(self, position: vec3, look_at: vec3, up: Optional[vec3] = None):
+        self.camera.set_pos(*position)
+
+        if up is None:
+            self.camera.look_at(*look_at)
+        else:
+            self.camera.look_at(*look_at, *up)

@@ -41,14 +41,12 @@ class Light:
             self.light = AmbientLight(name)
         elif ltype == LightType.DIRECTIONAL:
             self.light = DirectionalLight(name)
-            # self.light.set_direction(LVector3f(*direction))
         elif ltype == LightType.SPOTLIGHT:
             self.light = Spotlight(name)
             self.light.attenuation = attenuation
         elif ltype == LightType.POINT:
             self.light = PointLight(name)
             self.light.attenuation = attenuation
-            # self.light.set_point(LPoint3f(*position))
 
         self.light.set_color(VBase4F(*color))
         self.nodepath = NodePath(self.light)

@@ -18,3 +18,4 @@
 
 from .camera_widget import *
 from .camera_controller import *
+from .applications import *

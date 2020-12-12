@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import numpy as np
 from math import sin, cos, acos, atan2, sqrt, pi, inf
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, rotator_pitch, rotator_roll, rotator_yaw)
+from ..utils import cached_property
 
 __all__ = ["vec3", "rotator", "ray", "transform"]
 
@@ -178,8 +179,8 @@ class vec3:
 
     def in_obb(self, center: vec3, hx: vec3, hy: vec3, hz: vec3):
         diff: vec3 = self - center
-        return abs(hx.dot(diff)) <= hx.len_sq() and abs(hy.dot(diff)) <= hy.len_sq() and abs(
-            hz.dot(diff)) <= hz.len_sq()
+        return abs(hx.dot(diff)) <= hx.len_sq() and abs(hy.dot(diff)) <= hy.len_sq() and \
+               abs(hz.dot(diff)) <= hz.len_sq()
 
     def in_sphere(self, center: vec3, radius: float) -> bool:
         return self.dist_to_sq(center) <= (radius ** 2 + FEPSILON)
@@ -571,3 +572,32 @@ class transform:
             out[:3, 3] = tuple(self._trans)
 
         return out
+
+
+class BoundBox:
+    """
+    Axis-aligned bounding box.
+    """
+
+    def __init__(self, vmin: vec3, vmax: vec3):
+        self.vmin = vmin
+        self.vmax = vmax
+
+    @cached_property
+    def corners(self) -> Tuple[vec3, vec3, vec3, vec3, vec3, vec3, vec3, vec3]:
+        xmin, ymin, zmin = self.vmin
+        xmax, ymax, zmax = self.vmax
+
+        return self.vmin, vec3(xmax, ymin, zmin), vec3(xmin, ymax, zmin), vec3(xmax, ymax, zmin), \
+               vec3(xmin, ymin, zmax), vec3(xmax, ymin, zmax), vec3(xmin, ymax, zmax), self.vmax
+
+    @cached_property
+    def center(self) -> vec3:
+        return (self.vmin + self.vmax) / 2
+
+    @cached_property
+    def radius(self) -> float:
+        return self.vmin.dist_to(self.vmax) / 2
+
+    def in_bounds(self, v: vec3) -> bool:
+        return v.in_aabb(self.vmin, self.vmax)

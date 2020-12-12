@@ -1,8 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-import numpy as np
 
-import eidolon
 import eidolon.renderer
 import eidolon.ui
 
@@ -11,42 +9,31 @@ from eidolon.renderer import create_texture_np
 
 from scipy.misc import face
 
+mgr = eidolon.renderer.Manager()
+cam = eidolon.renderer.OffscreenCamera(mgr, "test", 400, 400)
 
-def main():
-    mgr = eidolon.renderer.Manager()
-    cam = eidolon.renderer.OffscreenCamera(mgr, "test", 400, 400)
+ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
 
-    ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
+verts = [(-10, 0, -10), (10, 0, -10), (-10, 0, 10), (10, 0, 10)]
+inds = [(0, 1, 2), (1, 3, 2)]
+norms = [(0, 0, 1)] * len(verts)
+uvs = [(0, 1), (1, 1), (0, 0), (1, 0)]
 
-    verts = [(0, 0, 0), (10, 0, 0), (0, 0, 10), (10, 0, 10)]
-    inds = [(0, 1, 2), (1, 3, 2)]
-    norms = [(0, 0, 1)] * len(verts)
-    uvs = [(0, 1), (1, 1), (0, 0), (1, 0)]
+tex = create_texture_np(face())
 
-    tex = create_texture_np(face())
+mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, None, uvs)
+mesh.attach(cam)
+mesh.set_texture(tex)
 
-    mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, None, uvs)
-    mesh.attach(cam)
+app = QtWidgets.QApplication(sys.argv)
 
-    mesh.position = vec3(-5, 0, -5)
-    # mesh.orientation = rotator.from_axis(vec3.X, np.pi / 2)
-    # mesh.scale = vec3.one * 10
+camwidget = eidolon.ui.CameraWidget(mgr, cam)
 
-    mesh.set_texture(tex)
+ctrl.attach_events(camwidget.events)
 
-    app = QtWidgets.QApplication(sys.argv)
+appw = QtWidgets.QMainWindow()
+appw.resize(800, 600)
+appw.setCentralWidget(camwidget)
+appw.show()
 
-    camwidget = eidolon.ui.CameraWidget(mgr, cam)
-
-    ctrl.attach_events(camwidget.events)
-
-    appw = QtWidgets.QMainWindow()
-    appw.resize(800, 600)
-    appw.setCentralWidget(camwidget)
-    appw.show()
-
-    sys.exit(app.exec_())
-
-
-if __name__ == "__main__":
-    main()
+eidolon.ui.qtrunner(app)

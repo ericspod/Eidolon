@@ -16,10 +16,19 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .event_dispatcher import *
-from .platform import *
-from .decorators import *
+
+import sys
+from typing import Optional
+
+from PyQt5 import QtWidgets
+
+from ..utils import is_interactive
+
+__all__ = ["qtrunner"]
 
 
+def qtrunner(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
+    status = app.exec_()
 
-
+    if do_exit is True or (do_exit is None and not is_interactive()):
+        sys.exit(status)

@@ -39,7 +39,7 @@ class Manager(ShowBase):
     def update(self):
         with self.lock:
             if self.is_ready():
-                self.taskMgr.step()
+                self.task_mgr.step()
 
     def is_ready(self):
         with self.lock:

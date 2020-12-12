@@ -17,11 +17,24 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import os
+import sys
 import platform
+
+__all__=["is_interactive"]
 
 is_darwin = platform.system().lower() == 'darwin'
 is_windows = platform.system().lower() == 'windows'
 is_linux = platform.system().lower() == 'linux'
+
+
+def is_interactive() -> bool:
+    # try:
+    #     import __main__
+    #     return not hasattr(__main__, "__file__")
+    # except ImportError:
+    #     return False
+
+    return hasattr(sys,"ps1")
 
 
 def add_path_variable(varname: str, path: str, append=True):

@@ -86,12 +86,16 @@ class CameraWidget(QtWidgets.QWidget):
     def _trigger_event(self, name, evt=None):
         self.events.trigger_event(name, widget=self, event=evt)
 
-    def resizeEvent(self, evt: QtGui.QResizeEvent):
-        self._resize(evt.size(), True)
+    def resizeEvent(self, evt: QtGui.QResizeEvent) -> None:
+        size_diff = evt.size() - evt.oldSize()
+        # FIXME: why crash when changing both dimensions at once? Needed to avoid crashes when both dimensions change
+        resize_1d = size_diff.width() == 0 or size_diff.height() == 0
+
+        self._resize(evt.size(), resize_1d)
         self._trigger_event(CameraWidgetEvents.RESIZED, evt)
         super().resizeEvent(evt)
 
-    def showEvent(self, evt: QtGui.QShowEvent):
+    def showEvent(self, evt: QtGui.QShowEvent) -> None:
         self._resize(self.size(), True)
         self._trigger_event(CameraWidgetEvents.SHOWN, evt)
         super().showEvent(evt)

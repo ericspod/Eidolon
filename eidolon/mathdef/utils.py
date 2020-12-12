@@ -18,7 +18,7 @@
 
 from math import asin, atan2, sqrt, pi
 
-from .compile_support import njit
+from .compile_support import jit
 
 __all__ = [
     "FEPSILON", "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp", "rad_circular_convert",
@@ -34,32 +34,32 @@ def epsilon_zero(val):
     return 0.0 if abs(val) < FEPSILON else val
 
 
-@njit
+@jit
 def len3(x: float, y: float, z: float) -> float:
     return sqrt(x ** 2 + y ** 2 + z ** 2)
 
 
-@njit
+@jit
 def lensq3(x: float, y: float, z: float) -> float:
     return x ** 2 + y ** 2 + z ** 2
 
 
-@njit
+@jit
 def fequals_eps(v1: float, v2: float) -> bool:
     return abs(v1 - v2) <= FEPSILON
 
 
-@njit
+@jit
 def finv(v: float) -> float:
     return 1 / v if v != 0.0 else 0.0
 
 
-@njit
+@jit
 def fsign(v: float) -> float:
     return 1.0 if v >= 0.0 else -1.0
 
 
-@njit
+@jit
 def fclamp(v: float, vmin: float, vmax: float) -> float:
     if v > vmax:
         return vmax
@@ -68,7 +68,7 @@ def fclamp(v: float, vmin: float, vmax: float) -> float:
     return v
 
 
-@njit
+@jit
 def rad_circular_convert(rad: float) -> float:
     """Converts the given rad angle value to the equivalent angle on the interval [-pi,pi]."""
     # if rad > pi:
@@ -87,13 +87,13 @@ def rad_circular_convert(rad: float) -> float:
     return rad
 
 
-@njit
+@jit
 def rad_clamp(rad: float) -> float:
     """Clamps the given value between pi*0.5 and pi*-0.5."""
     return fclamp(rad, -pi / 2, pi / 2)
 
 
-@njit
+@jit
 def rotator_yaw(x: float, y: float, z: float, w: float) -> float:
     test: float = x * y + z * w
     if test > (0.5 - FEPSILON):
@@ -105,7 +105,7 @@ def rotator_yaw(x: float, y: float, z: float, w: float) -> float:
     return asin(2 * test)
 
 
-@njit
+@jit
 def rotator_pitch(x: float, y: float, z: float, w: float) -> float:
     test: float = x * y + z * w
     if test > (0.5 - FEPSILON):
@@ -119,7 +119,7 @@ def rotator_pitch(x: float, y: float, z: float, w: float) -> float:
     return atan2(y1, x1)
 
 
-@njit
+@jit
 def rotator_roll(x: float, y: float, z: float, w: float) -> float:
     test: float = x * y + z * w
     if test > (0.5 - FEPSILON):

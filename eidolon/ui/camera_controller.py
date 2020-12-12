@@ -103,8 +103,8 @@ class CameraController:
     def get_dist(self):
         return self.dist
 
-    def set_dist(self,dist):
-        self.dist=max(5 * self.zscale, dist)
+    def set_dist(self, dist):
+        self.dist = max(5 * self.zscale, dist)
 
     def get_rotation(self):
         """
@@ -154,12 +154,11 @@ class CameraController:
         rot = self.get_rotation()
         self.translate(rot * (vec3(dx, dy, dz) * self.tscale))
 
-    def zoom(self,dz:float):
-        self.set_dist(self.get_dist()+dz*self.zscale)
+    def zoom(self, dz: float):
+        self.set_dist(self.get_dist() + dz * self.zscale)
 
     def apply_camera_position(self):
         rot = self.get_rotation()
         campos = (rot * vec3(0, -self.dist, 0)) + self.position
 
-        self.camera.camera.set_pos(*campos)
-        self.camera.camera.look_at(*self.position)
+        self.camera.set_camera_lookat(campos, self.position)
