@@ -16,8 +16,17 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .utils import *
-from .compile_support import *
-from .mathtypes import *
-from .meshutils import *
-from .imageutils import *
+
+import numpy as np
+
+__all__ = ["generate_circle", "generate_sphere"]
+
+
+def generate_circle(width, height, radius):
+    x, y = np.meshgrid(np.linspace(-1, 1, width), np.linspace(-1, 1, height))
+    return ((x ** 2 + y ** 2) <= radius ** 2).astype(np.float32)
+
+
+def generate_sphere(width, height, depth, radius):
+    x, y, z = np.meshgrid(np.linspace(-1, 1, width), np.linspace(-1, 1, height), np.linspace(-1, 1, depth))
+    return ((x ** 2 + y ** 2 + z ** 2) <= radius ** 2).astype(np.float32)

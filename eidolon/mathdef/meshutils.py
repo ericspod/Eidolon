@@ -69,7 +69,7 @@ def generate_plane(refine):
     pt_indices = list(np.ndindex(refine + 1, refine + 1))
 
     nodes = [vec3(nl * i - 0.5, nl * (refine - j) - 0.5, 0) for j, i in pt_indices]
-    xis = [vec3(nl * i, nl * j, 0) for j, i in pt_indices]
+    xis = [vec3(nl * i, nl * (refine-j), 0) for j, i in pt_indices]
 
     for j, i in np.ndindex(refine, refine):
         a = pt_indices.index((j, i))

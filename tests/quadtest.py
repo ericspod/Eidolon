@@ -21,9 +21,8 @@ colors = [
     (0.0, 0.0, 1.0, 1.0),
     (1.0, 1.0, 1.0, 0.0),
 ]
-uvs = [(0, 0)] * len(verts)
 
-mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, colors, uvs)
+mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, colors)
 mesh.attach(cam)
 
 mesh.position = vec3(-5, -5, 0)
