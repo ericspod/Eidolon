@@ -41,6 +41,7 @@ def qtrunner(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
 
 class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
+        self.app = QtWidgets.QApplication(sys.argv)
         super().__init__(parent)
         self.mgr = Manager()
         self.cam = OffscreenCamera(self.mgr, "test")
@@ -58,3 +59,7 @@ class SimpleApp(QtWidgets.QMainWindow):
             self.close()
         else:
             super().keyPressEvent(evt)
+
+    def run(self, do_exit: Optional[bool] = None):
+        self.show()
+        qtrunner(self.app, do_exit)

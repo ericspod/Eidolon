@@ -22,3 +22,4 @@ from .figure import *
 from .image_figure import *
 from .light import *
 from .utils import *
+from .shaders import *
