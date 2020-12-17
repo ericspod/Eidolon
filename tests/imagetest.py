@@ -20,7 +20,7 @@ ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
 
 verts, inds, norms, colors = generate_axes_arrows(5, 10)
 
-axes = eidolon.renderer.SimpleMesh("axes", verts, inds, norms, colors)
+axes = eidolon.renderer.SimpleFigure("axes", verts, inds, norms, colors)
 axes.attach(cam)
 
 verts = [(0, 0, 0), (10, 0, 0), (0, 10, 0), (10, 10, 0)]
@@ -41,7 +41,7 @@ img[..., 2] = img.sum(axis=2) == 0
 
 tex = create_texture_np(img)
 
-mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, None, None, uvs)
+mesh = eidolon.renderer.SimpleFigure("quad", verts, inds, None, None, uvs)
 mesh.attach(cam)
 mesh.set_texture(tex)
 

@@ -27,7 +27,7 @@ circle_img = generate_circle(128, 128, 0.8)[:, :, None].repeat(2, 2)
 
 tex = create_texture_np(circle_img)
 
-mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, colors, uvs)
+mesh = eidolon.renderer.SimpleFigure("quad", verts, inds, norms, colors, uvs)
 mesh.attach(cam)
 mesh.position = vec3(-5, -5, 0)
 mesh.orientation = rotator.from_axis(vec3.X, 0.3)

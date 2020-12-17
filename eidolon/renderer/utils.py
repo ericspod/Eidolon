@@ -30,7 +30,10 @@ from panda3d.core import (
     GeomVertexWriter,
     LVector3,
     GeomTriangles,
-    Texture
+    GeomLines,
+    GeomPoints,
+    Texture,
+    BoundingVolume
 )
 
 vaformat = GeomVertexArrayFormat()
@@ -44,13 +47,14 @@ default_vformat.addArray(vaformat)
 default_vformat = GeomVertexFormat.registerFormat(default_vformat)
 
 
-def create_simple_geom(vertices, indices, norms=None, colors=None, uvwcoords=None, vformat=None):
+def _create_vertex_data(vertices, indices=None, norms=None, colors=None, uvwcoords=None, vformat=None):
     norms = norms or [vec3.Z] * len(vertices)
     colors = colors or [(1, 1, 1, 1)] * len(vertices)
     uvwcoords = uvwcoords or [(0, 0, 0)] * len(vertices)
+    prim = None
     vformat = vformat or default_vformat
 
-    vdata = GeomVertexData("square", vformat, Geom.UHDynamic)
+    vdata = GeomVertexData("vdata", vformat, Geom.UH_dynamic)
 
     vertex = GeomVertexWriter(vdata, "vertex")
     normal = GeomVertexWriter(vdata, "normal")
@@ -58,19 +62,46 @@ def create_simple_geom(vertices, indices, norms=None, colors=None, uvwcoords=Non
     texcoord = GeomVertexWriter(vdata, "texcoord")
 
     for i in range(len(vertices)):
-        vertex.addData3f(*vertices[i])
-        normal.addData3f(LVector3(*norms[i]).normalized())
-        color.addData4f(*colors[i])
-        texcoord.addData3f(*uvwcoords[i])
+        vertex.add_data3f(*vertices[i])
+        normal.add_data3f(LVector3(*norms[i]).normalized())
+        color.add_data4f(*colors[i])
+        texcoord.add_data3f(*uvwcoords[i])
 
-    tris = GeomTriangles(Geom.UHDynamic)
+    if indices is not None:
+        if len(indices[0]) == 2:
+            prim = GeomLines(Geom.UH_dynamic)
+        elif len(indices[0]) == 3:
+            prim = GeomTriangles(Geom.UH_dynamic)
+        else:
+            raise ValueError(f"Unknown primitive format with size {len(indices[0])}")
 
-    for i in range(len(indices)):
-        tris.addVertices(*indices[i])
+        for i in range(len(indices)):
+            prim.add_vertices(*indices[i])
+    else:
+        prim = GeomPoints(Geom.UH_dynamic)
+        for i in range(len(vertices)):
+            prim.add_vertex(i)
+
+    return vdata, prim
+
+
+def create_simple_geom(vertices, indices=None, norms=None, colors=None, uvwcoords=None, vformat=None):
+    vdata, prim = _create_vertex_data(vertices, indices, norms, colors, uvwcoords, vformat)
 
     geom = Geom(vdata)
-    geom.addPrimitive(tris)
+
+    if prim is not None:
+        geom.add_primitive(prim)
+
+    geom.set_bounds_type(BoundingVolume.BT_box)
+
     return geom
+
+
+def update_geom(geom: Geom, vertices, indices=None, norms=None, colors=None, uvwcoords=None, vformat=None):
+    vdata, prim = _create_vertex_data(vertices, indices, norms, colors, uvwcoords, vformat)
+    geom.set_vertex_data(vdata)
+    geom.set_primitive(0, prim)
 
 
 def create_texture_np(array, is_3d: bool = False, t_format=None, f_format=None):

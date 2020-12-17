@@ -21,15 +21,15 @@ import numpy as np
 
 from panda3d.core import Texture
 
-from .mesh import Mesh
+from .figure import Figure
 from .utils import create_simple_geom, create_texture_np
-from ..mathdef import vec3, generate_plane
+from ..mathdef import vec3, BoundBox, generate_plane, generate_cube
 from .camera import OffscreenCamera
 
-__all__ = ["ImagePlaneMesh"]
+__all__ = ["ImagePlaneFigure", "ImageVolumeFigure"]
 
 
-class ImagePlaneMesh(Mesh):
+class ImagePlaneFigure(Figure):
     def __init__(self, name: str, image: np.ndarray, is_3d: bool = False, t_format=None, f_format=None):
         self.texture: Texture = create_texture_np(image, is_3d, t_format, f_format)
         self.width: int = image.shape[0]
@@ -73,3 +73,34 @@ class ImagePlaneMesh(Mesh):
                 self.add_geom(geom)
 
             self.set_texture(self.texture)
+
+
+class ImageVolumeFigure(Figure):
+    def __init__(self, name: str, image: np.ndarray, num_planes: int = 100, t_format=None, f_format=None):
+        self.texture: Texture = create_texture_np(image, True, t_format, f_format)
+        self.width: int = image.shape[0]
+        self.height: int = image.shape[1]
+        self.depth: int = image.shape[2]
+        self.num_planes: int = num_planes
+
+        # verts, _, inds, xis = generate_cube(1)
+        # verts = [v + vec3.one * 0.5 for v in verts]
+        #
+        # geom = create_simple_geom(verts, inds, uvwcoords=xis)
+
+        geom = create_simple_geom([vec3.one * 0.5] * self.num_planes)
+
+        super().__init__(name, geom)
+
+        self.set_texture(self.texture)
+
+    def attach(self, camera: OffscreenCamera):
+        super().attach(camera)
+        self.set_texture(self.texture)
+
+    def aabb(self):
+        return BoundBox(vec3.zero, vec3.one) * self.get_transform()
+
+    def corners(self):
+        t = self.get_transform()
+        return vec3.zero * t, vec3.one * t

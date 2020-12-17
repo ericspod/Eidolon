@@ -24,7 +24,7 @@ ctrl.attach_events(camwidget.events)
 
 verts, inds, norms, colors = generate_axes_arrows(5, 10)
 
-mesh = eidolon.renderer.SimpleMesh("axes", verts, inds, norms, colors)
+mesh = eidolon.renderer.SimpleFigure("axes", verts, inds, norms, colors)
 mesh.attach(cam)
 
 appw = QtWidgets.QMainWindow()

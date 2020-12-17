@@ -1,12 +1,32 @@
+# Eidolon Biomedical Framework
+# Copyright (C) 2016-20 Eric Kerfoot, King's College London, all rights reserved
+#
+# This file is part of Eidolon.
+#
+# Eidolon is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Eidolon is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
+
+
 import math
 import numpy as np
 from .mathtypes import vec3, rotator
 from .utils import frange
 
 __all__ = [
-    "generate_plane",
+    "generate_plane", "generate_cube", "calculate_aabb_corners",
     "calculate_bound_box", "generate_cylinder", "generate_arrow",
-    "generate_axes_arrows", "generate_tri_normals", "add_indices"
+    "generate_axes_arrows", "generate_tri_normals", "add_indices",
+    "generate_line_cuboid"
 ]
 
 
@@ -23,6 +43,7 @@ def calculate_bound_box(vertices):
     zmax = -math.inf
 
     for vert in vertices:
+        assert isinstance(vert, vec3), f"{vert}"
         x, y, z = vert
         xmin = min(xmin, x)
         xmax = max(xmax, x)
@@ -32,6 +53,14 @@ def calculate_bound_box(vertices):
         zmax = max(zmax, z)
 
     return xmin, ymin, zmin, xmax, ymax, zmax
+
+
+def calculate_aabb_corners(vmin: vec3, vmax: vec3):
+    xmin, ymin, zmin = vmin
+    xmax, ymax, zmax = vmax
+
+    return vmin, vec3(xmax, ymin, zmin), vec3(xmin, ymax, zmin), vec3(xmax, ymax, zmin), \
+           vec3(xmin, ymin, zmax), vec3(xmax, ymin, zmax), vec3(xmin, ymax, zmax), vmax
 
 
 def add_indices(indices, offset):
@@ -55,7 +84,7 @@ def generate_tri_normals(nodes, indices):
     return [n.norm() for n in norms]
 
 
-def generate_plane(refine):
+def generate_plane(refine: int):
     """
     Generates a plane of triangles on the XY plane centered at the origin with edges length 1. The argument 'refine'
     states how many divisions to used in defining the plane, a value of 0 yields a plane defined by 2 triangles. The
@@ -69,7 +98,7 @@ def generate_plane(refine):
     pt_indices = list(np.ndindex(refine + 1, refine + 1))
 
     nodes = [vec3(nl * i - 0.5, nl * (refine - j) - 0.5, 0) for j, i in pt_indices]
-    xis = [vec3(nl * i, nl * (refine-j), 0) for j, i in pt_indices]
+    xis = [vec3(nl * i, nl * (refine - j), 0) for j, i in pt_indices]
 
     for j, i in np.ndindex(refine, refine):
         a = pt_indices.index((j, i))
@@ -84,6 +113,38 @@ def generate_plane(refine):
             indices += [(b, a, d), (a, c, d)]
 
     return nodes, indices, xis
+
+
+def generate_cube(refine: int):
+    """Generates a unit cube centered at the origin using 'generate_plane', returns nodes, norms, indices, and xis."""
+
+    nodes = []
+    norms = []
+    inds = []
+    xis = []
+
+    pnodes, pinds, pxis = generate_plane(refine)
+
+    # define each face as a rotation of the original plane after being translated by (0,0,0.5)
+    faces = [rotator.from_axis(vec3.X, 0), rotator.from_axis(vec3.X, math.pi), rotator.from_axis(vec3.X, math.pi / 2),
+             rotator.from_axis(vec3.X, -math.pi / 2), rotator.from_axis(vec3.Y, math.pi / 2),
+             rotator.from_axis(vec3.Y, -math.pi / 2)]
+
+    for rot in faces:
+        inds += [(i + len(nodes), j + len(nodes), k + len(nodes)) for i, j, k in pinds]
+        nodes += [rot * (p + vec3(0, 0, 0.5)) for p in pnodes]
+        norms += [rot * vec3(0, 0, 1) for p in pnodes]
+
+    xis = [n + vec3.one * 0.5 for n in nodes]
+
+    return nodes, norms, inds, xis
+
+
+def generate_line_cuboid(dims: vec3 = vec3.one):
+    verts = calculate_aabb_corners(vec3.zero, dims)
+    inds = [(0, 1), (0, 2), (1, 3), (2, 3), (0, 4), (1, 5), (2, 6), (3, 7), (4, 5), (4, 6), (5, 7), (6, 7)]
+
+    return verts, inds
 
 
 def generate_cylinder(ctrls, radii, refine=0, start_cap=True, end_cap=True, align_rings=True):

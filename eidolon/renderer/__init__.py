@@ -18,7 +18,7 @@
 
 from .manager import *
 from .camera import *
-from .mesh import *
-from .image_mesh import *
+from .figure import *
+from .image_figure import *
 from .light import *
 from .utils import *

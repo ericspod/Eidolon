@@ -22,7 +22,7 @@ colors = [
     (1.0, 1.0, 1.0, 0.0),
 ]
 
-mesh = eidolon.renderer.SimpleMesh("quad", verts, inds, norms, colors)
+mesh = eidolon.renderer.SimpleFigure("quad", verts, inds, norms, colors)
 mesh.attach(cam)
 
 mesh.position = vec3(-5, -5, 0)

@@ -38,7 +38,7 @@ __all__ = ["OffscreenCamera"]
 
 class OffscreenCamera:
 
-    def __init__(self, mgr: Manager, name: str, width: int, height: int, sort: int = -100,
+    def __init__(self, mgr: Manager, name: str, width: int = 400, height: int = 400, sort: int = -100,
                  clear_color: LVecBase4f = LVecBase4f(0.1, 0.1, 0.1, 1)):
         self.mgr: Manager = mgr
         self.name: str = name

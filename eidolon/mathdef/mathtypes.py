@@ -25,7 +25,7 @@ from typing import Union, Optional, Tuple
 from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, rotator_pitch, rotator_roll, rotator_yaw)
 from ..utils import cached_property
 
-__all__ = ["vec3", "rotator", "ray", "transform"]
+__all__ = ["vec3", "rotator", "ray", "transform", "BoundBox"]
 
 
 class vec3:
@@ -80,13 +80,15 @@ class vec3:
     def __rsub__(self, other: Union[vec3, float]) -> vec3:
         return other + (-self)
 
-    def __mul__(self, other: Union[vec3, float]) -> vec3:
+    def __mul__(self, other: Union[vec3, transform, float]) -> vec3:
         if isinstance(other, vec3):
             return vec3(self._x * other.x, self._y * other.y, self._z * other.z)
+        elif isinstance(other, transform):
+            return other * self
         else:
             return vec3(self._x * other, self._y * other, self._z * other)
 
-    def __rmul__(self, other: Union[vec3, float]) -> vec3:
+    def __rmul__(self, other: float) -> vec3:
         return self * other
 
     def __floordiv__(self, other: Union[vec3, float]) -> vec3:
@@ -462,6 +464,9 @@ class ray:
         self._signy: bool = self._invdir.y < 0
         self._signz: bool = self._invdir.z < 0
 
+    def __repr__(self):
+        return f"ray({self.pos}, {self.vdir})"
+
     @property
     def pos(self) -> vec3:
         return self._pos
@@ -533,13 +538,13 @@ class transform:
 
             return transform(mincorner, scale, rot)
 
-    def __rmul__(self, other: Union[vec3, ray, transform]) -> Union[vec3, ray, transform]:
+    def __rmul__(self, other: Union[ray, transform]) -> Union[ray, transform]:
         return self * other
 
     def __truediv__(self, other: Union[vec3, ray, transform]) -> Union[vec3, ray, transform]:
         return ~self * other
 
-    def __rtruediv__(self, other: Union[vec3, ray, transform]) -> Union[vec3, ray, transform]:
+    def __rtruediv__(self, other: Union[ray, transform]) -> Union[ray, transform]:
         return self / other
 
     def __invert__(self) -> transform:
@@ -579,25 +584,59 @@ class BoundBox:
     Axis-aligned bounding box.
     """
 
+    @staticmethod
+    def from_vertices(vertices) -> BoundBox:
+        from .meshutils import calculate_bound_box
+        xmin, ymin, zmin, xmax, ymax, zmax = calculate_bound_box(vertices)
+        return BoundBox(vec3(xmin, ymin, zmin), vec3(xmax, ymax, zmax))
+
     def __init__(self, vmin: vec3, vmax: vec3):
-        self.vmin = vmin
-        self.vmax = vmax
+        self._vmin: vec3 = vmin
+        self._vmax: vec3 = vmax
+
+    @property
+    def vmin(self):
+        return self._vmin
+
+    @property
+    def vmax(self):
+        return self._vmax
+
+    @property
+    def diag(self):
+        return self._vmax-self._vmin
+
+    def __repr__(self):
+        return f"BoundBox({self._vmin}, {self._vmax})"
 
     @cached_property
     def corners(self) -> Tuple[vec3, vec3, vec3, vec3, vec3, vec3, vec3, vec3]:
-        xmin, ymin, zmin = self.vmin
-        xmax, ymax, zmax = self.vmax
+        from .meshutils import calculate_aabb_corners
 
-        return self.vmin, vec3(xmax, ymin, zmin), vec3(xmin, ymax, zmin), vec3(xmax, ymax, zmin), \
-               vec3(xmin, ymin, zmax), vec3(xmax, ymin, zmax), vec3(xmin, ymax, zmax), self.vmax
+        return calculate_aabb_corners(self._vmin, self._vmax)
+        # xmin, ymin, zmin = self._vmin
+        # xmax, ymax, zmax = self._vmax
+        #
+        # return self._vmin, vec3(xmax, ymin, zmin), vec3(xmin, ymax, zmin), vec3(xmax, ymax, zmin), \
+        #        vec3(xmin, ymin, zmax), vec3(xmax, ymin, zmax), vec3(xmin, ymax, zmax), self._vmax
 
     @cached_property
     def center(self) -> vec3:
-        return (self.vmin + self.vmax) / 2
+        return (self._vmin + self._vmax) / 2
 
     @cached_property
     def radius(self) -> float:
-        return self.vmin.dist_to(self.vmax) / 2
+        return self._vmin.dist_to(self._vmax) / 2
 
     def in_bounds(self, v: vec3) -> bool:
-        return v.in_aabb(self.vmin, self.vmax)
+        return v.in_aabb(self._vmin, self._vmax)
+
+    def __mul__(self, other: transform) -> BoundBox:
+        return BoundBox.from_vertices([c * other for c in self.corners])
+
+    def __add__(self, other: BoundBox) -> BoundBox:
+        return BoundBox.from_vertices(self.corners + other.corners)
+
+    def __iter__(self):
+        yield self._vmin
+        yield self._vmax

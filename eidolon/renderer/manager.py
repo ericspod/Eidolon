@@ -29,6 +29,8 @@ class Manager(ShowBase):
     def __init__(self, width=800, height=600):
         loadPrcFileData("", f"win-size {width} {height}")
         loadPrcFileData("", "window-type offscreen")
+        loadPrcFileData("", "gl-debug #t")
+
         ShowBase.__init__(self)
 
         self.disableMouse()

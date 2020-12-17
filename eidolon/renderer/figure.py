@@ -20,7 +20,7 @@ from typing import List
 
 from .utils import create_simple_geom
 from .camera import OffscreenCamera
-from ..mathdef.mathtypes import vec3, rotator, transform
+from ..mathdef.mathtypes import vec3, rotator, transform, BoundBox
 from panda3d.core import LQuaternionf
 
 from panda3d.core import (
@@ -28,13 +28,15 @@ from panda3d.core import (
     GeomNode,
     Geom,
     TransparencyAttrib,
-    Texture
+    Texture,
+    BoundingBox,
+    BoundingSphere
 )
 
-__all__ = ["Mesh", "SimpleMesh"]
+__all__ = ["Figure", "SimpleFigure"]
 
 
-class Mesh:
+class Figure:
     def __init__(self, name: str, *geoms: Geom):
         self.name: str = name
         self.node: GeomNode = GeomNode(name + "_node")
@@ -117,7 +119,30 @@ class Mesh:
         for camnode in self.camnodes:
             camnode.set_texture(tex)
 
+    def aabb(self) -> BoundBox:
+        bb = None
 
-class SimpleMesh(Mesh):
-    def __init__(self, name: str, vertices, indices, norms=None, colors=None, uvcoords=None):
+        for geom in self.node.get_geoms():
+            bounds = geom.get_bounds()
+
+            if isinstance(bounds, BoundingBox):
+                vmin = vec3(*bounds.get_min())
+                vmax = vec3(*bounds.get_max())
+            elif isinstance(bounds, BoundingSphere):
+                center = vec3(*bounds.get_center())
+                rad = bounds.get_radius()
+                diag = vec3.one * rad
+                vmin = center - diag
+                vmax = center + diag
+            else:
+                raise ValueError(f"Unknown bounds object {bounds}")
+
+            newbb = BoundBox(vmin, vmax)
+            bb = newbb if bb is None else (bb + newbb)
+
+        return bb * self.get_transform()
+
+
+class SimpleFigure(Figure):
+    def __init__(self, name: str, vertices, indices=None, norms=None, colors=None, uvcoords=None):
         super().__init__(name, create_simple_geom(vertices, indices, norms, colors, uvcoords))

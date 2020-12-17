@@ -69,6 +69,8 @@ class CameraController:
         elif event.buttons() == QtCore.Qt.RightButton:
             self.translate_camera_relative(-dx, 0, dy)
         elif event.buttons() == QtCore.Qt.MiddleButton:
+            self.zoom(dy)
+        elif event.buttons() == (QtCore.Qt.LeftButton | QtCore.Qt.RightButton):
             self.translate_camera_relative(0, -dy, 0)
 
         self.apply_camera_position()
