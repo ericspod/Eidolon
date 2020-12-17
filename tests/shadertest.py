@@ -50,12 +50,17 @@ vert_body = """
         //float z=p3d_Vertex.x;
         //float z=idx-p2;
         
-        float z=((p3d_Vertex.x*0.5)/num_planes)-1;
+        float z=((p3d_Vertex.x*2)/num_planes)-1;
         
         //gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
-        gl_Position = p3d_ModelViewProjectionMatrix * vec4(0.5,0.5,0.5,1);
-        gl_Position.z+=z;
-        vColor=vec4(float(idx)/num_planes,1,0,1.0); //p3d_Color;
+        gl_Position = p3d_ModelViewMatrix * vec4(0.5,0.5,0.5,1);
+        
+        float scale=distance(p3d_ModelViewMatrix * vec4(1,1,1,1), gl_Position);
+        
+        gl_Position.z+=((p3d_Vertex.x*2*scale)/num_planes)-scale;
+        gl_Position=p3d_ProjectionMatrix*gl_Position;
+        
+        vColor=vec4(float(idx)/num_planes,0,1.0-float(idx)/num_planes,1.0); //p3d_Color;
     }
 """
 
@@ -74,6 +79,11 @@ geom_body = """
     out vec4 fColor; // Output to fragment shader
 
     int[24] edges={0, 1, 0, 2, 1, 3, 2, 3, 0, 4, 1, 5, 2, 6, 3, 7, 4, 5, 4, 6, 5, 7, 6, 7};
+    
+    vec4[8] unitcube={ 
+        vec4(0,0,0,1), vec4(1,0,0,1), vec4(0,1,0,1), vec4(1,1,0,1), 
+        vec4(0,0,1,1), vec4(1,0,1,1), vec4(0,1,1,1), vec4(1,1,1,1)
+    };
 
     vec4 v4lerp(float val, vec4 v1, vec4 v2)
     {
@@ -84,18 +94,17 @@ geom_body = """
     {
         float z=gl_in[0].gl_Position.z;
         
-        vec4 corners[]={
-            p3d_ModelViewProjectionMatrix*vec4(0,0,0,1),
-            p3d_ModelViewProjectionMatrix*vec4(1,0,0,1),
-            p3d_ModelViewProjectionMatrix*vec4(0,1,0,1),
-            p3d_ModelViewProjectionMatrix*vec4(1,1,0,1),
-            p3d_ModelViewProjectionMatrix*vec4(0,0,1,1),
-            p3d_ModelViewProjectionMatrix*vec4(1,0,1,1),
-            p3d_ModelViewProjectionMatrix*vec4(0,1,1,1),
-            p3d_ModelViewProjectionMatrix*vec4(1,1,1,1)
-        };
+        vec4[8] corners;
         
-        fColor = vColor[0]; // Point has only one vertex
+        for(int i=0;i<8;i++)
+            corners[i]=p3d_ModelViewProjectionMatrix*unitcube[i];
+        
+        fColor = vColor[0];
+        
+        vec4[6] vertices;
+        float[6] angles;
+        int num_vertices=0;
+        
         
         for(int i=0;i<24;i+=2){
             vec4 v1=corners[edges[i]];
@@ -105,10 +114,30 @@ geom_body = """
             
             if( (z1<0 && z2>=0) || (z1>=0 && z2<0)){
                 float v=abs(z1)/(abs(z1)+abs(z2));
+                vec4 vertex=v4lerp(v,v1,v2);
                 
-                gl_Position=v4lerp(v,v1,v2);
-                EmitVertex();
+                vertices[num_vertices]=vertex;
+                angles[num_vertices]=atan(vertex.y,vertex.x);
+                
+                int curpos=num_vertices;
+                while(curpos>0 && angles[curpos]<angles[curpos-1]){
+                    vec4 vtemp=vertices[curpos-1];
+                    float atemp=angles[curpos-1];
+                    vertices[curpos-1]=vertices[curpos];
+                    angles[curpos-1]=angles[curpos];
+                    vertices[curpos]=vtemp;
+                    angles[curpos]=atemp;
+                    curpos--;
+                }
+                
+                num_vertices++;
             } 
+            
+        }
+        
+        for(int i=0;i<num_vertices+1;i++){
+            gl_Position=vertices[i%num_vertices];
+            EmitVertex();
         }
         
         /*
