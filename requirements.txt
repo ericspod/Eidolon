@@ -9,3 +9,4 @@ ipykernel
 imageio
 pandas
 coverage
+pyyaml

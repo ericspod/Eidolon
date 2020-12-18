@@ -52,4 +52,4 @@ fig.camnodes[0].set_shader_input("num_planes", num_items)
 
 win.show()
 
-eidolon.ui.qtrunner(app)
+eidolon.ui.exec_ui(app)

@@ -56,4 +56,4 @@ appw.resize(800, 600)
 appw.setCentralWidget(camwidget)
 appw.show()
 
-eidolon.ui.qtrunner(app)
+eidolon.ui.exec_ui(app)

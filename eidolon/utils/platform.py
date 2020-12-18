@@ -20,7 +20,7 @@ import os
 import sys
 import platform
 
-__all__=["is_interactive"]
+__all__ = ["is_interactive", "is_darwin", "is_linux", "is_windows"]
 
 is_darwin = platform.system().lower() == 'darwin'
 is_windows = platform.system().lower() == 'windows'
@@ -34,7 +34,7 @@ def is_interactive() -> bool:
     # except ImportError:
     #     return False
 
-    return hasattr(sys,"ps1")
+    return hasattr(sys, "ps1")
 
 
 def add_path_variable(varname: str, path: str, append=True):

@@ -27,31 +27,39 @@ import ctypes
 from .utils.platform import is_windows, is_linux, add_path_variable
 
 __appname__ = 'Eidolon Biomedical Framework'
-__version_info__ = (
-    0, 6,
-    99)  # global application version, major/minor/patch, patch value 99 means development code directly from the repo
+__version_info__ = (0, 6, 99)  # global version, major/minor/patch, patch value 99 means development code from repo
 __version__ = '%i.%i.%i' % __version_info__
 __author__ = 'Eric Kerfoot'
 __copyright__ = "Copyright (c) 2016-20 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
 __website__ = "https://ericspod.github.io/Eidolon"
 __verurl__ = "https://api.github.com/repos/ericspod/Eidolon/releases"
 
-# top-level constants, these are hard-coded environment variable or file names
-APPDIRVAR = 'APPDIR'  # environment variable defining the application's directory, set by the start up script and is needed at init time
-LIBSDIR = 'EidolonLibs'  # directory name containing the application's libraries
-CONFIGFILE = 'config.ini'  # config file name
-
 _scriptdir = os.path.dirname(os.path.abspath(__file__))
 
 # the application directory is given by pyinstaller in _MEIPASS, if not present use the directory one level up
 __appdir__ = getattr(sys, '_MEIPASS', os.path.abspath(_scriptdir + '/..'))
 
-# library directory
-__libdir__ = os.path.join(__appdir__, 'eidolon', LIBSDIR)
+# environment variable names
+CONFIGFILEVAR = "CONFIGFILE"  # path to config file, default config.yaml
+APPDIRVAR = "APPDIR"  # path to the application's directory, default __appdir__
+APPDATADIRVAR = "APPDATADIR"  # path to app data directory, default ~/.eidolon
 
-if is_windows:
-    # add the library directory to PATH so that DLLs can be loaded when the renderer is imported
-    add_path_variable('PATH', os.path.abspath(os.path.join(__libdir__, 'win64_mingw', 'bin')))
+# LIBSDIR = "EidolonLibs"  # directory name containing the application's libraries
+APPDIR = os.environ.get(APPDIRVAR, __appdir__)
+APPDATADIR = os.environ.get(APPDATADIRVAR, "~/.eidolon")
+CONFIGFILE = os.environ.get(CONFIGFILEVAR, "config.yaml")  # config file name
+
+# _scriptdir = os.path.dirname(os.path.abspath(__file__))
+#
+# # the application directory is given by pyinstaller in _MEIPASS, if not present use the directory one level up
+# __appdir__ = getattr(sys, '_MEIPASS', os.path.abspath(_scriptdir + '/..'))
+#
+# # library directory
+# __libdir__ = os.path.join(__appdir__, 'eidolon', LIBSDIR)
+
+# if is_windows:
+#     # add the library directory to PATH so that DLLs can be loaded when the renderer is imported
+#     add_path_variable('PATH', os.path.abspath(os.path.join(__libdir__, 'win64_mingw', 'bin')))
 # elif is_linux:
 #     # load all linux libraries so that LD_LIBRARY_PATH doesn't need to be set
 #     for lib in glob.glob(os.path.join(__libdir__, 'linux', 'lib', '*.so*')):  # will attempt to load libraries twice
@@ -59,4 +67,3 @@ if is_windows:
 #             _ = ctypes.cdll.LoadLibrary(lib)
 #         except OSError:
 #             pass
-

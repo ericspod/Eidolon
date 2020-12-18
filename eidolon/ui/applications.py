@@ -18,6 +18,7 @@
 
 
 import sys
+import signal
 from typing import Optional
 
 from PyQt5 import QtWidgets
@@ -29,19 +30,38 @@ from ..renderer import Manager, OffscreenCamera
 from .camera_controller import CameraController
 from .camera_widget import CameraWidget
 
-__all__ = ["qtrunner", "SimpleApp"]
+__all__ = ["init_ui", "exec_ui", "SimpleApp"]
+
+global_app = None
 
 
-def qtrunner(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
+def init_ui(args=None):
+    """Initialize the UI framework."""
+    global global_app
+
+    if global_app is None:
+        global_app = QtWidgets.QApplication(sys.argv if args is None else args)
+        global_app.setAttribute(Qt.AA_DontUseNativeMenuBar)  # in macOS, forces menubar to be in window
+
+    return global_app
+
+
+def exec_ui(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
+    do_exit = do_exit is True or (do_exit is None and not is_interactive())  # exit only if requested or not interactive
+    app = app or global_app
+
+    if do_exit:
+        signal.signal(signal.SIGINT, signal.SIG_DFL)  # ensure keyboard interrupt signal causes a forced unclean exit
+
     status = app.exec_()
 
-    if do_exit is True or (do_exit is None and not is_interactive()):
+    if do_exit:
         sys.exit(status)
 
 
 class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
-        self.app = QtWidgets.QApplication(sys.argv)
+        self.app = init_ui(sys.argv)
         super().__init__(parent)
         self.mgr = Manager()
         self.cam = OffscreenCamera(self.mgr, "test")
@@ -62,4 +82,4 @@ class SimpleApp(QtWidgets.QMainWindow):
 
     def run(self, do_exit: Optional[bool] = None):
         self.show()
-        qtrunner(self.app, do_exit)
+        exec_ui(self.app, do_exit)

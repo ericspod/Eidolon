@@ -16,6 +16,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from . import resources_rc
+
 from .camera_widget import *
 from .camera_controller import *
 from .applications import *
+from .loader import *
+from .main_window import *
+
+

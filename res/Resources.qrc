@@ -1,34 +1,73 @@
 <RCC>
   <qresource prefix="icons">
-    <file>images/cube.png</file>
-    <file>images/eye.png</file>
-    <file>images/eye-disabled.png</file>
-    <file>images/image.png</file>
-    <file>images/stats-bars.png</file>
-    <file>images/document.png</file>
-    <file>images/help-circled.png</file>
-    <file>images/scissors.png</file>
-    <file>images/stop.png</file>
-    <file>images/play.png</file>
-    <file>images/plus-round.png</file>
-    <file>images/minus-round.png</file>
-    <file>images/camera.png</file>
-    <file>images/gear-b.png</file>
-    <file>images/wrench.png</file>
-    <file>images/close.png</file>
-    <file>images/trash-a.png</file>
-    <file>images/nametag.png</file>
-    <file>images/clone.png</file>
-    <file>images/seg.png</file>
-    <file>images/checkbox.png</file>
-    <file>images/uncheckbox.png</file>
-    <file>images/down.png</file>
-    <file>images/up.png</file>
-    <file>images/close-circled.png</file>
-    <file>images/clipboard.png</file>
-    <file>images/skip-forward.png</file>
-    <file>images/skip-backward.png</file>
-    <file>images/chevron-left.png</file>
-    <file>images/chevron-right.png</file>
+    <file alias="arrow.tif">images/arrow.tif</file>
+    <file alias="arrow4.png">images/arrow4.png</file>
+    <file alias="camera.png">images/camera.png</file>
+    <file alias="checkbox.png">images/checkbox.png</file>
+    <file alias="chevron-left.png">images/chevron-left.png</file>
+    <file alias="chevron-right.png">images/chevron-right.png</file>
+    <file alias="clipboard.png">images/clipboard.png</file>
+    <file alias="clone.png">images/clone.png</file>
+    <file alias="close-circled.png">images/close-circled.png</file>
+    <file alias="close.png">images/close.png</file>
+    <file alias="cube.png">images/cube.png</file>
+    <file alias="document.png">images/document.png</file>
+    <file alias="down.png">images/down.png</file>
+    <file alias="eye-disabled.png">images/eye-disabled.png</file>
+    <file alias="eye.png">images/eye.png</file>
+    <file alias="gear-b.png">images/gear-b.png</file>
+    <file alias="help-circled.png">images/help-circled.png</file>
+    <file alias="image.png">images/image.png</file>
+    <file alias="minus-round.png">images/minus-round.png</file>
+    <file alias="nametag.png">images/nametag.png</file>
+    <file alias="play.png">images/play.png</file>
+    <file alias="plus-round.png">images/plus-round.png</file>
+    <file alias="scissors.png">images/scissors.png</file>
+    <file alias="seg.png">images/seg.png</file>
+    <file alias="skip-backward.png">images/skip-backward.png</file>
+    <file alias="skip-forward.png">images/skip-forward.png</file>
+    <file alias="stats-bars.png">images/stats-bars.png</file>
+    <file alias="stop.png">images/stop.png</file>
+    <file alias="trash-a.png">images/trash-a.png</file>
+    <file alias="uncheckbox.png">images/uncheckbox.png</file>
+    <file alias="up.png">images/up.png</file>
+    <file alias="wrench.png">images/wrench.png</file>
+  </qresource>
+  <qresource prefix="layouts">
+    <file alias="CTMotionProp.ui">ui/CTMotionProp.ui</file>
+    <file alias="CardiacMotionProp.ui">ui/CardiacMotionProp.ui</file>
+    <file alias="ChooseImgStack.ui">ui/ChooseImgStack.ui</file>
+    <file alias="ChooseSeries.ui">ui/ChooseSeries.ui</file>
+    <file alias="DeformObjProp.ui">ui/DeformObjProp.ui</file>
+    <file alias="Dicom2DView.ui">ui/Dicom2DView.ui</file>
+    <file alias="Draw2DView.ui">ui/Draw2DView.ui</file>
+    <file alias="GPUProp.ui">ui/GPUProp.ui</file>
+    <file alias="LightProp.ui">ui/LightProp.ui</file>
+    <file alias="MainWindow.ui">ui/MainWindow.ui</file>
+    <file alias="MatProp.ui">ui/MatProp.ui</file>
+    <file alias="Measure2DView.ui">ui/Measure2DView.ui</file>
+    <file alias="MeasureObjProp.ui">ui/MeasureObjProp.ui</file>
+    <file alias="ObjProp.ui">ui/ObjProp.ui</file>
+    <file alias="ObjReprProp.ui">ui/ObjReprProp.ui</file>
+    <file alias="ProjProp.ui">ui/ProjProp.ui</file>
+    <file alias="RegionGraphWidget.ui">ui/RegionGraphWidget.ui</file>
+    <file alias="ScreenshotForm.ui">ui/ScreenshotForm.ui</file>
+    <file alias="Seg2DView.ui">ui/Seg2DView.ui</file>
+    <file alias="SegObjProp.ui">ui/SegObjProp.ui</file>
+    <file alias="SeriesProp.ui">ui/SeriesProp.ui</file>
+    <file alias="ShowMsg.ui">ui/ShowMsg.ui</file>
+    <file alias="SliceObjProp.ui">ui/SliceObjProp.ui</file>
+    <file alias="cheartdataload.ui">ui/cheartdataload.ui</file>
+    <file alias="cheartload.ui">ui/cheartload.ui</file>
+    <file alias="chearttdload.ui">ui/chearttdload.ui</file>
+    <file alias="loadGPUScript.ui">ui/loadGPUScript.ui</file>
+    <file alias="mtServerForm.ui">ui/mtServerForm.ui</file>
+  </qresource>
+  <qresource prefix="css">
+    <file>DefaultUIStyle.css</file>
+  </qresource>
+  <qresource prefix="fonts">
+    <file>ArchivoBlack.otf</file>
+    <file>Vegur-Regular.otf</file>
   </qresource>
 </RCC>
