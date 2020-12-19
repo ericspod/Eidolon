@@ -23,6 +23,8 @@ import yaml
 
 from . import CONFIGFILE, APPDATADIR
 
+__all__=["load_config","load_config_file","save_config_file"]
+
 DEFAULT_CONFIG = """
 all:
     # Vertical screen sync, possible values: true (default), false
@@ -65,20 +67,6 @@ def update_dict(orig, updates):
     return orig
 
 
-# def load_config(filename, use_defaults=True):
-#     conf = {}
-#     if filename:
-#         p = Path(filename).expanduser()
-#         if p.is_file():
-#             conf = load_config_file(str(p))
-#
-#     if use_defaults:
-#         defaults = yaml.safe_load(StringIO(DEFAULT_CONFIG))
-#         conf = update_dict(defaults, conf)
-#
-#     return conf
-
-
 def load_config(configfile: str = None) -> dict:
     conf = yaml.safe_load(StringIO(DEFAULT_CONFIG))
     datadir = None
@@ -94,7 +82,7 @@ def load_config(configfile: str = None) -> dict:
         saved_conf = load_config_file(str(configfile))
         conf = update_dict(conf, saved_conf)
     else:
-        create_appdata_dir(conf, datadir)
+        create_appdata_dir(datadir)
 
     return conf
 
@@ -109,7 +97,11 @@ def save_config_file(conf, filename):
         yaml.safe_dump(conf, o)
 
 
-def create_appdata_dir(conf, dirname):
-    p = Path(dirname)
+def create_appdata_dir(dirname):
+    p = Path(dirname).expanduser()
     p.mkdir(parents=True, exist_ok=True)
-    save_config_file(conf, str(p / CONFIGFILE))
+    conf = p / CONFIGFILE
+
+    if not conf.is_file():
+        with open(conf, "w") as o:
+            o.write(DEFAULT_CONFIG)

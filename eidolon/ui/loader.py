@@ -22,7 +22,7 @@ from io import StringIO
 
 from PyQt5 import QtCore, uic
 
-__all__ = ["load_ui", "load_rc_layout"]
+__all__ = ["load_ui", "load_rc_layout", "load_rc_file"]
 
 restag = re.compile('<resources>.*</resources>', flags=re.DOTALL)  # matches the resource tags in the ui files
 
