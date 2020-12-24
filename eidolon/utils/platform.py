@@ -19,12 +19,19 @@
 import os
 import sys
 import platform
+from enum import Enum
 
-__all__ = ["is_interactive", "is_darwin", "is_linux", "is_windows"]
+__all__ = ["is_interactive", "PlatformNames", "is_darwin", "is_linux", "is_windows"]
 
-is_darwin = platform.system().lower() == 'darwin'
-is_windows = platform.system().lower() == 'windows'
-is_linux = platform.system().lower() == 'linux'
+is_darwin = platform.system().lower() == "darwin"
+is_windows = platform.system().lower() == "windows"
+is_linux = platform.system().lower() == "linux"
+
+
+class PlatformNames(Enum):
+    WINDOWS = ("windows", is_windows)
+    LINUX = ("linux", is_linux)
+    DARWIN = ("darwin", is_darwin)
 
 
 def is_interactive() -> bool:

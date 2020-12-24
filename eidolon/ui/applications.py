@@ -26,7 +26,7 @@ from PyQt5.QtCore import Qt
 
 from ..mathdef import vec3
 from ..utils import is_interactive
-from ..renderer import Manager, OffscreenCamera
+from ..renderer import RenderBase, OffscreenCamera
 from .camera_controller import CameraController
 from .camera_widget import CameraWidget
 
@@ -35,7 +35,7 @@ __all__ = ["init_ui", "exec_ui", "SimpleApp"]
 global_app = None
 
 
-def init_ui(args=None):
+def init_ui(args=None) -> QtWidgets.QApplication:
     """Initialize the UI framework."""
     global global_app
 
@@ -63,10 +63,9 @@ class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
         self.app = init_ui(sys.argv)
         super().__init__(parent)
-        self.mgr = Manager()
-        self.cam = OffscreenCamera(self.mgr, "test")
+        self.cam = OffscreenCamera("cam")
 
-        self.camwidget = CameraWidget(self.mgr, self.cam)
+        self.camwidget = CameraWidget(self.cam)
 
         self.ctrl = CameraController(self.cam, vec3.zero, 0, 0, 50)
         self.ctrl.attach_events(self.camwidget.events)

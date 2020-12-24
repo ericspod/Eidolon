@@ -18,12 +18,14 @@
 
 from pathlib import Path
 from io import StringIO
+from typing import Optional
 from collections.abc import Mapping
 import yaml
 
 from . import CONFIGFILE, APPDATADIR
+from .utils import PlatformNames
 
-__all__=["load_config","load_config_file","save_config_file"]
+__all__ = ["load_config", "load_config_file", "save_config_file"]
 
 DEFAULT_CONFIG = """
 all:
@@ -67,10 +69,11 @@ def update_dict(orig, updates):
     return orig
 
 
-def load_config(configfile: str = None) -> dict:
+def load_config(configfile: Optional[str] = None) -> dict:
     conf = yaml.safe_load(StringIO(DEFAULT_CONFIG))
     datadir = None
 
+    # raise an error if `configfile` is given but not a file, otherwise `configfile` is set to that in the app data dir
     if configfile is not None:
         if not Path(configfile).is_file():
             raise ValueError(f"Cannot load file '{configfile}'")
@@ -78,13 +81,23 @@ def load_config(configfile: str = None) -> dict:
         datadir = Path(APPDATADIR).expanduser()
         configfile = datadir / CONFIGFILE
 
+    # if the config file is present load it and replace the current values with whatever is loaded
     if configfile.is_file():
         saved_conf = load_config_file(str(configfile))
         conf = update_dict(conf, saved_conf)
-    else:
+    else:  # create the config file and app data dir if necessary
         create_appdata_dir(datadir)
 
-    return conf
+    # select the "all" section from the config
+    all_conf = dict(conf.get("all", {}))
+
+    # replace values in config with those specific to the current platform
+    for pn in PlatformNames:
+        platform_name, is_platform = pn.value
+        if is_platform:
+            all_conf = update_dict(all_conf, conf.get(platform_name, {}))
+
+    return all_conf
 
 
 def load_config_file(filename):

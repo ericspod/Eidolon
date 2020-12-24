@@ -7,7 +7,7 @@ import eidolon.ui
 from eidolon.mathdef import vec3, rotator, transform, generate_circle
 from eidolon.renderer import create_texture_np
 
-mgr = eidolon.renderer.Manager()
+mgr = eidolon.renderer.RenderBase()
 cam = eidolon.renderer.OffscreenCamera(mgr, "test", 400, 400)
 
 ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)

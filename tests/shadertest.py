@@ -27,14 +27,14 @@ axes.attach(win.cam)
 # img[..., 2] = img.sum(axis=2) == 0
 
 img = generate_circle(128, 128, 0.8)  # [:, :, None].repeat(2, 2)
-img=gaussian_filter(img,6).astype(np.float32)
+img = gaussian_filter(img, 6).astype(np.float32)
 
 tex = create_texture_np(img)
 
-spectrum=np.zeros((64,64,4),np.float32)
-spectrum[...,0]=np.linspace(0,1,64)[::-1,None].repeat(64,axis=1)
-spectrum[...,2]=np.linspace(0,1,64)[:,None].repeat(64,axis=1)
-spectrum[...,3]=np.linspace(0,1,64)[None,::-1].repeat(64,axis=0)
+spectrum = np.zeros((64, 64, 4), np.float32)
+spectrum[..., 0] = np.linspace(0, 1, 64)[::-1, None].repeat(64, axis=1)
+spectrum[..., 2] = np.linspace(0, 1, 64)[:, None].repeat(64, axis=1)
+spectrum[..., 3] = np.linspace(0, 1, 64)[None, ::-1].repeat(64, axis=0)
 
 # spectrum = np.linspace(0, 1, 64).astype(np.float32)
 # spectrum = spectrum[:, None].repeat(2, axis=1)
@@ -97,8 +97,8 @@ texcoords = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0)]
 fig = eidolon.renderer.SimpleFigure("quad", verts, inds, norms, colors, texcoords)
 fig.attach(win.cam)
 
-fig.camnodes[0].set_texture(TextureStage("ts"),tex)
-fig.camnodes[0].set_texture(TextureStage("spec"),tspectrum)
+fig.camnodes[0].set_texture(TextureStage("ts"), tex)
+fig.camnodes[0].set_texture(TextureStage("spec"), tspectrum)
 fig.camnodes[0].set_shader(s)
 # fig.camnodes[0].set_shader_input("vol_radius", box.aabb().radius)
 # fig.camnodes[0].set_shader_input("num_planes", num_items)

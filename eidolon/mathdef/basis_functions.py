@@ -32,13 +32,24 @@ y    |\    |  |
 import itertools
 import functools
 from typing import Tuple
+from textwrap import dedent
 
 import numpy as np
 
 from .compile_support import jit
 
+ELEMENT_TYPES = ("line", "tri", "quad", "tet", "hex")
 
-def tri_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float]:
+
+def line_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float]:
+    """
+    Line linear nodal lagrange basis function. Returned values correspond to coefficients for (xi0, xi1, xi2) at
+    coordinates (0,0,0) and (1,0,0). Note @jit not applied as it doesn't help for so simple a function.
+    """
+    return 1 - xi0, xi0
+
+
+def tri_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float]:
     """
     Triangle linear nodal lagrange basis function. Returned values correspond to coefficients for (xi0, xi1, xi2) at
     coordinates (0,0,0), (1,0,0), and (0,1,0). Note @jit not applied as it doesn't help for so simple a function.
@@ -47,7 +58,7 @@ def tri_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float]:
 
 
 @jit
-def quad_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float]:
+def quad_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float]:
     """
     Quadrilateral linear nodal lagrange basis function. Returned values correspond to coefficients for (xi0, xi1, xi2)
     at coordinates (0,0,0), (1,0,0), (0,1,0), and (1,1,0).
@@ -57,7 +68,7 @@ def quad_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, f
 
 
 @jit
-def tet_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float]:
+def tet_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float]:
     """
     Tetrahedal linear nodal lagrange basis function. Returned values correspond to coefficients for (xi0, xi1, xi2) at
     coordinates (0,0,0), (1,0,0), (0,1,0), and (0,0,1).
@@ -66,7 +77,7 @@ def tet_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, fl
 
 
 @jit
-def hex_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float, float, float, float, float]:
+def hex_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float, float, float, float, float]:
     """
     Hexahedal linear nodal lagrange basis function. Returned values correspond to coefficients for (xi0, xi1, xi2) at
     coordinates (0,0,0), (1,0,0), (0,1,0), (1,1,0), (0,0,1), (1,0,1), (0,1,1), and (1,1,1)."""
@@ -77,71 +88,6 @@ def hex_1NL(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, fl
 
     return 1.0 - xi0 - xi1 - xi2 + xi01 + xi02 + xi12 - xi012, xi0 - xi01 - xi02 + xi012, xi1 - xi01 - xi12 + xi012, \
            xi01 - xi012, xi2 - xi02 - xi12 + xi012, xi02 - xi012, xi12 - xi012, xi012
-
-
-@jit
-def tri_2nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float, float, float]:
-    return (2.0 * xi0 ** 2 + 4.0 * xi0 * xi1 - 3.0 * xi0 + 2.0 * xi1 ** 2 - 3.0 * xi1 + 1, 2.0 * xi0 ** 2 - 1.0 * xi0,
-            2.0 * xi1 ** 2 - 1.0 * xi1, -4.0 * xi0 ** 2 - 4.0 * xi0 * xi1 + 4.0 * xi0,
-            -4.0 * xi0 * xi1 - 4.0 * xi1 ** 2 + 4.0 * xi1, 4.0 * xi0 * xi1)
-
-
-@jit
-def quad_2nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float, float, float, float, float, float]:
-    return (
-    4.0 * xi0 ** 2 * xi1 ** 2 - 6.0 * xi0 ** 2 * xi1 + 2.0 * xi0 ** 2 - 6.0 * xi0 * xi1 ** 2 + 9.0 * xi0 * xi1 - 3.0 * xi0 + 2.0 * xi1 ** 2 - 3.0 * xi1 + 1,
-    4.0 * xi0 ** 2 * xi1 ** 2 - 6.0 * xi0 ** 2 * xi1 + 2.0 * xi0 ** 2 - 2.0 * xi0 * xi1 ** 2 + 3.0 * xi0 * xi1 - 1.0 * xi0,
-    4.0 * xi0 ** 2 * xi1 ** 2 - 2.0 * xi0 ** 2 * xi1 - 6.0 * xi0 * xi1 ** 2 + 3.0 * xi0 * xi1 + 2.0 * xi1 ** 2 - 1.0 * xi1,
-    4.0 * xi0 ** 2 * xi1 ** 2 - 2.0 * xi0 ** 2 * xi1 - 2.0 * xi0 * xi1 ** 2 + xi0 * xi1,
-    -8.0 * xi0 ** 2 * xi1 ** 2 + 12.0 * xi0 ** 2 * xi1 - 4.0 * xi0 ** 2 + 8.0 * xi0 * xi1 ** 2 - 12.0 * xi0 * xi1 + 4.0 * xi0,
-    -8.0 * xi0 ** 2 * xi1 ** 2 + 8.0 * xi0 ** 2 * xi1 + 12.0 * xi0 * xi1 ** 2 - 12.0 * xi0 * xi1 - 4.0 * xi1 ** 2 + 4.0 * xi1,
-    16.0 * xi0 ** 2 * xi1 ** 2 - 16.0 * xi0 ** 2 * xi1 - 16.0 * xi0 * xi1 ** 2 + 16.0 * xi0 * xi1,
-    -8.0 * xi0 ** 2 * xi1 ** 2 + 8.0 * xi0 ** 2 * xi1 + 4.0 * xi0 * xi1 ** 2 - 4.0 * xi0 * xi1,
-    -8.0 * xi0 ** 2 * xi1 ** 2 + 4.0 * xi0 ** 2 * xi1 + 8.0 * xi0 * xi1 ** 2 - 4.0 * xi0 * xi1)
-
-
-@jit
-def tet_2nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, float, float, float, float, float, float, float]:
-    return (
-    2.0 * xi0 ** 2 + 4.0 * xi0 * xi1 + 4.0 * xi0 * xi2 - 3.0 * xi0 + 2.0 * xi1 ** 2 + 4.0 * xi1 * xi2 - 3.0 * xi1 + 2.0 * xi2 ** 2 - 3.0 * xi2 + 1,
-    2.0 * xi1 ** 2 - 1.0 * xi1, 2.0 * xi0 ** 2 - 1.0 * xi0, 2.0 * xi2 ** 2 - 1.0 * xi2,
-    -4.0 * xi0 * xi1 - 4.0 * xi1 ** 2 - 4.0 * xi1 * xi2 + 4.0 * xi1,
-    -4.0 * xi0 ** 2 - 4.0 * xi0 * xi1 - 4.0 * xi0 * xi2 + 4.0 * xi0, 4.0 * xi0 * xi1,
-    -4.0 * xi0 * xi2 - 4.0 * xi1 * xi2 - 4.0 * xi2 ** 2 + 4.0 * xi2, 4.0 * xi1 * xi2, 4.0 * xi0 * xi2)
-
-
-@njit
-def hex_2nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, ...]:
-    return (
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 12.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 4.0 * xi0 ** 2 * xi1 ** 2 - 12.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 18.0 * xi0 ** 2 * xi1 * xi2 - 6.0 * xi0 ** 2 * xi1 + 4.0 * xi0 ** 2 * xi2 ** 2 - 6.0 * xi0 ** 2 * xi2 + 2.0 * xi0 ** 2 - 12.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 18.0 * xi0 * xi1 ** 2 * xi2 - 6.0 * xi0 * xi1 ** 2 + 18.0 * xi0 * xi1 * xi2 ** 2 - 27.0 * xi0 * xi1 * xi2 + 9.0 * xi0 * xi1 - 6.0 * xi0 * xi2 ** 2 + 9.0 * xi0 * xi2 - 3.0 * xi0 + 4.0 * xi1 ** 2 * xi2 ** 2 - 6.0 * xi1 ** 2 * xi2 + 2.0 * xi1 ** 2 - 6.0 * xi1 * xi2 ** 2 + 9.0 * xi1 * xi2 - 3.0 * xi1 + 2.0 * xi2 ** 2 - 3.0 * xi2 + 1,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 12.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 4.0 * xi0 ** 2 * xi1 ** 2 - 4.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 6.0 * xi0 ** 2 * xi1 * xi2 - 2.0 * xi0 ** 2 * xi1 - 12.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 18.0 * xi0 * xi1 ** 2 * xi2 - 6.0 * xi0 * xi1 ** 2 + 6.0 * xi0 * xi1 * xi2 ** 2 - 9.0 * xi0 * xi1 * xi2 + 3.0 * xi0 * xi1 + 4.0 * xi1 ** 2 * xi2 ** 2 - 6.0 * xi1 ** 2 * xi2 + 2.0 * xi1 ** 2 - 2.0 * xi1 * xi2 ** 2 + 3.0 * xi1 * xi2 - 1.0 * xi1,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 12.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 4.0 * xi0 ** 2 * xi1 ** 2 - 12.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 18.0 * xi0 ** 2 * xi1 * xi2 - 6.0 * xi0 ** 2 * xi1 + 4.0 * xi0 ** 2 * xi2 ** 2 - 6.0 * xi0 ** 2 * xi2 + 2.0 * xi0 ** 2 - 4.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 6.0 * xi0 * xi1 ** 2 * xi2 - 2.0 * xi0 * xi1 ** 2 + 6.0 * xi0 * xi1 * xi2 ** 2 - 9.0 * xi0 * xi1 * xi2 + 3.0 * xi0 * xi1 - 2.0 * xi0 * xi2 ** 2 + 3.0 * xi0 * xi2 - 1.0 * xi0,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 12.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 4.0 * xi0 ** 2 * xi1 ** 2 - 4.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 6.0 * xi0 ** 2 * xi1 * xi2 - 2.0 * xi0 ** 2 * xi1 - 4.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 6.0 * xi0 * xi1 ** 2 * xi2 - 2.0 * xi0 * xi1 ** 2 + 2.0 * xi0 * xi1 * xi2 ** 2 - 3.0 * xi0 * xi1 * xi2 + xi0 * xi1,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 4.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 12.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 6.0 * xi0 ** 2 * xi1 * xi2 + 4.0 * xi0 ** 2 * xi2 ** 2 - 2.0 * xi0 ** 2 * xi2 - 12.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 6.0 * xi0 * xi1 ** 2 * xi2 + 18.0 * xi0 * xi1 * xi2 ** 2 - 9.0 * xi0 * xi1 * xi2 - 6.0 * xi0 * xi2 ** 2 + 3.0 * xi0 * xi2 + 4.0 * xi1 ** 2 * xi2 ** 2 - 2.0 * xi1 ** 2 * xi2 - 6.0 * xi1 * xi2 ** 2 + 3.0 * xi1 * xi2 + 2.0 * xi2 ** 2 - 1.0 * xi2,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 4.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 4.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 2.0 * xi0 ** 2 * xi1 * xi2 - 12.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 6.0 * xi0 * xi1 ** 2 * xi2 + 6.0 * xi0 * xi1 * xi2 ** 2 - 3.0 * xi0 * xi1 * xi2 + 4.0 * xi1 ** 2 * xi2 ** 2 - 2.0 * xi1 ** 2 * xi2 - 2.0 * xi1 * xi2 ** 2 + xi1 * xi2,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 4.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 12.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 6.0 * xi0 ** 2 * xi1 * xi2 + 4.0 * xi0 ** 2 * xi2 ** 2 - 2.0 * xi0 ** 2 * xi2 - 4.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 2.0 * xi0 * xi1 ** 2 * xi2 + 6.0 * xi0 * xi1 * xi2 ** 2 - 3.0 * xi0 * xi1 * xi2 - 2.0 * xi0 * xi2 ** 2 + xi0 * xi2,
-    8.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 4.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 4.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 2.0 * xi0 ** 2 * xi1 * xi2 - 4.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 2.0 * xi0 * xi1 ** 2 * xi2 + 2.0 * xi0 * xi1 * xi2 ** 2 - 1.0 * xi0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 24.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 8.0 * xi0 ** 2 * xi1 ** 2 + 16.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 24.0 * xi0 ** 2 * xi1 * xi2 + 8.0 * xi0 ** 2 * xi1 + 24.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 36.0 * xi0 * xi1 ** 2 * xi2 + 12.0 * xi0 * xi1 ** 2 - 24.0 * xi0 * xi1 * xi2 ** 2 + 36.0 * xi0 * xi1 * xi2 - 12.0 * xi0 * xi1 - 8.0 * xi1 ** 2 * xi2 ** 2 + 12.0 * xi1 ** 2 * xi2 - 4.0 * xi1 ** 2 + 8.0 * xi1 * xi2 ** 2 - 12.0 * xi1 * xi2 + 4.0 * xi1,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 24.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 8.0 * xi0 ** 2 * xi1 ** 2 + 24.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 36.0 * xi0 ** 2 * xi1 * xi2 + 12.0 * xi0 ** 2 * xi1 - 8.0 * xi0 ** 2 * xi2 ** 2 + 12.0 * xi0 ** 2 * xi2 - 4.0 * xi0 ** 2 + 16.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 24.0 * xi0 * xi1 ** 2 * xi2 + 8.0 * xi0 * xi1 ** 2 - 24.0 * xi0 * xi1 * xi2 ** 2 + 36.0 * xi0 * xi1 * xi2 - 12.0 * xi0 * xi1 + 8.0 * xi0 * xi2 ** 2 - 12.0 * xi0 * xi2 + 4.0 * xi0,
-    32.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 48.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 16.0 * xi0 ** 2 * xi1 ** 2 - 32.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 48.0 * xi0 ** 2 * xi1 * xi2 - 16.0 * xi0 ** 2 * xi1 - 32.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 48.0 * xi0 * xi1 ** 2 * xi2 - 16.0 * xi0 * xi1 ** 2 + 32.0 * xi0 * xi1 * xi2 ** 2 - 48.0 * xi0 * xi1 * xi2 + 16.0 * xi0 * xi1,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 24.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 8.0 * xi0 ** 2 * xi1 ** 2 + 8.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 12.0 * xi0 ** 2 * xi1 * xi2 + 4.0 * xi0 ** 2 * xi1 + 16.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 24.0 * xi0 * xi1 ** 2 * xi2 + 8.0 * xi0 * xi1 ** 2 - 8.0 * xi0 * xi1 * xi2 ** 2 + 12.0 * xi0 * xi1 * xi2 - 4.0 * xi0 * xi1,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 24.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 8.0 * xi0 ** 2 * xi1 ** 2 + 16.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 24.0 * xi0 ** 2 * xi1 * xi2 + 8.0 * xi0 ** 2 * xi1 + 8.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 12.0 * xi0 * xi1 ** 2 * xi2 + 4.0 * xi0 * xi1 ** 2 - 8.0 * xi0 * xi1 * xi2 ** 2 + 12.0 * xi0 * xi1 * xi2 - 4.0 * xi0 * xi1,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 16.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 24.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 24.0 * xi0 ** 2 * xi1 * xi2 - 8.0 * xi0 ** 2 * xi2 ** 2 + 8.0 * xi0 ** 2 * xi2 + 24.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 24.0 * xi0 * xi1 ** 2 * xi2 - 36.0 * xi0 * xi1 * xi2 ** 2 + 36.0 * xi0 * xi1 * xi2 + 12.0 * xi0 * xi2 ** 2 - 12.0 * xi0 * xi2 - 8.0 * xi1 ** 2 * xi2 ** 2 + 8.0 * xi1 ** 2 * xi2 + 12.0 * xi1 * xi2 ** 2 - 12.0 * xi1 * xi2 - 4.0 * xi2 ** 2 + 4.0 * xi2,
-    32.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 32.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 32.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 32.0 * xi0 ** 2 * xi1 * xi2 - 48.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 48.0 * xi0 * xi1 ** 2 * xi2 + 48.0 * xi0 * xi1 * xi2 ** 2 - 48.0 * xi0 * xi1 * xi2 + 16.0 * xi1 ** 2 * xi2 ** 2 - 16.0 * xi1 ** 2 * xi2 - 16.0 * xi1 * xi2 ** 2 + 16.0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 16.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 8.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 8.0 * xi0 ** 2 * xi1 * xi2 + 24.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 24.0 * xi0 * xi1 ** 2 * xi2 - 12.0 * xi0 * xi1 * xi2 ** 2 + 12.0 * xi0 * xi1 * xi2 - 8.0 * xi1 ** 2 * xi2 ** 2 + 8.0 * xi1 ** 2 * xi2 + 4.0 * xi1 * xi2 ** 2 - 4.0 * xi1 * xi2,
-    32.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 32.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 48.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 48.0 * xi0 ** 2 * xi1 * xi2 + 16.0 * xi0 ** 2 * xi2 ** 2 - 16.0 * xi0 ** 2 * xi2 - 32.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 32.0 * xi0 * xi1 ** 2 * xi2 + 48.0 * xi0 * xi1 * xi2 ** 2 - 48.0 * xi0 * xi1 * xi2 - 16.0 * xi0 * xi2 ** 2 + 16.0 * xi0 * xi2,
-    -64.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 64.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 64.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 64.0 * xi0 ** 2 * xi1 * xi2 + 64.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 64.0 * xi0 * xi1 ** 2 * xi2 - 64.0 * xi0 * xi1 * xi2 ** 2 + 64.0 * xi0 * xi1 * xi2,
-    32.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 32.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 16.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 16.0 * xi0 ** 2 * xi1 * xi2 - 32.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 32.0 * xi0 * xi1 ** 2 * xi2 + 16.0 * xi0 * xi1 * xi2 ** 2 - 16.0 * xi0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 16.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 24.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 24.0 * xi0 ** 2 * xi1 * xi2 - 8.0 * xi0 ** 2 * xi2 ** 2 + 8.0 * xi0 ** 2 * xi2 + 8.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 8.0 * xi0 * xi1 ** 2 * xi2 - 12.0 * xi0 * xi1 * xi2 ** 2 + 12.0 * xi0 * xi1 * xi2 + 4.0 * xi0 * xi2 ** 2 - 4.0 * xi0 * xi2,
-    32.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 32.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 32.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 32.0 * xi0 ** 2 * xi1 * xi2 - 16.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 16.0 * xi0 * xi1 ** 2 * xi2 + 16.0 * xi0 * xi1 * xi2 ** 2 - 16.0 * xi0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 16.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 8.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 8.0 * xi0 ** 2 * xi1 * xi2 + 8.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 8.0 * xi0 * xi1 ** 2 * xi2 - 4.0 * xi0 * xi1 * xi2 ** 2 + 4.0 * xi0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 8.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 16.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 8.0 * xi0 ** 2 * xi1 * xi2 + 24.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 12.0 * xi0 * xi1 ** 2 * xi2 - 24.0 * xi0 * xi1 * xi2 ** 2 + 12.0 * xi0 * xi1 * xi2 - 8.0 * xi1 ** 2 * xi2 ** 2 + 4.0 * xi1 ** 2 * xi2 + 8.0 * xi1 * xi2 ** 2 - 4.0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 8.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 24.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 12.0 * xi0 ** 2 * xi1 * xi2 - 8.0 * xi0 ** 2 * xi2 ** 2 + 4.0 * xi0 ** 2 * xi2 + 16.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 8.0 * xi0 * xi1 ** 2 * xi2 - 24.0 * xi0 * xi1 * xi2 ** 2 + 12.0 * xi0 * xi1 * xi2 + 8.0 * xi0 * xi2 ** 2 - 4.0 * xi0 * xi2,
-    32.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 - 16.0 * xi0 ** 2 * xi1 ** 2 * xi2 - 32.0 * xi0 ** 2 * xi1 * xi2 ** 2 + 16.0 * xi0 ** 2 * xi1 * xi2 - 32.0 * xi0 * xi1 ** 2 * xi2 ** 2 + 16.0 * xi0 * xi1 ** 2 * xi2 + 32.0 * xi0 * xi1 * xi2 ** 2 - 16.0 * xi0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 8.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 8.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 4.0 * xi0 ** 2 * xi1 * xi2 + 16.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 8.0 * xi0 * xi1 ** 2 * xi2 - 8.0 * xi0 * xi1 * xi2 ** 2 + 4.0 * xi0 * xi1 * xi2,
-    -16.0 * xi0 ** 2 * xi1 ** 2 * xi2 ** 2 + 8.0 * xi0 ** 2 * xi1 ** 2 * xi2 + 16.0 * xi0 ** 2 * xi1 * xi2 ** 2 - 8.0 * xi0 ** 2 * xi1 * xi2 + 8.0 * xi0 * xi1 ** 2 * xi2 ** 2 - 4.0 * xi0 * xi1 ** 2 * xi2 - 8.0 * xi0 * xi1 * xi2 ** 2 + 4.0 * xi0 * xi1 * xi2)
-
-
 
 
 def lagrange_beta(order, is_simplex, dim):
@@ -205,16 +151,13 @@ def xi_coords(order, beta):
     return np.array(result)
 
 
-def lagrange_basis_eval(i, K, xi, alpha, beta):
+def lagrange_basis_eval(i, xi, alpha, beta):
     """Evaluate the i'th lagrange basis function using the input xi values and matrix definitions."""
 
-    M = len(alpha[0])  # # of polynomials
-    d = len(xi)  # spatial dimension
-
     result = 0
-    for j in range(M):  # for each polynomial
+    for j in range(alpha.shape[0]):  # for each polynomial
         a = alpha[i][j]
-        for k in range(d):  # for each xi component
+        for k in range(xi.shape[0]):  # for each xi component
             a *= xi[k] ** beta[k][j]
 
         result += a
@@ -222,15 +165,14 @@ def lagrange_basis_eval(i, K, xi, alpha, beta):
     return result
 
 
-def lagrange_basis_eval_str(i, K, d, alpha, beta):
+def lagrange_basis_eval_str(i, alpha, beta):
     """
     Construct a string representing the i'th lagrange basis function with free variables xi0,xi1,xi2 storing the
     input xi values.
     """
-    M = len(alpha[0])  # # of polynomials
 
     result = []
-    for j in range(M):  # for each polynomial
+    for j in range(alpha.shape[0]):  # for each polynomial
         a = alpha[i][j]
         if a == 0:
             continue
@@ -242,7 +184,7 @@ def lagrange_basis_eval_str(i, K, d, alpha, beta):
             eq += str(a)
             is_first = False
 
-        for k in range(d):  # for each xi component
+        for k in range(beta.shape[0]):  # for each xi component
             b = beta[k][j]
             if b == 0:
                 continue
@@ -271,24 +213,45 @@ def lagrange_basis_funcs(num_funcs, alpha, beta):
     """
     funcs = []
     for i in range(num_funcs):
-        funcs.append(lambda xi0, xi1, xi2, *_, **__: lagrange_basis_eval(i, num_funcs, (xi0, xi1, xi2), alpha, beta))
+        funcs.append(lambda xi0, xi1, xi2, *_, **__: lagrange_basis_eval(i, (xi0, xi1, xi2), alpha, beta))
 
     return tuple(funcs)
 
 
-def lagrange_basis(num_funcs, dim, alpha, beta):
-    """Create a lagrange basis function which accepts xi values and calculates coefficients for each node."""
+def lagrange_basis(elem_type, order, prefix_code=""):
+    """
+    Creates a function to compute the coefficients for the nodes of a nodal lagrange element of type `elem_type` and
+    order `order`. This is done by defining a function to compute the weights as generated Python code which is compiled
+    with Numba if available. The `prefix_code` string is prepended to the code block to be compiled. The return value is
+    this compiled callable accepting the three xi coordinate values and the matrix of xi coordinates for each node.
+    Numba is invoked with caching disabled so the generated function should be kept by the called to avoid recompiling.
+    """
+    basis_name = f"{elem_type}_{order}nl"
+    is_simplex = elem_type in ("tri", "tet")
 
-    s = '(' + ','.join(lagrange_basis_eval_str(i, num_funcs, dim, alpha, beta) for i in range(num_funcs)) + ')'
-    c = compile(s, '<<basis>>', 'eval')
+    if elem_type == "line":
+        dim = 1
+    elif elem_type in ("tri", "quad"):
+        dim = 2
+    elif elem_type in ("tet", "hex"):
+        dim = 3
+    else:
+        raise ValueError(f"Unknown element type '{elem_type}'")
 
-    return lambda xi0, xi1, xi2, *args, **kwargs: eval(c)
-
-
-def lagrange_basis_exprs(order, is_simplex, dim):
     beta = lagrange_beta(order, is_simplex, dim)
     xis = xi_coords(order, beta)
     alpha = lagrange_alpha(beta, xis)
     k = xis.shape[0]
-    return '(' + ','.join(lagrange_basis_eval_str(i, k, dim, alpha, beta) for i in range(k)) + ')'
 
+    exprs = '(' + ','.join(lagrange_basis_eval_str(i, alpha, beta) for i in range(k)) + ')'
+
+    basis_func = f"""
+    {prefix_code}
+    @jit(cache=False)
+    def {basis_name}(xi0, xi1, xi2):
+        '''Computes the Nodal Lagrange coefficients for the nodes of an {order} {elem_type} element.'''
+        return {exprs}
+    """
+
+    exec(dedent(basis_func))  # compile the generated function with Numba if installed
+    return locals()[basis_name], xis

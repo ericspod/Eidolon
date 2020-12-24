@@ -7,7 +7,7 @@ import eidolon.ui
 from eidolon.mathdef import vec3
 
 
-mgr = eidolon.renderer.Manager()
+mgr = eidolon.renderer.RenderBase()
 cam = eidolon.renderer.OffscreenCamera(mgr, "test", 400, 400)
 
 ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)

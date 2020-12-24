@@ -162,5 +162,6 @@ class CameraController:
     def apply_camera_position(self):
         rot = self.get_rotation()
         campos = (rot * vec3(0, -self.dist, 0)) + self.position
+        up = rot * vec3.Z
 
-        self.camera.set_camera_lookat(campos, self.position)
+        self.camera.set_camera_lookat(campos, self.position, up)

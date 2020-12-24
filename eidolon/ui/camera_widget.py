@@ -19,7 +19,8 @@
 from enum import Enum
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
-from ..renderer.manager import Manager
+from ..renderer.camera import OffscreenCamera
+from ..renderer.renderbase import RenderBase
 from ..utils.event_dispatcher import EventDispatcher
 
 __all__ = ["CameraWidget", "CameraWidgetEvents"]
@@ -40,18 +41,23 @@ class CameraWidgetEvents(Enum):
 
 
 class CameraWidget(QtWidgets.QWidget):
-    def __init__(self, mgr: Manager, camera, parent=None):
+    def __init__(self, camera: OffscreenCamera, parent=None):
         super().__init__(parent)
         # self.setFocusPolicy(Qt.StrongFocus)
         # self.setAttribute(Qt.WA_PaintOnScreen, True)
         # self.setAttribute(Qt.WA_NoSystemBackground, True)
         # self.setAttribute(Qt.WA_OpaquePaintEvent, True)
 
-        self.mgr: Manager = mgr
-        self.camera = camera
+        self.camera: OffscreenCamera = camera
+        self.rbase: RenderBase = camera.rbase
 
-        self.painter = QtGui.QPainter()
-        self._events = EventDispatcher()
+        self.painter: QtGui.QPainter = QtGui.QPainter()
+        self._events: EventDispatcher = EventDispatcher()
+
+        # creates a timed repaint event to redraw the widget after resizing in both dimensions at once
+        self.redraw_timer: QtCore.QTimer = QtCore.QTimer()
+        self.redraw_timer.setSingleShot(True)
+        self.redraw_timer.timeout.connect(self.repaint_on_ready)
 
     @property
     def events(self):
@@ -72,9 +78,9 @@ class CameraWidget(QtWidgets.QWidget):
             self.painter.end()
 
     def repaint_on_ready(self):
-        if self.mgr.is_ready():
+        if self.rbase.is_ready():
             self._trigger_event(CameraWidgetEvents.PRE_PAINT)
-            self.mgr.update()
+            self.rbase.update()
             self.repaint()
             self._trigger_event(CameraWidgetEvents.POST_PAINT)
 
@@ -83,17 +89,22 @@ class CameraWidget(QtWidgets.QWidget):
         if do_update:
             self.repaint_on_ready()
 
+        self.repaint()
+
     def _trigger_event(self, name, evt=None):
         self.events.trigger_event(name, widget=self, event=evt)
 
     def resizeEvent(self, evt: QtGui.QResizeEvent) -> None:
         size_diff = evt.size() - evt.oldSize()
         # FIXME: why crash when changing both dimensions at once? Needed to avoid crashes when both dimensions change
-        resize_1d = size_diff.width() == 0 or size_diff.height() == 0
+        resize_1d = False #size_diff.width() == 0 or size_diff.height() == 0
 
         self._resize(evt.size(), resize_1d)
         self._trigger_event(CameraWidgetEvents.RESIZED, evt)
         super().resizeEvent(evt)
+
+        if not resize_1d:  # FIXME: this is the fix for the above issue, should be replaced with a proper solution
+            self.redraw_timer.start(1)
 
     def showEvent(self, evt: QtGui.QShowEvent) -> None:
         self._resize(self.size(), True)

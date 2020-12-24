@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import collections
-import threading
+from collections import defaultdict
+from threading import RLock
+from weakref import ref, WeakMethod
 
 __all__ = ["EventDispatcher"]
 
@@ -33,8 +34,8 @@ class EventDispatcher:
     """
 
     def __init__(self):
-        self.handlers = collections.defaultdict(list)
-        self.lock = threading.Lock()
+        self.handlers = defaultdict(list)
+        self.lock = RLock()
         self.suppressed_events = set()
 
     def trigger_event(self, name, **kwargs):
@@ -49,7 +50,8 @@ class EventDispatcher:
             discards = set()
 
             try:
-                for hfunc in handlers:
+                for weakfunc in handlers:
+                    hfunc = weakfunc()
                     try:
                         result = hfunc(**kwargs)
                         if allow_break and result is True:  # skip further handlers if returned True
@@ -75,14 +77,19 @@ class EventDispatcher:
 
     def add_handler(self, name, hfunc, is_priority=False):
         """
-        Add the callback callable `cb' for event named `name'. If `isPriority', `cb' is placed at the start of the event
-        list, and the end otherwise. If `isPostEvent' is True then `cb' is added as a post event callback which is then
-        called after regular callbacks with the return value ignored, ie. always gets called.
+        Add the callback callable `hfunc' for event named `name'. If `is_priority', `hfunc' is placed at the start of
+        the event list, and the end otherwise.
         """
         events = self.handlers[name]
-        events.insert(0 if is_priority else len(events), hfunc)
+
+        if hasattr(hfunc, "__self__"):
+            weakfunc = WeakMethod(hfunc, events.remove)
+        else:
+            weakfunc = ref(hfunc, events.remove)
+
+        events.insert(0 if is_priority else len(events), weakfunc)
 
     def remove_handler(self, hfunc):
-        """Remove the callback `cb' from wherever it occurs."""
+        """Remove the callback `hfunc' from wherever it occurs."""
         for hfuncs in list(self.handlers.values()):
-            hfuncs[:] = [h for h in hfuncs if h is not hfunc]
+            hfuncs[:] = [h for h in hfuncs if h() is not hfunc]

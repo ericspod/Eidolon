@@ -23,14 +23,16 @@ import numpy as np
 from panda3d.core import (
     GraphicsPipe,
     NodePath,
+    Lens, Camera,
     FrameBufferProperties,
     GraphicsOutput,
     Texture,
     WindowProperties,
-    LVecBase4f
+    LVecBase4f,
+    LPoint3f
 )
 
-from .manager import Manager
+from .renderbase import RenderBase
 from ..mathdef import vec3
 
 __all__ = ["OffscreenCamera"]
@@ -38,9 +40,9 @@ __all__ = ["OffscreenCamera"]
 
 class OffscreenCamera:
 
-    def __init__(self, mgr: Manager, name: str, width: int = 400, height: int = 400, sort: int = -100,
-                 clear_color: LVecBase4f = LVecBase4f(0.1, 0.1, 0.1, 1)):
-        self.mgr: Manager = mgr
+    def __init__(self, name: str, width: int = 400, height: int = 400, sort: int = -100,
+                 clear_color: LVecBase4f = LVecBase4f(0.1, 0.1, 0.1, 1), rbase: Optional[RenderBase] = None):
+        self.rbase: RenderBase = rbase or RenderBase.instance()
         self.name: str = name
 
         self.texture: Texture = Texture()
@@ -57,27 +59,27 @@ class OffscreenCamera:
         props.set_rgba_bits(8, 8, 8, 8)
         props.set_depth_bits(8)
 
-        with mgr.lock:
-            self.buffer = self.mgr.graphicsEngine.make_output(
-                self.mgr.pipe,
+        with self.rbase.lock:
+            self.buffer = self.rbase.graphicsEngine.make_output(
+                self.rbase.pipe,
                 name,
                 sort,
                 props,
                 winprops,
                 GraphicsPipe.BF_resizeable,
-                self.mgr.win.get_gsg(),
-                self.mgr.win,
+                self.rbase.win.get_gsg(),
+                self.rbase.win,
             )
 
             self.buffer.add_render_texture(self.texture, GraphicsOutput.RTMCopyRam)
             self.buffer.set_sort(sort)
-            self.camera: NodePath = self.mgr.make_camera(self.buffer, camName=name)
+            self.camera: NodePath = self.rbase.make_camera(self.buffer, camName=name)
 
             self.nodepath: NodePath = NodePath(name + "_nodepath")
             self.camera.reparent_to(self.nodepath)
 
-            self.camera_node = self.camera.node()
-            self.lens = self.camera_node.get_lens()
+            self.camera_node: Camera = self.camera.node()
+            self.lens: Lens = self.camera_node.get_lens()
 
             self.set_clear_color(clear_color)
 
@@ -98,6 +100,9 @@ class OffscreenCamera:
 
         return datanp[::-1]
 
+    def size(self):
+        return tuple(self.lens.get_film_size())
+
     def resize(self, width, height):
         self.lens.set_film_size(width, height)
         self.buffer.set_size(width, height)
@@ -106,6 +111,6 @@ class OffscreenCamera:
         self.camera.set_pos(*position)
 
         if up is None:
-            self.camera.look_at(*look_at)
+            self.camera.look_at(LPoint3f(*look_at))
         else:
-            self.camera.look_at(*look_at, *up)
+            self.camera.look_at(LPoint3f(*look_at), LPoint3f(*up))

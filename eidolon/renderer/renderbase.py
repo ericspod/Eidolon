@@ -22,14 +22,23 @@ from panda3d.core import loadPrcFileData, Thread
 
 from direct.showbase.ShowBase import ShowBase
 
-__all__ = ["Manager"]
+__all__ = ["RenderBase"]
 
 
-class Manager(ShowBase):
+class RenderBase(ShowBase):
+    global_instance = None
+
+    @staticmethod
+    def instance():
+        if RenderBase.global_instance is None:
+            RenderBase.global_instance = RenderBase()
+
+        return RenderBase.global_instance
+
     def __init__(self, width=800, height=600):
         loadPrcFileData("", f"win-size {width} {height}")
         loadPrcFileData("", "window-type offscreen")
-        loadPrcFileData("", "gl-debug #t")
+        # loadPrcFileData("", "gl-debug #t")
 
         ShowBase.__init__(self)
 
