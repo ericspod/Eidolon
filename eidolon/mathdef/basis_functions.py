@@ -16,18 +16,6 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-"""
-2D node ordering:
-
-     2     2--3
-y    |\    |  |
-^    | \   |  |
-|    0--1  0--1
-+->x
-
-
-
-"""
 
 import itertools
 import functools
@@ -36,9 +24,22 @@ from textwrap import dedent
 
 import numpy as np
 
+from ..utils import Namespace
 from .compile_support import jit
 
-ELEMENT_TYPES = ("line", "tri", "quad", "tet", "hex")
+__all__ = ["ShapeType", "lagrange_basis"]
+
+
+class ShapeType(Namespace):
+    """
+    Stores the geometry types with their full names, dimensions, and if they are symplex or not
+    """
+    Point = ("Point", 0, False)
+    Line = ("Line", 1, False)
+    Tri = ('Triangle', 2, True)
+    Quad = ('Quadrilateral', 2, False)
+    Tet = ('Tetrahedron', 3, True)
+    Hex = ('Hexahedron', 3, False)
 
 
 def line_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float]:
@@ -126,18 +127,18 @@ def lagrange_beta(order, is_simplex, dim):
     return np.swapaxes(vals, 0, 1)
 
 
-def lagrange_alpha(beta, xi_coords):
+def lagrange_alpha(beta, xis):
     """
     Calculate an alpha matrix for a nodal lagrange basis function by applying the Vandermonde matrix method to a beta
     matrix and node xi coords. This adheres to CHeart node ordering.
     """
 
-    k = len(xi_coords)
-    d = len(xi_coords[0])
+    k = len(xis)
+    d = len(xis[0])
     a = np.zeros((k, k))
 
     for i, j in np.ndindex(k, k):
-        a[i, j] = np.prod([xi_coords[i][k] ** beta[k][j] for k in range(d)])
+        a[i, j] = np.prod([xis[i][k] ** beta[k][j] for k in range(d)])
 
     return np.linalg.inv(a).T
 
@@ -155,14 +156,26 @@ def lagrange_basis_eval(i, xi, alpha, beta):
     """Evaluate the i'th lagrange basis function using the input xi values and matrix definitions."""
 
     result = 0
-    for j in range(alpha.shape[0]):  # for each polynomial
+    for j in range(len(alpha)):  # for each polynomial
         a = alpha[i][j]
-        for k in range(xi.shape[0]):  # for each xi component
+        for k in range(len(xi)):  # for each xi component
             a *= xi[k] ** beta[k][j]
 
         result += a
 
     return result
+
+
+def lagrange_basis_funcs(num_funcs, alpha, beta):
+    """
+    Create a sequence of lagrange basis functions, each of which accepts xi values and calculates the coefficient for
+    its respective node.
+    """
+    funcs = []
+    for i in range(num_funcs):
+        funcs.append(lambda xi0, xi1, xi2, *_, **__: lagrange_basis_eval(i, (xi0, xi1, xi2), alpha, beta))
+
+    return tuple(funcs)
 
 
 def lagrange_basis_eval_str(i, alpha, beta):
@@ -206,52 +219,55 @@ def lagrange_basis_eval_str(i, alpha, beta):
     return '+'.join(result)
 
 
-def lagrange_basis_funcs(num_funcs, alpha, beta):
+def lagrange_basis(shape_type, order, prefix_code=""):
     """
-    Create a sequence of lagrange basis functions, each of which accepts xi values and calculates the coefficient for
-    its respective node.
-    """
-    funcs = []
-    for i in range(num_funcs):
-        funcs.append(lambda xi0, xi1, xi2, *_, **__: lagrange_basis_eval(i, (xi0, xi1, xi2), alpha, beta))
-
-    return tuple(funcs)
-
-
-def lagrange_basis(elem_type, order, prefix_code=""):
-    """
-    Creates a function to compute the coefficients for the nodes of a nodal lagrange element of type `elem_type` and
+    Creates a function to compute the coefficients for the nodes of a nodal lagrange element of type `shape_type` and
     order `order`. This is done by defining a function to compute the weights as generated Python code which is compiled
     with Numba if available. The `prefix_code` string is prepended to the code block to be compiled. The return value is
     this compiled callable accepting the three xi coordinate values and the matrix of xi coordinates for each node.
     Numba is invoked with caching disabled so the generated function should be kept by the called to avoid recompiling.
     """
-    basis_name = f"{elem_type}_{order}nl"
-    is_simplex = elem_type in ("tri", "tet")
-
-    if elem_type == "line":
+    if shape_type not in ShapeType:
+        raise ValueError(f"Unknown shape type '{shape_type}'")
+    elif shape_type == ShapeType._Line:
         dim = 1
-    elif elem_type in ("tri", "quad"):
+    elif shape_type in (ShapeType._Tri, ShapeType._Quad):
         dim = 2
-    elif elem_type in ("tet", "hex"):
+    elif shape_type in (ShapeType._Tet, ShapeType._Hex):
         dim = 3
     else:
-        raise ValueError(f"Unknown element type '{elem_type}'")
+        raise ValueError(f"Lagrange basis function not known shape type '{shape_type}'")
 
+    is_simplex = shape_type in (ShapeType._Tri, ShapeType._Tet)
     beta = lagrange_beta(order, is_simplex, dim)
     xis = xi_coords(order, beta)
-    alpha = lagrange_alpha(beta, xis)
-    k = xis.shape[0]
 
-    exprs = '(' + ','.join(lagrange_basis_eval_str(i, alpha, beta) for i in range(k)) + ')'
+    if order == 1:
+        premade_funcs = {
+            ShapeType._Line: line_1nl,
+            ShapeType._Tri: tri_1nl,
+            ShapeType._Quad: quad_1nl,
+            ShapeType._Tet: tet_1nl,
+            ShapeType._Hex: hex_1nl,
+        }
 
-    basis_func = f"""
-    {prefix_code}
-    @jit(cache=False)
-    def {basis_name}(xi0, xi1, xi2):
-        '''Computes the Nodal Lagrange coefficients for the nodes of an {order} {elem_type} element.'''
-        return {exprs}
-    """
+        basis_func = premade_funcs[shape_type]
+    else:
+        basis_name = f"compute_{shape_type}{order}nl"
+        alpha = lagrange_alpha(beta, xis)
+        k = xis.shape[0]
 
-    exec(dedent(basis_func))  # compile the generated function with Numba if installed
-    return locals()[basis_name], xis
+        exprs = '(' + ','.join(lagrange_basis_eval_str(i, alpha, beta) for i in range(k)) + ')'
+
+        basis_func = f"""
+            {prefix_code}
+            @jit(cache=False)  # cannot cache outside of a named module to store the result in
+            def {basis_name}(xi0, xi1, xi2):
+                '''Computes the Nodal Lagrange coefficients for the nodes of an {order} {shape_type} element.'''
+                return {exprs}
+        """
+
+        exec(dedent(basis_func))  # compile the generated function with Numba if installed
+        basis_func = locals()[basis_name]
+
+    return basis_func, xis

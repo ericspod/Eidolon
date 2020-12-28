@@ -40,14 +40,16 @@ _scriptdir = os.path.dirname(os.path.abspath(__file__))
 __appdir__ = getattr(sys, '_MEIPASS', os.path.abspath(_scriptdir + '/..'))
 
 # environment variable names
-CONFIGFILEVAR = "CONFIGFILE"  # path to config file, default config.yaml
 APPDIRVAR = "APPDIR"  # path to the application's directory, default __appdir__
 APPDATADIRVAR = "APPDATADIR"  # path to app data directory, default ~/.eidolon
+CONFIGFILEVAR = "CONFIGFILE"  # path to config file, default config.yaml
+LOGFILEVAR = "LOGFILE" # path to log file, default eidolon.log
 
 # LIBSDIR = "EidolonLibs"  # directory name containing the application's libraries
 APPDIR = os.environ.get(APPDIRVAR, __appdir__)
 APPDATADIR = os.environ.get(APPDATADIRVAR, "~/.eidolon")
 CONFIGFILE = os.environ.get(CONFIGFILEVAR, "config.yaml")  # config file name
+LOGFILE = os.environ.get(LOGFILEVAR, "eidolon.log")  # config file name
 
 # _scriptdir = os.path.dirname(os.path.abspath(__file__))
 #

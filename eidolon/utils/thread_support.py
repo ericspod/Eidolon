@@ -18,9 +18,15 @@
 
 from typing import Optional
 import traceback
-from threading import Event, ThreadError
+from threading import RLock, Event, ThreadError, current_thread
+from functools import wraps
 
-__all__ = ["Future"]
+__all__ = ["is_main_thread", "Future", "get_object_lock", "locking", "trylocking"]
+
+
+def is_main_thread() -> bool:
+    """Returns True if the calling thread is the main thread of the program."""
+    return current_thread().name == "MainThread"
 
 
 class FutureError(Exception):
@@ -126,3 +132,50 @@ class Future(object):
             return obj(timeout)
         else:
             return obj
+
+
+def get_object_lock(obj, lock_type=RLock):
+    """
+    Returns a lock object stored as the member `__lock__` of `obj`, creating it if such a member doesn't exist. The
+    given type is used to create the lock object, by default this is RLock allowing recursive access to locked objects.
+    """
+
+    lock = getattr(obj, "__lock__", None)
+
+    if lock is None:
+        lock = lock_type()
+        setattr(obj, "__lock__", lock)
+
+    return lock
+
+
+def locking(meth, lock_type=RLock):
+    """
+    This method decorator synchronizes access to the current object using its stored lock object. This ensures that
+    calls to decorated methods are restricted to one thread at a time, which doesn't necessarily ensure exclusive access
+    to the all of the receiving object's members.
+    """
+
+    @wraps(meth)
+    def methwrap(self, *args, **kwargs):
+        with get_object_lock(self, lock_type):
+            return meth(self, *args, **kwargs)
+
+    return methwrap
+
+
+def trylocking(meth, lock_type=RLock):
+    """
+    Same as 'locking' except it only attempts to acquire the lock without blocking, doing nothing if the acquire fails.
+    """
+
+    @wraps(meth)
+    def methwrap(self, *args, **kwargs):
+        lock = get_object_lock(self, lock_type)
+        if lock.acquire(False):
+            try:
+                return meth(self, *args, **kwargs)
+            finally:
+                lock.release()
+
+    return methwrap

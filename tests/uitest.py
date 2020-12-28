@@ -110,31 +110,5 @@ class SyncCall(QtCore.QObject):
         return self.result
 
 
-def evtest():
-
-    print(threading.current_thread())
-    return 123
-
-
-from eidolon.ui.threadsafe_calls import ThreadsafeCall
-
-calls=[]
-sc=None
-
-def start():
-    global sc
-    print(threading.current_thread())
-    sc = ThreadsafeCall(evtest, (), {})
-    calls.append(sc)
-    win.res = sc.post()
-    print("Sent")
-
-# start()
-tt=threading.Thread(target=start)
-tt.daemon=True
-tt.start()
-
-tt.join()
-print(calls)
 
 exec_ui(app)

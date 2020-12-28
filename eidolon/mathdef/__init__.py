@@ -21,3 +21,5 @@ from .compile_support import *
 from .mathtypes import *
 from .meshutils import *
 from .imageutils import *
+from .basis_functions import *
+from .elem_type import *

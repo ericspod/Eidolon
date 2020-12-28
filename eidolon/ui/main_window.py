@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+import os
 import sys
 import textwrap
 import warnings
@@ -26,9 +27,9 @@ from .loader import load_rc_layout
 
 import eidolon
 from ..utils.platform import is_darwin
-from .utils import resize_screen_relative, center_window
+from .utils import resize_screen_relative, center_window, choose_file_dialog
 from .console_widget import jupyter_present, JupyterWidget, ConsoleWidget
-from .threadsafe_calls import qtthreadsafe
+from .threadsafe_calls import qtmainthread
 import threading
 
 __all__ = ["MainWindow"]
@@ -42,6 +43,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, conf, width=1200, height=800):
         super().__init__()
         self.conf = conf
+        self.working_dir = os.getcwd()
 
         self.setupUi(self)
         self.setWindowTitle(main_title % (eidolon.__appname__, eidolon.__version__))
@@ -55,6 +57,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.action_Time.triggered.connect(lambda: self.timeWidget.setVisible(not self.timeWidget.isVisible()))
         self.actionScratch_Pad.triggered.connect(
             lambda: self.scratchWidget.setVisible(not self.scratchWidget.isVisible()))
+
+        self.execButton.clicked.connect(self._execute_scratch)
+        self.loadScratchButton.clicked.connect(self._load_scratch)
+        self.saveScratchButton.clicked.connect(self._save_scratch)
 
         self.status_progress_bar = QtWidgets.QProgressBar()
         self.status_progress_bar.setMaximumWidth(200)
@@ -97,11 +103,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         resize_screen_relative(self, 0.8, 0.8)
         center_window(self)
 
-    # @qtthreadsafe
-    # def threadtest(self):
-    #     print(threading.current_thread())
-    #     return "Done"
-
     def _show_about(self):
         """Show the about dialog box."""
         msg = f"""
@@ -142,6 +143,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             super().keyPressEvent(e)
 
+    @qtmainthread
     def set_status(self, msg, progress=0, progressmax=0):
         if progressmax > 0 and is_darwin:
             msg = f"{(100.0 * progress) / progressmax:.0f} ({progress}/{progressmax} {msg}"
@@ -150,3 +152,34 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.status_progress_bar.setVisible(progressmax > 0)
         self.status_progress_bar.setRange(0, progressmax)
         self.status_progress_bar.setValue(progress)
+
+    def _execute_scratch(self):
+        """Execute the contents of the scratch pad line-by-line in the console, making it visible first."""
+        self.consoleWidget.setVisible(True)
+        text = str(self.scratchEdit.document().toPlainText())
+        if text[-1] != '\n':
+            text += '\n'
+
+        self.console.send_input_block(text, False)
+
+    def _load_scratch(self):
+        # scratch = self.chooseFileDialog('Choose Load Scratch Filename', chooseMultiple=False, isOpen=True)
+        scratch = choose_file_dialog('Choose Load Scratch Filename', self)
+        if scratch:
+            self.working_dir = os.path.dirname(scratch[0])
+            with open(scratch[0]) as o:
+                self.scratchEdit.document().setPlainText(o.read())
+
+    def _save_scratch(self):
+        """Save the scratch pad contents to a chosen file."""
+        # scratch = self.chooseFileDialog('Choose Save Scratch Filename', chooseMultiple=False, isOpen=False)
+
+        scratch = choose_file_dialog('Choose Save Scratch Filename', self, is_open=False)
+        if scratch:
+            self.working_dir = os.path.dirname(scratch[0])
+            text = str(self.scratchEdit.document().toPlainText())
+            if text[-1] != '\n':
+                text += '\n'
+
+            with open(scratch[0], 'w') as ofile:
+                ofile.write(text)

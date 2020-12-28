@@ -16,84 +16,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import os
 import operator
 import itertools
+from typing import Iterable
 from functools import reduce
-from .platform import is_windows
 
-__all__ = ["process_exists", "get_win_drives", "get_username", "add_path_variable", "fcomp", "first", "last",
+__all__ = ["is_iterable_notstr", "fcomp", "first", "last",
            "list_sum", "zip_with", "mulsum", "successive", "group"]
 
 
-def process_exists(pid):
-    """
-    Returns true if the process identified by `pid' is running and active, false if it doesn't exist or has crashed.
-    """
-    if is_windows:  # adapted from http://www.madebuild.org/blog/?p=30
-        _PROCESS_QUERY_INFORMATION = 1024  # OpenProcess requires this access rights specifier
-        _STILL_ACTIVE = 259  # GetExitCodeProcess uses a special exit code to indicate the process is still running
-
-        import ctypes
-        import ctypes.wintypes
-        kernel32 = ctypes.windll.kernel32
-
-        handle = kernel32.OpenProcess(_PROCESS_QUERY_INFORMATION, 0, pid)
-        if handle == 0:
-            return False
-
-        # If the process exited recently, a handle may still exist for the pid. So, check if we can get the exit code.
-        exitcode = ctypes.wintypes.DWORD()
-        result = kernel32.GetExitCodeProcess(handle, ctypes.byref(exitcode))  # returns 0 if failed
-        kernel32.CloseHandle(handle)
-
-        # See if we couldn't get the exit code or the exit code indicates that the process is still running.
-        return result != 0 and exitcode.value == _STILL_ACTIVE
-    else:  # non-Windows platforms, kill is supported in Windows but doesn't detect crashed processes correctly
-        try:
-            os.kill(pid, 0)  # signal 0 does nothing but still raises an exception if the process doesn't exist
-            return True
-        except OSError:
-            return False
-
-
-def get_win_drives():
-    """Returns available Windows drive letters."""
-    import win32api
-    d = win32api.GetLogicalDriveStrings()
-    return [dd[0] for dd in d.split('\x00') if dd]
-
-
-def get_username():
-    """Returns the username in a portable and secure way which works with 'su' and non-terminal processes."""
-    if is_windows:
-        import win32api
-        import win32con
-        hostuname = win32api.GetUserNameEx(win32con.NameSamCompatible)
-        return str(hostuname.split('\\')[-1])
-    else:
-        import pwd
-        return pwd.getpwuid(os.getuid()).pw_name
-
-
-def add_path_variable(varname, path, append=True):
-    """
-    Add the string `path' to the environment variable `varname' by appending (if `append` is True) or prepending `path'
-    using os.pathsep as the separator. This assumes `varname' is a path variable like PATH. Blank paths present in the
-    original variable are moved to the end to prevent consecutive os.pathsep characters appearing in the variable. If
-    `varname' does not name a variable with text it will be set to `path'.
-    """
-    var = os.environ.get(varname, '').strip()
-
-    if var:  # if the variable exists and has text
-        paths = [p.strip() for p in var.split(os.pathsep)]  # split by the separator and strip whitespace just in case
-        paths.insert(len(paths) if append else 0, path)  # append or prepend `path'
-        if '' in paths:  # need to move the blank path to the end to prevent :: from appearing in the variable
-            paths = list(filter(bool, paths)) + ['']
-    else:
-        paths = [path]  # variable is new so only text is `path'
-
-    os.environ[varname] = os.pathsep.join(paths)
+def is_iterable_notstr(val) -> bool:
+    """Returns True if `val` is an iterable but not a string type (str or bytes)."""
+    return isinstance(val, Iterable) and not isinstance(val, (str, bytes))
 
 
 def fcomp(*funcs):

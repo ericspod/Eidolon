@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-
+import os
 import contextlib
 from functools import partial
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import Qt
+
+from .threadsafe_calls import qtmainthread
 
 
 def to_qt_color(c):
@@ -166,8 +168,9 @@ def set_spin_box(box, minval=None, maxval=None, stepval=None, decimals=None):
 
 
 def set_table_headers(table):
-    # NOTE: the critical property the table must have is the cascading resize settings must be set to true for both dimensions
-    # The designer properties for these are horizontalHeaderCascadingSectionResizes and verticalHeaderCascadingSectionResizes
+    # NOTE: the critical property the table must have is the cascading resize settings must be set to true for both
+    # dimensions. The designer properties for these are horizontalHeaderCascadingSectionResizes and
+    # verticalHeaderCascadingSectionResizes
     table.verticalHeader().setCascadingSectionResizes(True)
     table.horizontalHeader().setCascadingSectionResizes(True)
     table.verticalHeader().setDefaultAlignment(Qt.AlignLeft)  # why doesn't this stick in the designer?
@@ -176,7 +179,7 @@ def set_table_headers(table):
 
 
 def create_split_widget(parent, widg1, widg2, is_vertical=True):
-    """Create a splitter widget within `parent' with `widg1' and `widg2' as its two halves, vertical if `isVertical."""
+    """Create a splitter widget within `parent` with two halves `widg1` and `widg2`, vertical if `is_vertical`."""
     split = QtWidgets.QSplitter(parent)
     split.setOrientation(Qt.Vertical if is_vertical else Qt.Horizontal)
     split.setChildrenCollapsible(False)
@@ -187,8 +190,8 @@ def create_split_widget(parent, widg1, widg2, is_vertical=True):
 
 def create_menu(title, values, default_func=lambda v: None, parent=None):
     """
-    Construct a menu widget from the given values. The list `values` must contain strings, pairs containing strings
-    and a callback function, '---' for a separator, or further lists thereof. When a item is selected, the given callback
+    Construct a menu widget from the given values. The list `values` must contain strings, pairs containing strings and
+    a callback function, '---' for a separator, or further lists thereof. When a item is selected, the given callback
     function is called with the string passed as an argument, if only a string is given then `default_func` is called
     instead with that string as argument.
     """
@@ -199,7 +202,7 @@ def create_menu(title, values, default_func=lambda v: None, parent=None):
         menu.addAction(title, lambda: None)
         menu.addSeparator()
 
-    def _call_func(_func, _val):  # needed to ensure v and func are fresh
+    def _call_func(_func, _val):  # needed to ensure v and meth are fresh
         return partial(_func, _val)
 
     for val in values:
@@ -219,3 +222,124 @@ def create_menu(title, values, default_func=lambda v: None, parent=None):
     return menu
 
 
+@qtmainthread
+def choose_rgb_color_dialog(origcolor, parent, callback):
+    """
+    Opens a color pick dialog initialized with `origcolor` (RGBA tuple or color object). If Ok is pressed, the
+    callable `callback` is invoked with the RGBA color tuple passed as the single argument, otherwise does nothing.
+    """
+    c = QtWidgets.QColorDialog.getColor(to_qt_color(origcolor), parent)
+    # if validQVariantStr(c):
+    callback(c.getRgbF())
+
+
+@qtmainthread
+def choose_yes_no_dialog(msg, title, parent, callback=None):
+    """
+    Opens a Yes/No dialog box with message string `msg` and title string `title`. If Yes is selected, the callable
+    `callback` is called with no arguments if given. Return value is if Yes was selected or not.
+    """
+    reply = QtWidgets.QMessageBox.question(parent, title, msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+
+    if reply == QtWidgets.QMessageBox.Yes:
+        if callback is not None:
+            callback()
+        return True
+    else:
+        return False
+
+
+@qtmainthread
+def choose_str_dialog(title, defaultval, parent, callback):
+    """
+    Opens a dialog box asking for an input string with title string `title` and default string value `defaultval`.
+    When the dialog closes, the callable `callback` is called with the given string value as the only argument.
+    """
+
+    text, ok = QtWidgets.QInputDialog.getText(parent, 'Input String', title, text=defaultval)
+    if ok:
+        callback(str(text))
+
+
+# @qtmainthread
+# def choose_list_items_dialog(self, title, msg, items, callback, selected=[], multi_select=False):
+#     if multi_select:
+#         selectmode = QtWidgets.QAbstractItemView.MultiSelection
+#     else:
+#         selectmode = QtWidgets.QAbstractItemView.SingleSelection
+#
+#     d = QtWidgets.QDialog(self)
+#     d.setWindowTitle(title)
+#     d.resize(400, Utils.clamp(len(items) * 10, 200, 800))
+#     d.verticalLayout = QtWidgets.QVBoxLayout(d)
+#     d.label = QtWidgets.QLabel(d)
+#     d.label.setText(msg)
+#     d.verticalLayout.addWidget(d.label)
+#     d.listWidget = QtWidgets.QListWidget(d)
+#     d.listWidget.setSelectionMode(selectmode)
+#     d.listWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+#     d.verticalLayout.addWidget(d.listWidget)
+#
+#     fillList(d.listWidget, map(str, items))
+#
+#     for s in selected:
+#         d.listWidget.item(s).setSelected(True)
+#
+#     def _getSelected():
+#         selinds = []
+#         for i in d.listWidget.selectedItems():
+#             selinds.append(d.listWidget.indexFromItem(i).row())
+#
+#         selinds.sort()
+#         callback(selinds)
+#         d.close()
+#
+#     d.buttonBox = QtWidgets.QDialogButtonBox(d)
+#     d.buttonBox.setOrientation(Qt.Horizontal)
+#     d.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
+#     d.buttonBox.setCenterButtons(False)
+#     d.buttonBox.accepted.connect(_getSelected)
+#     d.verticalLayout.addWidget(d.buttonBox)
+#     d.exec_()
+
+
+@qtmainthread
+def choose_file_dialog(title, parent, opendir=None, filterstr='', is_open=True,
+                       choose_multiple=False, confirm_overwrite=True):
+    """
+    Return a list of chosen files selected from a dialog box. If `is_open` is True the dialog is for selecting files to
+    open, allowing the choice of multiple files if `choose_multiple` is True. The dialog is for selecting a file to save
+    to otherwise, in which case a confirm dialog box will be given is `confirm_overwrite` is True if the file exists.
+    """
+    opendir = opendir or os.getcwd()
+
+    if is_open:
+        if choose_multiple:
+            fnames = QtWidgets.QFileDialog.getOpenFileNames(parent, title, opendir, filterstr)
+
+            result = [os.path.abspath(str(f)) for f in fnames[0]]
+        else:
+            fname = QtWidgets.QFileDialog.getOpenFileName(parent, title, opendir, filterstr)
+            result = [str(fname[0])]
+    else:
+        options = QtWidgets.QFileDialog.Options()
+        if not confirm_overwrite:
+            options |= QtWidgets.QFileDialog.DontConfirmOverwrite
+
+        fname = QtWidgets.QFileDialog.getSaveFileName(parent, title, opendir, filterstr, None, options)
+        result = [str(fname[0])]
+
+    return list(filter(bool,result))
+
+
+def choose_dir_dialog(title, parent, opendir=None):
+    """
+    Opens a dialog for choosing a directory, returning the chosen directory path or None.
+    """
+    opendir = opendir or os.getcwd()
+
+    dirname = str(QtWidgets.QFileDialog.getExistingDirectory(parent, title, opendir))
+    if dirname:
+        dirname = os.path.abspath(dirname)
+
+    return dirname

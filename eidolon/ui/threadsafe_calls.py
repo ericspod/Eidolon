@@ -22,88 +22,50 @@ from functools import wraps
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 
-from ..utils import Future
+from ..utils import Future, is_main_thread
 
-__all__ = ["qtthreadsafe", "delayedmethod"]
+__all__ = ["qtmainthread", "delayedmethod"]
 
 
-class ThreadsafeEvent(QtCore.QEvent):
+class MainThreadEvent(QtCore.QEvent):
     EVENT_TYPE = QtCore.QEvent.Type(QtCore.QEvent.registerEventType())
 
-    def __init__(self):
+    def __init__(self, func, args, kwargs, result):
         super().__init__(self.EVENT_TYPE)
-
-
-class ThreadsafeCall(QtCore.QObject):
-    def __init__(self, func, args, kwargs):
-        super().__init__()
         self.func = func
         self.args = args
         self.kwargs = kwargs
-        self.result = Future()
+        self.result = result
 
+
+class MainThreadCaller(QtCore.QObject):
     def event(self, event):
-        print("event", event)
         event.accept()
-
-        with self.result:
-            res = self.func(*self.args, **self.kwargs)
-            self.result.set_result(res)
+        with event.result:
+            res = event.func(*event.args, **event.kwargs)
+            event.result.set_result(res)
 
         return True
 
-    def post(self):
-        QtCore.QCoreApplication.postEvent(self, ThreadsafeEvent(), Qt.HighEventPriority)
-        return self.result
+
+# global persistent instance created in the mainthread
+_mt_caller = MainThreadCaller()
 
 
-# class ThreadsafeEvent(QtCore.QEvent):
-#     EVENT_TYPE = QtCore.QEvent.Type(QtCore.QEvent.registerEventType())
-#
-#     def __init__(self, func, args, kwargs,result):
-#         super().__init__(self.EVENT_TYPE)
-#         self.func=func
-#         self.args=args
-#         self.kwargs=kwargs
-#         self.result=result
-#
-#
-# class ThreadsafeCaller(QtCore.QObject):
-#     def event(self,event):
-#         event.accept()
-#         with event.result:
-#             res=event.func(*event.args,**event.kwargs)
-#             event.result.set_result(res)
-#
-#         return True
-#
-#
-# ts_caller=ThreadsafeCaller()
-#
-# def call_threadsafe(func,*args,**kwargs):
-#     result=Future()
-#     tse=ThreadsafeEvent(func,args,kwargs,result)
-#     QtCore.QCoreApplication.postEvent(ThreadsafeCaller(),tse)
-#     return result
+def call_mainthread(func, *args, **kwargs):
+    result = Future()
+    tse = MainThreadEvent(func, args, kwargs, result)
+    QtCore.QCoreApplication.postEvent(_mt_caller, tse)
+    return result
 
 
-def qtthreadsafe(func, timeout=10.0):
-    name = func.__name__ + "__caller__"
-
+def qtmainthread(func, timeout=10.0):
     @wraps(func)
     def _wrapper(*args, **kwargs):
-        # caller = getattr(self, name, None)
-        # if caller is None:
-        #     caller = ThreadsafeCall(meth, args, kwargs)
-        #     setattr(self, name, caller)
-        # else:
-        #     caller.args = args
-        #     caller.kwargs = kwargs
-        #     caller.result.clear()
-
-        caller = ThreadsafeCall(func, args, kwargs)
-        result = caller.post()
-        return result
+        if is_main_thread():
+            return func(*args, **kwargs)
+        else:
+            return call_mainthread(func, *args, **kwargs)
 
     return _wrapper
 
@@ -144,12 +106,11 @@ def delayedmethod(timeout):
     def _deco(func):
         name = func.__name__ + "__delay__"
 
-        @qtthreadsafe
+        @qtmainthread
         @wraps(func)
         def _meth(self, *args, **kwargs):
-            if hasattr(self, name):
-                dc = getattr(self, name)
-            else:
+            dc = getattr(self, name, None)
+            if dc is None:
                 dc = DelayedCall(func, timeout)
                 setattr(self, name, dc)
 

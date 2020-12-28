@@ -16,14 +16,27 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from . import resources_rc
+import numpy as np
 
-from .camera_widget import *
-from .camera_controller import *
-from .appbase import *
-from .loader import *
-from .main_window import *
-from .console_widget import *
-from .threadsafe_calls import *
+__all__=["Mesh"]
+
+class Mesh:
+    def __init__(self,nodes,topo_sets=[],field_sets=[],normals=None,colors=None, uvws=None, time_index=0):
+        self.nodes=nodes
+        self.topologies={}
+        self.fields={}
+        self.normals=normals
+        self.colors=colors
+        self.uvws=uvws
+        self.time_index=time_index
+
+        for t in topo_sets:
+            if isinstance(t,(list,tuple)):
+                self.set_topology(*t)
 
 
+    def set_topology(self,name, topo_array, elem_type):
+        self.topologies[name]=(topo_array,elem_type)
+
+    def set_field(self,name,data_array,spatial_topology, field_topology=None):
+        self.fields[name]=(data_array,spatial_topology,field_topology)

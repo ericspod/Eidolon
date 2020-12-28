@@ -22,7 +22,7 @@ from .compile_support import jit
 
 __all__ = [
     "FEPSILON", "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp", "rad_circular_convert",
-    "rotator_yaw", "rotator_roll", "rotator_pitch","frange"
+    "rotator_yaw", "rotator_roll", "rotator_pitch", "frange", "lerp", "lerp_xi"
 ]
 
 FEPSILON: float = 1e-10
@@ -169,3 +169,16 @@ def frange(start, stop=None, step=None):
         temp = total + y
         comp = (temp - total) - y
         total = temp
+
+
+def lerp(val, v1, v2):
+    """Linearly interpolate between `v1' and `v2', val==0 results in `v1'."""
+    return v1 + (v2 - v1) * val
+
+
+def lerp_xi(val, minv, maxv):
+    """
+    Calculates the linear interpolation xi value corresponding to `val` if interpolated over the range [minv,maxv],
+    ie. if lerp_xi(V,A,B)==X then lerp(X,A,B)==V assuming A<B. If minv>=maxv then `val` is returned.
+    """
+    return val if minv >= maxv else float(val - minv) / float(maxv - minv)
