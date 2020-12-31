@@ -41,18 +41,14 @@ def calculate_mesh_octree(mesh: Mesh, topo_name=None, depth=3):
         mesh.other_arrays[other_key] = oc
 
 
-# from numba.typed import Dict,List
-# from numba.core import types
+from numba.typed import Dict, List
+from numba.core import types
 
-# int_array = types.int64[:]
+int_array = types.int64[:]
+
 
 @jit
 def calculate_shared_nodes(topo_array: np.array, leaf: np.array):
-    # result = Dict.empty(
-    #     key_type=types.int64,
-    #     value_type=int_array,
-    # )
-
     result = dict()
 
     for idx in range(leaf.shape[0]):
@@ -61,9 +57,9 @@ def calculate_shared_nodes(topo_array: np.array, leaf: np.array):
         for node_idx in range(topo_array.shape[1]):
             node = topo_array[elem_idx, node_idx]
             if node not in result:
-                result[node] = np.array([idx])
-            else:
-                result[node] = np.append(result[node], idx)
+                result[node] = List.empty_list(item_type=types.int64)
+
+            result[node].append(idx)
 
     return result
 
@@ -95,53 +91,47 @@ def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None):
     return topo_ext_adj
 
 
-@jit
+@jit(parallel=True)
 def calculate_expanded_face_inds(expanded_face_inds: np.array, topo_array: np.array, leaf: np.array,
                                  face_inds: np.array):
-    num_faces = face_inds.shape[0]
-    face_size = face_inds.shape[1]
+    num_faces: int = face_inds.shape[0]
+    face_size: int = face_inds.shape[1]
 
-    for idx in range(leaf.shape[0]):
-        elem_idx = leaf[idx]
-        elem = topo_array[elem_idx]
+    for idx in prange(leaf.shape[0]):
+        elem_idx: int = leaf[idx]
+
         for face_idx in range(num_faces):
             for felem_idx in range(face_size):
-                expanded_face_inds[idx, face_idx, felem_idx] = elem[face_inds[face_idx, felem_idx]]
+                expanded_face_inds[idx, face_idx, felem_idx] = topo_array[elem_idx, face_inds[face_idx, felem_idx]]
 
 
-@jit
+@jit(parallel=True)
 def calculate_leaf_ext_adj(expanded_face_inds: np.array, topo_array: np.array, leaf: np.array,
                            face_inds: np.array, topo_ext_adj: np.array):
-    # shared_nodes = calculate_shared_nodes(topo_array, leaf)
+    shared_nodes = calculate_shared_nodes(topo_array, leaf)
+
+    num_elems = leaf.shape[0]
     num_faces = face_inds.shape[0]
-    face_size = face_inds.shape[1]
 
-    # expanded_face_inds = np.zeros((leaf.shape[0], num_faces, face_size), dtype=int)
+    for idx in prange(num_elems):
+        elem_idx = leaf[idx]
 
-    # for idx in range(leaf.shape[0]):
-    #     elem_idx = leaf[idx]
-    #     elem = topo_array[elem_idx]
-    #     for face_idx in range(num_faces):
-    #         for felem_idx in range(face_size):
-    #             expanded_face_inds[idx, face_idx, felem_idx] = elem[face_inds[face_idx, felem_idx]]
-    #
-    # expanded_face_inds = np.sort(expanded_face_inds, axis=2)
-
-    for idx in range(leaf.shape[0]):
-        # elem_idx = leaf[idx]
-        # elem = topo_array[elem_idx]
         for face_idx in range(num_faces):
-            # face = [elem[face_inds[face_idx, i]] for i in range(face_inds.shape[1])]
-            # face = set(face)
-            face = expanded_face_inds[idx, face_idx]
+            if topo_ext_adj[elem_idx, face_idx] > -1:
+                continue
 
-            for other_idx in range(leaf.shape[0]):
+            face = expanded_face_inds[idx, face_idx]
+            other_elems = set()
+
+            for face_elem_idx in range(face.shape[0]):
+                other_elems.update(shared_nodes[face[face_elem_idx]])
+
+            for other_idx in other_elems:
                 if other_idx == idx:
                     continue
 
                 for other_face_idx in range(num_faces):
                     if np.array_equal(expanded_face_inds[other_idx, other_face_idx], face):
-                        elem_idx = leaf[idx]
                         other_elem = leaf[other_idx]
 
                         topo_ext_adj[elem_idx, face_idx] = other_elem

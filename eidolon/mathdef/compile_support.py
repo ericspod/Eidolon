@@ -18,10 +18,11 @@
 
 
 try:
-    from numba import jit as _jit, prange
+    from numba import jit as _jit, prange, set_num_threads
     from functools import partial
 
-    jit = partial(_jit, nopython=True, cache=True)
+    jit = partial(_jit, nopython=True, cache=True, nogil=True)
+    has_numba = True
 
 except ImportError:
     import warnings
@@ -33,6 +34,11 @@ except ImportError:
         return func
 
 
-    prange = range
+    def set_num_threads(n):
+        pass
 
-__all__ = ["jit", "prange"]
+
+    prange = range
+    has_numba = True
+
+__all__ = ["has_numba", "jit", "prange", "set_num_threads"]
