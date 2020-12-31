@@ -26,7 +26,7 @@ import subprocess
 from pathlib import Path
 from enum import Enum
 
-from .pathutils import ensure_ext
+from .path_utils import ensure_ext
 
 __all__ = ["is_interactive", "PlatformNames", "is_darwin", "is_linux", "is_windows"]
 

@@ -18,8 +18,9 @@
 
 
 import math
+import itertools
 import numpy as np
-from .mathtypes import vec3, rotator
+from .math_types import vec3, rotator
 from .utils import frange
 
 __all__ = [
@@ -28,6 +29,17 @@ __all__ = [
     "generate_axes_arrows", "generate_tri_normals", "add_indices",
     "generate_line_cuboid"
 ]
+
+
+def tri_area(v1: vec3, v2: vec3, v3: vec3) -> float:
+    bb: vec3 = v2 - v1
+    cc: vec3 = v3 - v1
+
+    return bb.len * cc.len * math.sin(bb.angle_to(cc)) * 0.5
+
+
+def quad_area(v1: vec3, v2: vec3, v3: vec3, v4: vec3) -> float:
+    return tri_area(v1, v2, v3) + tri_area(v2, v3, v4)
 
 
 def calculate_bound_box(vertices):
@@ -81,7 +93,36 @@ def generate_tri_normals(nodes, indices):
         norms[b] += norm
         norms[c] += norm
 
-    return [n.norm() for n in norms]
+    return [n.norm for n in norms]
+
+
+def reindex_mesh(inds, components):
+    """
+    Reindex the mesh defined by the topos `inds` and lists of nodes, norms, xis etc. in list `components`. The topos
+    in `inds` will be reordered to start from 0 and any members of `components` not indexed will not be present in the
+    resulting mesh. The return value is the pair (newinds,newcomps) where `newinds` is the new list of topos and
+    `newcomps` the new list of component lists which is indexed by `newinds`.
+    """
+    newcomps = [list() for c in components]
+    newinds = []
+    nodemap = {}
+
+    assert len(components) > 0
+
+    for ind in inds:
+        newind = []
+        for i in ind:
+            # if the index is new, store it in nodemap and copy over the i'th value from each component to newcomps
+            if i not in nodemap:
+                nodemap[i] = len(newcomps[0])
+                for j in range(len(newcomps)):
+                    newcomps[j].append(components[j][i])
+
+            newind.append(nodemap[i])  # replace old index with new index
+
+        newinds.append(tuple(newind))
+
+    return newinds, newcomps
 
 
 def generate_plane(refine: int):
@@ -116,7 +157,7 @@ def generate_plane(refine: int):
 
 
 def generate_cube(refine: int):
-    """Generates a unit cube centered at the origin using 'generate_plane', returns nodes, norms, indices, and xis."""
+    """Generates a unit cube centered at the origin using 'generate_plane', returns nodes, norms, topos, and xis."""
 
     nodes = []
     norms = []
@@ -165,16 +206,16 @@ def generate_cylinder(ctrls, radii, refine=0, start_cap=True, end_cap=True, alig
     align_rings = align_rings and len(ctrls) >= 3
 
     # calculate the directional vectors as the differences between control points
-    dirs = [(ctrls[1] - ctrls[0]).norm()]
+    dirs = [(ctrls[1] - ctrls[0]).norm]
     for n in range(1, len(ctrls) - 1):
         d1 = ctrls[n] - ctrls[n - 1]
         d2 = ctrls[n + 1] - ctrls[n]
-        dirs.append(((d1 + d2) / 2).norm())
+        dirs.append(((d1 + d2) / 2).norm)
 
-    dirs.append((ctrls[-1] - ctrls[-2]).norm())
+    dirs.append((ctrls[-1] - ctrls[-2]).norm)
 
     # define a circular ring of points on the XY plane
-    ring = [vec3(-i * (math.pi * 2), math.pi / 2, 1.0).from_polar() for i in frange(0.0, 1.0, 1.0 / refine)]
+    ring = [vec3(-i * (math.pi * 2), math.pi / 2, 1.0).from_polar for i in frange(0.0, 1.0, 1.0 / refine)]
 
     if align_rings:  # calculate the control point barycenter
         barycenter = sum(ctrls, vec3.zero) / len(ctrls)
@@ -189,7 +230,7 @@ def generate_cylinder(ctrls, radii, refine=0, start_cap=True, end_cap=True, alig
         # angles with a vector towards the barycenter from the ring center.
         if align_rings:  # and dirvec.angleTo(alignplanes[ctrlvec])>0:
             rv = rot * vec3(1, 0, 0)  # rotate X axis
-            line = dirvec.cross((barycenter - ctrlvec).norm())
+            line = dirvec.cross((barycenter - ctrlvec).norm)
             # rotate the ring in its plane so that the rotated X axis is at right angles with the barycenter
             rot = rotator.between_vecs(rv, line) * rot
 
@@ -199,15 +240,15 @@ def generate_cylinder(ctrls, radii, refine=0, start_cap=True, end_cap=True, alig
     indices = []
 
     if start_cap:
-        # Start cap composed of triangle fan, starting index is center of the fan, next indices are consecutive points
-        # on the ring. The expression (i+1)%refine indexes the next point on the ring from point i since the indices
+        # Start cap composed of triangle fan, starting index is center of the fan, next topos are consecutive points
+        # on the ring. The expression (i+1)%refine indexes the next point on the ring from point i since the topos
         # have to loop back around to the beginning. Note also that all triangles use counter-clockwise winding.
         indices += [(0, i + 1, (i + 1) % refine + 1) for i in range(refine)]
         nodes = [ctrls[0]] + make_ring(ctrls[0], dirs[0], radii[0]) + nodes  # duplicate first ring
 
-    # cylinder midsections and final ring with triangle indices
+    # cylinder midsections and final ring with triangle topos
     for n in range(1, len(ctrls)):
-        for i in range(refine):  # fill in indices
+        for i in range(refine):  # fill in topos
             b = len(nodes) + i
             d = len(nodes) + (i + 1) % refine
             a = b - refine
@@ -250,3 +291,73 @@ def generate_axes_arrows(refine=5, length=10):
     colors = [(1, 0, 0, 1)] * len(zverts) + [(0, 1, 0, 1)] * len(zverts) + [(0, 0, 1, 1)] * len(zverts)
 
     return verts, inds, norms, colors
+
+
+def generate_sphere(refine=0):
+    """
+    Generates a unit sphere (actually a buckyball) centered at the origin through recursive icosahedron refinement.
+    This will produce a mesh with 20*(4**refine) triangles. Return value is the (nodes, topos) pair.
+    """
+
+    gold = (1.0 + math.sqrt(5.0)) / 2.0  # golden ratio
+
+    # define the points of an icosahedron
+    nodes = [
+        vec3(0, 1, gold), vec3(0, -1, gold), vec3(0, 1, -gold), vec3(0, -1, -gold),  # YZ-plane
+        vec3(1, gold, 0), vec3(-1, gold, 0), vec3(1, -gold, 0), vec3(-1, -gold, 0),  # XY-plane
+        vec3(gold, 0, 1), vec3(-gold, 0, 1), vec3(gold, 0, -1), vec3(-gold, 0, -1)  # XZ-plane
+    ]
+
+    # define the triangle topos of the icosahedron
+    indices = [
+        (0, 1, 8), (0, 9, 1), (0, 8, 4), (0, 4, 5), (0, 5, 9),
+        (2, 3, 11), (2, 11, 5), (2, 5, 4), (2, 4, 10), (2, 10, 3),
+        (1, 9, 7), (1, 7, 6), (1, 6, 8), (3, 10, 6), (3, 6, 7),
+        (3, 7, 11), (4, 8, 10), (5, 11, 9), (6, 10, 8), (7, 9, 11)
+    ]
+
+    # rotate the icosahedron so that a node of the YZ plane is up; when refined this
+    # creates a figure with an 'equator' on the XY plane
+    rot = rotator(vec3.X, nodes[0].angleTo(vec3.Z))
+    nodes = [rot * n for n in nodes]
+
+    # refine the icosahedron by dividing each triangle into 4, triforce-style
+    for r in range(refine):
+        medians = {}
+        nextindex = len(nodes)
+        newindices = []
+
+        for i, j, k in indices:
+            # reserve an index in 'nodes' for the new node which is the median node between a and b
+            for a, b in itertools.combinations([i, j, k], 2):
+                if (a, b) not in medians:
+                    medians[(a, b)] = nextindex
+                    medians[(b, a)] = nextindex
+                    nextindex += 1
+
+            # add new topos for the 4 new triangles
+            newindices += [
+                (i, medians[(i, j)], medians[(i, k)]),
+                (medians[(i, j)], j, medians[(j, k)]),
+                (medians[(i, k)], medians[(j, k)], k),
+                (medians[(i, j)], medians[(j, k)], medians[(i, k)])
+            ]
+
+        indices = newindices
+        nodes += [None] * (nextindex - len(nodes))
+
+        # calculate each median node
+        for (i, j), n in medians.items():
+            if not nodes[n]:
+                nodes[n] = (nodes[i] + nodes[j]) * 0.5
+
+    # normalizing the nodes creates a sphere rather than just a complex icosahedron
+    return [n.norm for n in nodes], indices
+
+
+def generate_hemisphere(refine=0):
+    """Generate a hemisphere as the top half of the mesh from generateSphere(refine+1,indexoffset)."""
+    nodes, inds = generate_sphere(refine + 1)
+    inds = [(i, j, k) for i, j, k in inds if nodes[i].z >= -1e-10 and nodes[j].z >= -1e-10 and nodes[k].z >= -1e-10]
+    inds, comps = reindex_mesh(inds, [nodes])
+    return comps[0], inds

@@ -135,7 +135,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                 with open(self.logfile) as o:
                     log = [s.rstrip() for s in o.readlines()]
 
-                self.history = log[-self.loglines:]  # add no more than self.loglines values to the history
+                self.history = log[-self.loglines:]  # add no more than v1.loglines values to the history
             except Exception as e:
                 self.write('Cannot open console log file %r:\n%r\n' % (self.logfile, e))
 
@@ -149,7 +149,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         These are then executed with execute().
         """
 
-        # while not self.win.isExec:
+        # while not v1.win.isExec:
         #     time.sleep(0.01)  # wait for window to appear
 
         for cmd in self.init_cmds:
@@ -272,10 +272,10 @@ class ConsoleWidget(QtWidgets.QTextEdit):
     def write(self, line):
         """Write a line of text to the text window."""
 
-        # @self.win.callFuncUIThread
+        # @v1.win.callFuncUIThread
         # def write_line():
-        #     self.insertPlainText(line)
-        #     self.ensureCursorVisible()
+        #     v1.insertPlainText(line)
+        #     v1.ensureCursorVisible()
 
         self.insertPlainText(line)
         self.ensureCursorVisible()

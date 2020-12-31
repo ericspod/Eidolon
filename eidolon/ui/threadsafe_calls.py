@@ -53,21 +53,32 @@ _mt_caller = MainThreadCaller()
 
 
 def call_mainthread(func, *args, **kwargs):
-    result = Future()
-    tse = MainThreadEvent(func, args, kwargs, result)
-    QtCore.QCoreApplication.postEvent(_mt_caller, tse)
-    return result
+    if is_main_thread():
+        return func(*args, **kwargs)
+    else:
+        result = Future()
+        evt = MainThreadEvent(func, args, kwargs, result)
+        QtCore.QCoreApplication.postEvent(_mt_caller, evt)
+        return result
 
 
-def qtmainthread(func, timeout=10.0):
+def qtmainthread(func):
+    """
+    Executes the decorated function/method in the main thread using Qt's event system.
+    """
+
     @wraps(func)
     def _wrapper(*args, **kwargs):
-        if is_main_thread():
-            return func(*args, **kwargs)
-        else:
-            return call_mainthread(func, *args, **kwargs)
+        return call_mainthread(func, *args, **kwargs)
 
     return _wrapper
+
+
+def connect(signal, func):
+    """
+    Connects the callable `func` to the given signal in the main thread.
+    """
+    call_mainthread(signal.connect, func)
 
 
 class DelayedCall:
@@ -98,9 +109,9 @@ class DelayedCall:
 
 def delayedmethod(timeout):
     """
-    When applied to a function or method, delays the actual execution of the callable until the given time in
-    milliseconds has elapsed. This is done using a QTimer object. If the same callable is invoked again the timeout is
-    reset and the supplied arguments for the most recent call are used in place of previous ones. No value is returned.
+    When applied to a method, delays the actual execution of the callable until the given time in milliseconds has
+    elapsed. This is done using a QTimer object. If the same callable is invoked again the timeout is reset and the
+    supplied arguments for the most recent call are used in place of previous ones. No value is returned.
     """
 
     def _deco(func):

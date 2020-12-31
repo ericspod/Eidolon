@@ -22,7 +22,7 @@ from PyQt5 import QtGui, QtCore
 
 from .camera_widget import CameraWidget, CameraWidgetEvents
 from ..renderer import OffscreenCamera
-from ..mathdef.mathtypes import vec3, rotator
+from ..mathdef.math_types import vec3, rotator
 from ..mathdef.utils import rad_clamp, rad_circular_convert
 
 from ..utils import timing
@@ -110,7 +110,7 @@ class CameraController:
 
     def get_rotation(self):
         """
-        Get the rotator for the camera based on self.theta and self.phi or self.freerotator. This represents the
+        Get the rotator for the camera based on v1.theta and v1.phi or v1.freerotator. This represents the
         rotation applied to orient the camera to face the look at position and a given up direction from the initial
         position as defined by this controller.
         """
@@ -123,8 +123,8 @@ class CameraController:
     def set_rotation(self, theta_r: float, phi: float = 0):
         """
         Sets rotational parameters. If z_lock is True, `theta_r' and  `phi' are polar rotation values, these are
-        used to set self.theta and self.phi contrained within their respective ranges and tolerances. If z_lock
-        is False then `theta_r' is a rotator which is assigned to self.freerotator.
+        used to set v1.theta and v1.phi contrained within their respective ranges and tolerances. If z_lock
+        is False then `theta_r' is a rotator which is assigned to v1.freerotator.
         """
         if self._is_z_locked:
             self.theta = rad_circular_convert(theta_r)
@@ -139,8 +139,8 @@ class CameraController:
     def rotate(self, dx_r: Union[float, rotator], dy: float = 0):
         """
         Rotate the camera using the given arguments. If the camera is Z-locked (z_lock is True), `dx_r' is a
-        float value scaled by self.rScale*0.005 then added to self.theta and `dy' is also a float scaled by
-        self.rScale*0.005 then added to self.phi. If the camera is not Z-locked, `dx_r' is a rotator applied to the
+        float value scaled by v1.rScale*0.005 then added to v1.theta and `dy' is also a float scaled by
+        v1.rScale*0.005 then added to v1.phi. If the camera is not Z-locked, `dx_r' is a rotator applied to the
         camera's rotation.
         """
         if self._is_z_locked:

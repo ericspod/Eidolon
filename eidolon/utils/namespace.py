@@ -19,7 +19,7 @@
 import inspect
 from types import MethodType
 
-__all__ = ["Namespace","NamespaceMeta"]
+__all__ = ["Namespace", "NamespaceMeta"]
 
 
 class NamespaceMeta(type):
@@ -27,7 +27,7 @@ class NamespaceMeta(type):
         ns_dict = {}
 
         for k, v in list(classdict.items()):
-            if k[0] != "_" and not inspect.ismethod(v) and not isinstance(v,classmethod):
+            if k[0] != "_" and not inspect.ismethod(v) and not isinstance(v, classmethod):
                 ns_dict[k] = v
                 del classdict[k]
 
@@ -42,10 +42,7 @@ class NamespaceMeta(type):
         return member in cls.ns_dict
 
     def __getitem__(cls, name):
-        if name in cls.ns_dict:
-            return cls.__getattr__(name)
-        else:
-            raise ValueError(f"Value {name} not found in namespace")
+        return cls.__getattr__(name)
 
     def __getattr__(cls, name):
         if name in cls.ns_dict:

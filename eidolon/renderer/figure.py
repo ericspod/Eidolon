@@ -20,7 +20,7 @@ from typing import List
 
 from .utils import create_simple_geom
 from .camera import OffscreenCamera
-from ..mathdef.mathtypes import vec3, rotator, transform, BoundBox
+from ..mathdef.math_types import vec3, rotator, transform, BoundBox, Transformable
 from panda3d.core import LQuaternionf
 
 from panda3d.core import (
@@ -36,43 +36,16 @@ from panda3d.core import (
 __all__ = ["Figure", "SimpleFigure"]
 
 
-class Figure:
+class Figure(Transformable):
     def __init__(self, name: str, *geoms: Geom):
+        super().__init__()
         self.name: str = name
         self.node: GeomNode = GeomNode(name + "_node")
         self.camnodes: List[NodePath] = []
         self._visible: bool = True
-        self._transform: transform = transform()
 
         for geom in geoms:
             self.add_geom(geom)
-
-    @property
-    def position(self):
-        return self._transform.trans
-
-    @position.setter
-    def position(self, pos: vec3):
-        self.set_transform(transform(pos, self._transform.scale, self._transform.rot))
-
-    @property
-    def orientation(self):
-        return self._transform.rot
-
-    @orientation.setter
-    def orientation(self, rot: rotator):
-        self.set_transform(transform(self._transform.trans, self._transform.scale, rot))
-
-    @property
-    def scale(self):
-        return self._transform.scale
-
-    @scale.setter
-    def scale(self, scale: vec3):
-        self.set_transform(transform(self._transform.trans, scale, self._transform.rot))
-
-    def get_transform(self):
-        return self._transform
 
     def set_transform(self, trans: transform):
         self._transform = trans
@@ -100,6 +73,21 @@ class Figure:
                 self.camnodes[i].detach_node()
                 del self.camnodes[i]
                 break
+
+    def detach_all(self):
+        for cm in self.camnodes:
+            cm.detach_node()
+
+        self.camnodes[:] = []
+
+    @property
+    def attached(self) -> bool:
+        """Returns True if this figure is attached to any camera."""
+        return len(self.camnodes) > 0
+
+    def attached_to_camera(self, camera: OffscreenCamera) -> bool:
+        """Returns True if this figure is attached to `camera`."""
+        return any(cm in camera.nodepath.children for cm in self.camnodes)
 
     @property
     def visible(self):

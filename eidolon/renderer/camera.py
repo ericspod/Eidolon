@@ -32,7 +32,7 @@ from panda3d.core import (
     LPoint3f
 )
 
-from .renderbase import RenderBase
+from .render_base import RenderBase
 from ..mathdef import vec3
 
 __all__ = ["OffscreenCamera"]

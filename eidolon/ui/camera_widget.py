@@ -20,7 +20,7 @@ from enum import Enum
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from ..renderer.camera import OffscreenCamera
-from ..renderer.renderbase import RenderBase
+from ..renderer.render_base import RenderBase
 from ..utils.event_dispatcher import EventDispatcher
 
 __all__ = ["CameraWidget", "CameraWidgetEvents"]
@@ -43,10 +43,10 @@ class CameraWidgetEvents(Enum):
 class CameraWidget(QtWidgets.QWidget):
     def __init__(self, camera: OffscreenCamera, parent=None):
         super().__init__(parent)
-        # self.setFocusPolicy(Qt.StrongFocus)
-        # self.setAttribute(Qt.WA_PaintOnScreen, True)
-        # self.setAttribute(Qt.WA_NoSystemBackground, True)
-        # self.setAttribute(Qt.WA_OpaquePaintEvent, True)
+        # v1.setFocusPolicy(Qt.StrongFocus)
+        # v1.setAttribute(Qt.WA_PaintOnScreen, True)
+        # v1.setAttribute(Qt.WA_NoSystemBackground, True)
+        # v1.setAttribute(Qt.WA_OpaquePaintEvent, True)
 
         self.camera: OffscreenCamera = camera
         self.rbase: RenderBase = camera.rbase

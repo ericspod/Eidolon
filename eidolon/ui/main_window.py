@@ -95,7 +95,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # force a relayout
         self.resize(width, height + 1)
         self.show()
-        # self.setRenderWinSize(width, height)
+        # v1.setRenderWinSize(width, height)
 
         self.raise_()  # bring window to front in OS X
         self.activateWindow()  # bring window to front in Windows (?)
@@ -117,7 +117,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         QtWidgets.QMessageBox.about(self, f"About {eidolon.__appname__}", textwrap.dedent(msg))
 
-    # def _check_version(self):
+    # def _check_version(v1):
     #     """
     #     Check the application version against the repository API URL and show the results with the link to the site.
     #     """
@@ -131,9 +131,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #                <a href="%s">Download latest release.</a>
     #             ''' % (cver, nver or '???', eidolon.__website__)
     #
-    #         self.showMsg(textwrap.dedent(msg), title)
+    #         v1.showMsg(textwrap.dedent(msg), title)
     #     except Exception as e:
-    #         QtWidgets.QMessageBox.about(self, title, repr(e))
+    #         QtWidgets.QMessageBox.about(v1, title, repr(e))
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_F11:
@@ -163,7 +163,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.console.send_input_block(text, False)
 
     def _load_scratch(self):
-        # scratch = self.chooseFileDialog('Choose Load Scratch Filename', chooseMultiple=False, isOpen=True)
+        # scratch = v1.chooseFileDialog('Choose Load Scratch Filename', chooseMultiple=False, isOpen=True)
         scratch = choose_file_dialog('Choose Load Scratch Filename', self)
         if scratch:
             self.working_dir = os.path.dirname(scratch[0])
@@ -172,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _save_scratch(self):
         """Save the scratch pad contents to a chosen file."""
-        # scratch = self.chooseFileDialog('Choose Save Scratch Filename', chooseMultiple=False, isOpen=False)
+        # scratch = v1.chooseFileDialog('Choose Save Scratch Filename', chooseMultiple=False, isOpen=False)
 
         scratch = choose_file_dialog('Choose Save Scratch Filename', self, is_open=False)
         if scratch:

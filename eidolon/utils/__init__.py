@@ -21,5 +21,5 @@ from .platform import *
 from .decorators import *
 from .routines import *
 from .thread_support import *
-from .pathutils import *
+from .path_utils import *
 from .namespace import *

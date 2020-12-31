@@ -60,14 +60,14 @@ geom_image_volume = """
     out vec4 fColor;
     out vec3 texcoord;
 
-    // indices of the edges for the cube, each successive pair represents one edge
+    // topos of the edges for the cube, each successive pair represents one edge
     int[24] edges={  
         0, 1, 0, 2, 1, 3, 2, 3, // bottom square 
         0, 4, 1, 5, 2, 6, 3, 7, // vertical edges 
         4, 5, 4, 6, 5, 7, 6, 7 // top square
     };
     
-    // indices of the triangles defining this plane, up to 4 depending on how many vertices are generated
+    // topos of the triangles defining this plane, up to 4 depending on how many vertices are generated
     int[] triangle_indices = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 };
     
     // vertices for the unit cude, also used as texture uvw coordinates 

@@ -16,23 +16,33 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-
-try:
-    from numba import jit as _jit, prange
-    from functools import partial
-
-    jit = partial(_jit, nopython=True, cache=True)
-
-except ImportError:
-    import warnings
-
-    warnings.warn("Numba not found, code will not be compiled")
+from eidolon.mathdef import vec3, rotator, transform
+from unittest import TestCase
+from numpy.testing import assert_array_equal
 
 
-    def jit(func):
-        return func
+class TestVec3(TestCase):
+    def test_basic(self):
+        v = vec3(1, -2, 3)
+
+        assert_array_equal(tuple(v), (1, -2, 3))
+
+    def test_mathops(self):
+        v = vec3.one
+        expr = v * vec3(1, 0, 2) + vec3(-2, 1, 3.5)
+        expected = vec3(-1, 1, 5.5)
+
+        assert_array_equal(expr, expected)
+
+    def test_aabb(self):
+        assert vec3(0, 0, 0).in_aabb(vec3(-1, -1, -1), vec3(1, 1, 1))
 
 
-    prange = range
+class TestRotator(TestCase):
+    def test_basic(self):
+        r = rotator()
 
-__all__ = ["jit", "prange"]
+        assert_array_equal(tuple(r), (0, 0, 0, 1))
+        self.assertEqual(r.yaw, 0)
+        self.assertEqual(r.pitch, 0)
+        self.assertEqual(r.roll, 0)

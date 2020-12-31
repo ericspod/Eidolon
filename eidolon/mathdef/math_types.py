@@ -25,7 +25,7 @@ from typing import Union, Optional, Tuple
 from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, rotator_pitch, rotator_roll, rotator_yaw)
 from ..utils import cached_property
 
-__all__ = ["vec3", "rotator", "ray", "transform", "BoundBox"]
+__all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
 
 
 class vec3:
@@ -55,6 +55,9 @@ class vec3:
 
     def __iter__(self):
         return iter((self._x, self._y, self._z))
+
+    def __hash__(self):
+        return hash((self._x, self._y, self._z))
 
     def __pos__(self) -> vec3:
         return vec3(self._x, self._y, self._z)
@@ -118,20 +121,58 @@ class vec3:
     def __ge__(self, other: vec3) -> bool:
         return self == other or self > other
 
+    @cached_property
     def len(self) -> float:
         return len3(self._x, self._y, self._z)
 
+    @cached_property
     def len_sq(self) -> float:
         return lensq3(self._x, self._y, self._z)
 
+    @cached_property
     def abs(self) -> vec3:
         return vec3(abs(self._x), abs(self._y), abs(self._z))
 
+    @cached_property
     def inv(self) -> vec3:
         return vec3(finv(self._x), finv(self._y), finv(self._z))
 
+    @cached_property
     def sign(self) -> vec3:
         return vec3(fsign(self._x), fsign(self._y), fsign(self._z))
+
+    @cached_property
+    def norm(self) -> vec3:
+        length = self.len
+        return self / length if length > 0 else vec3.zero
+
+    @cached_property
+    def is_zero(self) -> bool:
+        return fequals_eps(self._x, 0) and fequals_eps(self._y, 0) and fequals_eps(self._z, 0)
+
+    @cached_property
+    def to_polar(self) -> vec3:
+        length = self.len
+        if length == 0:
+            return vec3.zero
+
+        return vec3(atan2(self._y, self._x), acos(self._z / length), length)
+
+    @cached_property
+    def to_cylindrical(self) -> vec3:
+        return vec3(atan2(self._y, self._x), self._z, sqrt(self._y ** 2 + self._x ** 2))
+
+    @cached_property
+    def from_polar(self) -> vec3:
+        return vec3(
+            cos(self._x) * sin(self._y) * self._z,
+            sin(self._y) * sin(self._x) * self._z,
+            cos(self._y) * self._z
+        )
+
+    @cached_property
+    def from_cylindrical(self) -> vec3:
+        return vec3(cos(self._x) * self._z, sin(self._x) * self._z, self._y)
 
     def cross(self, other: vec3) -> vec3:
         return vec3(self._y * other.z - self._z * other.y, self._z * other.x - self._x * other.z,
@@ -140,61 +181,20 @@ class vec3:
     def dot(self, other: vec3) -> float:
         return self._x * other.x + self._y * other.y + self._z * other.z
 
-    def norm(self) -> vec3:
-        length = self.len()
-        return self / length if length > 0 else vec3.zero
-
     def dist_to(self, other: vec3) -> float:
-        return (self - other).len()
+        return (self - other).len
 
     def dist_to_sq(self, other: vec3) -> float:
-        return (self - other).len_sq()
+        return (self - other).len_sq
 
     def clamp(self, vmin: vec3, vmax: vec3) -> vec3:
         return vec3(fclamp(self._x, vmin.x, vmax.x), fclamp(self._y, vmin.y, vmax.y), fclamp(self._z, vmin.z, vmax.z))
 
-    def to_polar(self) -> vec3:
-        length = self.len()
-        if length == 0:
-            return vec3.zero
-
-        return vec3(atan2(self._y, self._x), acos(self._z / length), length)
-
-    def to_cylindrical(self) -> vec3:
-        return vec3(atan2(self._y, self._x), self._z, sqrt(self._y ** 2 + self._x ** 2))
-
-    def from_polar(self) -> vec3:
-        return vec3(
-            cos(self._x) * sin(self._y) * self._z,
-            sin(self._y) * sin(self._x) * self._z,
-            cos(self._y) * self._z
-        )
-
-    def from_cylindrical(self) -> vec3:
-        return vec3(cos(self._x) * self._z, sin(self._x) * self._z, self._y)
-
-    def is_zero(self):
-        return fequals_eps(self._x, 0) and fequals_eps(self._y, 0) and fequals_eps(self._z, 0)
-
-    def in_aabb(self, vmin: vec3, vmax: vec3) -> bool:
-        return vmin <= self <= vmax
-
-    def in_obb(self, center: vec3, hx: vec3, hy: vec3, hz: vec3):
-        diff: vec3 = self - center
-        return abs(hx.dot(diff)) <= hx.len_sq() and abs(hy.dot(diff)) <= hy.len_sq() and \
-               abs(hz.dot(diff)) <= hz.len_sq()
-
-    def in_sphere(self, center: vec3, radius: float) -> bool:
-        return self.dist_to_sq(center) <= (radius ** 2 + FEPSILON)
-
-    def on_plane(self, planept: vec3, planenorm: vec3) -> bool:
-        return fequals_eps(self.plane_dist(planept, planenorm), 0)
-
     def is_parallel(self, other: vec3) -> bool:
-        return self.cross(other).is_zero()
+        return self.cross(other).is_zero
 
     def angle_to(self, other: vec3) -> float:
-        length: float = sqrt(self.len_sq() * other.len_sq())
+        length: float = sqrt(self.len_sq * other.len_sq)
 
         if length < FEPSILON:
             return 0.0
@@ -209,8 +209,22 @@ class vec3:
 
         return acos(vl)
 
+    def in_aabb(self, vmin: vec3, vmax: vec3) -> bool:
+        return vmin <= self <= vmax
+
+    def in_obb(self, center: vec3, hx: vec3, hy: vec3, hz: vec3):
+        diff: vec3 = self - center
+        return abs(hx.dot(diff)) <= hx.len_sq and abs(hy.dot(diff)) <= hy.len_sq and \
+               abs(hz.dot(diff)) <= hz.len_sq
+
+    def in_sphere(self, center: vec3, radius: float) -> bool:
+        return self.dist_to_sq(center) <= (radius ** 2 + FEPSILON)
+
+    def on_plane(self, planept: vec3, planenorm: vec3) -> bool:
+        return fequals_eps(self.plane_dist(planept, planenorm), 0)
+
     def plane_norm(self, v2: vec3, v3: vec3, vfar: Optional[vec3] = None) -> vec3:
-        pnorm = (v2 - self).cross(v3 - self).norm()
+        pnorm = (v2 - self).cross(v3 - self).norm
 
         if vfar is not None and pnorm.angle_to(vfar - self) < (pi * 0.5):
             return -pnorm
@@ -223,24 +237,17 @@ class vec3:
     def plane_project(self, planept: vec3, planenorm: vec3) -> vec3:
         return self - (planenorm * self.plane_dist(planept, planenorm))
 
-    def tri_area(self, v2: vec3, v3: vec3) -> float:
-        bb: vec3 = v2 - self
-        cc: vec3 = v3 - self
-
-        return bb.len() * cc.len() * sin(bb.angle_to(cc)) * 0.5
-
     def line_dist(self, v1: vec3, v2: vec3) -> float:
         axis: vec3 = v2 - v1
-        al: float = axis.len()
 
-        if al < FEPSILON:  # v1==v2 so no line
+        if axis.len < FEPSILON:  # v1==v2 so no line
             return -1
 
-        # self is below or above the cylinder
+        # v1 is below or above the cylinder
         if self.plane_dist(v1, axis) < 0 or self.plane_dist(v2, -axis) < 0:
             return -1
 
-        return axis.cross(v1 - self).len() / al
+        return axis.cross(v1 - self).len / axis.len
 
 
 # set unit axes and other global values
@@ -257,10 +264,10 @@ class rotator:
 
     @staticmethod
     def from_axis(axis: vec3, rads: float) -> rotator:
-        if fequals_eps(rads, 0) or axis.is_zero():  # no rotation or bad axis
+        if fequals_eps(rads, 0) or axis.is_zero:  # no rotation or bad axis
             return rotator()
 
-        na: vec3 = axis.norm()
+        na: vec3 = axis.norm
         srads: float = sin(rads / 2)
         return rotator(na.x * srads, na.y * srads, na.z * srads, cos(rads / 2.0))
 
@@ -330,8 +337,8 @@ class rotator:
         This implies a rotation between plane normals and a rotation to transform the right-facing vector to the
         row vector. All args are assumed normalized.
         """
-        norm1: vec3 = col1.cross(row1).norm()
-        norm2: vec3 = col2.cross(row2).norm()
+        norm1: vec3 = col1.cross(row1).norm
+        norm2: vec3 = col2.cross(row2).norm
 
         if norm1 == -norm2:
             rot: rotator = rotator.from_axis(row1, pi)
@@ -362,15 +369,6 @@ class rotator:
     def w(self) -> float:
         return self._w
 
-    def yaw(self) -> float:
-        return rotator_yaw(self._x, self._y, self._z, self._w)
-
-    def pitch(self) -> float:
-        return rotator_pitch(self._x, self._y, self._z, self._w)
-
-    def roll(self) -> float:
-        return rotator_roll(self._x, self._y, self._z, self._w)
-
     def __repr__(self):
         return f"rotator({self._x}, {self._y}, {self._z}, {self._w})"
 
@@ -379,6 +377,9 @@ class rotator:
 
     def __iter__(self):
         return iter((self._x, self._y, self._z, self._w))
+
+    def __hash__(self):
+        return hash((self._x, self._y, self._z, self._w))
 
     def __mul__(self, other: Union[vec3, rotator]) -> Union[vec3, rotator]:
         if isinstance(other, vec3):
@@ -405,24 +406,39 @@ class rotator:
         return ~self * other
 
     def __invert__(self) -> rotator:
-        return self.conjugate().norm()
+        return self.conjugate.norm
 
     def __eq__(self, other: rotator) -> bool:
         return fequals_eps(self._x, other.x) and fequals_eps(self._y, other.y) and \
                fequals_eps(self._z, other.z) and fequals_eps(self._w, other.w)
 
+    @cached_property
+    def yaw(self) -> float:
+        return rotator_yaw(self._x, self._y, self._z, self._w)
+
+    @cached_property
+    def pitch(self) -> float:
+        return rotator_pitch(self._x, self._y, self._z, self._w)
+
+    @cached_property
+    def roll(self) -> float:
+        return rotator_roll(self._x, self._y, self._z, self._w)
+
+    @cached_property
     def conjugate(self):
         return rotator(-self._x, -self._y, -self._z, self._w)
 
+    @cached_property
     def len(self) -> float:
         return sqrt(self._x ** 2 + self._y ** 2 + self._z ** 2 + self._w ** 2)
 
+    @cached_property
+    def norm(self) -> rotator:
+        length: float = self.len
+        return rotator(self._x / length, self._y / length, self._z / length, self._w / length)
+
     def dot(self, rot: rotator) -> float:
         return self._x * rot.x + self._y * rot.y + self._z * rot.z + self._w * rot.w
-
-    def norm(self) -> rotator:
-        length: float = self.len()
-        return rotator(self._x / length, self._y / length, self._z / length, self._w / length)
 
     def interpolate(self, val: float, rot: rotator) -> rotator:
         if val >= 1:
@@ -433,11 +449,11 @@ class rotator:
         mult: float = -1 if self.dot(rot) < 0 else 1
         components: list = [s + (mult * r - s) * val for s, r in zip(self, rot)]
 
-        return rotator(*components).norm()
+        return rotator(*components).norm
 
     def to_matrix(self) -> np.ndarray:
         out: np.ndarray = np.eye(4)
-        rnorm: rotator = self.norm()
+        rnorm: rotator = self.norm
         x2: float = rnorm.x * rnorm.x
         y2: float = rnorm.y * rnorm.y
         z2: float = rnorm.z * rnorm.z
@@ -458,8 +474,8 @@ class rotator:
 class ray:
     def __init__(self, pos: vec3, vdir: vec3):
         self._pos: vec3 = pos
-        self._vdir: vec3 = vdir.norm()
-        self._invdir: vec3 = vdir.inv()
+        self._vdir: vec3 = vdir.norm
+        self._invdir: vec3 = vdir.inv
         self._signx: bool = self._invdir.x < 0
         self._signy: bool = self._invdir.y < 0
         self._signz: bool = self._invdir.z < 0
@@ -532,7 +548,7 @@ class transform:
             xcorner: vec3 = self * (other * vec3.X)
             ycorner: vec3 = self * (other * vec3.Y)
 
-            rot: rotator = rotator.between_planes((xcorner - mincorner).norm(), (ycorner - mincorner).norm(), vec3.X,
+            rot: rotator = rotator.between_planes((xcorner - mincorner).norm, (ycorner - mincorner).norm, vec3.X,
                                                   vec3.Y)
             scale: vec3 = rot / (maxcorner - mincorner)
 
@@ -548,7 +564,7 @@ class transform:
         return self / other
 
     def __invert__(self) -> transform:
-        return transform(self._trans * -1, self._scale.inv(), ~self._rot, not self._is_inverse)
+        return transform(self._trans * -1, self._scale.inv, ~self._rot, not self._is_inverse)
 
     def __eq__(self, other: transform) -> bool:
         return self._trans == other.trans and self._scale == other.scale and \
@@ -557,6 +573,7 @@ class transform:
     def __repr__(self):
         return f"transform({self._rot}, {self._scale}, {self._rot}, {self._is_inverse})"
 
+    @cached_property
     def directional(self) -> transform:
         return transform(vec3.zero, self._scale, self._rot, self._is_inverse)
 
@@ -586,7 +603,7 @@ class BoundBox:
 
     @staticmethod
     def from_vertices(vertices) -> BoundBox:
-        from .meshutils import calculate_bound_box
+        from .mesh_utils import calculate_bound_box
         xmin, ymin, zmin, xmax, ymax, zmax = calculate_bound_box(vertices)
         return BoundBox(vec3(xmin, ymin, zmin), vec3(xmax, ymax, zmax))
 
@@ -604,21 +621,16 @@ class BoundBox:
 
     @property
     def diag(self):
-        return self._vmax-self._vmin
+        return self._vmax - self._vmin
 
     def __repr__(self):
         return f"BoundBox({self._vmin}, {self._vmax})"
 
     @cached_property
     def corners(self) -> Tuple[vec3, vec3, vec3, vec3, vec3, vec3, vec3, vec3]:
-        from .meshutils import calculate_aabb_corners
+        from .mesh_utils import calculate_aabb_corners
 
         return calculate_aabb_corners(self._vmin, self._vmax)
-        # xmin, ymin, zmin = self._vmin
-        # xmax, ymax, zmax = self._vmax
-        #
-        # return self._vmin, vec3(xmax, ymin, zmin), vec3(xmin, ymax, zmin), vec3(xmax, ymax, zmin), \
-        #        vec3(xmin, ymin, zmax), vec3(xmax, ymin, zmax), vec3(xmin, ymax, zmax), self._vmax
 
     @cached_property
     def center(self) -> vec3:
@@ -628,8 +640,17 @@ class BoundBox:
     def radius(self) -> float:
         return self._vmin.dist_to(self._vmax) / 2
 
-    def in_bounds(self, v: vec3) -> bool:
-        return v.in_aabb(self._vmin, self._vmax)
+    def plane_intersects(self, planept: vec3, planenorm: vec3):
+        """Returns True if the plane defined by point `planept` and normal `planenorm` intersects the bounding area."""
+        corners_above = set(c.plane_dists(planept, planenorm) >= 0 for c in self.corners)
+
+        return len(corners_above) == 2
+
+    def __contains__(self, other: Union[vec3, BoundBox]):
+        if isinstance(other, vec3):
+            return other.in_aabb(self._vmin, self._vmax)
+        else:
+            return other.vmin.in_aabb(self._vmin, self._vmax) and other.vmax.in_aabb(self._vmin, self._vmax)
 
     def __mul__(self, other: transform) -> BoundBox:
         return BoundBox.from_vertices([c * other for c in self.corners])
@@ -637,6 +658,45 @@ class BoundBox:
     def __add__(self, other: BoundBox) -> BoundBox:
         return BoundBox.from_vertices(self.corners + other.corners)
 
+    def __sub__(self, other: BoundBox) -> BoundBox:
+        vmin, vmax = other
+        return BoundBox.from_vertices([c.clamp(vmin, vmax) for c in self.corners])
+
     def __iter__(self):
         yield self._vmin
         yield self._vmax
+
+
+class Transformable:
+    def __init__(self):
+        self._transform: transform = transform()
+
+    @property
+    def position(self) -> vec3:
+        return self._transform.trans
+
+    @position.setter
+    def position(self, pos: vec3):
+        self.set_transform(transform(pos, self._transform.scale, self._transform.rot))
+
+    @property
+    def orientation(self) -> rotator:
+        return self._transform.rot
+
+    @orientation.setter
+    def orientation(self, rot: rotator):
+        self.set_transform(transform(self._transform.trans, self._transform.scale, rot))
+
+    @property
+    def scale(self) -> vec3:
+        return self._transform.scale
+
+    @scale.setter
+    def scale(self, scale: vec3):
+        self.set_transform(transform(self._transform.trans, scale, self._transform.rot))
+
+    def get_transform(self) -> transform:
+        return self._transform
+
+    def set_transform(self, trans: transform):
+        raise NotImplementedError()

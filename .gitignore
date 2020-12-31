@@ -108,3 +108,5 @@ venv.bak/
 *.pickle
 .DS_Store
 .idea
+
+*.npz

@@ -56,8 +56,8 @@ class ElemTypeDef(object):
         self.order = order  # order (1=linear, 2=quadratic, etc)
         self.xis = list(xis)  # xi values for each node, [] if node count not fixed
         self.centerxi = (0.25 if self.is_simplex else 0.5,) * self.dim
-        self.vertices = list(vertices)  # list of vertex indices, [] if node count not fixed
-        self.faces = list(faces)  # list of face node indices, [] if node count not fixed
+        self.vertices = list(vertices)  # list of vertex topos, [] if node count not fixed
+        self.faces = list(faces)  # list of face node topos, [] if node count not fixed
 
         # basis callable, maps xi values to node coefficients, must accept x, y, z coordinate
         # arguments plus any further positional and keyword args
@@ -67,7 +67,7 @@ class ElemTypeDef(object):
         self.internalxis = list(internalxis)  # per-face xi sub values to convert a xi value on face to internal xi
         self.facevertices = [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in
                              range(len(self.faces))]  # # of vertices per face
-        self.edges = []  # tuples of xi indices defining edges on 1D/2D elements, vertices first followed by midpoints
+        self.edges = []  # tuples of xi topos defining edges on 1D/2D elements, vertices first followed by midpoints
 
         # ElemTypeDef defining faces as 2D elements (assumes all faces same shape)
         self.facetype = facetype if facetype else self
@@ -102,8 +102,8 @@ class ElemTypeDef(object):
         return self.facevertices[face] if face < len(self.facevertices) else -1
 
     def get_face_indices(self, face):
-        """Returns the indices for a face, or [] if not fixed."""
-        # return self.faces[face][:-1] if self.is_fixed_node_count() else -1
+        """Returns the topos for a face, or [] if not fixed."""
+        # return v1.faces[face][:-1] if v1.is_fixed_node_count() else -1
         if face >= len(self.faces) or not self.is_fixed_node_count:
             return []
         elif self.dim < 3:
@@ -166,7 +166,7 @@ class ElemTypeDef(object):
 
     def face_xi_to_elem_xi(self, face, xi0, xi1):
         """
-        Convert the xi value (xi0,xi1) on face number `face' to an element xi value for a 3D element. If self.dim
+        Convert the xi value (xi0,xi1) on face number `face' to an element xi value for a 3D element. If v1.dim
         is less than 3, the result is simply (xi0,xi1,0). This relies on face 0 being on the xi YZ plane at xi0=0.
         """
         if self.dim < 3:
@@ -175,7 +175,7 @@ class ElemTypeDef(object):
         result = [0, 0, 0]
         facetype = self.get_face_type(face, True)
         coeffs = facetype.basis(xi0, xi1, 0)  # coeffs within the xi space of this face
-        finds = self.get_face_indices(face)  # indices for the nodes of the element defining this face
+        finds = self.get_face_indices(face)  # topos for the nodes of the element defining this face
 
         # interpolate the xi coordinates of the nodes defining this face
         for c, f in zip(coeffs, finds):
@@ -205,7 +205,7 @@ class ElemTypeDef(object):
 def find_faces(xis, num_vertices, is_simplex):
     """
     Find the faces of an axis-aligned element (tet or hex) with unit xi coordinates. This adheres to CHeart node
-    ordering. The first indices for each face will be the vertices, the last is the index for a node opposite the face.
+    ordering. The first topos for each face will be the vertices, the last is the index for a node opposite the face.
     A more general face-finding operation would look for those nodes defining vertices and then the nodes between them
     to find faces, but life is easier with axis-aligned elements. Other geometry types other than tet or hex would
     require modification to this function. The first return value is a list of face index lists, the second is a list
@@ -224,7 +224,7 @@ def find_faces(xis, num_vertices, is_simplex):
 
     # collect axis-aligned faces
     for dim, xirange in itertools.product(range(xi_dim), xi_range):
-        # collect the indices of each xi value whose component 'dim' equals 'xirange' (which is 0 or 1)
+        # collect the topos of each xi value whose component 'dim' equals 'xirange' (which is 0 or 1)
         face = [n for n, xi in enumerate(xis) if xi[dim] == xirange]
         if len(face) > 0:
             far = farnode(face, xirange)
@@ -247,7 +247,7 @@ def find_faces(xis, num_vertices, is_simplex):
         b = faces[b]
         return (a > b) - (a < b)
 
-    # indices=sorted(range(len(faces)),key=lambda i:faces[i])
+    # topos=sorted(range(len(faces)),key=lambda i:faces[i])
     indices = sorted(range(len(faces)), key=functools.cmp_to_key(_cmp))
 
     return [faces[i] for i in indices], [internalxisub[i] for i in indices]
@@ -255,7 +255,8 @@ def find_faces(xis, num_vertices, is_simplex):
 
 def find_edges(xis, num_vertices, is_simplex):
     def crosses_midpoint(a, b):
-        return sum(1 if abs(i * 0.5 + j * 0.5 - 0.5) < FEPSILON else 0 for i, j in zip(a, b)) in (2, 3)
+        """Returns True if the line from `a` to `b` crosses the midpoint of a face or element, ie. is diagonal."""
+        return sum(abs(i * 0.5 + j * 0.5 - 0.5) < FEPSILON for i, j in zip(a, b)) in (2, 3)
 
     def within(v, a, b):
         """Returns True if `v' is within range [a,b], or [b,a] if b<=a."""
@@ -310,7 +311,7 @@ def nodal_lagrange_type(shape, desc, order):
     faces = []
     internalxis = []
     vertices = list(range(num_vertices))
-    facetype = None
+    face_type = None
 
     if dim == 3:
         faces, internalxis = find_faces(xis, num_vertices, is_simplex)
@@ -319,11 +320,10 @@ def nodal_lagrange_type(shape, desc, order):
 
     if dim == 3:  # TODO: this assumes all faces the same shape, change if this isn't true anymore (eg. prisms)
         shape_type = ShapeType._Tri if is_simplex else ShapeType._Quad
-        # facetype = nodal_lagrange_type(shape_type, 'Face type', order)
         face_name = ElemType.get_elem_type_name(shape_type, "NL", order)
         face_type = ElemType[face_name]
 
-    return ElemTypeDef(shape, 'NL', desc, order, xis, vertices, faces, internalxis, basis, point_search_elem, facetype)
+    return ElemTypeDef(shape, 'NL', desc, order, xis, vertices, faces, internalxis, basis, point_search_elem, face_type)
 
 
 class BasisGenFuncs(Namespace):
@@ -379,8 +379,10 @@ class ElemTypeMeta(NamespaceMeta):
             faces = [faces]
 
         for f in faces:
-            if f and f not in cls:
-                cls.append(cls.get_elem_type_name(f.shape_type, basistype, f.order), f)
+            if f is not None:
+                name = cls.get_elem_type_name(f.shape_type, basistype, f.order)
+                if name not in cls:
+                    cls.append(name, f)
 
         return basisobj
 

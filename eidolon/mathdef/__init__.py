@@ -18,8 +18,11 @@
 
 from .utils import *
 from .compile_support import *
-from .mathtypes import *
-from .meshutils import *
-from .imageutils import *
+from .math_types import *
+from .mesh_utils import *
+from .image_utils import *
 from .basis_functions import *
 from .elem_type import *
+from .octree import *
+from .mesh import *
+from .mesh_algorithms import *

@@ -262,13 +262,13 @@ def choose_str_dialog(title, defaultval, parent, callback):
 
 
 # @qtmainthread
-# def choose_list_items_dialog(self, title, msg, items, callback, selected=[], multi_select=False):
+# def choose_list_items_dialog(v1, title, msg, items, callback, selected=[], multi_select=False):
 #     if multi_select:
 #         selectmode = QtWidgets.QAbstractItemView.MultiSelection
 #     else:
 #         selectmode = QtWidgets.QAbstractItemView.SingleSelection
 #
-#     d = QtWidgets.QDialog(self)
+#     d = QtWidgets.QDialog(v1)
 #     d.setWindowTitle(title)
 #     d.resize(400, Utils.clamp(len(items) * 10, 200, 800))
 #     d.verticalLayout = QtWidgets.QVBoxLayout(d)
