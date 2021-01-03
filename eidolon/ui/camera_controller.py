@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+import math
 from typing import Union
 
 from PyQt5 import QtGui, QtCore
@@ -33,10 +34,10 @@ __all__ = ["CameraController"]
 class CameraController:
     def __init__(self, camera: OffscreenCamera, position: vec3, theta: float, phi: float, dist: float):
         self.camera: OffscreenCamera = camera
-        self.position: vec3 = position
+        self._position: vec3 = position
         self.theta: float = theta
         self.phi: float = phi
-        self.dist: float = dist
+        self._dist: float = dist
         self.last_pos = None
         self.free_rotator = None
         self._is_z_locked = True
@@ -95,18 +96,22 @@ class CameraController:
             self.free_rotator = self.get_rotation()
             self._is_z_locked = False
 
-    def get_position(self):
-        return self.position
+    @property
+    def position(self):
+        return self._position
 
-    def set_position(self, position):
-        self.position = position
-        self.apply_camera_position()
+    @position.setter
+    def position(self, value):
+        self._position = value
+        # self.apply_camera_position()
 
-    def get_dist(self):
-        return self.dist
+    @property
+    def dist(self):
+        return self._dist
 
-    def set_dist(self, dist):
-        self.dist = max(5 * self.zscale, dist)
+    @dist.setter
+    def dist(self, value):
+        self._dist = max(5 * self.zscale, value)
 
     def get_rotation(self):
         """
@@ -149,7 +154,7 @@ class CameraController:
             self.set_rotation(dx_r * self.free_rotator)
 
     def translate(self, trans: vec3):
-        self.set_position(self.get_position() + trans)
+        self.position += trans
 
     def translate_camera_relative(self, dx, dy, dz):
         """Translate relative to the orientation (Y-forward, Z-up) defined by the camera's rotator."""
@@ -157,7 +162,20 @@ class CameraController:
         self.translate(rot * (vec3(dx, dy, dz) * self.tscale))
 
     def zoom(self, dz: float):
-        self.set_dist(self.get_dist() + dz * self.zscale)
+        self.dist += dz * self.zscale
+
+    def move_see_all(self):
+        aabb = self.camera.scene_aabb
+        radius = max(0.0001, aabb.radius)
+        fov =max(self.camera.fov)
+
+        self.position = aabb.center
+        self.dist = (radius * 0.5) / math.tan(fov * 0.5) + radius * 1.5
+        self.zscale = radius * 0.005
+        self.tscale = radius * 0.00125
+        # self.radiusPower = Utils.getClosestPower(radius) - 1
+
+        self.apply_camera_position()
 
     def apply_camera_position(self):
         rot = self.get_rotation()

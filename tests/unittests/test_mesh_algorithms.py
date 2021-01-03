@@ -29,7 +29,7 @@ class SimpleMeshTestCase(TestCase):
         nodes = np.array([(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1)])
         inds = np.array([(0, 1, 2, 3), (1, 2, 3, 4)])
 
-        self.mesh = Mesh(nodes, [("inds", inds, "Tet1NL")])
+        self.mesh = Mesh(nodes, {"inds": (inds, "Tet1NL")})
 
 
 class TestCalculateOctree(SimpleMeshTestCase):

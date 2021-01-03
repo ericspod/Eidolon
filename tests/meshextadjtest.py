@@ -32,20 +32,20 @@ res=timeit.timeit(func,number=number)
 
 print("calculate_shared_nodes", res/number)
 
-func=lambda: calculate_expanded_face_inds(expanded_face_inds, t, leafdata, face_inds)
-
-func()
-
-res = timeit.timeit(func,number=number)
-
-print("calculate_expanded_face_inds",res/number)
-
-expanded_face_inds = np.sort(expanded_face_inds, axis=2)
-
-func=lambda: calculate_leaf_ext_adj(expanded_face_inds, t, leafdata, face_inds, topo_ext_adj)
-
-func()
-
-res = timeit.timeit(func,number=number)
-
-print("calculate_leaf_ext_adj",res/number)
+# func=lambda: calculate_expanded_face_inds(expanded_face_inds, t, leafdata, face_inds)
+#
+# func()
+#
+# res = timeit.timeit(func,number=number)
+#
+# print("calculate_expanded_face_inds",res/number)
+#
+# expanded_face_inds = np.sort(expanded_face_inds, axis=2)
+#
+# func=lambda: calculate_leaf_ext_adj(expanded_face_inds, t, leafdata, face_inds, topo_ext_adj)
+#
+# func()
+#
+# res = timeit.timeit(func,number=number)
+#
+# print("calculate_leaf_ext_adj",res/number)

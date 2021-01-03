@@ -91,7 +91,7 @@ def hex_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, fl
            xi01 - xi012, xi2 - xi02 - xi12 + xi012, xi02 - xi012, xi12 - xi012, xi012
 
 
-def lagrange_beta(order, is_simplex, dim):
+def lagrange_beta(order: int, is_simplex: bool, dim: int):
     """
     Calculate the beta matrix for a nodal lagrange basis function defining line, triangle, quad, hex, or tet elements.
     This adheres to CHeart node ordering. See Lee et al., "Multi-Physics Computational Modeling in CHeart", 2016
@@ -99,8 +99,8 @@ def lagrange_beta(order, is_simplex, dim):
 
     def sort_cheart(a, b):
         """Sort the columns of the beta matrix to enforce CHeart node ordering."""
-        aorder = all(i == order or i == 0 for i in a)
-        border = all(i == order or i == 0 for i in b)
+        aorder = all(int(i) in (0, order) for i in a)
+        border = all(int(i) in (0, order) for i in b)
 
         # sort first by order (# of index components used by vertices), this makes vertices come first
         if aorder < border:
@@ -114,7 +114,6 @@ def lagrange_beta(order, is_simplex, dim):
                 return -1
             elif i > j:
                 return 1
-            return 0
 
         return 0
 
@@ -127,7 +126,7 @@ def lagrange_beta(order, is_simplex, dim):
     return np.swapaxes(vals, 0, 1)
 
 
-def lagrange_alpha(beta, xis):
+def lagrange_alpha(beta: np.ndarray, xis: np.ndarray):
     """
     Calculate an alpha matrix for a nodal lagrange basis function by applying the Vandermonde matrix method to a beta
     matrix and node xi coords. This adheres to CHeart node ordering.
@@ -143,7 +142,7 @@ def lagrange_alpha(beta, xis):
     return np.linalg.inv(a).T
 
 
-def xi_coords(order, beta):
+def xi_coords(order: int, beta: np.ndarray):
     """Calculate xi coords for nodes from a beta matrix."""
     result = []
     for i in range(beta.shape[1]):
@@ -269,5 +268,8 @@ def lagrange_basis(shape_type, order, prefix_code=""):
 
         exec(dedent(basis_func))  # compile the generated function with Numba if installed
         basis_func = locals()[basis_name]
+
+    # if xis.shape[1] == 3:
+    #     xis = xis[:, (1, 0, 2)]  # swap X and Y values
 
     return basis_func, xis

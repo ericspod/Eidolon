@@ -33,7 +33,7 @@ from panda3d.core import (
 )
 
 from .render_base import RenderBase
-from ..mathdef import vec3
+from ..mathdef import vec3, BoundBox
 
 __all__ = ["OffscreenCamera"]
 
@@ -100,6 +100,7 @@ class OffscreenCamera:
 
         return datanp[::-1]
 
+    @property
     def size(self):
         return tuple(self.lens.get_film_size())
 
@@ -114,3 +115,12 @@ class OffscreenCamera:
             self.camera.look_at(LPoint3f(*look_at))
         else:
             self.camera.look_at(LPoint3f(*look_at), LPoint3f(*up))
+
+    @property
+    def scene_aabb(self):
+        vmin, vmax = self.nodepath.get_tight_bounds()
+        return BoundBox(vec3(*vmin), vec3(*vmax))
+
+    @property
+    def fov(self):
+        return np.deg2rad(self.lens.get_fov())

@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import numpy as np
-from ..utils import Namespace
+from ..utils import Namespace, first
 
 __all__ = ["Mesh", "MeshDataType"]
 
@@ -34,7 +34,7 @@ class MeshDataType(Namespace):
 
 
 class Mesh:
-    def __init__(self, nodes, topo_sets=[], field_sets=[], time_index=0, normals=None, colors=None, uvws=None):
+    def __init__(self, nodes, topo_sets={}, field_sets={}, time_index=0, normals=None, colors=None, uvws=None):
         self.nodes = nodes
         self.topos = {}
         self.fields = {}
@@ -46,20 +46,14 @@ class Mesh:
         self.properties = {}
         self.other_arrays = {}
 
-        for t in topo_sets:
-            if isinstance(t, (list, tuple)):
-                self.set_topology(*t)
-            else:
-                raise ValueError(f"Unknown index {t}")
+        for name, vals in topo_sets.items():
+            self.set_topology(name, *vals)
 
-        for f in field_sets:
-            if isinstance(f, (list, tuple)):
-                self.set_field(*f)
-            else:
-                raise ValueError(f"Unknown field {f}")
+        for name, vals in field_sets.items():
+            self.set_field(name, *vals)
 
-    def set_topology(self, name, index_array, elem_type=None):
-        self.topos[name] = (index_array, elem_type)
+    def set_topology(self, name, index_array, elem_type=None, is_field_topo=False):
+        self.topos[name] = (index_array, elem_type, is_field_topo)
 
-    def set_field(self, name, data_array, spatial_topology, field_topology=None):
-        self.fields[name] = (data_array, spatial_topology, field_topology)
+    def set_field(self, name, data_array, spatial_topology, field_topology=None, is_per_elem=False):
+        self.fields[name] = (data_array, spatial_topology, field_topology, is_per_elem)

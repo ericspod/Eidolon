@@ -21,74 +21,65 @@ from .elem_type import ElemType, ElemTypeDef
 from .octree import Octree
 from ..utils import first
 from .mesh import Mesh, MeshDataType
-from .compile_support import jit, prange
+from .compile_support import jit, prange, has_numba
+from .mesh_utils import divide_quad_to_tri_mesh, divide_tri_to_tri_mesh
 
 import numpy as np
 
-__all__ = ["calculate_mesh_octree", "calculate_shared_nodes", "calculate_mesh_ext_adj"]
+__all__ = ["calculate_mesh_octree", "calculate_shared_nodes", "calculate_mesh_ext_adj", "calculate_tri_mesh"]
 
 
 def calculate_mesh_octree(mesh: Mesh, topo_name=None, depth=3):
     topo_name = topo_name or first(mesh.topos)
-    topo_array, _ = mesh.topos[topo_name]
+    topo_array, *_ = mesh.topos[topo_name]
 
-    other_key = (topo_name, MeshDataType.octree)
+    other_key = (topo_name, MeshDataType._octree)
 
-    nodes = [vec3(*v) for v in mesh.nodes]
+    oc = mesh.other_arrays.get(other_key, None)
 
-    if other_key not in mesh.other_arrays:
+    if oc is None:
+        nodes = [vec3(*v) for v in mesh.nodes]
         oc = Octree.from_mesh(depth, nodes, topo_array)
         mesh.other_arrays[other_key] = oc
 
-
-from numba.typed import Dict, List
-from numba.core import types
-
-int_array = types.int64[:]
+    return oc
 
 
-@jit
-def calculate_shared_nodes(topo_array: np.array, leaf: np.array):
-    result = dict()
-
-    for idx in range(leaf.shape[0]):
-        elem_idx = leaf[idx]
-
-        for node_idx in range(topo_array.shape[1]):
-            node = topo_array[elem_idx, node_idx]
-            if node not in result:
-                result[node] = List.empty_list(item_type=types.int64)
-
-            result[node].append(idx)
-
-    return result
+if has_numba:
+    from numba.typed import List
+    from numba.core import types
 
 
-def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None):
-    topo_name = topo_name or first(mesh.topos)
-    topo_array, et_name = mesh.topos[topo_name]
-    et: ElemTypeDef = ElemType[et_name]
-    octree = mesh.other_arrays[(topo_name, MeshDataType.octree)]
+    @jit
+    def calculate_shared_nodes(topo_array: np.array, leaf: np.array):
+        result = dict()
 
-    face_inds = np.array(et.faces)[:, :-1]  # remove far node index
+        for idx in range(leaf.shape[0]):
+            elem_idx = leaf[idx]
 
-    topo_ext_adj = -np.ones((topo_array.shape[0], et.num_faces * 2), dtype=int)
+            for node_idx in range(topo_array.shape[1]):
+                node = topo_array[elem_idx, node_idx]
+                if node not in result:
+                    result[node] = List.empty_list(item_type=types.int64)
 
-    for leaf in octree.leaves:
-        if len(leaf.leafdata):
-            leafdata = np.array(leaf.leafdata)
-            num_faces = face_inds.shape[0]
-            face_size = face_inds.shape[1]
+                result[node].append(idx)
 
-            expanded_face_inds = np.zeros((leafdata.shape[0], num_faces, face_size), dtype=int)
-            calculate_expanded_face_inds(expanded_face_inds, topo_array, leafdata, face_inds)
-            expanded_face_inds = np.sort(expanded_face_inds, axis=2)
+        return result
+else:
+    def calculate_shared_nodes(topo_array: np.array, leaf: np.array):
+        result = dict()
 
-            calculate_leaf_ext_adj(expanded_face_inds, topo_array, leafdata, face_inds, topo_ext_adj)
+        for idx in range(leaf.shape[0]):
+            elem_idx = leaf[idx]
 
-    mesh.other_arrays[(topo_name, MeshDataType.ext_adj)] = topo_ext_adj
+            for node_idx in range(topo_array.shape[1]):
+                node = topo_array[elem_idx, node_idx]
+                if node not in result:
+                    result[node] = []
 
-    return topo_ext_adj
+                result[node].append(idx)
+
+        return result
 
 
 @jit(parallel=True)
@@ -105,9 +96,45 @@ def calculate_expanded_face_inds(expanded_face_inds: np.array, topo_array: np.ar
                 expanded_face_inds[idx, face_idx, felem_idx] = topo_array[elem_idx, face_inds[face_idx, felem_idx]]
 
 
+def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None, octree_threshold=1000, octree_depth=3):
+    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t][2])
+    ext_adj_key = (topo_name, MeshDataType._ext_adj)
+
+    topo_ext_adj = mesh.other_arrays.get(ext_adj_key, None)
+
+    if topo_ext_adj is None:
+        topo_array, et_name, _ = mesh.topos[topo_name]
+        et: ElemTypeDef = ElemType[et_name]
+
+        if topo_array.shape[0] < octree_threshold:
+            leaf_inds = [np.arange(topo_array.shape[0])]
+        else:
+            octree = calculate_mesh_octree(mesh, topo_name, octree_depth)
+            leaf_inds = [leaf.leafdata for leaf in octree.leaves if len(leaf.leafdata) > 0]
+
+        face_inds = np.array(et.faces)[:, :-1]  # remove far node index
+
+        topo_ext_adj = -np.ones((topo_array.shape[0], et.num_faces * 2), dtype=int)
+
+        for leafdata in leaf_inds:
+            leafdata = np.array(leafdata)
+            num_faces = face_inds.shape[0]
+            face_size = face_inds.shape[1]
+
+            expanded_face_inds = np.zeros((leafdata.shape[0], num_faces, face_size), dtype=int)
+            calculate_expanded_face_inds(expanded_face_inds, topo_array, leafdata, face_inds)
+            expanded_face_inds = np.sort(expanded_face_inds, axis=2)
+
+            _calculate_leaf_ext_adj(expanded_face_inds, topo_array, leafdata, face_inds, topo_ext_adj)
+
+        mesh.other_arrays[ext_adj_key] = topo_ext_adj
+
+    return topo_ext_adj
+
+
 @jit(parallel=True)
-def calculate_leaf_ext_adj(expanded_face_inds: np.array, topo_array: np.array, leaf: np.array,
-                           face_inds: np.array, topo_ext_adj: np.array):
+def _calculate_leaf_ext_adj(expanded_face_inds: np.array, topo_array: np.array, leaf: np.array,
+                            face_inds: np.array, topo_ext_adj: np.array):
     shared_nodes = calculate_shared_nodes(topo_array, leaf)
 
     num_elems = leaf.shape[0]
@@ -139,28 +166,96 @@ def calculate_leaf_ext_adj(expanded_face_inds: np.array, topo_array: np.array, l
                         topo_ext_adj[other_elem, other_face_idx] = elem_idx
                         topo_ext_adj[other_elem, other_face_idx + num_faces] = face_idx
 
-# # @jit
-# def calculate_leaf_ext_adj(topo_array: np.array, leaf: np.array, face_inds: np.array, topo_ext_adj: np.array):
-#     faces: dict = dict()
-#     num_faces = topo_ext_adj.shape[1] // 2
-#
-#     for idx in range(leaf.shape[0]):
-#         elem_idx = leaf[idx]
-#         elem = topo_array[elem_idx]
-#
-#         for face_idx in range(face_inds.shape[0]):
-#             face = [elem[face_inds[face_idx, i]] for i in range(face_inds.shape[1])]
-#             face = set(face)
-#             face = tuple(face)
-#
-#             if face in faces:
-#                 other = faces[face]
-#                 other_elem = other[0]
-#                 other_face = other[1]
-#
-#                 topo_ext_adj[elem_idx, face_idx] = other_elem
-#                 topo_ext_adj[elem_idx, face_idx + num_faces] = other_face
-#                 topo_ext_adj[other_elem, other_face] = elem_idx
-#                 topo_ext_adj[other_elem, other_face + num_faces] = face_idx
-#             else:
-#                 faces[face] = (elem_idx, face_idx)
+
+def calculate_tri_elem_face_meshes(et: ElemTypeDef, refine=0):
+    fet = et.facetype
+    num_faces = et.num_faces
+
+    if fet.is_simplex:
+        nodes, inds = divide_tri_to_tri_mesh(refine)
+    else:
+        nodes, inds = divide_quad_to_tri_mesh(refine)
+
+    xis = np.zeros((num_faces, len(nodes), 3))
+    coeffs = np.zeros((num_faces, len(nodes), et.num_nodes))
+    inds = np.array(inds)
+
+    for face_idx in range(num_faces):
+        for i, (xi0, xi1) in enumerate(nodes):
+            xi = et.face_xi_to_elem_xi(face_idx, xi0, xi1)
+            xis[face_idx, i] = xi
+            coeffs[face_idx, i] = et.basis(*xi)
+
+    return xis, coeffs, inds
+
+
+@jit
+def apply_coeffs_elem(nodes, inds, ind_idx, coeffs):
+    """
+    Interpolate the node values given by `nodes` of the element at `ind_idx` in the index matrix `inds`. The `coeffs`
+    array of coefficients provides the multiplication values for each node value. The result is equivalent to:
+        np.sum([coeffs[i] * nodes[inds[ind_idx, i]] for i in range(inds.shape[1])],axis=0)
+    """
+    result = coeffs[0] * nodes[inds[ind_idx, 0]]
+
+    for i in range(1, inds.shape[1]):
+        result += coeffs[i] * nodes[inds[ind_idx, i]]
+
+    return result
+
+
+def calculate_tri_mesh(mesh: Mesh, refine=0, topo_name=None, external_only=True, tree_depth=3):
+    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t][2])
+    nodes = mesh.nodes
+    topo_array, et_name, _ = mesh.topos[topo_name]
+    et: ElemTypeDef = ElemType[et_name]
+
+    octree = calculate_mesh_octree(mesh, topo_name, tree_depth)
+    ext_adj = calculate_mesh_ext_adj(mesh, topo_name)
+    face_xis, coeffs, face_tris = calculate_tri_elem_face_meshes(et, refine)
+
+    num_elems = topo_array.shape[0]
+
+    if external_only:
+        ext_faces = ext_adj[:, :et.num_faces] < 0
+        num_ext_faces = np.sum(ext_faces)
+        start_elem_idx = np.cumsum(np.sum(ext_faces, axis=1))
+        # start_elem_idx -= start_elem_idx[0]
+        # start_elem_idx[1:] -= 1
+        start_elem_idx[1:]=start_elem_idx[:-1]
+        start_elem_idx[0]=0
+    else:
+        ext_faces = np.ones_like(ext_adj[:, :et.num_faces], dtype=np.bool)
+        num_ext_faces = et.num_faces * num_elems
+        start_elem_idx = np.arange(num_elems) * et.num_faces
+
+
+    num_face_nodes = face_xis.shape[1]
+    num_face_tris = face_tris.shape[0]
+    num_nodes = num_face_nodes * num_ext_faces
+    num_inds = num_face_tris * num_ext_faces
+
+    out_nodes = np.zeros((num_nodes, nodes.shape[1]), dtype=nodes.dtype)
+    out_xis = np.zeros((num_nodes, 3), dtype=np.float32)
+    out_inds = np.zeros((num_inds, 3), dtype=np.int32)
+
+    for elem_idx in range(num_elems):
+        node_idx = start_elem_idx[elem_idx] * num_face_nodes
+        inds_idx = start_elem_idx[elem_idx] * num_face_tris
+
+        for face_idx in range(ext_faces.shape[1]):
+            if ext_faces[elem_idx, face_idx]:
+                out_inds[inds_idx:inds_idx + num_face_tris] = face_tris + node_idx
+                out_xis[node_idx:node_idx + num_face_nodes] = face_xis[face_idx]
+
+                for nidx in range(num_face_nodes):
+                    out_nodes[node_idx] = apply_coeffs_elem(nodes, topo_array, elem_idx, coeffs[face_idx, nidx])
+                    node_idx += 1
+
+                inds_idx += num_face_tris
+
+    out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)})
+    out_mesh.other_arrays["xis"] = out_xis
+    out_mesh.other_arrays["parent"] = mesh
+
+    return out_mesh

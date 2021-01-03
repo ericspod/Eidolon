@@ -19,6 +19,7 @@
 
 import math
 import itertools
+from functools import lru_cache
 import numpy as np
 from .math_types import vec3, rotator
 from .utils import frange
@@ -27,7 +28,7 @@ __all__ = [
     "generate_plane", "generate_cube", "calculate_aabb_corners",
     "calculate_bound_box", "generate_cylinder", "generate_arrow",
     "generate_axes_arrows", "generate_tri_normals", "add_indices",
-    "generate_line_cuboid"
+    "generate_line_cuboid", "divide_tri_to_tri_mesh", "divide_quad_to_tri_mesh"
 ]
 
 
@@ -86,6 +87,9 @@ def add_indices(indices, offset):
 
 def generate_tri_normals(nodes, indices):
     norms = [vec3.zero for i in nodes]
+
+    if isinstance(nodes,np.ndarray):
+        nodes=[vec3(*v) for v in nodes]
 
     for i, (a, b, c) in enumerate(indices):
         norm = nodes[a].plane_norm(nodes[b], nodes[c])
@@ -361,3 +365,45 @@ def generate_hemisphere(refine=0):
     inds = [(i, j, k) for i, j, k in inds if nodes[i].z >= -1e-10 and nodes[j].z >= -1e-10 and nodes[k].z >= -1e-10]
     inds, comps = reindex_mesh(inds, [nodes])
     return comps[0], inds
+
+
+@lru_cache(maxsize=None)
+def divide_tri_to_tri_mesh(n: int = 0):
+    """Returns 2D xis list and triangle index list for dividing a triangle into a triangle mesh with refinement `n`."""
+    xis = []
+    inds = []
+    n1 = 1.0 / (n + 1)
+
+    for y in frange(0, 1 + n1, n1):
+        xis += [(x, y) for x in frange(0, 1 - y + n1, n1)]
+
+    next_row = 0
+    start = 0
+    for j in range(n + 1):
+        next_row += n + 2 - j
+        for i in range(n - j):
+            inds += [(start, start + 1, next_row + i), (next_row + i, start + 1, next_row + 1 + i)]
+            start += 1
+
+        inds += [(start, start + 1, next_row + n - j)]
+        start = next_row
+
+    return xis, inds
+
+
+@lru_cache(maxsize=None)
+def divide_quad_to_tri_mesh(n: int = 0):
+    """Returns 2D xis list and triangle index list for dividing a quad into a triangle mesh with refinement `n'."""
+    xis = []
+    inds = []
+    n1 = 1.0 / (n + 1)
+
+    for y in frange(0, 1 + n1, n1):
+        xis += [(x, y) for x in frange(0, 1 + n1, n1)]
+
+    for i, j in np.ndindex(n + 1, n + 1):
+        start = j * (n + 2) + i
+        next_row = (j + 1) * (n + 2) + i
+        inds += [(start, start + 1, next_row), (next_row, start + 1, next_row + 1)]
+
+    return xis, inds

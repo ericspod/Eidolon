@@ -225,5 +225,7 @@ class Octree:
         """
         for eidx, elem in enumerate(inds):
             for nidx in elem:
-                _, _, leaf = self.add_node(vec3(*nodes[nidx]), eidx)  # store the node in the leaf
+                node = nodes[nidx]
+                node = vec3(*node)
+                _, _, leaf = self.add_node(node, eidx)  # store the node in the leaf
                 leaf.leafdata.append(eidx)  # store the element ID in the leaf

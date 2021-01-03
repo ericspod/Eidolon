@@ -28,10 +28,11 @@ y    |\    |  |
 
 
 """
-
+from __future__ import annotations
 import itertools
 import functools
 import re
+from typing import Optional, Callable
 
 from ..utils import Namespace, NamespaceMeta, cached_property, is_iterable_notstr, mulsum
 from .utils import lerp, lerp_xi, FEPSILON
@@ -45,32 +46,33 @@ class ElemTypeDef(object):
     Defines a mesh element type, including the basis function and its face definition.
     """
 
-    def __init__(self, shape_type, basisname, desc, order, xis, vertices,
-                 faces, internalxis, basis, pointsearch, facetype):
+    def __init__(self, shape_type: str, basisname: str, desc: str, order: int, xis: list, vertices: list,
+                 faces: list, internalxis: list, basis: Callable, pointsearch: Optional[Callable],
+                 facetype: Optional[ElemTypeDef]):
 
-        self.shape_type = shape_type  # geometry (tet, hex, etc)
-        self.dim = ShapeType[shape_type][1]  # spatial dimensions
-        self.is_simplex = ShapeType[shape_type][2]  # whether the element is simplex (tri,tet) or not
-        self.basisname = basisname  # basis function name (NL=nodal lagrange, etc)
-        self.desc = desc  # plain language description
-        self.order = order  # order (1=linear, 2=quadratic, etc)
-        self.xis = list(xis)  # xi values for each node, [] if node count not fixed
-        self.centerxi = (0.25 if self.is_simplex else 0.5,) * self.dim
-        self.vertices = list(vertices)  # list of vertex topos, [] if node count not fixed
-        self.faces = list(faces)  # list of face node topos, [] if node count not fixed
+        self.shape_type: str = shape_type  # geometry (tet, hex, etc)
+        self.dim: int = ShapeType[shape_type][1]  # spatial dimensions
+        self.is_simplex: bool = ShapeType[shape_type][2]  # whether the element is simplex (tri,tet) or not
+        self.basisname: str = basisname  # basis function name (NL=nodal lagrange, etc)
+        self.desc: str = desc  # plain language description
+        self.order: int = order  # order (1=linear, 2=quadratic, etc)
+        self.xis: list = list(xis)  # xi values for each node, [] if node count not fixed
+        self.centerxi: tuple = (0.25 if self.is_simplex else 0.5,) * self.dim
+        self.vertices: list = list(vertices)  # list of vertex topos, [] if node count not fixed
+        self.faces: list = list(faces)  # list of face node topos, [] if node count not fixed
 
         # basis callable, maps xi values to node coefficients, must accept x, y, z coordinate
         # arguments plus any further positional and keyword args
-        self.basis = basis
+        self.basis: Callable = basis
 
-        self.pointsearch = pointsearch  # callable which implements point search for this type
-        self.internalxis = list(internalxis)  # per-face xi sub values to convert a xi value on face to internal xi
-        self.facevertices = [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in
-                             range(len(self.faces))]  # # of vertices per face
-        self.edges = []  # tuples of xi topos defining edges on 1D/2D elements, vertices first followed by midpoints
+        self.pointsearch: Optional[Callable] = pointsearch  # callable which implements point search for this type
+        self.internalxis: list = list(internalxis)  # per-face xi sub values to convert xi value on face to internal xi
+        self.facevertices: list = [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in
+                                   range(len(self.faces))]  # vertex indices for each face
+        self.edges: list = []  # tuples of xi indices defining edges on 1D/2D elements, vertices first then midpoints
 
         # ElemTypeDef defining faces as 2D elements (assumes all faces same shape)
-        self.facetype = facetype if facetype else self
+        self.facetype: ElemTypeDef = facetype or self
 
         if self.dim == 1:
             self.edges = [list(range(len(xis)))]  # whole line is an edge
@@ -125,7 +127,7 @@ class ElemTypeDef(object):
             facetype = self.facetype
 
         if as_linear:
-            facetype = ElemType.getLinearType(facetype)
+            facetype = ElemType.get_linear_type(facetype)
 
         return facetype
 
@@ -166,8 +168,8 @@ class ElemTypeDef(object):
 
     def face_xi_to_elem_xi(self, face, xi0, xi1):
         """
-        Convert the xi value (xi0,xi1) on face number `face' to an element xi value for a 3D element. If v1.dim
-        is less than 3, the result is simply (xi0,xi1,0). This relies on face 0 being on the xi YZ plane at xi0=0.
+        Convert the xi value (xi0,xi1) on face number `face` to an element xi value for a 3D element. If self.dim
+        is less than 3, the result is simply (xi0,xi1,0). This relies on face 0 being on the xi YZ plane at xi2=0.
         """
         if self.dim < 3:
             return xi0, xi1, 0
@@ -401,7 +403,18 @@ class ElemTypeMeta(NamespaceMeta):
         else:
             return f"{shape_name}{order}{basis_name}"
 
+    def get_linear_type(cls, elemtype):
+        key=cls.get_elem_type_name(elemtype.shape_type, elemtype.basisname, 1)
+        return cls.__getattr__(key)
+
     def __getattr__(cls, key):
+        if key[0] == "_":
+            try:
+                cls._generate_elem_type(key[1:])
+                return key[1:]
+            except ValueError:
+                pass
+
         try:
             return super().__getattr__(key)
         except AttributeError:

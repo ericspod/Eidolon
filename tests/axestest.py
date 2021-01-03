@@ -48,9 +48,9 @@ frag_body = """
     }
 """
 
-s = Shader.make(lang=Shader.SL_GLSL, vertex=vert_body, fragment=frag_body)
+# s = Shader.make(lang=Shader.SL_GLSL, vertex=vert_body, fragment=frag_body)
 
-cam.nodepath.setShader(s)
+# cam.nodepath.setShader(s)
 
 camwidget = eidolon.ui.CameraWidget(cam)
 
