@@ -22,7 +22,8 @@ import numpy as np
 from math import sin, cos, acos, atan2, sqrt, pi, inf
 from typing import Union, Optional, Tuple
 
-from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, rotator_pitch, rotator_roll, rotator_yaw)
+from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, angle_between, plane_norm, rotator_pitch,
+                    rotator_roll, rotator_yaw)
 from ..utils import cached_property
 
 __all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
@@ -194,20 +195,7 @@ class vec3:
         return self.cross(other).is_zero
 
     def angle_to(self, other: vec3) -> float:
-        length: float = sqrt(self.len_sq * other.len_sq)
-
-        if length < FEPSILON:
-            return 0.0
-
-        vl: float = self.dot(other) / length
-
-        if vl >= (1.0 - FEPSILON):
-            return 0.0
-
-        if vl <= (FEPSILON - 1.0):
-            return pi
-
-        return acos(vl)
+        return angle_between(*self, *other)
 
     def in_aabb(self, vmin: vec3, vmax: vec3) -> bool:
         return vmin <= self <= vmax
@@ -224,7 +212,7 @@ class vec3:
         return fequals_eps(self.plane_dist(planept, planenorm), 0)
 
     def plane_norm(self, v2: vec3, v3: vec3, vfar: Optional[vec3] = None) -> vec3:
-        pnorm = (v2 - self).cross(v3 - self).norm
+        pnorm = vec3(*plane_norm(*self, *v2, *v3))  # (v2 - self).cross(v3 - self).norm
 
         if vfar is not None and pnorm.angle_to(vfar - self) < (pi * 0.5):
             return -pnorm

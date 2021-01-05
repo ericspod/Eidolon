@@ -57,10 +57,11 @@ class Octree:
         return vec3(x, y, z)
 
     @staticmethod
-    def from_mesh(depth: int, nodes: np.array, inds: np.array, margins: float = 0.05, eq_func: Callable = None):
+    def from_mesh(depth: int, nodes: np.array, inds: np.array, margins: float = 0.05,
+                  eq_func: Callable = None, add_nodes: bool = False):
         aabb = BoundBox.from_vertices(nodes)
         octree = Octree(depth, aabb.diag * (1.0 + margins), aabb.center, eq_func)
-        octree.add_mesh(nodes, inds)
+        octree.add_mesh(nodes, inds, add_nodes)
         return octree
 
     def __init__(self, depth: int, dim: vec3, parentcenter: vec3, eq_func: Callable = None, octant: int = 8,
@@ -218,7 +219,7 @@ class Octree:
         if leaf:
             leaf.leafdata.append(val)
 
-    def add_mesh(self, nodes: Iterable, inds: Iterable):
+    def add_mesh(self, nodes: Iterable, inds: Iterable, add_nodes: bool):
         """
         Add the nodes from `nodes` to the octree, mapping them to the element index they were referenced from, and
         storing the element index in each leaf an element occurs in.
@@ -227,5 +228,12 @@ class Octree:
             for nidx in elem:
                 node = nodes[nidx]
                 node = vec3(*node)
-                _, _, leaf = self.add_node(node, eidx)  # store the node in the leaf
+
+                if add_nodes:
+                    _, _, leaf = self.add_node(node, eidx)  # store the node in the leaf
+                else:
+                    leaf = self.get_leaf(node)
                 leaf.leafdata.append(eidx)  # store the element ID in the leaf
+
+        for leaf in self.leaves:
+            leaf.leafdata[:] = set(leaf.leafdata)

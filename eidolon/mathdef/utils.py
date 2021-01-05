@@ -16,16 +16,20 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from math import asin, atan2, sqrt, pi
+from math import asin, acos, atan2, sqrt, pi
+from typing import Tuple
 
 from .compile_support import jit
 
 __all__ = [
-    "FEPSILON", "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp", "rad_circular_convert",
-    "rotator_yaw", "rotator_roll", "rotator_pitch", "frange", "lerp", "lerp_xi"
+    "FEPSILON", "HALFPI", "TAU", "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp",
+    "rad_circular_convert", "rotator_yaw", "rotator_roll", "rotator_pitch", "frange", "lerp", "lerp_xi",
+    "angle_between", "plane_norm"
 ]
 
 FEPSILON: float = 1e-10
+HALFPI: float = pi / 2
+TAU: float = pi * 2
 
 
 def epsilon_zero(val):
@@ -66,6 +70,47 @@ def fclamp(v: float, vmin: float, vmax: float) -> float:
     elif v < vmin:
         return vmin
     return v
+
+
+@jit
+def angle_between(x0, y0, z0, x1, y1, z1):
+    """Returns the angle between vectors (x0, y0, z0) and (x1, y1, z1)."""
+    length = sqrt(lensq3(x0, y0, z0) * lensq3(x1, y1, z1))
+
+    if length < FEPSILON:
+        return 0.0
+
+    vl = (x0 * x1 + y0 * y1 + z0 * z1) / length
+
+    if vl >= (1.0 - FEPSILON):
+        return 0.0
+
+    if vl <= (FEPSILON - 1.0):
+        return pi
+
+    return acos(vl)
+
+
+@jit
+def plane_norm(x0: float, y0: float, z0: float, x1: float, y1: float, z1: float, x2: float, y2: float, z2: float) -> \
+        Tuple[float, float, float]:
+    dx1 = x1 - x0
+    dy1 = y1 - y0
+    dz1 = z1 - z0
+    dx2 = x2 - x0
+    dy2 = y2 - y0
+    dz2 = z2 - z0
+
+    cx = dy1 * dz2 - dz1 * dy2
+    cy = dz1 * dx2 - dx1 * dz2
+    cz = dx1 * dy2 - dy1 * dx2
+
+    ln = len3(cx, cy, cz)
+
+    if ln == 0:
+        return 0, 0, 0
+    else:
+        return cx / ln, cy / ln, cz / ln
 
 
 @jit

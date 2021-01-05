@@ -37,6 +37,7 @@ from typing import Optional, Callable
 from ..utils import Namespace, NamespaceMeta, cached_property, is_iterable_notstr, mulsum
 from .utils import lerp, lerp_xi, FEPSILON
 from .basis_functions import lagrange_basis, ShapeType
+from .math_types import vec3
 
 __all__ = ["ElemType", "ElemTypeDef", "BasisGenFuncs"]
 
@@ -46,38 +47,34 @@ class ElemTypeDef(object):
     Defines a mesh element type, including the basis function and its face definition.
     """
 
-    def __init__(self, shape_type: str, basisname: str, desc: str, order: int, xis: list, vertices: list,
-                 faces: list, internalxis: list, basis: Callable, pointsearch: Optional[Callable],
-                 facetype: Optional[ElemTypeDef]):
+    def __init__(self, shape_type: str, basis_name: str, desc: str, order: int, xis: list, vertices: list,
+                 faces: list, edges: list, face_xi_norms: list, xi_elem_dirs: list, basis: Callable,
+                 point_search: Optional[Callable], face_type: Optional[ElemTypeDef]):
 
         self.shape_type: str = shape_type  # geometry (tet, hex, etc)
         self.dim: int = ShapeType[shape_type][1]  # spatial dimensions
         self.is_simplex: bool = ShapeType[shape_type][2]  # whether the element is simplex (tri,tet) or not
-        self.basisname: str = basisname  # basis function name (NL=nodal lagrange, etc)
+        self.basis_name: str = basis_name  # basis function name (NL=nodal lagrange, etc)
         self.desc: str = desc  # plain language description
         self.order: int = order  # order (1=linear, 2=quadratic, etc)
         self.xis: list = list(xis)  # xi values for each node, [] if node count not fixed
-        self.centerxi: tuple = (0.25 if self.is_simplex else 0.5,) * self.dim
+        self.center_xi: tuple = (0.25 if self.is_simplex else 0.5,) * self.dim
         self.vertices: list = list(vertices)  # list of vertex topos, [] if node count not fixed
         self.faces: list = list(faces)  # list of face node topos, [] if node count not fixed
+        self.xi_elem_dirs = list(xi_elem_dirs)  # list of xi element direction index quadruples
 
         # basis callable, maps xi values to node coefficients, must accept x, y, z coordinate
         # arguments plus any further positional and keyword args
         self.basis: Callable = basis
 
-        self.pointsearch: Optional[Callable] = pointsearch  # callable which implements point search for this type
-        self.internalxis: list = list(internalxis)  # per-face xi sub values to convert xi value on face to internal xi
-        self.facevertices: list = [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in
-                                   range(len(self.faces))]  # vertex indices for each face
-        self.edges: list = []  # tuples of xi indices defining edges on 1D/2D elements, vertices first then midpoints
+        self.point_search: Optional[Callable] = point_search  # callable which implements point search for this type
+        self.face_xi_norms: list = list(face_xi_norms)  # per-face xi space normals
+        self.face_vertices: list = [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in
+                                    range(len(self.faces))]  # vertex indices for each face
+        self.edges: list = edges  # tuples of xi indices defining edges on 1D/2D elements, vertices first then midpoints
 
         # ElemTypeDef defining faces as 2D elements (assumes all faces same shape)
-        self.facetype: ElemTypeDef = facetype or self
-
-        if self.dim == 1:
-            self.edges = [list(range(len(xis)))]  # whole line is an edge
-        elif self.dim == 2:
-            self.edges = find_edges(self.xis, len(self.vertices), self.is_simplex)
+        self.face_type: ElemTypeDef = face_type or self
 
     @cached_property
     def is_fixed_node_count(self):
@@ -101,7 +98,7 @@ class ElemTypeDef(object):
 
     def num_face_vertices(self, face=0):
         """Returns the number of vertices for a face, or -1 if not fixed."""
-        return self.facevertices[face] if face < len(self.facevertices) else -1
+        return self.face_vertices[face] if face < len(self.face_vertices) else -1
 
     def get_face_indices(self, face):
         """Returns the topos for a face, or [] if not fixed."""
@@ -121,10 +118,10 @@ class ElemTypeDef(object):
             return self.get_face_indices(face)[:numverts]
 
     def get_face_type(self, face, as_linear=False):
-        if is_iterable_notstr(self.facetype):
-            facetype = self.facetype[face]
+        if is_iterable_notstr(self.face_type):
+            facetype = self.face_type[face]
         else:
-            facetype = self.facetype
+            facetype = self.face_type
 
         if as_linear:
             facetype = ElemType.get_linear_type(facetype)
@@ -139,7 +136,7 @@ class ElemTypeDef(object):
             return -1
 
     def get_internal_face_xi_sub(self, face):
-        """Returns the value to subtract from a xi on the given face to get an internal xi."""
+        """Returns the value to subtract from a xi on the given face to get an internal xi coordinate."""
         return self.internalxis[face]
 
     def apply_basis(self, vals, xi0, xi1, xi2, *args, **kwargs):
@@ -197,10 +194,10 @@ class ElemTypeDef(object):
                 f"Must supply as many element node values as nodes for this element {len(elemnodes)}!={self.num_nodes}"
             )
 
-        return self.pointsearch(self, elemnodes, pt, refine, *args, **kwargs)
+        return self.point_search(self, elemnodes, pt, refine, *args, **kwargs)
 
     def __repr__(self):
-        type_name = ElemType.get_elem_type_name(self.shape_type, self.basisname, self.order)
+        type_name = ElemType.get_elem_type_name(self.shape_type, self.basis_name, self.order)
         return f"{type_name}: {self.desc}"
 
 
@@ -214,8 +211,7 @@ def find_faces(xis, num_vertices, is_simplex):
     of xi values which when subtracted from a xi coordinate on the face will produce an internal xi coordinate.
     """
     faces = []
-    subvalue = 0.01
-    internalxisub = []  # values to subtract from surface xis to get an internal xi coord
+    face_xi_norms = []  # values to subtract from surface xis to get an internal xi coord
     xi_dim = len(xis[0])
     xi_range = (0.0,) if is_simplex else (0.0, 1.0)
 
@@ -232,9 +228,9 @@ def find_faces(xis, num_vertices, is_simplex):
             far = farnode(face, xirange)
             faces.append(face + [far])
 
-            internalxis = [0.0] * xi_dim
-            internalxis[dim] = subvalue if xirange == 1.0 else -subvalue
-            internalxisub.append(internalxis)
+            xi_norm = [0.0] * xi_dim
+            xi_norm[dim] = -1.0 if xirange == 1.0 else 1.0
+            face_xi_norms.append(xi_norm)
 
     # collect tet far face passing through unit vectors
     if is_simplex:
@@ -242,7 +238,7 @@ def find_faces(xis, num_vertices, is_simplex):
         if face != ():
             far = farnode(face, 0)
             faces.append(face + [far])
-            internalxisub.append([subvalue] * xi_dim)
+            face_xi_norms.append([1.0] * xi_dim)
 
     def _cmp(a, b):
         a = faces[a]
@@ -252,7 +248,7 @@ def find_faces(xis, num_vertices, is_simplex):
     # topos=sorted(range(len(faces)),key=lambda i:faces[i])
     indices = sorted(range(len(faces)), key=functools.cmp_to_key(_cmp))
 
-    return [faces[i] for i in indices], [internalxisub[i] for i in indices]
+    return [faces[i] for i in indices], [face_xi_norms[i] for i in indices]
 
 
 def find_edges(xis, num_vertices, is_simplex):
@@ -295,9 +291,27 @@ def find_edges(xis, num_vertices, is_simplex):
     return edges
 
 
+def get_xi_elem_directions(xis):
+    """
+    Returns quadruples of node indices for the xi coordinates `xis` such that the normal of the plane defined by the
+    first three nodes points in the direction of the fourth in xi space.
+    """
+    cross_prods = []
+
+    for a, b, c, d in itertools.permutations(range(len(xis)), 4):
+        v0 = vec3(*xis[a])
+        v1 = vec3(*xis[b])
+        v2 = vec3(*xis[c])
+        v3 = vec3(*xis[d])
+        if (a, b, c, d) not in cross_prods and v0.plane_norm(v1, v2).angle_to(v3 - v0) < FEPSILON:
+            cross_prods.append((a, b, c, d))
+
+    return cross_prods
+
+
 def nodal_lagrange_type(shape, desc, order):
     """
-    Generate the ElemTypeDef object which defines a nodal lagrange element type for the given type geometry,
+    Generates the ElemTypeDef object which defines a nodal lagrange element type for the given type geometry,
     description, and order. This relies on CHeart node ordering where xi coordinates are sorted based on component
     values, where X is least significant and Z most, but with the vertices coming first before medial nodes.
     """
@@ -308,24 +322,34 @@ def nodal_lagrange_type(shape, desc, order):
     basis, xis = lagrange_basis(shape, order)
 
     num_vertices = xis.shape[0]
+    xis = xis.tolist()
 
     # determine faces and face basis function(s)
     faces = []
-    internalxis = []
+    face_norms = []
     vertices = list(range(num_vertices))
     face_type = None
+    xi_elem_dirs = []
+    edges = []
 
-    if dim == 3:
-        faces, internalxis = find_faces(xis, num_vertices, is_simplex)
+    if dim == 1:
+        edges = [list(range(len(xis)))]  # whole line is an edge
     elif dim == 2:
         faces = [list(range(len(xis)))]
+        edges = find_edges(xis, len(vertices), is_simplex)
+    elif dim == 3:
+        faces, face_norms = find_faces(xis, num_vertices, is_simplex)
+        xi_elem_dirs = get_xi_elem_directions(xis)
 
-    if dim == 3:  # TODO: this assumes all faces the same shape, change if this isn't true anymore (eg. prisms)
+        # TODO: this assumes all faces the same shape, change if this isn't true anymore (eg. prisms)
         shape_type = ShapeType._Tri if is_simplex else ShapeType._Quad
         face_name = ElemType.get_elem_type_name(shape_type, "NL", order)
         face_type = ElemType[face_name]
 
-    return ElemTypeDef(shape, 'NL', desc, order, xis, vertices, faces, internalxis, basis, point_search_elem, face_type)
+    return ElemTypeDef(
+        shape, 'NL', desc, order, xis, vertices, faces, edges, face_norms, xi_elem_dirs, basis, point_search_elem,
+        face_type
+    )
 
 
 class BasisGenFuncs(Namespace):
@@ -360,15 +384,17 @@ class ElemTypeMeta(NamespaceMeta):
         basistype = nsplit[3]
 
         if shape not in ShapeType:
-            raise TypeError(f"Shape type '{shape}' not recognized")
+            raise ValueError(f"Shape type '{shape}' not recognized")
+
+        if order < 1:
+            raise ValueError(f"Order value '{order}' must be an integer greater than 0")
 
         if basistype not in BasisGenFuncs:
-            raise TypeError(f"Basis Function type '{basistype}' not recognized")
+            raise ValueError(f"Basis Function type '{basistype}' not recognized")
 
-        ordernames = ['Linear', 'Quadratic', 'Cubic', 'Quartic', 'Quintic', 'Hextic', 'Heptic', 'Octic', 'Nonic',
-                      'Decic']
+        ordernames = ['Linear', 'Quadratic', 'Cubic', 'Quartic']
 
-        orderstr = ordernames[order - 1] if order <= 10 else 'Order ' + str(order)
+        orderstr = ordernames[order - 1] if order <= len(ordernames) else f"Order {order}"
 
         desc = f"{ShapeType[shape][0]}, {orderstr} {BasisGenFuncs[basistype][0]}"
 
@@ -376,7 +402,7 @@ class ElemTypeMeta(NamespaceMeta):
 
         cls.append(name, basisobj)
 
-        faces = basisobj.facetype
+        faces = basisobj.face_type
         if not is_iterable_notstr(faces):
             faces = [faces]
 
@@ -404,7 +430,7 @@ class ElemTypeMeta(NamespaceMeta):
             return f"{shape_name}{order}{basis_name}"
 
     def get_linear_type(cls, elemtype):
-        key=cls.get_elem_type_name(elemtype.shape_type, elemtype.basisname, 1)
+        key = cls.get_elem_type_name(elemtype.shape_type, elemtype.basis_name, 1)
         return cls.__getattr__(key)
 
     def __getattr__(cls, key):
@@ -431,4 +457,4 @@ class ElemType(metaclass=ElemTypeMeta):
     For example, Tet1NL will cause the nodal lagrange (NL) basis generator function to be pulled from BasisGenFuncs and
     the values "Tet" and 1 passed as the shape and order values. The resulting object is keyed to Tet1NL internally.
     """
-    Point = ElemTypeDef(ShapeType._Point, "NL", "Point", 0, [], [], [], [], None, None, None)
+    Point = ElemTypeDef(ShapeType._Point, "NL", "Point", 0, [], [], [], [], [], [], None, None, None)

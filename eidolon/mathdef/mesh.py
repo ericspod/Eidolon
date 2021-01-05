@@ -44,7 +44,7 @@ class Mesh:
         self.time_index = time_index
 
         self.properties = {}
-        self.other_arrays = {}
+        self.other_data = {}
 
         for name, vals in topo_sets.items():
             self.set_topology(name, *vals)

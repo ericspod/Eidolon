@@ -269,7 +269,4 @@ def lagrange_basis(shape_type, order, prefix_code=""):
         exec(dedent(basis_func))  # compile the generated function with Numba if installed
         basis_func = locals()[basis_name]
 
-    # if xis.shape[1] == 3:
-    #     xis = xis[:, (1, 0, 2)]  # swap X and Y values
-
     return basis_func, xis
