@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .utils import FEPSILON, HALFPI
+from .utils import FEPSILON, HALFPI, plane_norm, angle_between
 from .math_types import vec3
 from .elem_type import ElemType, ElemTypeDef, get_xi_elem_directions
 from .octree import Octree
@@ -47,6 +47,7 @@ def calculate_mesh_octree(mesh: Mesh, topo_name=None, depth=3):
     return oc
 
 
+# calculate_shared_nodes() needs a generic way to create a Numba List object if present, or a Python list if not
 if has_numba:
     from numba.typed import List
     from numba.core import types
@@ -92,7 +93,7 @@ def calculate_expanded_face_inds(expanded_face_inds: np.array, topo_array: np.ar
 
 
 @timing
-def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None, octree_threshold=1000, octree_depth=3):
+def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None, octree_threshold=100000, octree_depth=3):
     topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t][2])
     ext_adj_key = (topo_name, MeshDataType._ext_adj)
 
@@ -129,8 +130,13 @@ def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None, octree_threshold=1000, oc
 
 
 @jit(parallel=True)
-def _calculate_leaf_ext_adj(expanded_face_inds: np.array, topo_array: np.array, leaf: np.array,
-                            face_inds: np.array, topo_ext_adj: np.array):
+def _calculate_leaf_ext_adj(
+    expanded_face_inds: np.array,
+    topo_array: np.array,
+    leaf: np.array,
+    face_inds: np.array,
+    topo_ext_adj: np.array
+):
     shared_nodes = calculate_shared_nodes(topo_array, leaf)
 
     num_elems = leaf.shape[0]
@@ -143,8 +149,8 @@ def _calculate_leaf_ext_adj(expanded_face_inds: np.array, topo_array: np.array, 
             if topo_ext_adj[elem_idx, face_idx] > -1:
                 continue
 
-            face = expanded_face_inds[idx, face_idx]
             other_elems = set()
+            face = expanded_face_inds[idx, face_idx]
 
             for face_elem_idx in range(face.shape[0]):
                 other_elems.update(shared_nodes[face[face_elem_idx]])
@@ -193,15 +199,10 @@ def calculate_tri_elem_face_meshes(et: ElemTypeDef, refine=0):
         xi_norm = verta.plane_norm(vertb, vertc)
 
         # calculate a vector point from the face surface towards the inside of the element in xi space
-        vertex_idx = et.get_face_vertex_indices(face_idx)[0]
-        vert_xi = vec3(*et.xis[vertex_idx])
         vert_inner_sub = vec3(*et.face_xi_norms[face_idx])
-        xi_inner = (vert_xi - vert_inner_sub).norm
 
         if xi_norm.angle_to(vert_inner_sub) <= FEPSILON:
-            tmp = inds[face_idx, :, 2].copy()
-            inds[face_idx, :, 2] = inds[face_idx, :, 1]
-            inds[face_idx, :, 1] = tmp
+            inds[face_idx] = inds[face_idx, :][:, (0, 2, 1)]
 
     return xis, coeffs, inds
 
@@ -221,14 +222,38 @@ def apply_coeffs_elem(nodes, inds, ind_idx, coeffs):
     return result
 
 
+@jit
+def is_elem_inverted(nodes, elem, elem_dirs):
+    for a, b, c, d in elem_dirs:
+
+        ax, ay, az = nodes[elem[a]]
+        bx, by, bz = nodes[elem[b]]
+        cx, cy, cz = nodes[elem[c]]
+        dx, dy, dz = nodes[elem[d]]
+
+        nx, ny, nz = plane_norm(ax, ay, az, bx, by, bz, cx, cy, cz)
+
+        if angle_between(nx, ny, nz, dx - ax, dy - ay, dz - az) > HALFPI:
+            return True
+
+    return False
+
+
 @timing
-def calculate_tri_mesh(mesh: Mesh, refine=0, topo_name=None, external_only=True, octree_depth=3):
+def calculate_tri_mesh(
+    mesh: Mesh,
+    refine=0,
+    topo_name=None,
+    external_only=True,
+    octree_threshold=100000,
+    octree_depth=3
+):
     topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t][2])
     nodes = mesh.nodes
     topo_array, et_name, _ = mesh.topos[topo_name]
     et: ElemTypeDef = ElemType[et_name]
 
-    ext_adj = calculate_mesh_ext_adj(mesh, topo_name, octree_depth=octree_depth)
+    ext_adj = calculate_mesh_ext_adj(mesh, topo_name, octree_threshold, octree_depth)
     face_xis, coeffs, face_tris = calculate_tri_elem_face_meshes(et, refine)
 
     num_elems = topo_array.shape[0]
@@ -254,57 +279,16 @@ def calculate_tri_mesh(mesh: Mesh, refine=0, topo_name=None, external_only=True,
     out_inds = np.zeros((num_inds, 3), dtype=np.int32)
     out_props = np.zeros((num_nodes, 2), dtype=np.int32)
 
-    # for elem_idx in range(num_elems):
-    #     node_idx = start_elem_idx[elem_idx] * num_face_nodes
-    #     inds_idx = start_elem_idx[elem_idx] * num_face_tris
-    #
-    #     for face_idx in range(ext_faces.shape[1]):
-    #         if ext_faces[elem_idx, face_idx]:
-    #             out_inds[inds_idx:inds_idx + num_face_tris] = face_tris[face_idx] + node_idx
-    #             out_xis[node_idx:node_idx + num_face_nodes] = face_xis[face_idx]
-    #             out_props[node_idx:node_idx + num_face_nodes, 0] = elem_idx
-    #             out_props[node_idx:node_idx + num_face_nodes, 1] = face_idx
-    #
-    #             for nidx in range(num_face_nodes):
-    #                 out_nodes[node_idx] = apply_coeffs_elem(nodes, topo_array, elem_idx, coeffs[face_idx, nidx])
-    #                 node_idx += 1
-    #
-    #             inds_idx += num_face_tris
-
-    _calculate_tri_mesh_main(num_elems, num_face_nodes, num_face_tris,
-                             nodes, topo_array,
-                             ext_faces, start_elem_idx, face_tris, face_xis,
-                             coeffs, out_nodes, out_inds, out_xis, out_props)
-
     if et.dim == 3:
         linet: ElemTypeDef = ElemType.get_linear_type(et)
 
         elem_dirs = get_xi_elem_directions(linet.xis)
         elem_dirs = np.array(elem_dirs)
+    else:
+        elem_dirs = np.array([])
 
-        for elem_idx in range(num_elems):
-            elem_inds = topo_array[elem_idx]
-            elem_nodes = [vec3(*nodes[elem_inds[v]]) for v in range(linet.num_nodes)]
-            is_inverted = False
-
-            for a, b, c, d in elem_dirs:
-                v0 = elem_nodes[a]
-                v1 = elem_nodes[b]
-                v2 = elem_nodes[c]
-                v3 = elem_nodes[d]
-
-                if v0.plane_norm(v1, v2).angle_to(v3 - v0) > HALFPI:
-                    is_inverted = True
-                    break
-
-            if is_inverted:
-                start_idx = start_elem_idx[elem_idx] * num_face_tris
-                if (elem_idx + 1) < start_elem_idx.shape[0]:
-                    end_idx = start_elem_idx[elem_idx + 1] * num_face_tris
-                else:
-                    end_idx = out_inds.shape[0]
-
-                out_inds[start_idx:end_idx, :] = out_inds[start_idx:end_idx, (0, 2, 1)]
+    _calculate_tri_mesh_main(num_elems, num_face_nodes, num_face_tris, nodes, topo_array, ext_faces, start_elem_idx,
+                             face_tris, face_xis, coeffs, elem_dirs, out_nodes, out_inds, out_xis, out_props)
 
     out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)})
     out_mesh.other_data["xis"] = out_xis
@@ -315,28 +299,31 @@ def calculate_tri_mesh(mesh: Mesh, refine=0, topo_name=None, external_only=True,
 
 @jit(parallel=True)
 def _calculate_tri_mesh_main(
-        num_elems: int,
-        num_face_nodes: int,
-        num_face_tris: int,
-        nodes: np.ndarray,
-        topo_array: np.ndarray,
-        ext_faces: np.ndarray,
-        start_elem_idx: np.ndarray,
-        face_tris: np.ndarray,
-        face_xis: np.ndarray,
-        coeffs: np.ndarray,
-        out_nodes: np.ndarray,
-        out_inds: np.ndarray,
-        out_xis: np.ndarray,
-        out_props: np.ndarray
+    num_elems: int,
+    num_face_nodes: int,
+    num_face_tris: int,
+    nodes: np.ndarray,
+    topo_array: np.ndarray,
+    selected_faces: np.ndarray,
+    start_elem_idx: np.ndarray,
+    face_tris: np.ndarray,
+    face_xis: np.ndarray,
+    coeffs: np.ndarray,
+    elem_dirs: np.ndarray,
+    out_nodes: np.ndarray,
+    out_inds: np.ndarray,
+    out_xis: np.ndarray,
+    out_props: np.ndarray
 ):
     for elem_idx in prange(num_elems):
-        node_idx = start_elem_idx[elem_idx] * num_face_nodes
-        inds_idx = start_elem_idx[elem_idx] * num_face_tris
+        node_idx: int = start_elem_idx[elem_idx] * num_face_nodes
+        inds_idx: int = start_elem_idx[elem_idx] * num_face_tris
+        cur_inds_idx: int = inds_idx
 
-        for face_idx in range(ext_faces.shape[1]):
-            if ext_faces[elem_idx, face_idx]:
-                out_inds[inds_idx:inds_idx + num_face_tris] = face_tris[face_idx] + node_idx
+        # generate triangles for every selected face
+        for face_idx in range(selected_faces.shape[1]):
+            if selected_faces[elem_idx, face_idx]:
+                out_inds[cur_inds_idx:cur_inds_idx + num_face_tris] = face_tris[face_idx] + node_idx
                 out_xis[node_idx:node_idx + num_face_nodes] = face_xis[face_idx]
                 out_props[node_idx:node_idx + num_face_nodes, 0] = elem_idx
                 out_props[node_idx:node_idx + num_face_nodes, 1] = face_idx
@@ -345,4 +332,10 @@ def _calculate_tri_mesh_main(
                     out_nodes[node_idx] = apply_coeffs_elem(nodes, topo_array, elem_idx, coeffs[face_idx, nidx])
                     node_idx += 1
 
-                inds_idx += num_face_tris
+                cur_inds_idx += num_face_tris
+
+        # if the element is inverted, swap triangle winding order
+        if is_elem_inverted(nodes, topo_array[elem_idx], elem_dirs):
+            tmp = out_inds[inds_idx:cur_inds_idx, 1].copy()
+            out_inds[inds_idx:cur_inds_idx, 1] = out_inds[inds_idx:cur_inds_idx, 2]
+            out_inds[inds_idx:cur_inds_idx, 2] = tmp

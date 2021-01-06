@@ -14,7 +14,9 @@ cam = eidolon.renderer.OffscreenCamera("test", 400, 400)
 ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
 
 dat = np.load("data/linmesh.npz")
-mesh = Mesh(dat["x"], {"inds":(dat["t"]-1, ElemType._Hex1NL)})
+# dat = np.load("data/cuboid.npz")
+
+mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)})
 
 # nodes = np.array([
 #     [0, 0, 0],
@@ -48,13 +50,15 @@ mesh = Mesh(dat["x"], {"inds":(dat["t"]-1, ElemType._Hex1NL)})
 #
 # mesh = Mesh(nodes, {"inds": (inds, ElemType._Hex1NL)})
 
-tri_mesh = calculate_tri_mesh(mesh, 0, "inds", external_only=True)
+print(mesh.nodes.shape,mesh.topos["inds"][0].shape)
+
+tri_mesh = calculate_tri_mesh(mesh, 0, "inds", external_only=True,octree_threshold=100000000)
 norms = generate_tri_normals(tri_mesh.nodes, tri_mesh.topos["inds"][0])
 
-fig = eidolon.renderer.SimpleFigure("axes", tri_mesh.nodes, tri_mesh.topos["inds"][0], norms)
+fig = eidolon.renderer.SimpleFigure("trimesh", tri_mesh.nodes, tri_mesh.topos["inds"][0], norms)
 fig.attach(cam)
 
-fig.scale = vec3.one * 10
+# fig.scale = vec3.one * 10
 fig.camnodes[0].set_render_mode_wireframe()
 
 app = QtWidgets.QApplication(sys.argv)
