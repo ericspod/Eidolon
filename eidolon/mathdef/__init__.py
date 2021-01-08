@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .utils import *
+from .math_utils import *
 from .compile_support import *
 from .math_types import *
 from .mesh_utils import *

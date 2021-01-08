@@ -19,13 +19,18 @@
 import numpy as np
 from ..utils import Namespace, first
 
-__all__ = ["Mesh", "MeshDataType"]
+__all__ = ["Mesh", "MeshDataValue"]
 
 
-class MeshDataType(Namespace):
+class MeshDataValue(Namespace):
+    """List of names and descriptions of known data objects that might appear in Mesh.other_data or Mesh.properties."""
     node = "Nodes"
     line = "Lines Indices"
     tri = "Triangles Indices"
+    xis = "Node Xi Values"
+    norms = "Node Normals"
+    colors = "Node Colors"
+    nodeprops = "Per-node Properties Array"
     spatial = "Spatial Topology"
     field = "Data Field"
     octree = "Octree Data"
@@ -34,17 +39,15 @@ class MeshDataType(Namespace):
 
 
 class Mesh:
-    def __init__(self, nodes, topo_sets={}, field_sets={}, time_index=0, normals=None, colors=None, uvws=None):
-        self.nodes = nodes
-        self.topos = {}
-        self.fields = {}
-        self.normals = normals
-        self.colors = colors
-        self.uvws = uvws
-        self.time_index = time_index
+    def __init__(self, nodes, topo_sets={}, field_sets={}, time_index=0, parent=None):
+        self.nodes: np.ndarray = nodes
+        self.topos: dict = {}
+        self.fields: dict = {}
+        self.time_index: float = time_index
+        self.parent: Mesh = parent
 
-        self.properties = {}
-        self.other_data = {}
+        self.properties: dict = {}
+        self.other_data: dict = {}
 
         for name, vals in topo_sets.items():
             self.set_topology(name, *vals)
@@ -56,4 +59,4 @@ class Mesh:
         self.topos[name] = (index_array, elem_type, is_field_topo)
 
     def set_field(self, name, data_array, spatial_topology, field_topology=None, is_per_elem=False):
-        self.fields[name] = (data_array, spatial_topology, field_topology, is_per_elem)
+        self.fields[name] = (data_array, spatial_topology, field_topology or spatial_topology, is_per_elem)

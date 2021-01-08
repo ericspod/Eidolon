@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets
 import eidolon.renderer
 import eidolon.ui
 
-from eidolon.mathdef import vec3, Mesh, ElemType, calculate_tri_mesh, calculate_mesh_ext_adj, generate_tri_normals
+from eidolon.mathdef import vec3, Mesh, ElemType, calculate_tri_mesh, calculate_field, calculate_field_colors
 
 cam = eidolon.renderer.OffscreenCamera("test", 400, 400)
 
@@ -16,7 +16,7 @@ ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
 dat = np.load("data/linmesh.npz")
 # dat = np.load("data/cuboid.npz")
 
-mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)})
+mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)}, {"field": (dat["d"], "inds")})
 
 # nodes = np.array([
 #     [0, 0, 0],
@@ -50,16 +50,19 @@ mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)})
 #
 # mesh = Mesh(nodes, {"inds": (inds, ElemType._Hex1NL)})
 
-print(mesh.nodes.shape,mesh.topos["inds"][0].shape)
+print(mesh.nodes.shape, mesh.topos["inds"][0].shape)
 
-tri_mesh = calculate_tri_mesh(mesh, 0, "inds", external_only=True,octree_threshold=100000000)
-norms = generate_tri_normals(tri_mesh.nodes, tri_mesh.topos["inds"][0])
+tri_mesh = calculate_tri_mesh(mesh, 0, "inds", external_only=True, octree_threshold=100000000)
+field = calculate_field(tri_mesh, "field")
+colors = calculate_field_colors(tri_mesh, "field", lambda i: (i, 0, 1 - i, 1))
 
-fig = eidolon.renderer.SimpleFigure("trimesh", tri_mesh.nodes, tri_mesh.topos["inds"][0], norms)
+norms = tri_mesh.other_data["norms"]
+colors = tri_mesh.other_data["colors"]
+
+fig = eidolon.renderer.SimpleFigure("trimesh", tri_mesh.nodes, tri_mesh.topos["inds"][0], norms, colors)
 fig.attach(cam)
 
-# fig.scale = vec3.one * 10
-fig.camnodes[0].set_render_mode_wireframe()
+fig.set_render_mode(eidolon.renderer.RenderMode.FILLED_WIREFRAME)
 
 app = QtWidgets.QApplication(sys.argv)
 
@@ -81,3 +84,4 @@ appw.setCentralWidget(camwidget)
 appw.show()
 
 eidolon.ui.exec_ui(app)
+

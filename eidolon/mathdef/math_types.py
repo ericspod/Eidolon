@@ -22,8 +22,9 @@ import numpy as np
 from math import sin, cos, acos, atan2, sqrt, pi, inf
 from typing import Union, Optional, Tuple
 
-from .utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, angle_between, plane_norm, rotator_pitch,
-                    rotator_roll, rotator_yaw)
+from .math_utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, angle_between, plane_norm,
+                         rotator_pitch,
+                         rotator_roll, rotator_yaw)
 from ..utils import cached_property
 
 __all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
@@ -630,7 +631,7 @@ class BoundBox:
 
     def plane_intersects(self, planept: vec3, planenorm: vec3):
         """Returns True if the plane defined by point `planept` and normal `planenorm` intersects the bounding area."""
-        corners_above = set(c.plane_dists(planept, planenorm) >= 0 for c in self.corners)
+        corners_above = set(c.plane_dist(planept, planenorm) >= 0 for c in self.corners)
 
         return len(corners_above) == 2
 
@@ -687,4 +688,4 @@ class Transformable:
         return self._transform
 
     def set_transform(self, trans: transform):
-        raise NotImplementedError()
+        self._transform = transform

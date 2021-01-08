@@ -35,11 +35,11 @@ import re
 from typing import Optional, Callable
 
 from ..utils import Namespace, NamespaceMeta, cached_property, is_iterable_notstr, mulsum
-from .utils import lerp, lerp_xi, FEPSILON
+from .math_utils import lerp, lerp_xi, FEPSILON
 from .basis_functions import lagrange_basis, ShapeType
 from .math_types import vec3
 
-__all__ = ["ElemType", "ElemTypeDef", "BasisGenFuncs"]
+__all__ = ["ElemType", "ElemTypeDef", "BasisGenFuncs","get_xi_elem_directions"]
 
 
 class ElemTypeDef(object):
@@ -69,12 +69,14 @@ class ElemTypeDef(object):
 
         self.point_search: Optional[Callable] = point_search  # callable which implements point search for this type
         self.face_xi_norms: list = list(face_xi_norms)  # per-face xi space normals
-        self.face_vertices: list = [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in
-                                    range(len(self.faces))]  # vertex indices for each face
         self.edges: list = edges  # tuples of xi indices defining edges on 1D/2D elements, vertices first then midpoints
 
         # ElemTypeDef defining faces as 2D elements (assumes all faces same shape)
         self.face_type: ElemTypeDef = face_type or self
+
+    @cached_property
+    def name(self):
+        return ElemType.get_elem_type_name(self.shape_type, self.basis_name, self.order)
 
     @cached_property
     def is_fixed_node_count(self):
@@ -95,6 +97,11 @@ class ElemTypeDef(object):
     def num_faces(self):
         """Returns the number of faces, -1 if not fixed."""
         return len(self.faces) if self.is_fixed_node_count else -1
+
+    @cached_property
+    def face_vertices(self):
+        # vertex indices for each face
+        return [len(set(self.get_face_indices(i)).intersection(self.vertices)) for i in range(len(self.faces))]
 
     def num_face_vertices(self, face=0):
         """Returns the number of vertices for a face, or -1 if not fixed."""
@@ -197,8 +204,7 @@ class ElemTypeDef(object):
         return self.point_search(self, elemnodes, pt, refine, *args, **kwargs)
 
     def __repr__(self):
-        type_name = ElemType.get_elem_type_name(self.shape_type, self.basis_name, self.order)
-        return f"{type_name}: {self.desc}"
+        return f"{self.name}: {self.desc}"
 
 
 def find_faces(xis, num_vertices, is_simplex):
@@ -229,7 +235,7 @@ def find_faces(xis, num_vertices, is_simplex):
             faces.append(face + [far])
 
             xi_norm = [0.0] * xi_dim
-            xi_norm[dim] = -1.0 if xirange == 1.0 else 1.0
+            xi_norm[dim] = 1.0 if xirange == 1.0 else -1.0
             face_xi_norms.append(xi_norm)
 
     # collect tet far face passing through unit vectors

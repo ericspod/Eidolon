@@ -22,12 +22,12 @@ import itertools
 from functools import lru_cache
 import numpy as np
 from .math_types import vec3, rotator
-from .utils import frange
+from .math_utils import frange
 
 __all__ = [
     "generate_plane", "generate_cube", "calculate_aabb_corners",
     "calculate_bound_box", "generate_cylinder", "generate_arrow",
-    "generate_axes_arrows", "generate_tri_normals", "add_indices",
+    "generate_axes_arrows", "add_indices",
     "generate_line_cuboid", "divide_tri_to_tri_mesh", "divide_quad_to_tri_mesh"
 ]
 
@@ -86,10 +86,11 @@ def add_indices(indices, offset):
 
 
 def generate_tri_normals(nodes, indices):
+    """Pure Python version of 'calculate_trimesh_normals'."""
     norms = [vec3.zero for i in nodes]
 
-    if isinstance(nodes,np.ndarray):
-        nodes=[vec3(*v) for v in nodes]
+    if isinstance(nodes, np.ndarray):
+        nodes = [vec3(*v) for v in nodes]
 
     for i, (a, b, c) in enumerate(indices):
         norm = nodes[a].plane_norm(nodes[b], nodes[c])

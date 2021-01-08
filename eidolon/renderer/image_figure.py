@@ -22,7 +22,7 @@ import numpy as np
 from panda3d.core import Texture, Shader
 
 from .figure import Figure
-from .utils import create_simple_geom, create_texture_np, update_geom
+from .render_utils import create_simple_geom, create_texture_np, update_geom
 from ..mathdef import vec3, BoundBox, generate_plane, generate_cube
 from .camera import OffscreenCamera
 from .shaders import get_default_image_volume

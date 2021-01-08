@@ -326,7 +326,7 @@ def choose_file_dialog(title, parent, opendir=None, filterstr='', is_open=True,
         if not confirm_overwrite:
             options |= QtWidgets.QFileDialog.DontConfirmOverwrite
 
-        fname = QtWidgets.QFileDialog.getSaveFileName(parent, title, opendir, filterstr, None, options)
+        fname = QtWidgets.QFileDialog.getSaveFileName(parent, title, opendir, filterstr, "", options)
         result = [str(fname[0])]
 
     return list(filter(bool,result))

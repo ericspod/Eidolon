@@ -32,6 +32,7 @@ from panda3d.core import (
     GeomTriangles,
     GeomLines,
     GeomPoints,
+    GeomPrimitive,
     Texture,
     BoundingVolume
 )
@@ -48,10 +49,10 @@ default_vformat = GeomVertexFormat.registerFormat(default_vformat)
 
 
 def _create_vertex_data(vertices, indices=None, norms=None, colors=None, uvwcoords=None, vformat=None):
-    norms = norms or [vec3.Z] * len(vertices)
-    colors = colors or [(1, 1, 1, 1)] * len(vertices)
-    uvwcoords = uvwcoords or [(0, 0, 0)] * len(vertices)
-    prim = None
+    norms = norms if norms is not None else [vec3.Z] * len(vertices)
+    colors = colors if colors is not None else [(1, 1, 1, 1)] * len(vertices)
+    uvwcoords = uvwcoords if uvwcoords is not None else [(0, 0, 0)] * len(vertices)
+    prim: GeomPrimitive = None
     vformat = vformat or default_vformat
 
     vdata = GeomVertexData("vdata", vformat, Geom.UH_dynamic)

@@ -20,7 +20,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from eidolon.mathdef import vec3, Mesh, MeshDataType, calculate_mesh_octree, calculate_shared_nodes, \
+from eidolon.mathdef import vec3, Mesh, MeshDataValue, calculate_mesh_octree, calculate_shared_nodes, \
     calculate_mesh_ext_adj
 
 
@@ -37,7 +37,7 @@ class TestCalculateOctree(SimpleMeshTestCase):
     def test_calculate_octree(self):
         calculate_mesh_octree(self.mesh, "inds")
 
-        self.assertIn(("inds", MeshDataType.octree), self.mesh.other_data)
+        self.assertIn(("inds", MeshDataValue.octree), self.mesh.other_data)
 
 
 class TestCalculateSharedNodes(SimpleMeshTestCase):
@@ -58,7 +58,7 @@ class TestCalculateExtAdj(SimpleMeshTestCase):
         calculate_mesh_octree(self.mesh, "inds")
         result = calculate_mesh_ext_adj(self.mesh, "inds")
 
-        self.assertIn(("inds", MeshDataType.ext_adj), self.mesh.other_data)
+        self.assertIn(("inds", MeshDataValue.ext_adj), self.mesh.other_data)
 
         expected = np.array([[-1, -1, -1, 1, -1, -1, -1, 0], [0, -1, -1, -1, 3, -1, -1, -1]])
 

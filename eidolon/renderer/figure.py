@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import List
+from enum import Enum
+from typing import List, Tuple, Union
 
-from .utils import create_simple_geom
+from ..utils import first
+from .render_utils import create_simple_geom
 from .camera import OffscreenCamera
 from ..mathdef.math_types import vec3, rotator, transform, BoundBox, Transformable
-from panda3d.core import LQuaternionf
 
 from panda3d.core import (
     NodePath,
@@ -30,10 +31,21 @@ from panda3d.core import (
     TransparencyAttrib,
     Texture,
     BoundingBox,
-    BoundingSphere
+    BoundingSphere,
+    LQuaternionf,
+    RenderModeAttrib
 )
 
-__all__ = ["Figure", "SimpleFigure"]
+__all__ = ["Figure", "SimpleFigure", "RenderMode"]
+
+
+class RenderMode(Enum):
+    UNCHANGED = RenderModeAttrib.M_unchanged,
+    FILLED = RenderModeAttrib.M_filled,
+    WIREFRAME = RenderModeAttrib.M_wireframe,
+    POINT = RenderModeAttrib.M_point,
+    FILLED_FLAT = RenderModeAttrib.M_filled_flat,
+    FILLED_WIREFRAME = RenderModeAttrib.M_filled_wireframe
 
 
 class Figure(Transformable):
@@ -102,6 +114,24 @@ class Figure(Transformable):
                 camnode.show()
             else:
                 camnode.hide()
+
+    @property
+    def render_mode(self) -> RenderMode:
+        if self.camnodes:
+            mode = first(self.camnodes).get_render_mode()
+            return first(m for m in RenderMode if m.value == mode)
+
+        return None
+
+    def set_render_mode(self, mode: RenderMode, point_thickness: float = 1.0, wireframe_color=(1, 1, 1, 1)):
+        if mode not in RenderMode:
+            raise ValueError(f"Render mode {mode} not valid, must be in RenderMode")
+
+        for camnode in self.camnodes:
+            if mode == RenderMode.FILLED_WIREFRAME:
+                camnode.set_render_mode_filled_wireframe(wireframe_color)
+            else:
+                camnode.set_render_mode(mode.value[0], point_thickness)
 
     def set_texture(self, tex: Texture):
         for camnode in self.camnodes:

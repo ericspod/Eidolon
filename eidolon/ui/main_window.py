@@ -27,7 +27,7 @@ from .loader import load_rc_layout
 
 import eidolon
 from ..utils.platform import is_darwin
-from .utils import resize_screen_relative, center_window, choose_file_dialog
+from .ui_utils import resize_screen_relative, center_window, choose_file_dialog
 from .console_widget import jupyter_present, JupyterWidget, ConsoleWidget
 from .threadsafe_calls import qtmainthread
 import threading

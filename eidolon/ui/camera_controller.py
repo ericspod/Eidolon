@@ -24,7 +24,7 @@ from PyQt5 import QtGui, QtCore
 from .camera_widget import CameraWidget, CameraWidgetEvents
 from ..renderer import OffscreenCamera
 from ..mathdef.math_types import vec3, rotator
-from ..mathdef.utils import rad_clamp, rad_circular_convert
+from ..mathdef.math_utils import rad_clamp, rad_circular_convert
 
 from ..utils import timing
 
