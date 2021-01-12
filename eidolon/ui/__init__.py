@@ -25,5 +25,5 @@ from .loader import *
 from .main_window import *
 from .console_widget import *
 from .threadsafe_calls import *
-
+from .models import *
 

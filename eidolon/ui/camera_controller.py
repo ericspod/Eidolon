@@ -167,7 +167,7 @@ class CameraController:
     def move_see_all(self):
         aabb = self.camera.scene_aabb
         radius = max(0.0001, aabb.radius)
-        fov =max(self.camera.fov)
+        fov = max(self.camera.fov)
 
         self.position = aabb.center
         self.dist = (radius * 0.5) / math.tan(fov * 0.5) + radius * 1.5

@@ -26,8 +26,8 @@ from .math_utils import frange
 
 __all__ = [
     "generate_plane", "generate_cube", "calculate_aabb_corners",
-    "calculate_bound_box", "generate_cylinder", "generate_arrow",
-    "generate_axes_arrows", "add_indices",
+    "calculate_bound_box", "generate_cylinder", "generate_arrow", "generate_sphere",
+    "generate_axes_arrows", "generate_tri_normals", "add_indices",
     "generate_line_cuboid", "divide_tri_to_tri_mesh", "divide_quad_to_tri_mesh"
 ]
 
@@ -323,7 +323,7 @@ def generate_sphere(refine=0):
 
     # rotate the icosahedron so that a node of the YZ plane is up; when refined this
     # creates a figure with an 'equator' on the XY plane
-    rot = rotator(vec3.X, nodes[0].angleTo(vec3.Z))
+    rot = rotator.from_axis(vec3.X, nodes[0].angle_to(vec3.Z))
     nodes = [rot * n for n in nodes]
 
     # refine the icosahedron by dividing each triangle into 4, triforce-style

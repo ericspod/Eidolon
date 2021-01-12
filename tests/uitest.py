@@ -34,6 +34,29 @@ verts, inds, norms, colors = generate_axes_arrows(5, 10)
 mesh = SimpleFigure("axes", verts, inds, norms, colors)
 mesh.attach(cam)
 
+
+class DictTableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
+        super().__init__()
+        self._data = data
+
+    def rowCount(self, parent=None) -> int:
+        return len(self._data)
+
+    def columnCount(self, parent=None) -> int:
+        return 2
+
+    # def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
+    #     return "Name" if section==0 else "Value"
+
+    def data(self, index: QtCore.QModelIndex, role: int = ...):
+        if role == QtCore.Qt.DisplayRole:
+            kv = list(self._data.items())[index.row()]
+            return kv[index.column()]
+
+
+win.cameraProps.setModel(DictTableModel({"foo": 1, "bar": 2}))
+
 win.show()
 
 import threading
@@ -108,7 +131,6 @@ class SyncCall(QtCore.QObject):
     def post(self):
         QtCore.QApplication.postEvent(self, SyncEvent())
         return self.result
-
 
 
 exec_ui(app)

@@ -40,7 +40,7 @@ vert_image_volume = """
         float scale = distance(p3d_ModelViewMatrix * vec4(1, 1, 1, 1), gl_Position);  // calculate bounding radius
         
         // move the point to its position on the line perpendicular with the camera's plane
-        gl_Position.z += ((plane_index * 2 * scale) / num_planes) - scale;
+        gl_Position.z += (plane_index * 2 * scale) - scale;
         gl_Position = p3d_ProjectionMatrix * gl_Position;
         
         vColor = p3d_Color;
@@ -92,6 +92,8 @@ geom_image_volume = """
         // project all of the corners of the volume into camera space
         for(int i=0;i<8;i++)
             corners[i]=p3d_ModelViewProjectionMatrix*unitcube[i];
+            
+        vec4 center=p3d_ModelViewProjectionMatrix*vec4(0.5,0.5,0.5,1);  // center of volume
 
         // Consider each edge of the volume, if one vertex is below the plane and other above then the edge bisects the
         // plane at a point on that edge. This position is stored as a vertex, which happens between 3 and 6 times.         
@@ -111,7 +113,7 @@ geom_image_volume = """
                 // store the vertex, texture coordinate, and its angle at the bottom of the list
                 vertices[num_vertices] = vertex;
                 texcoords[num_vertices] = tcoord;
-                angles[num_vertices] = atan(vertex.y,vertex.x);
+                angles[num_vertices] = atan(vertex.y-center.y,vertex.x-center.x);
                 
                 // move the new vertex up to its sorted position in the list, this ensures a circular sort order
                 for(int idx=num_vertices; idx>0 && angles[idx]<angles[idx-1];idx--){

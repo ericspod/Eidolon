@@ -17,11 +17,12 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from enum import Enum
-from typing import List, Tuple, Union
+from typing import List, Optional
 
 from ..utils import first
 from .render_utils import create_simple_geom
 from .camera import OffscreenCamera
+from .material import Material, MAIN_TEX_NAME
 from ..mathdef.math_types import vec3, rotator, transform, BoundBox, Transformable
 
 from panda3d.core import (
@@ -30,11 +31,15 @@ from panda3d.core import (
     Geom,
     TransparencyAttrib,
     Texture,
+    TextureStage,
+    Shader,
     BoundingBox,
     BoundingSphere,
     LQuaternionf,
     RenderModeAttrib
 )
+
+from panda3d.core import Material as PMaterial
 
 __all__ = ["Figure", "SimpleFigure", "RenderMode"]
 
@@ -55,6 +60,7 @@ class Figure(Transformable):
         self.node: GeomNode = GeomNode(name + "_node")
         self.camnodes: List[NodePath] = []
         self._visible: bool = True
+        self._timestep: float = 0
 
         for geom in geoms:
             self.add_geom(geom)
@@ -103,11 +109,11 @@ class Figure(Transformable):
 
     @property
     def visible(self):
-        return self._visible
+        return self.attached and self._visible
 
     @visible.setter
     def visible(self, visible: bool):
-        self._visible = visible
+        self._visible = self.attached and visible
 
         for camnode in self.camnodes:
             if visible:
@@ -116,7 +122,15 @@ class Figure(Transformable):
                 camnode.hide()
 
     @property
-    def render_mode(self) -> RenderMode:
+    def timestep(self) -> float:
+        return self._timestep
+
+    @timestep.setter
+    def timestep(self, ts: float):
+        self._timestep = ts
+
+    @property
+    def render_mode(self) -> Optional[RenderMode]:
         if self.camnodes:
             mode = first(self.camnodes).get_render_mode()
             return first(m for m in RenderMode if m.value == mode)
@@ -133,9 +147,41 @@ class Figure(Transformable):
             else:
                 camnode.set_render_mode(mode.value[0], point_thickness)
 
-    def set_texture(self, tex: Texture):
+    @property
+    def all_textures(self):
         for camnode in self.camnodes:
-            camnode.set_texture(tex)
+            return list(camnode.find_all_texture_stages())
+
+        return []
+
+    def set_texture(self, tex: Texture, stage_name: str, order=0):
+        ts = TextureStage(stage_name)
+        ts.set_saved_result(order)
+
+        for camnode in self.camnodes:
+            camnode.set_texture(ts, tex)
+
+    def set_shader(self, shader: Shader):
+        for camnode in self.camnodes:
+            camnode.set_shader(shader)
+
+    def set_shader_input(self, name: str, *args):
+        for camnode in self.camnodes:
+            camnode.set_shader_input(name, *args)
+
+    def apply_material(self, mat: Material, set_main_texture: bool = True, set_shader: bool = True):
+        pm: PMaterial = mat.get_material_obj()
+        stages = mat.get_texture_stages()
+
+        for camnode in self.camnodes:
+            camnode.set_material(pm)
+
+            for st, tex in stages:
+                if st.get_name() != MAIN_TEX_NAME or set_main_texture:
+                    camnode.set_texture(st, tex)
+
+            if set_shader and mat.shader is not None:
+                camnode.set_shader(mat.shader)
 
     def aabb(self) -> BoundBox:
         bb = None

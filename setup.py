@@ -45,6 +45,4 @@ else:
         description='Experimental medical imaging visualization framework.',
         keywords="dicom python medical imaging pydicom pyqtgraph nibabel visualisation",
         long_description=long_description.strip(),
-        # entry_points={'console_scripts': ['DicomBrowser = DicomBrowser:mainargv']},
-        # install_requires=['pyqtgraph', 'pydicom', 'pyqt']
     )

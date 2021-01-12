@@ -23,3 +23,4 @@ from .image_figure import *
 from .light import *
 from .render_utils import *
 from .shaders import *
+from .material import *

@@ -7,7 +7,7 @@ from scipy.ndimage import gaussian_filter
 import eidolon.renderer
 import eidolon.ui
 
-from eidolon.mathdef import vec3, rotator, transform, generate_circle, generate_axes_arrows
+from eidolon.mathdef import vec3, rotator, transform, generate_center_circle, generate_axes_arrows
 from eidolon.renderer import create_texture_np
 
 from panda3d.core import Shader, TextureStage
@@ -26,7 +26,7 @@ axes.attach(win.cam)
 # img[:30, :, 1] = 1
 # img[..., 2] = img.sum(axis=2) == 0
 
-img = generate_circle(128, 128, 0.8)  # [:, :, None].repeat(2, 2)
+img = generate_center_circle(128, 128, 0.8)  # [:, :, None].repeat(2, 2)
 img = gaussian_filter(img, 6).astype(np.float32)
 
 tex = create_texture_np(img)

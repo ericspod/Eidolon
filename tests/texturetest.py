@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 import eidolon.renderer
 import eidolon.ui
 
-from eidolon.mathdef import vec3, rotator, transform, generate_circle
+from eidolon.mathdef import vec3, rotator, transform, generate_center_circle
 from eidolon.renderer import create_texture_np
 
 mgr = eidolon.renderer.RenderBase()
@@ -23,7 +23,7 @@ colors = [
 ]
 uvs = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0)]
 
-circle_img = generate_circle(128, 128, 0.8)[:, :, None].repeat(2, 2)
+circle_img = generate_center_circle(128, 128, 0.8)[:, :, None].repeat(2, 2)
 
 tex = create_texture_np(circle_img)
 

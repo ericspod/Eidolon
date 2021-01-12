@@ -33,6 +33,9 @@ __all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
 class vec3:
 
     def __init__(self, x: float, y: float, z: float = 0):
+        if not isinstance(x, (float, int)) or not isinstance(y, (float, int)) or not isinstance(z, (float, int)):
+            raise ValueError("All vec3 arguments must be float or int.")
+
         self._x: float = x
         self._y: float = y
         self._z: float = z
@@ -589,6 +592,13 @@ class BoundBox:
     """
     Axis-aligned bounding box.
     """
+
+    @staticmethod
+    def from_boxes(*boxes: BoundBox) -> BoundBox:
+        if len(boxes) == 0:
+            raise ValueError("Need at least one BoundBox object")
+
+        return sum(boxes[1:], boxes[0])
 
     @staticmethod
     def from_vertices(vertices) -> BoundBox:
