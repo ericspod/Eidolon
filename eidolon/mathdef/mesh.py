@@ -40,7 +40,7 @@ class MeshDataValue(Namespace):
 
 class Mesh:
     def __init__(self, nodes, topo_sets={}, field_sets={}, time_index=0, parent=None):
-        self.nodes: np.ndarray = nodes
+        self.nodes: np.ndarray = np.asarray(nodes)
         self.topos: dict = {}
         self.fields: dict = {}
         self.time_index: float = time_index
@@ -56,7 +56,7 @@ class Mesh:
             self.set_field(name, *vals)
 
     def set_topology(self, name, index_array, elem_type=None, is_field_topo=False):
-        self.topos[name] = (index_array, elem_type, is_field_topo)
+        self.topos[name] = (np.asarray(index_array), elem_type, is_field_topo)
 
     def set_field(self, name, data_array, spatial_topology, field_topology=None, is_per_elem=False):
-        self.fields[name] = (data_array, spatial_topology, field_topology or spatial_topology, is_per_elem)
+        self.fields[name] = (np.asarray(data_array), spatial_topology, field_topology or spatial_topology, is_per_elem)

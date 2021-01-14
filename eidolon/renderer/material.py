@@ -24,17 +24,9 @@ from .camera import OffscreenCamera
 from ..mathdef.math_types import vec3, rotator, transform, BoundBox, Transformable
 
 from panda3d.core import (
-    NodePath,
-    GeomNode,
-    Geom,
-    TransparencyAttrib,
     Texture,
     TextureStage,
     Shader,
-    BoundingBox,
-    BoundingSphere,
-    LQuaternionf,
-    RenderModeAttrib
 )
 
 from panda3d.core import Material as PMaterial
