@@ -28,17 +28,17 @@ from enum import Enum
 
 from .path_utils import ensure_ext
 
-__all__ = ["is_interactive", "PlatformNames", "is_darwin", "is_linux", "is_windows"]
+__all__ = ["is_interactive", "PlatformName", "is_darwin", "is_linux", "is_windows"]
 
 is_darwin = platform.system().lower() == "darwin"
 is_windows = platform.system().lower() == "windows"
 is_linux = platform.system().lower() == "linux"
 
 
-class PlatformNames(Enum):
-    WINDOWS = ("windows", is_windows)
-    LINUX = ("linux", is_linux)
-    DARWIN = ("darwin", is_darwin)
+class PlatformName(Enum):
+    WINDOWS = "windows", is_windows
+    LINUX = "linux", is_linux
+    DARWIN = "darwin", is_darwin
 
 
 def is_interactive() -> bool:

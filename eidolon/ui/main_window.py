@@ -26,23 +26,39 @@ from PyQt5.QtCore import Qt
 from .loader import load_rc_layout
 
 import eidolon
+from ..utils import Namespace
 from ..utils.platform import is_darwin
 from .ui_utils import resize_screen_relative, center_window, choose_file_dialog
 from .console_widget import jupyter_present, JupyterWidget, ConsoleWidget
 from .threadsafe_calls import qtmainthread
-import threading
 
-__all__ = ["MainWindow"]
+__all__ = ["IconName","MainWindow"]
 
 main_title = '%s v%s (FOR RESEARCH ONLY)'
 
 Ui_MainWindow = load_rc_layout("MainWindow")
 
 
+class IconName(Namespace):
+    """Names of icons mapped to the filename in loaded resources."""
+    Default = ':/icons/document.png'
+    Mesh = ':/icons/cube.png'
+    Image = ':/icons/image.png'
+    Eye = ':/icons/eye.png'
+    EyeClosed = ':/icons/eye-disabled.png'
+    Bars = ':/icons/stats-bars.png'
+    Help = ':/icons/help-circled.png'
+    Scissors = ':/icons/scissors.png'
+    Trash = ':/icons/trash-a.png'
+    Seg = ':/icons/seg.png'
+    Clipboard = ':/icons/clipboard.png'
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, conf, width=1200, height=800):
         super().__init__()
         self.conf = conf
+        self.mgr = None
         self.working_dir = os.getcwd()
 
         self.setupUi(self)
@@ -152,6 +168,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.status_progress_bar.setVisible(progressmax > 0)
         self.status_progress_bar.setRange(0, progressmax)
         self.status_progress_bar.setValue(progress)
+
+    # @qtmainthread
+    # def show_msg(self, msg, title='Message', text=None, width=600, height=300):
+    #     """
+    #     Shows the string `msg' in a message dialog with the given title. If `text' is not None, this is displayed in
+    #     a text box within a message dialog that recalls previous messages, otherwise a simple dialog is used.
+    #     """
+    #     if text is None:
+    #         box = QtWidgets.QMessageBox(self)
+    #         box.setText(msg)
+    #         box.setWindowTitle(title)
+    #         box.show()
+    #     else:
+    #         self.msgdialog.addMsg(title, msg, str(text), width, height)
 
     def _execute_scratch(self):
         """Execute the contents of the scratch pad line-by-line in the console, making it visible first."""

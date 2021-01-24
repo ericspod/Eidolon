@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import Optional
+from __future__ import annotations
+import time
+from typing import Optional, List
 import traceback
 from threading import RLock, Event, ThreadError, current_thread
 from functools import wraps
 
-__all__ = ["is_main_thread", "Future", "get_object_lock", "locking", "trylocking"]
+__all__ = ["is_main_thread", "Future", "get_object_lock", "locking", "trylocking", "Task", "task_method", "TaskQueue"]
 
 
 def is_main_thread() -> bool:
@@ -179,3 +181,238 @@ def trylocking(meth, lock_type=RLock):
                 lock.release()
 
     return methwrap
+
+
+class Task:
+    """
+    This class represents the abstract notion of a task, with a `cur_progress` value to indicate progress in relation to
+    a `max_progress` value. Tasks are executed by a TaskQueue object. The actual action of the Task object should be
+    implemented by the supplied `func` argument, which must be a callable accepting the positional and keyword arguments
+    given by `args` and `kwargs`. When a Task object is executed, it's start() method is called which will call
+    self.func in the calling thread. A Task object can have a parent Task, which occurs when the body of one task
+    invokes an operation that normally adds a task to a queue. When this occurs the progress and label methods call into
+    the parent Task object.
+    """
+
+    @staticmethod
+    def null():
+        return Task('NullTask', lambda *args, **kwargs: None)
+
+    def __init__(self, label, func=None, args=(), kwargs={}, self_name: Optional[str] = None,
+                 parent_task: Optional[Task] = None):
+        self._cur_progress: int = 0
+        self._max_progress: int = 0
+        self._label: str = ""
+        self.result = None
+        self.completed: bool = False
+        self.started: bool = False
+        self.flush_queue: bool = False  # set to true if the queue is to be task flushed when this task finishes
+
+        # if this task is being run within another task, call that task's methods instead so that it is used to
+        # indicate status
+        self.parent_task: Task = parent_task
+
+        kwargs = dict(kwargs)
+        if self_name is not None:
+            kwargs[self_name] = self
+
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.label = label
+
+    def start(self):
+        """
+        Perform the execution of the task which sets the label, sets self.started to True, and then sets self.result to
+        the result of calling self.func with self.args and self.kwargs as arguments. Finally self.complete is set to
+        True once this is done.
+        """
+        oldlabel = self.label
+        self.label = self.label
+        self.started = True
+
+        try:
+            self.result = self.func(*self.args, **self.kwargs)
+            self.completed = True
+        finally:
+            if oldlabel and self.parent_task is not None:
+                self.parent_task.label = oldlabel  # restore the old label of the parent task if present
+
+    @property
+    def is_done(self):
+        """Returns True if the task has started and self.complete is True."""
+        return self.started and self.completed
+
+    @property
+    def label(self):
+        """Get the task's label, or that of the parent if present."""
+        if self.parent_task is not None:
+            return self.parent_task.label
+        else:
+            return self._label
+
+    @label.setter
+    def label(self, label):
+        """Set the task's label (or that of the parent if present), this will be used by UI to indicate current task."""
+        if self.parent_task is not None:
+            self.parent_task.label = label
+        else:
+            self._label = label
+
+    @property
+    def progress(self):
+        """Returns the current progress value or that of the parent if present."""
+        if self.parent_task is not None:
+            return self.parent_task._cur_progress
+        else:
+            return self._cur_progress
+
+    @progress.setter
+    def progress(self, cur_progress):
+        """Set the progress of this or the parent task to the integer value `curprogress`."""
+        if self.parent_task is not None:
+            self.parent_task.progress = cur_progress
+        else:
+            self._cur_progress = cur_progress
+
+    @property
+    def max_progress(self):
+        """Returns the maximal progress value or that of the parent if present."""
+        if self.parent_task is not None:
+            return self.parent_task.max_progress
+        else:
+            return self._max_progress
+
+    @max_progress.setter
+    def max_progress(self, max_progress):
+        """Set the max progress value of this or the parent task to the integer value `max_progress`."""
+        if self.parent_task is not None:
+            self.parent_task.max_progress = max_progress
+        else:
+            self._max_progress = max_progress
+            self._cur_progress = min(self._cur_progress, self._max_progress)
+
+    def __repr__(self):
+        return f"Task<{self.label}>"
+
+
+def task_method(meth, task_queue_name="mgr", task_arg_name="task", task_label=None):
+    """
+    Decorates a method to execute it's body as a Task. The method receiver must have a member named `task_queue_name`
+    which is a TaskQueue instance (default "mgr" reflects using the SceneManager as this object). When the method is
+    called a Task is added to this queue which executes the method body. If `task_arg_name` is not None the Task object
+    is passed to the method through the named additional keyword argument. If `task_label` is not None this labels the
+    Task instead of the method name. The returned value is a Future object which eventually stores the task's result.
+    """
+    @wraps(meth)
+    def _wrapper(self, *args, **kwargs):
+        tqueue = getattr(self, task_queue_name)
+        result = Future()
+
+        def _task(task=None):  # task proxy function, calls `meth` storing results/exceptions in result
+            with result:
+                if task_arg_name:
+                    kwargs[task_arg_name] = task
+
+                mresult = meth(self, *args, **kwargs)
+                result.set_result(mresult)
+
+        functask = Task(task_label or meth.__name__, func=_task, self_name="task")
+        tqueue.add_tasks(functask)
+
+        return result
+
+    return _wrapper
+
+
+class TaskQueue(object):
+    """
+    This represents a queue of tasks waiting to be executed and the algorithm to do so. The process_queue() method
+    handles executing each task in sequence and handling any exceptions that occur. The expected use case is that this
+    class will be mixed in with another responsible for maintaining tasks and other system-level facilities.
+    """
+
+    def __init__(self):
+        self.task_list: List[Task] = []  # list of queued Task objects
+        self.finished_tasks: List[Task] = []  # list of completed Task objects
+        self.current_task: Optional[Task] = None  # the current running task, None if there is none
+        self.do_process: bool = True  # loop condition in processTaskQueue
+
+    def process_queue(self):
+        """
+        Process the tasks in the queue, looping so long as self.do_process is True. This method will not return so long
+        as this condition is True and so should be executed in its own thread. Tasks are popped from the top of the
+        queue and their start() methods are called. Exceptions from this method are handled through task_except().
+        """
+        while self.do_process:
+            try:
+                # remove the first task, using the self lock to prevent interference while doing so
+                with get_object_lock(self):
+                    if len(self.task_list) > 0:
+                        self.current_task = self.task_list.pop(0)
+
+                # attempt to run the task by calling its start() method, on exception report and clear the queue
+                try:
+                    if self.current_task:
+                        self.current_task.start()  # run the task's operation
+                        self.finished_tasks.append(self.current_task)
+                    else:
+                        time.sleep(0.1)
+                except FutureError as fe:
+                    exc = fe.exc_value
+                    while exc != fe and isinstance(exc, FutureError):
+                        exc = exc.exc_value
+
+                    self.task_except(fe, exc, 'Exception from queued task ' + self.current_task.getLabel())
+                    # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
+                    self.current_task.flush_queue = True
+
+                except Exception as e:
+                    # if no current task then some non-task exception we don't care about has occurred
+                    if self.current_task:
+                        self.task_except(e, '', 'Exception from queued task ' + self.current_task.getLabel())
+                        self.current_task.flush_queue = True  # remove waiting tasks
+                finally:
+                    # set the current task to None, using self lock to prevent inconsistency with updatethread
+                    with get_object_lock(self):
+                        # clear the queue if there's a task and it wants to remove all current tasks
+                        if self.current_task is not None and self.current_task.flush_queue:
+                            del self.task_list[:]
+
+                        self.current_task = None
+            except:
+                pass  # ignore errors during shutdown
+
+    @locking
+    def add_tasks(self, *tasks: Task):
+        """Adds the given tasks to the task queue whether called in another task or not."""
+        if not all(isinstance(t, Task) for t in tasks):
+            raise ValueError("Arguments must all be Task objects")
+
+        self.task_list += list(tasks)
+
+    def add_func_task(self, func, name=None):
+        """Creates a task object (named 'name' or the function name if None) to call the function when executed."""
+        self.add_tasks(Task(name or func.__name__, func))
+
+    @locking
+    def list_tasks(self):
+        """Returns a list of the labels of all queued tasks."""
+        return [t.label for t in self.task_list]
+
+    @locking
+    def get_num_tasks(self):
+        """Returns the number of queued tasks."""
+        return len(self.task_list)
+
+    @locking
+    def task_status(self):
+        """Returns the current task lable, progress, and max progress, or ("",0,0) if no task running."""
+        if self.current_task is not None:
+            return self.current_task.label, self.current_task.progress, self.current_task.max_progress
+        else:
+            return "", 0, 0
+
+    def task_except(self, ex, msg, title):
+        """Called when the task queue encounters exception `ex` with message `msg` and report window title `title`."""
+        pass

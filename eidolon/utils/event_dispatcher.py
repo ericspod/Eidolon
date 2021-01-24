@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+from typing import Set, Dict, List, Callable
 from collections import defaultdict
 from threading import RLock
 from weakref import ref, WeakMethod
@@ -34,11 +35,11 @@ class EventDispatcher:
     """
 
     def __init__(self):
-        self.handlers = defaultdict(list)
-        self.lock = RLock()
-        self.suppressed_events = set()
+        self.handlers: Dict[str, List[Callable]] = defaultdict(list)
+        self.lock: RLock = RLock()
+        self.suppressed_events: Set[str] = set()
 
-    def trigger_event(self, name, **kwargs):
+    def trigger_event(self, name: str, **kwargs):
         """
         Broadcast event to handler callback functions, stopping for any regular callback that returns True. For every
         callback associated with event `name', call it expanding `args' as the arguments. This must be called in the
@@ -75,7 +76,7 @@ class EventDispatcher:
             with self.lock:
                 self.suppressed_events.remove(name)
 
-    def add_handler(self, name, hfunc, is_priority=False):
+    def add_handler(self, name: str, hfunc: Callable, is_priority=False):
         """
         Add the callback callable `hfunc' for event named `name'. If `is_priority', `hfunc' is placed at the start of
         the event list, and the end otherwise.
@@ -89,7 +90,7 @@ class EventDispatcher:
 
         events.insert(0 if is_priority else len(events), weakfunc)
 
-    def remove_handler(self, hfunc):
+    def remove_handler(self, hfunc: Callable):
         """Remove the callback `hfunc' from wherever it occurs."""
         for hfuncs in list(self.handlers.values()):
             hfuncs[:] = [h for h in hfuncs if h() is not hfunc]

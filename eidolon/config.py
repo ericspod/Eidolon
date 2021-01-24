@@ -23,7 +23,7 @@ from collections.abc import Mapping
 import yaml
 
 from . import CONFIGFILE, APPDATADIR
-from .utils import PlatformNames
+from .utils import PlatformName
 
 __all__ = ["load_config", "load_config_file", "save_config_file"]
 
@@ -92,7 +92,7 @@ def load_config(configfile: Optional[str] = None) -> dict:
     all_conf = dict(conf.get("all", {}))
 
     # replace values in config with those specific to the current platform
-    for pn in PlatformNames:
+    for pn in PlatformName:
         platform_name, is_platform = pn.value
         if is_platform:
             all_conf = update_dict(all_conf, conf.get(platform_name, {}))

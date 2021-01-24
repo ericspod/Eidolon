@@ -20,6 +20,7 @@ from typing import List, Optional
 
 import numpy as np
 
+from .scene_plugin import ScenePlugin
 from ..utils import cached_property, Namespace
 from ..mathdef import Transformable, BoundBox, transform
 from ..renderer import Figure, Material, OffscreenCamera
@@ -51,13 +52,14 @@ class SceneObject:
     represent the data store. The representations are stored as children of the originating SceneObject.
     """
 
-    def __init__(self, name, plugin=None, **other_values):
-        self._name = name  # object name
-        self.reprs = []  # list of current representations
-        self.reprcount = 0  # number of representations created, used to ensure unique names
-        self.plugin = plugin  # plugin used to link interface and create representations
-        self.other_values = other_values  # keyword arguments passed in through the constructor
-        self._prop_tuples = []  # list of cached property tuples, filled in by getPropTuples()
+    def __init__(self, name, plugin: Optional[ScenePlugin] = None, **other_values):
+        self._name: str = name  # object name
+        self.reprs: list = []  # list of current representations
+        self.reprcount: int = 0  # number of representations created, used to ensure unique names
+        self.plugin: ScenePlugin = plugin  # plugin used to link interface and create representations
+        self.other_values: dict = other_values  # keyword arguments passed in through the constructor
+        self._prop_tuples: list = []  # list of cached property tuples, filled in by getPropTuples()
+        self.filename: str = None
 
     def __repr__(self):
         return f"{self.__class__.__name__}<'{self.name}' @ {id(self):.16x}>"
@@ -128,16 +130,16 @@ class SceneObjectRepr(Transformable):
     figures, triangle meshes for rendering solid objects, texture planes for representing imaging data, and so forth.
     """
 
-    def __init__(self, parent: SceneObject, reprtype, reprcount, matname='Default'):
+    def __init__(self, parent: SceneObject, reprtype: str, reprcount: int, matname: str = 'Default'):
         super().__init__()
 
         self.parent: SceneObject = parent  # parent SceneObject instance
-        self.plugin = self.parent.plugin
-        self._name = ReprType[reprtype]  # +str(reprcount)
-        self._matname = matname
-        self.reprcount = reprcount
-        self.reprtype = reprtype
-        self._visible = False
+        self.plugin: ScenePlugin = self.parent.plugin
+        self._name: str = ReprType[reprtype]  # +str(reprcount)
+        self._matname: str = matname
+        self.reprcount: int = reprcount
+        self.reprtype: str = reprtype
+        self._visible: bool = False
         self._aabb: Optional[BoundBox] = None  # cached AABB object, set to None to force recalc
         self._current_timestep: float = 0
 

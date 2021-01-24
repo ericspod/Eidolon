@@ -132,7 +132,7 @@ def calculate_expanded_face_inds(expanded_face_inds: np.array, topo_array: np.ar
 
 @timing
 def calculate_mesh_ext_adj(mesh: Mesh, topo_name=None, octree_threshold=100000, octree_depth=3):
-    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t][2])
+    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t].is_field_topo)
     ext_adj_key = (MeshDataValue._ext_adj, topo_name)
 
     topo_ext_adj = mesh.other_data.get(ext_adj_key, None)
@@ -291,7 +291,7 @@ def calculate_tri_mesh(
         octree_threshold=100000,
         octree_depth=3
 ):
-    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t][2])
+    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t].is_field_topo)
     nodes = mesh.nodes
     topo_array, et_name, _ = mesh.topos[topo_name]
     et: ElemTypeDef = ElemType[et_name]
@@ -423,7 +423,7 @@ def calculate_field(mesh: Mesh, field_name: str):
 
 @timing
 def calculate_field_colors(mesh: Mesh, field_name: str, color_func: Callable, convert: Optional[Callable] = None):
-    field_array: np.ndarray = mesh.fields[field_name][0]
+    field_array: np.ndarray = mesh.fields[field_name].data
     out_colors = np.zeros((field_array.shape[0], 4))
 
     if field_array.ndim > 1 and convert is not None:

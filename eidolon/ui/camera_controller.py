@@ -21,7 +21,7 @@ from typing import Union
 
 from PyQt5 import QtGui, QtCore
 
-from .camera_widget import CameraWidget, CameraWidgetEvents
+from .camera_widget import CameraWidget, CameraWidgetEvent
 from ..renderer import OffscreenCamera
 from ..mathdef.math_types import vec3, rotator
 from ..mathdef.math_utils import rad_clamp, rad_circular_convert
@@ -49,9 +49,9 @@ class CameraController:
         self.apply_camera_position()
 
     def attach_events(self, events):
-        events.add_handler(CameraWidgetEvents.MOUSE_PRESSED, self._mouse_pressed)
-        events.add_handler(CameraWidgetEvents.MOUSE_MOVED, self._mouse_moved)
-        events.add_handler(CameraWidgetEvents.MOUSE_WHEEL, self._mouse_wheel)
+        events.add_handler(CameraWidgetEvent._mouse_pressed, self._mouse_pressed)
+        events.add_handler(CameraWidgetEvent._mouse_moved, self._mouse_moved)
+        events.add_handler(CameraWidgetEvent._mouse_wheel, self._mouse_wheel)
 
     def detach_events(self, events):
         events.remove_handler(self._mouse_pressed)

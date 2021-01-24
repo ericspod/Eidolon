@@ -36,7 +36,7 @@ def to_qt_color(c):
 
 
 def traverse_widget(widg, func=lambda i: True):
-    found = set([widg])
+    found = {widg}
     widgstack = [widg]
 
     while widgstack:
@@ -46,7 +46,7 @@ def traverse_widget(widg, func=lambda i: True):
             obj = getattr(w, d)
             try:
                 if obj not in found and isinstance(obj, QtWidgets.QWidget) and func(obj):
-                    widgstack.push(obj)
+                    widgstack.append(obj)
             except:
                 pass
 
@@ -202,7 +202,7 @@ def create_menu(title, values, default_func=lambda v: None, parent=None):
         menu.addAction(title, lambda: None)
         menu.addSeparator()
 
-    def _call_func(_func, _val):  # needed to ensure v and meth are fresh
+    def _call_func(_func, _val):  # needed to ensure func and val are fresh
         return partial(_func, _val)
 
     for val in values:
