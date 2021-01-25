@@ -365,7 +365,7 @@ def _calculate_tri_mesh_main(
         out_xis: np.ndarray,
         out_props: np.ndarray
 ):
-    for elem_idx in range(num_elems):
+    for elem_idx in prange(num_elems):
         node_idx: int = start_elem_idx[elem_idx] * num_face_nodes
         inds_idx: int = start_elem_idx[elem_idx] * num_face_tris
         cur_inds_idx: int = inds_idx

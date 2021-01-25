@@ -32,7 +32,7 @@ from .ui_utils import resize_screen_relative, center_window, choose_file_dialog
 from .console_widget import jupyter_present, JupyterWidget, ConsoleWidget
 from .threadsafe_calls import qtmainthread
 
-__all__ = ["IconName","MainWindow"]
+__all__ = ["IconName", "MainWindow"]
 
 main_title = '%s v%s (FOR RESEARCH ONLY)'
 
@@ -41,17 +41,17 @@ Ui_MainWindow = load_rc_layout("MainWindow")
 
 class IconName(Namespace):
     """Names of icons mapped to the filename in loaded resources."""
-    Default = ':/icons/document.png'
-    Mesh = ':/icons/cube.png'
-    Image = ':/icons/image.png'
-    Eye = ':/icons/eye.png'
-    EyeClosed = ':/icons/eye-disabled.png'
-    Bars = ':/icons/stats-bars.png'
-    Help = ':/icons/help-circled.png'
-    Scissors = ':/icons/scissors.png'
-    Trash = ':/icons/trash-a.png'
-    Seg = ':/icons/seg.png'
-    Clipboard = ':/icons/clipboard.png'
+    default = ':/icons/document.png'
+    mesh = ':/icons/cube.png'
+    image = ':/icons/image.png'
+    eye = ':/icons/eye.png'
+    eyeclosed = ':/icons/eye-disabled.png'
+    bars = ':/icons/stats-bars.png'
+    help = ':/icons/help-circled.png'
+    scissors = ':/icons/scissors.png'
+    trash = ':/icons/trash-a.png'
+    seg = ':/icons/seg.png'
+    clipboard = ':/icons/clipboard.png'
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):

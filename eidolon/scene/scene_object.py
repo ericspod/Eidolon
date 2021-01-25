@@ -20,7 +20,6 @@ from typing import List, Optional
 
 import numpy as np
 
-from .scene_plugin import ScenePlugin
 from ..utils import cached_property, Namespace
 from ..mathdef import Transformable, BoundBox, transform
 from ..renderer import Figure, Material, OffscreenCamera
@@ -32,15 +31,16 @@ class ReprType(Namespace):
     """
     Stores the types of visual representations data can have.
     """
-    Vertex = "Mesh Vertices"
-    Point = "Mesh Points"
-    Line = "Mesh Lines"
-    Volume = "Mesh Volumes"
-    Surface = "Mesh Surfaces"
-    ImageStack = "Image Stack"
-    TimedImageStack = "Time-dependent Image Stack"
-    ImageVolume = "Image Volume"
-    TimedImageVolume = "Time-dependent Image Volume"
+    # mesh types
+    vertex = "Mesh Vertices"
+    point = "Mesh Points"
+    line = "Mesh Lines"
+    volume = "Mesh Volumes"
+    # image types
+    imagestack = "Image Stack"
+    imagevolume = "Image Volume"
+    timedimagestack = "Time-dependent Image Stack"
+    timedimagevolume = "Time-dependent Image Volume"
 
 
 class SceneObject:
@@ -52,11 +52,11 @@ class SceneObject:
     represent the data store. The representations are stored as children of the originating SceneObject.
     """
 
-    def __init__(self, name, plugin: Optional[ScenePlugin] = None, **other_values):
+    def __init__(self, name, plugin=None, **other_values):
         self._name: str = name  # object name
         self.reprs: list = []  # list of current representations
         self.reprcount: int = 0  # number of representations created, used to ensure unique names
-        self.plugin: ScenePlugin = plugin  # plugin used to link interface and create representations
+        self.plugin = plugin  # plugin used to link interface and create representations
         self.other_values: dict = other_values  # keyword arguments passed in through the constructor
         self._prop_tuples: list = []  # list of cached property tuples, filled in by getPropTuples()
         self.filename: str = None
@@ -130,15 +130,15 @@ class SceneObjectRepr(Transformable):
     figures, triangle meshes for rendering solid objects, texture planes for representing imaging data, and so forth.
     """
 
-    def __init__(self, parent: SceneObject, reprtype: str, reprcount: int, matname: str = 'Default'):
+    def __init__(self, parent: SceneObject, repr_type: str, repr_count: int, matname: str = 'Default'):
         super().__init__()
 
         self.parent: SceneObject = parent  # parent SceneObject instance
-        self.plugin: ScenePlugin = self.parent.plugin
-        self._name: str = ReprType[reprtype]  # +str(reprcount)
+        self.plugin = self.parent.plugin
+        self._name: str = ReprType[repr_type]  # +str(reprcount)
         self._matname: str = matname
-        self.reprcount: int = reprcount
-        self.reprtype: str = reprtype
+        self.repr_count: int = repr_count
+        self.repr_type: str = repr_type
         self._visible: bool = False
         self._aabb: Optional[BoundBox] = None  # cached AABB object, set to None to force recalc
         self._current_timestep: float = 0
@@ -203,14 +203,14 @@ class SceneObjectRepr(Transformable):
         """Returns True if this representation has been initialized and included into the scene, false otherwise."""
         return any(f.attached for f in self.figures)
 
-    def aabb(self, recalculate=False):
+    def aabb(self, recalculate: bool = False):
         """Returns the untransformed axis-aligned bound box enclosing the geometry of this representation."""
         if recalculate or self._aabb is None:
             self._calculate_aabb()
 
         return self._aabb
 
-    def _calculate_aabb(self):
+    def _calculate_aabb(self) -> BoundBox:
         """Recalculate the AABB after the data has changed."""
         boxes = [f.aabb() for f in self.figures if f.visible]
         return BoundBox.from_boxes(*boxes)

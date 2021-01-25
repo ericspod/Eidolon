@@ -31,7 +31,6 @@ __all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
 
 
 class vec3:
-
     def __init__(self, x: float, y: float, z: float = 0):
         if not isinstance(x, (float, int)) or not isinstance(y, (float, int)) or not isinstance(z, (float, int)):
             raise ValueError("All vec3 arguments must be float or int.")

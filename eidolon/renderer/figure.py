@@ -45,11 +45,11 @@ __all__ = ["Figure", "SimpleFigure", "RenderMode"]
 
 
 class RenderMode(Enum):
-    UNCHANGED = RenderModeAttrib.M_unchanged,
-    FILLED = RenderModeAttrib.M_filled,
-    WIREFRAME = RenderModeAttrib.M_wireframe,
-    POINT = RenderModeAttrib.M_point,
-    FILLED_FLAT = RenderModeAttrib.M_filled_flat,
+    UNCHANGED = RenderModeAttrib.M_unchanged
+    FILLED = RenderModeAttrib.M_filled
+    WIREFRAME = RenderModeAttrib.M_wireframe
+    POINT = RenderModeAttrib.M_point
+    FILLED_FLAT = RenderModeAttrib.M_filled_flat
     FILLED_WIREFRAME = RenderModeAttrib.M_filled_wireframe
 
 
@@ -208,5 +208,5 @@ class Figure(Transformable):
 
 
 class SimpleFigure(Figure):
-    def __init__(self, name: str, vertices, indices=None, norms=None, colors=None, uvcoords=None):
-        super().__init__(name, create_simple_geom(vertices, indices, norms, colors, uvcoords))
+    def __init__(self, name: str, vertices, indices=None, norms=None, colors=None, uvwcoords=None):
+        super().__init__(name, create_simple_geom(vertices, indices, norms, colors, uvwcoords))

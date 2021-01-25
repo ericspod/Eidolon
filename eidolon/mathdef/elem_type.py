@@ -52,8 +52,8 @@ class ElemTypeDef(object):
                  point_search: Optional[Callable], face_type: Optional[ElemTypeDef]):
 
         self.shape_type: str = shape_type  # geometry (tet, hex, etc)
-        self.dim: int = ShapeType[shape_type][1]  # spatial dimensions
-        self.is_simplex: bool = ShapeType[shape_type][2]  # whether the element is simplex (tri,tet) or not
+        self.dim: int = ShapeType[shape_type].dim  # spatial dimensions
+        self.is_simplex: bool = ShapeType[shape_type].is_simplex  # whether the element is simplex (tri,tet) or not
         self.basis_name: str = basis_name  # basis function name (NL=nodal lagrange, etc)
         self.desc: str = desc  # plain language description
         self.order: int = order  # order (1=linear, 2=quadratic, etc)
@@ -402,11 +402,12 @@ class ElemTypeMeta(NamespaceMeta):
 
         orderstr = ordernames[order - 1] if order <= len(ordernames) else f"Order {order}"
 
-        desc = f"{ShapeType[shape][0]}, {orderstr} {BasisGenFuncs[basistype][0]}"
+        desc = f"{ShapeType[shape].name}, {orderstr} {BasisGenFuncs[basistype][0]}"
 
         basisobj = BasisGenFuncs[basistype][1](shape, desc, order)
 
-        cls.append(name, basisobj)
+        # cls.append(name, basisobj)
+        cls[name]=basisobj
 
         faces = basisobj.face_type
         if not is_iterable_notstr(faces):
@@ -448,7 +449,8 @@ class ElemTypeMeta(NamespaceMeta):
                 pass
 
         try:
-            return super().__getattr__(key)
+            # return super().__getattr__(key)
+            return NamespaceMeta.__getattribute__(cls,key)
         except AttributeError:
             return cls._generate_elem_type(key)
 

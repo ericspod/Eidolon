@@ -332,6 +332,7 @@ def choose_file_dialog(title, parent, opendir=None, filterstr='', is_open=True,
     return list(filter(bool,result))
 
 
+@qtmainthread
 def choose_dir_dialog(title, parent, opendir=None):
     """
     Opens a dialog for choosing a directory, returning the chosen directory path or None.

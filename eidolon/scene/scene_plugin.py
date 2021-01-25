@@ -19,16 +19,21 @@
 from typing import List, Union, NamedTuple, Callable
 
 from .scene_object import ReprType, SceneObject, SceneObjectRepr
-from ..utils import split_path_ext, Namespace
+from .mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
+from ..utils import split_path_ext, Namespace, first, task_method
 from ..ui import IconName
-from ..mathdef import calculate_tri_mesh
+from ..mathdef import calculate_tri_mesh, ElemType, Mesh, MeshDataValue
+from ..renderer import SimpleFigure
+
 
 class MeshAlgorithmDesc(NamedTuple):
-    calc_func:Callable=None
-    
+    repr_type: str = ""
+    calc_func: Callable = None
+    min_dim: int = 0
+
 
 class ReprMeshAlgorithm(Namespace):
-    TriMesh=(calculate_tri_mesh,)
+    trimesh = MeshAlgorithmDesc(ReprType._volume, calculate_tri_mesh, 3)
 
 
 class ScenePlugin:
@@ -51,7 +56,7 @@ class ScenePlugin:
 
     def get_icon(self, obj) -> str:
         """Returns the icon name for `obj` (which will likely be a member of IconName), or None for the default."""
-        return IconName.Default
+        return IconName.default
 
     def get_help(self) -> str:
         """Return a help text block."""
@@ -90,11 +95,64 @@ class ScenePlugin:
         """This should be called if another plugin takes responsibility for `obj' away from the current one."""
         assert obj.plugin == self
 
+    def create_repr(self, obj: SceneObject, reprtype: str, **kwargs):
+        """Create a representation of `obj` of the type `reprtype`."""
+        pass
+
+    def get_repr_params(self, obj: SceneObject, reprtype: str):
+        """Returns the list of ParamDef objects defining the parameters for the given given representation type."""
+        return []
+
 
 class MeshScenePlugin(ScenePlugin):
     def get_icon(self, obj) -> str:
-        return IconName.Mesh
+        return IconName.mesh
+
+    def get_repr_types(self, obj: MeshSceneObject) -> List[str]:
+        spatial_topos = obj.meshes[0].get_spatial_topos()
+        min_dim = min(ElemType[t.elem_type].dim for t in spatial_topos.values())
+
+        reprs = [ReprType._vertex, ReprType._point]
+
+        if min_dim > 1:
+            reprs.append(ReprType._line)
+        if min_dim > 2:
+            reprs.append(ReprType._volume)
+
+        return reprs
+
+    def create_repr(self, obj: MeshSceneObject, repr_type: str, **kwargs):
+        spatial_topos = obj.meshes[0].get_spatial_topos()
+        min_dim = min(ElemType[t.elem_type].dim for t in spatial_topos.values())
+
+        calc_func = first(d.calc_func for d in ReprMeshAlgorithm if d.repr_type == repr_type and d.min_dim >= min_dim)
+
+        mesh0: Mesh = calc_func(obj.meshes[0], **kwargs)
+        meshes = [mesh0]
+        figures = []
+
+        for m in obj.meshes[1:]:
+            mesh0.share_other_data(m)
+            meshm = calc_func(m, **kwargs)
+            meshes.append(meshm)
+
+        for m in meshes:
+            inds = first(m.topos.values())
+            norms = m.other_data.get(MeshDataValue._norms, None)
+            colors = m.other_data.get(MeshDataValue._colors, None)
+            uvwcoords = m.other_data.get(MeshDataValue._uvwcoords, None)
+
+            fig = SimpleFigure(f"Fig{m.time_index}", m.nodes, inds, norms, colors, uvwcoords)
+            fig.timestep = m.time_index
+            figures.append(fig)
+
+        repr = MeshSceneObjectRepr(obj, repr_type, len(obj.reprs))
+        repr.figures[:] = figures
+        obj.reprs.append(repr)
+
+        return repr
+
 
 class ImageScenePlugin(ScenePlugin):
     def get_icon(self, obj) -> str:
-        return IconName.Image
+        return IconName.image

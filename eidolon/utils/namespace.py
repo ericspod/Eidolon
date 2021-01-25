@@ -29,7 +29,7 @@ class NamespaceMeta(type):
         for k, v in list(classdict.items()):
             if k[0] != "_" and not inspect.ismethod(v) and not isinstance(v, classmethod):
                 ns_dict[k] = v
-                del classdict[k]
+                classdict["_" + k] = k
 
         ns_class = super().__new__(mcs, cls, bases, classdict)
 
@@ -41,37 +41,53 @@ class NamespaceMeta(type):
     def __contains__(cls, member):
         return member in cls.ns_dict
 
-    def __getitem__(cls, name):
-        return cls.__getattr__(name)
-
-    def __getattr__(cls, name):
-        if name in cls.ns_dict:
-            return cls.ns_dict[name]
-        elif name[0] == '_' and name[1:] in cls.ns_dict:
-            return name[1:]
-        else:
-            return super().__getattribute__(name)
-
-    def __setattr__(cls, key, value):
-        if key not in cls.ns_dict and hasattr(cls, key):
-            super().__setattribute__(key, value)
-        elif key[0] == "_":
-            raise ValueError("Cannot add namespace member starting with _")
-
-        cls.ns_dict[key] = value
-
     def __iter__(cls):
         yield from cls.ns_dict.items()
-
-    def append(cls, key, value):
-        if key in cls.ns_dict:
-            raise ValueError(f"Key '{key}' already present in namespace")
-
-        cls.ns_dict[key] = value
 
     def __len__(cls):
         return len(cls.ns_dict)
 
+    # def __setattr__(cls, key, value):
+    #     if hasattr(cls, key) and not hasattr(cls, "_" + key):  # not a namespace member, use inherited setattr
+    #         type.__setattr__(cls, key, value)
+    #     elif key[0] == "_":
+    #         raise ValueError("Cannot add namespace member starting with _")
+    #     else:
+    #         cls.ns_dict[key] = value
+    #         type.__setattr__(cls, key, value)
+    #         type.__setattr__(cls, "_" + key, key)
+
+    __getitem__ = type.__getattribute__
+    # __setitem__ = __setattr__
+
+    # def append(cls, key, value):
+    #     if key in cls.ns_dict:
+    #         raise ValueError(f"Key '{key}' already present in namespace")
+    #
+    #     # NamespaceMeta.__setattr__(cls, key, value)
+    #     cls.ns_dict[key] = value
+    #     type.__setattr__(cls, key, value)
+    #     type.__setattr__(cls, "_" + key, key)
+
+    def __setitem__(cls, key, value):
+        if key[0] == "_":
+            raise ValueError("Cannot add namespace member starting with _")
+        elif key in cls.__dict__ and key not in cls.ns_dict:
+            raise ValueError(f"Member {key} already defined")
+        else:
+            cls.ns_dict[key] = value
+            type.__setattr__(cls, key, value)
+            type.__setattr__(cls, "_" + key, key)
+
+
 
 class Namespace(metaclass=NamespaceMeta):
+    """
+    A Namespace is a multable sequence of identifiers defined by static class members. Like Enum, a class inheriting
+    from Namespace defines a new sequence variables which can be accessed as members, as items with [] syntax, and
+    iterated over. Additionally the name of each variable is stored as a separate member with the same name prepended
+    with underscore. Namespace classes are meant to be mutable and represent stored resources which plugins or other
+    extensions can add to or modify to change system behaviour. To define a set of static constants with a separate type
+    definition, use Enum instead.
+    """
     pass

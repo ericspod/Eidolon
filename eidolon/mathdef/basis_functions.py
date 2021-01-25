@@ -19,7 +19,7 @@
 
 import itertools
 import functools
-from typing import Tuple
+from typing import Tuple, NamedTuple
 from textwrap import dedent
 
 import numpy as np
@@ -30,16 +30,23 @@ from .compile_support import jit
 __all__ = ["ShapeType", "lagrange_basis"]
 
 
+class ShapeTypeDesc(NamedTuple):
+    name: str = ""
+    dim: int = 0
+    is_simplex: bool = True
+
+
 class ShapeType(Namespace):
     """
-    Stores the geometry types with their full names, dimensions, and if they are symplex or not
+    Stores the geometry types with their full names, dimensions, and if they are symplex or not. These members are
+    capitalized since they will be used in constructing a basis type name.
     """
-    Point = ("Point", 0, False)
-    Line = ("Line", 1, False)
-    Tri = ('Triangle', 2, True)
-    Quad = ('Quadrilateral', 2, False)
-    Tet = ('Tetrahedron', 3, True)
-    Hex = ('Hexahedron', 3, False)
+    Point = ShapeTypeDesc("Point", 0, False)
+    Line = ShapeTypeDesc("Line", 1, False)
+    Tri = ShapeTypeDesc('Triangle', 2, True)
+    Quad = ShapeTypeDesc('Quadrilateral', 2, False)
+    Tet = ShapeTypeDesc('Tetrahedron', 3, True)
+    Hex = ShapeTypeDesc('Hexahedron', 3, False)
 
 
 def line_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float]:

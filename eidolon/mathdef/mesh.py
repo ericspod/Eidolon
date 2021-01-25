@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+
+from __future__ import annotations
 from typing import NamedTuple, Optional, Dict, Any, Tuple, Union
 import numpy as np
 from ..utils import Namespace, first
@@ -31,6 +33,7 @@ class MeshDataValue(Namespace):
     xis = "Node Xi Values"
     norms = "Node Normals"
     colors = "Node Colors"
+    uvwcoords = "Texture Coordinates"
     nodeprops = "Per-node Properties Array"
     spatial = "Spatial Topology"
     field = "Data Field"
@@ -60,7 +63,7 @@ class Mesh:
         self.time_index: float = time_index
         self.parent: Mesh = parent
 
-        self.properties: Dict[str, Any] = {}
+        self.properties: Dict[Union[str, Tuple[str, str]], Any] = {}
         self.other_data: Dict[Union[str, Tuple[str, str]], Any] = {}
 
         for name, vals in topo_sets.items():
@@ -75,3 +78,22 @@ class Mesh:
     def set_field(self, name, data_array, spatial_topology, field_topology=None, is_per_elem=False):
         field_topology = field_topology or spatial_topology
         self.fields[name] = Field(np.asarray(data_array), spatial_topology, field_topology, is_per_elem)
+
+    def get_spatial_topos(self) -> Dict[str, Topology]:
+        return {n: t for n, t in self.topos.items() if not t.is_field_topo}
+
+    def share_other_data(self, other: Mesh):
+        """
+        Share members of `other_data` with `other`, adding key-value entries if they are not in `other.other_data`. This
+        does not copy arrays so data does become shared, this is assumed to be normal, octree, or adjecency data that
+        applies to the same topologies in `other` as are present here. If a key in `other_data` is a pair containing a
+        value name and topology/field name, the entry is added to `other` only if that member is present.
+        """
+        for k, v in self.other_data.items():
+            if k not in other.other_data:
+                if isinstance(k, tuple):
+                    _, array_name = k
+                    if array_name in other.topos or array_name in other.fields:
+                        other.other_data[k] = v
+                else:
+                    other.other_data[k] = v
