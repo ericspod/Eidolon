@@ -20,9 +20,11 @@ from typing import Iterable, List
 from .scene_object import SceneObject, SceneObjectRepr
 from ..mathdef import Mesh
 
+__all__ = ["MeshSceneObject", "MeshSceneObjectRepr"]
+
 
 class MeshSceneObject(SceneObject):
-    def __init__(self, name, meshes: Iterable[Mesh], plugin=None, **other_values):
+    def __init__(self, name:str, meshes: Iterable[Mesh], plugin=None, **other_values):
         super().__init__(name, plugin, **other_values)
         self.meshes: List[Mesh] = meshes
 

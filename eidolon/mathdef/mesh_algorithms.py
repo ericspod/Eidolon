@@ -291,7 +291,7 @@ def calculate_tri_mesh(
         octree_threshold=100000,
         octree_depth=3
 ):
-    topo_name = topo_name or first(t for t in mesh.topos if mesh.topos[t].is_field_topo)
+    topo_name = topo_name or first(t for t in mesh.topos if not mesh.topos[t].is_field_topo)
     nodes = mesh.nodes
     topo_array, et_name, _ = mesh.topos[topo_name]
     et: ElemTypeDef = ElemType[et_name]
@@ -339,7 +339,7 @@ def calculate_tri_mesh(
 
     out_norms = calculate_trimesh_normals(out_nodes, out_inds)
 
-    out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)}, {}, mesh.time_index, mesh)
+    out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)}, {}, mesh.timestep, mesh)
     out_mesh.other_data[MeshDataValue._xis] = out_xis
     out_mesh.other_data[MeshDataValue._norms] = out_norms
     out_mesh.other_data[MeshDataValue._nodeprops] = out_props

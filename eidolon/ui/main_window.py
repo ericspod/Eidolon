@@ -20,7 +20,9 @@ import os
 import sys
 import textwrap
 import warnings
-from PyQt5 import QtCore, QtWidgets
+from typing import Optional, Any
+
+from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 
 from .loader import load_rc_layout
@@ -57,14 +59,17 @@ class IconName(Namespace):
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, conf, width=1200, height=800):
         super().__init__()
-        self.conf = conf
+        self.conf: dict = conf
         self.mgr = None
-        self.working_dir = os.getcwd()
+        self.working_dir: str = os.getcwd()
 
         self.setupUi(self)
         self.setWindowTitle(main_title % (eidolon.__appname__, eidolon.__version__))
         self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks)
         self.setAcceptDrops(True)
+
+        self.tree_model: QtGui.QStandardItemModel = QtGui.QStandardItemModel()
+        self.treeView.setModel(self.tree_model)
 
         self.action_About.triggered.connect(self._show_about)
         self.action_Scene_Elements.triggered.connect(
@@ -111,13 +116,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # force a relayout
         self.resize(width, height + 1)
         self.show()
-        # v1.setRenderWinSize(width, height)
+        # self.setRenderWinSize(width, height)
 
         self.raise_()  # bring window to front in OS X
         self.activateWindow()  # bring window to front in Windows (?)
 
         resize_screen_relative(self, 0.8, 0.8)
         center_window(self)
+
+    def _connect_components(self):
+        self.removeObjectButton.clicked.connect(self._remove_button)
 
     def _show_about(self):
         """Show the about dialog box."""
@@ -183,6 +191,51 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #     else:
     #         self.msgdialog.addMsg(title, msg, str(text), width, height)
 
+    def find_tree_item(self, obj, search_list: Optional[list] = None):
+        if search_list is None:
+            search_list = self.tree_model.findItems(".*", Qt.MatchRegExp)
+
+        for item in search_list:
+            if item.data() == obj:
+                return item
+            elif item.hasChildren():
+                child = self.find_tree_item(obj, [item.child(r, 0) for r in range(item.rowCount())])
+                if child is not None:
+                    return child
+
+        return None
+
+    def get_selected_tree_object(self):
+        indices = self.treeView.selectedIndexes()
+
+        if len(indices) > 0:
+            item = self.tree_model.itemFromIndex(indices[0])
+            return item.data()
+        else:
+            return None
+
+    def add_tree_object(self, obj, text: str, icon: str, parent: Optional[Any] = None):
+        item = QtGui.QStandardItem(QtGui.QIcon(icon), text)
+        item.setData(obj)
+        parent_item = self.tree_model
+
+        if parent is not None:
+            parent_item = self.find_tree_item(parent)
+
+        parent_item.appendRow(item)
+        self.treeView.expand(self.tree_model.indexFromItem(item))
+
+        return item
+
+    def remove_tree_object(self, obj):
+        item = self.find_tree_item(obj)
+
+        if item is None:
+            raise ValueError("Object not found in tree view")
+
+        parent = item.parent() or self.tree_model
+        parent.removeRow(item.row())
+
     def _execute_scratch(self):
         """Execute the contents of the scratch pad line-by-line in the console, making it visible first."""
         self.consoleWidget.setVisible(True)
@@ -213,3 +266,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             with open(scratch[0], 'w') as ofile:
                 ofile.write(text)
+
+    def _remove_button(self):
+        obj=self.get_selected_tree_object()

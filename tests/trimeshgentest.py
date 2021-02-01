@@ -70,7 +70,7 @@ camwidget = eidolon.ui.CameraWidget(cam)
 
 ctrl.attach_events(camwidget.events)
 
-ctrl.move_see_all()
+ctrl.set_camera_see_all()
 
 light = eidolon.renderer.Light("dlight", eidolon.renderer.LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
 light.attach(cam, True)

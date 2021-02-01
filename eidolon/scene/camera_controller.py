@@ -17,18 +17,16 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import math
-from typing import Union
+from typing import Union, Generator
 
 from PyQt5 import QtGui, QtCore
 
-from .camera_widget import CameraWidget, CameraWidgetEvent
+from ..ui.camera_widget import CameraWidget, CameraWidgetEvent
 from ..renderer import OffscreenCamera
 from ..mathdef.math_types import vec3, rotator
 from ..mathdef.math_utils import rad_clamp, rad_circular_convert
 
-from ..utils import timing
-
-__all__ = ["CameraController"]
+__all__ = ["CameraController", "QtCameraController"]
 
 
 class CameraController:
@@ -40,7 +38,7 @@ class CameraController:
         self._dist: float = dist
         self.last_pos = None
         self.free_rotator = None
-        self._is_z_locked = True
+        self._is_z_locked: bool = True
         self.phisub: float = 1e-5
         self.rscale: float = 5e-3
         self.tscale: float = 1e-1
@@ -48,40 +46,8 @@ class CameraController:
 
         self.apply_camera_position()
 
-    def attach_events(self, events):
-        events.add_handler(CameraWidgetEvent._mouse_pressed, self._mouse_pressed)
-        events.add_handler(CameraWidgetEvent._mouse_moved, self._mouse_moved)
-        events.add_handler(CameraWidgetEvent._mouse_wheel, self._mouse_wheel)
-
-    def detach_events(self, events):
-        events.remove_handler(self._mouse_pressed)
-        events.remove_handler(self._mouse_moved)
-        events.remove_handler(self._mouse_wheel)
-
-    def _mouse_pressed(self, widget: CameraWidget, event: QtGui.QMouseEvent):
-        self.last_pos = (event.x(), event.y())
-
-    def _mouse_moved(self, widget: CameraWidget, event: QtGui.QMouseEvent):
-        dx = event.x() - self.last_pos[0]
-        dy = event.y() - self.last_pos[1]
-
-        if event.buttons() == QtCore.Qt.LeftButton:
-            self.rotate(dx, dy)
-        elif event.buttons() == QtCore.Qt.RightButton:
-            self.translate_camera_relative(-dx, 0, dy)
-        elif event.buttons() == QtCore.Qt.MiddleButton:
-            self.zoom(dy)
-        elif event.buttons() == (QtCore.Qt.LeftButton | QtCore.Qt.RightButton):
-            self.translate_camera_relative(0, -dy, 0)
-
-        self.apply_camera_position()
-        widget.repaint_on_ready()
-        self.last_pos = (event.x(), event.y())
-
-    def _mouse_wheel(self, widget: CameraWidget, event: QtGui.QWheelEvent):
-        self.zoom(-event.angleDelta().y())
-        self.apply_camera_position()
-        widget.repaint_on_ready()
+    def cameras(self) -> Generator[OffscreenCamera,None,None]:
+        yield self.camera
 
     @property
     def z_lock(self) -> bool:
@@ -164,7 +130,7 @@ class CameraController:
     def zoom(self, dz: float):
         self.dist += dz * self.zscale
 
-    def move_see_all(self):
+    def set_camera_see_all(self):
         aabb = self.camera.scene_aabb
         radius = max(0.0001, aabb.radius)
         fov = max(self.camera.fov)
@@ -183,3 +149,40 @@ class CameraController:
         up = rot * vec3.Z
 
         self.camera.set_camera_lookat(campos, self.position, up)
+
+
+class QtCameraController(CameraController):
+    def attach_events(self, events):
+        events.add_handler(CameraWidgetEvent._mouse_pressed, self._mouse_pressed)
+        events.add_handler(CameraWidgetEvent._mouse_moved, self._mouse_moved)
+        events.add_handler(CameraWidgetEvent._mouse_wheel, self._mouse_wheel)
+
+    def detach_events(self, events):
+        events.remove_handler(self._mouse_pressed)
+        events.remove_handler(self._mouse_moved)
+        events.remove_handler(self._mouse_wheel)
+
+    def _mouse_pressed(self, widget: CameraWidget, event: QtGui.QMouseEvent):
+        self.last_pos = (event.x(), event.y())
+
+    def _mouse_moved(self, widget: CameraWidget, event: QtGui.QMouseEvent):
+        dx = event.x() - self.last_pos[0]
+        dy = event.y() - self.last_pos[1]
+
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.rotate(dx, dy)
+        elif event.buttons() == QtCore.Qt.RightButton:
+            self.translate_camera_relative(-dx, 0, dy)
+        elif event.buttons() == QtCore.Qt.MiddleButton:
+            self.zoom(dy)
+        elif event.buttons() == (QtCore.Qt.LeftButton | QtCore.Qt.RightButton):
+            self.translate_camera_relative(0, -dy, 0)
+
+        self.apply_camera_position()
+        widget.repaint_on_ready()
+        self.last_pos = (event.x(), event.y())
+
+    def _mouse_wheel(self, widget: CameraWidget, event: QtGui.QWheelEvent):
+        self.zoom(-event.angleDelta().y())
+        self.apply_camera_position()
+        widget.repaint_on_ready()

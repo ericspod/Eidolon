@@ -19,7 +19,6 @@
 from . import resources_rc
 
 from .camera_widget import *
-from .camera_controller import *
 from .appbase import *
 from .loader import *
 from .main_window import *

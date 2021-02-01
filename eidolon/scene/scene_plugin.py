@@ -23,7 +23,9 @@ from .mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
 from ..utils import split_path_ext, Namespace, first, task_method
 from ..ui import IconName
 from ..mathdef import calculate_tri_mesh, ElemType, Mesh, MeshDataValue
-from ..renderer import SimpleFigure
+from ..renderer import SimpleFigure, OffscreenCamera
+
+__all__ = ["MeshAlgorithmDesc", "ReprMeshAlgorithm", "ScenePlugin", "MeshScenePlugin", "ImageScenePlugin"]
 
 
 class MeshAlgorithmDesc(NamedTuple):
@@ -95,13 +97,24 @@ class ScenePlugin:
         """This should be called if another plugin takes responsibility for `obj' away from the current one."""
         assert obj.plugin == self
 
+    def get_repr_params(self, obj: SceneObject, reprtype: str):
+        """Returns the list of ParamDef objects defining the parameters for the given given representation type."""
+        return []
+
     def create_repr(self, obj: SceneObject, reprtype: str, **kwargs):
         """Create a representation of `obj` of the type `reprtype`."""
         pass
 
-    def get_repr_params(self, obj: SceneObject, reprtype: str):
-        """Returns the list of ParamDef objects defining the parameters for the given given representation type."""
-        return []
+    def attach_repr(self, rep: SceneObjectRepr, camera: OffscreenCamera):
+        for fig in rep.figures:
+            if not fig.attached_to_camera(camera):
+                fig.attach(camera)
+
+        rep.visible=True
+
+    def detach_repr(self, rep: SceneObjectRepr, camera: OffscreenCamera):
+        for fig in rep.figures:
+            fig.detach(camera)
 
 
 class MeshScenePlugin(ScenePlugin):
@@ -125,7 +138,7 @@ class MeshScenePlugin(ScenePlugin):
         spatial_topos = obj.meshes[0].get_spatial_topos()
         min_dim = min(ElemType[t.elem_type].dim for t in spatial_topos.values())
 
-        calc_func = first(d.calc_func for d in ReprMeshAlgorithm if d.repr_type == repr_type and d.min_dim >= min_dim)
+        calc_func = first(d.calc_func for _,d in ReprMeshAlgorithm if d.repr_type == repr_type and d.min_dim >= min_dim)
 
         mesh0: Mesh = calc_func(obj.meshes[0], **kwargs)
         meshes = [mesh0]
@@ -137,13 +150,13 @@ class MeshScenePlugin(ScenePlugin):
             meshes.append(meshm)
 
         for m in meshes:
-            inds = first(m.topos.values())
+            inds = first(m.topos.values()).data
             norms = m.other_data.get(MeshDataValue._norms, None)
             colors = m.other_data.get(MeshDataValue._colors, None)
             uvwcoords = m.other_data.get(MeshDataValue._uvwcoords, None)
 
-            fig = SimpleFigure(f"Fig{m.time_index}", m.nodes, inds, norms, colors, uvwcoords)
-            fig.timestep = m.time_index
+            fig = SimpleFigure(f"Fig{m.timestep}", m.nodes, inds, norms, colors, uvwcoords)
+            fig.timestep = m.timestep
             figures.append(fig)
 
         repr = MeshSceneObjectRepr(obj, repr_type, len(obj.reprs))

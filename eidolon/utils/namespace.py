@@ -47,27 +47,7 @@ class NamespaceMeta(type):
     def __len__(cls):
         return len(cls.ns_dict)
 
-    # def __setattr__(cls, key, value):
-    #     if hasattr(cls, key) and not hasattr(cls, "_" + key):  # not a namespace member, use inherited setattr
-    #         type.__setattr__(cls, key, value)
-    #     elif key[0] == "_":
-    #         raise ValueError("Cannot add namespace member starting with _")
-    #     else:
-    #         cls.ns_dict[key] = value
-    #         type.__setattr__(cls, key, value)
-    #         type.__setattr__(cls, "_" + key, key)
-
     __getitem__ = type.__getattribute__
-    # __setitem__ = __setattr__
-
-    # def append(cls, key, value):
-    #     if key in cls.ns_dict:
-    #         raise ValueError(f"Key '{key}' already present in namespace")
-    #
-    #     # NamespaceMeta.__setattr__(cls, key, value)
-    #     cls.ns_dict[key] = value
-    #     type.__setattr__(cls, key, value)
-    #     type.__setattr__(cls, "_" + key, key)
 
     def __setitem__(cls, key, value):
         if key[0] == "_":
@@ -78,7 +58,6 @@ class NamespaceMeta(type):
             cls.ns_dict[key] = value
             type.__setattr__(cls, key, value)
             type.__setattr__(cls, "_" + key, key)
-
 
 
 class Namespace(metaclass=NamespaceMeta):

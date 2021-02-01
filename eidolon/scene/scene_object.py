@@ -22,7 +22,7 @@ import numpy as np
 
 from ..utils import cached_property, Namespace
 from ..mathdef import Transformable, BoundBox, transform
-from ..renderer import Figure, Material, OffscreenCamera
+from ..renderer import Figure, Material
 
 __all__ = ["ReprType", "SceneObject", "SceneObjectRepr"]
 
@@ -52,7 +52,7 @@ class SceneObject:
     represent the data store. The representations are stored as children of the originating SceneObject.
     """
 
-    def __init__(self, name, plugin=None, **other_values):
+    def __init__(self, name:str, plugin=None, **other_values):
         self._name: str = name  # object name
         self.reprs: list = []  # list of current representations
         self.reprcount: int = 0  # number of representations created, used to ensure unique names
@@ -62,7 +62,7 @@ class SceneObject:
         self.filename: str = None
 
     def __repr__(self):
-        return f"{self.__class__.__name__}<'{self.name}' @ {id(self):.16x}>"
+        return f"{self.__class__.__name__}<'{self.name}' @ {id(self):x}>"
 
     @property
     def name(self):
@@ -147,7 +147,7 @@ class SceneObjectRepr(Transformable):
         self.secondary_figures = []
 
     def __repr__(self):
-        return f"{self.__class__.__name__}<{self.name} @ {id(self):.16x}>"
+        return f"{self.__class__.__name__}<{self.name} @ {id(self):x}>"
 
     @property
     def label(self):
@@ -188,15 +188,6 @@ class SceneObjectRepr(Transformable):
 
         for f in self.all_figures():
             f.visible = self.visible and f.timestep == timestep
-
-    def attach(self, cam: OffscreenCamera):
-        for fig in self.all_figures():
-            if not fig.attached_to_camera(cam):
-                fig.attach(cam)
-
-    def detach(self, cam: OffscreenCamera):
-        for fig in self.all_figures():
-            fig.detach(cam)
 
     @property
     def is_in_scene(self) -> bool:

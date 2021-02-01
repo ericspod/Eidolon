@@ -34,6 +34,6 @@ fig = eidolon.renderer.ImageVolumeFigure("planes", img, num_planes=100)
 fig.attach(win.cam)
 fig.scale = vec3.one * 10
 
-win.ctrl.move_see_all()
+win.ctrl.set_camera_see_all()
 
 win.run()

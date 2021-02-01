@@ -26,8 +26,6 @@ from PyQt5.QtCore import Qt
 
 from ..mathdef import vec3
 from ..utils import is_interactive
-from ..renderer import RenderBase, OffscreenCamera
-from .camera_controller import CameraController
 from .camera_widget import CameraWidget
 
 __all__ = ["init_ui", "exec_ui", "SimpleApp"]
@@ -61,13 +59,17 @@ def exec_ui(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
 
 class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
+        # imported here to avoid dependency issues
+        from ..scene.camera_controller import QtCameraController
+        from ..renderer import OffscreenCamera
+
         self.app = init_ui(sys.argv)
         super().__init__(parent)
         self.cam = OffscreenCamera("cam")
 
         self.camwidget = CameraWidget(self.cam)
 
-        self.ctrl = CameraController(self.cam, vec3.zero, 0, 0, 50)
+        self.ctrl = QtCameraController(self.cam, vec3.zero, 0, 0, 50)
         self.ctrl.attach_events(self.camwidget.events)
 
         self.resize(width, height)
@@ -79,6 +81,6 @@ class SimpleApp(QtWidgets.QMainWindow):
         else:
             super().keyPressEvent(evt)
 
-    def run(self, do_exit: Optional[bool] = None):
+    def exec(self, do_exit: Optional[bool] = None):
         self.show()
         exec_ui(self.app, do_exit)

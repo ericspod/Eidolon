@@ -64,7 +64,7 @@ def _create_vertex_data(vertices, indices=None, norms=None, colors=None, uvwcoor
 
     for i in range(len(vertices)):
         vertex.add_data3f(*vertices[i])
-        normal.add_data3f(LVector3(*norms[i]).normalized())
+        normal.add_data3f(*vec3(*norms[i]).norm)
         color.add_data4f(*colors[i])
         texcoord.add_data3f(*uvwcoords[i])
 

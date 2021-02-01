@@ -39,7 +39,7 @@ from .math_utils import lerp, lerp_xi, FEPSILON
 from .basis_functions import lagrange_basis, ShapeType
 from .math_types import vec3
 
-__all__ = ["ElemType", "ElemTypeDef", "BasisGenFuncs","get_xi_elem_directions"]
+__all__ = ["ElemType", "ElemTypeDef", "BasisGenFuncs", "get_xi_elem_directions"]
 
 
 class ElemTypeDef(object):
@@ -406,8 +406,7 @@ class ElemTypeMeta(NamespaceMeta):
 
         basisobj = BasisGenFuncs[basistype][1](shape, desc, order)
 
-        # cls.append(name, basisobj)
-        cls[name]=basisobj
+        cls[name] = basisobj
 
         faces = basisobj.face_type
         if not is_iterable_notstr(faces):
@@ -450,9 +449,11 @@ class ElemTypeMeta(NamespaceMeta):
 
         try:
             # return super().__getattr__(key)
-            return NamespaceMeta.__getattribute__(cls,key)
+            return NamespaceMeta.__getattribute__(cls, key)
         except AttributeError:
             return cls._generate_elem_type(key)
+
+    __getitem__ = __getattr__
 
 
 class ElemType(metaclass=ElemTypeMeta):

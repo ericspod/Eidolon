@@ -29,11 +29,12 @@ from panda3d.core import (
     Texture,
     WindowProperties,
     LVecBase4f,
-    LPoint3f
+    LPoint3f,
+    LPoint2f
 )
 
 from .render_base import RenderBase
-from ..mathdef import vec3, BoundBox
+from ..mathdef import vec3, BoundBox, ray
 
 __all__ = ["OffscreenCamera"]
 
@@ -83,6 +84,10 @@ class OffscreenCamera:
 
             self.set_clear_color(clear_color)
 
+    def update_scene(self):
+        if self.rbase.is_ready():
+            self.rbase.update()
+
     def set_clear_color(self, clear_color: LVecBase4f):
         if clear_color is None:
             self.buffer.set_clear_active(GraphicsOutput.RTPColor, False)
@@ -124,3 +129,22 @@ class OffscreenCamera:
     @property
     def fov(self):
         return np.deg2rad(self.lens.get_fov())
+
+    def get_screen_ray(self, x: float = 0, y: float = 0) -> Optional[ray]:
+        """Given a screen coordinate with (0,0) in center and (-1,-1) bottom left, return projected ray."""
+        near = LPoint3f()
+        far = LPoint3f()
+
+        if self.lens.extrude(LPoint2f(x, y), near, far):
+            return ray(vec3(*near), vec3(*(far - near)))
+        else:
+            return None
+
+    def get_screen_position(self, pos: vec3) -> Optional[vec3]:
+        """Given a position in space, return screen coordinate with (0,0) in center and (-1,-1) bottom left."""
+        pt = LPoint2f()
+
+        if self.lens.project(LPoint3f(*pos)):
+            return vec3(*pt)
+        else:
+            return None

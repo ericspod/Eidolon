@@ -32,12 +32,9 @@ __all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
 
 class vec3:
     def __init__(self, x: float, y: float, z: float = 0):
-        if not isinstance(x, (float, int)) or not isinstance(y, (float, int)) or not isinstance(z, (float, int)):
-            raise ValueError("All vec3 arguments must be float or int.")
-
-        self._x: float = x
-        self._y: float = y
-        self._z: float = z
+        self._x: float = float(x)
+        self._y: float = float(y)
+        self._z: float = float(z)
 
     @property
     def x(self) -> float:
@@ -339,10 +336,10 @@ class rotator:
         return rotator.between_vecs(rot * row2, row1) * rot
 
     def __init__(self, x: float = 0, y: float = 0, z: float = 0, w: float = 1):
-        self._x: float = x
-        self._y: float = y
-        self._z: float = z
-        self._w: float = w
+        self._x: float = float(x)
+        self._y: float = float(y)
+        self._z: float = float(z)
+        self._w: float = float(w)
 
     @property
     def x(self) -> float:

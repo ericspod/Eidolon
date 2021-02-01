@@ -56,11 +56,11 @@ class Field(NamedTuple):
 
 
 class Mesh:
-    def __init__(self, nodes, topo_sets={}, field_sets={}, time_index=0, parent=None):
+    def __init__(self, nodes, topo_sets={}, field_sets={}, timestep=0, parent=None):
         self.nodes: np.ndarray = np.asarray(nodes)
         self.topos: Dict[str, Topology] = {}
         self.fields: Dict[str, Field] = {}
-        self.time_index: float = time_index
+        self.timestep: float = timestep
         self.parent: Mesh = parent
 
         self.properties: Dict[Union[str, Tuple[str, str]], Any] = {}

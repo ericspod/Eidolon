@@ -18,48 +18,75 @@
 
 import threading
 import time
-from ..utils import TaskQueue, EventDispatcher, get_object_lock
+from typing import Union, List, Optional
+from .scene_object import SceneObject, SceneObjectRepr
+from .scene_plugin import ScenePlugin
+from .camera_controller import CameraController
+from ..utils import Namespace, TaskQueue, EventDispatcher, get_object_lock
+from ..ui import IconName, qtmainthread
+
+__all__ = ["SceneManager"]
+
+
+class ManagerEvent(Namespace):
+    object_added = Union[SceneObject, SceneObjectRepr]
+    object_removed = Union[SceneObject, SceneObjectRepr]
 
 
 class SceneManager(TaskQueue):
     global_instance = None
-    global_plugins=[]
+    global_plugins: List[ScenePlugin] = []
 
     @staticmethod
     def instance():
         return SceneManager.global_instance
 
-    def __init__(self,conf,win):
-        super().__init__()
-        self.conf=conf
-        self.win=win
+    @staticmethod
+    def add_plugin(plugin: ScenePlugin):
+        SceneManager.global_plugins.append(plugin)
 
-        self.evt_despatch=EventDispatcher()
+    @staticmethod
+    def init(conf, win):
+        if SceneManager.global_instance is None:
+            SceneManager.global_instance = SceneManager(conf, win)
+
+            for i, p in enumerate(SceneManager.global_plugins):
+                p.init(i, SceneManager.global_instance)
+
+            if win is not None:
+                SceneManager.global_instance.ui_init()
+
+        return SceneManager.global_instance
+
+    def __init__(self, conf, win):
+        super().__init__()
+        self.conf = conf
+        self.win = win
+
+        self.evt_dispatch = EventDispatcher()
 
         # camera controller
-        self.controller = None  # the camera controller
-        self.singleController = None  # same as self.controller if used, None if a multi-camera controller is used
-        self.multiController = None  # same as self.controller if used, None if a single-camera controller is used
+        self.controller: Optional[CameraController] = None  # the camera controller
 
         # scene assets and objects
         self.cameras = []  # list of Camera objects, cameras[0] is "main" 3D perspective camera
-        self.objs = []  # members of the scene, instances of SceneObject
+        self.objects = []  # members of the scene, instances of SceneObject
         self.specs = []  # Existing spectrums
         self.mats = []  # Existing materials
         self.textures = []  # Existing textures
         self.lights = []  # existing light objects
         self.programs = []  # existing Vertex/Fragment shader GPU programs
 
-        self.ambient_color = (1,1,1,1)
-        self.background_color = (1,1,1,1)
+        self.ambient_color = (1, 1, 1, 1)
+        self.background_color = (1, 1, 1, 1)
 
         # # secondary scene elements
         # self.bbmap = {}  # maps representations to their bounding boxes
         # self.handlemap = {}  # maps representations to their handles (Repr -> list<Handle>), only populated when handles are first requested
 
         # task related components
-        self.taskthread = threading.Thread(
-            target=self._process_tasks)  # thread in which tasks are executed, None if no tasks are being run
+        # thread in which tasks are executed, None if no tasks are being run
+        self.taskthread = threading.Thread(target=self._process_tasks)
         self.taskthread.daemon = True
         self.updatethread = None
 
@@ -146,6 +173,11 @@ class SceneManager(TaskQueue):
 
         self.taskthread.start()  # start taskthread here
 
+    @qtmainthread
+    def ui_init(self):
+        print("ui_init")
+        self.win.seeAllButton.clicked.connect(self.set_camera_see_all)
+
     def _process_tasks(self):
         """
         Takes tasks from the queue and runs them. This is executed in a separate daemon thread and should not be called.
@@ -155,9 +187,9 @@ class SceneManager(TaskQueue):
         # if self.conf.hasValue('args', 't'):
         #     setTrace()
 
-        if self.win is not None:  # wait for the window to appear
-            while not self.win.isExec:
-                time.sleep(0.01)
+        # if self.win is not None:  # wait for the window to appear
+        #     while not self.win.isExec:
+        #         time.sleep(0.01)
 
         def _update_status():
             """Status update action, this runs as a thread and continually updates the status bar."""
@@ -177,8 +209,52 @@ class SceneManager(TaskQueue):
 
         self.process_queue()  # process the queue
 
-    def set_task_status(self,task_label,cur_progress,max_progress):
+    def set_task_status(self, task_label, cur_progress, max_progress):
         pass
 
     def _player_thread(self):
         pass
+
+    def set_camera_see_all(self):
+        if self.controller is not None:
+            self.controller.set_camera_see_all()
+
+    def add_scene_object(self, obj: SceneObject):
+        if obj in self.objects:
+            raise ValueError("Object already in scene")
+
+        self.objects.append(obj)
+        plugin: ScenePlugin = obj.plugin
+
+        if self.win is not None:
+            icon = plugin.get_icon(obj) or IconName.default
+            # menu=plugin.get_menu(obj)
+            self.win.add_tree_object(obj, obj.label, icon)
+
+    def add_scene_object_repr(self, rep: SceneObjectRepr):
+        for cam in self.controller.cameras():
+            rep.plugin.attach_repr(rep, cam)
+
+        if self.win is not None:
+            icon = IconName.eye
+            self.win.add_tree_object(rep, rep.label, icon, rep.parent)
+
+    def remove_object(self, obj: Union[SceneObject, SceneObjectRepr]):
+        if isinstance(obj, SceneObject):
+            if obj not in self.objects:
+                raise ValueError("Object not in scene")
+
+            for r in obj.reprs:
+                self.remove_object(r)
+
+            self.objects.remove(obj)
+        elif isinstance(obj, SceneObjectRepr):
+            for cam in self.controller.cameras():
+                obj.plugin.dettach_repr(obj, cam)
+
+            obj.visible=False
+        else:
+            raise ValueError("Unknown argument type, should be SceneObject/SceneObjectRepr")
+
+        if self.win is not None:
+            self.win.remove_tree_object(obj)
