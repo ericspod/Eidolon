@@ -84,10 +84,6 @@ class OffscreenCamera:
 
             self.set_clear_color(clear_color)
 
-    def update_scene(self):
-        if self.rbase.is_ready():
-            self.rbase.update()
-
     def set_clear_color(self, clear_color: LVecBase4f):
         if clear_color is None:
             self.buffer.set_clear_active(GraphicsOutput.RTPColor, False)

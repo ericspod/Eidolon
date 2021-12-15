@@ -60,19 +60,34 @@ class CameraWidget(QtWidgets.QWidget):
         # creates a timed repaint event to redraw the widget after resizing in both dimensions at once
         self.redraw_timer: QtCore.QTimer = QtCore.QTimer()
         self.redraw_timer.setSingleShot(True)
-        self.redraw_timer.timeout.connect(self.repaint_on_ready1)
+        self.redraw_timer.timeout.connect(self.repaint_on_ready)
+
+    def _trigger_event(self, name:str, evt=None):
+        self.events.trigger_event(name, widget=self, event=evt)
 
     @property
     def events(self):
         return self._events
 
+    @qtmainthread
+    def repaint_on_ready(self):
+        """
+        Trigger a repainting of the scene, this requires updating the RenderBase object. If this isn't ready post an
+        event to try again after other events have completed.
+        """
+        if self.rbase.is_ready():
+            self.rbase.update()
+            self.repaint()
+        else:
+            self.redraw_timer.start(1)
+
     def minimumSizeHint(self):
         return QtCore.QSize(400, 300)
 
     def paintEvent(self, evt: QtGui.QPaintEvent):
-        size=self.size()
-        self.camera.resize(size.width(), size.height())
+        self._trigger_event(CameraWidgetEvent._pre_paint)
 
+        self.camera.resize(self.width(), self.height())
         texture = self.camera.texture
 
         if texture.might_have_ram_image():
@@ -83,42 +98,16 @@ class CameraWidget(QtWidgets.QWidget):
             self.painter.drawImage(0, 0, img)
             self.painter.end()
 
-    @qtmainthread
-    def repaint_on_ready(self):
-        if self.rbase.is_ready():
-            self._trigger_event(CameraWidgetEvent._pre_paint)
-            self.rbase.update()
-            self.repaint()
-            self._trigger_event(CameraWidgetEvent._post_paint)
+        self._trigger_event(CameraWidgetEvent._post_paint)
 
-    def _resize(self, size: QtCore.QSize, do_update: bool):
-        self.camera.resize(size.width(), size.height())
-        if do_update:
-            self.repaint_on_ready()
-
-        self.repaint()
-
-    def _trigger_event(self, name, evt=None):
-        self.events.trigger_event(name, widget=self, event=evt)
-
-
-    @timing
     def resizeEvent(self, evt: QtGui.QResizeEvent) -> None:
-        size_diff = evt.size() - evt.oldSize()
-        # FIXME: why crash when changing both dimensions at once? Needed to avoid crashes when both dimensions change
-        resize_1d = False  # size_diff.width() == 0 or size_diff.height() == 0
-
-        # self._resize(evt.size(), resize_1d)
-        self.repaint()
-
         self._trigger_event(CameraWidgetEvent._resized, evt)
         super().resizeEvent(evt)
 
-        if not resize_1d:  # FIXME: this is the fix for the above issue, should be replaced with a proper solution
-            self.redraw_timer.start(5)
+        # need to trigger repaint event outside of this event, this allows self.rbase to update correctly when resized
+        self.redraw_timer.start(1)  # FIXME: possible race condition with the rendering in paintEvent?
 
     def showEvent(self, evt: QtGui.QShowEvent) -> None:
-        # self._resize(self.size(), True)
         self._trigger_event(CameraWidgetEvent._shown, evt)
         super().showEvent(evt)
 

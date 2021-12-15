@@ -20,9 +20,9 @@ import threading
 import time
 from typing import Union, List, Optional
 from .scene_object import SceneObject, SceneObjectRepr
-from .scene_plugin import ScenePlugin
+from .scene_plugin import ScenePlugin, MeshScenePlugin
 from .camera_controller import CameraController
-from ..utils import Namespace, TaskQueue, EventDispatcher, get_object_lock
+from ..utils import Namespace, TaskQueue, EventDispatcher, first
 from ..ui import IconName, qtmainthread
 
 __all__ = ["SceneManager"]
@@ -49,6 +49,8 @@ class SceneManager(TaskQueue):
     def init(conf, win):
         if SceneManager.global_instance is None:
             SceneManager.global_instance = SceneManager(conf, win)
+
+            SceneManager.global_plugins.insert(0, MeshScenePlugin("Mesh"))
 
             for i, p in enumerate(SceneManager.global_plugins):
                 p.init(i, SceneManager.global_instance)
@@ -178,6 +180,9 @@ class SceneManager(TaskQueue):
         print("ui_init")
         self.win.seeAllButton.clicked.connect(self.set_camera_see_all)
 
+    def get_plugin(self, name: str):
+        return first(p for p in self.global_plugins if p.name == name)
+
     def _process_tasks(self):
         """
         Takes tasks from the queue and runs them. This is executed in a separate daemon thread and should not be called.
@@ -252,7 +257,7 @@ class SceneManager(TaskQueue):
             for cam in self.controller.cameras():
                 obj.plugin.dettach_repr(obj, cam)
 
-            obj.visible=False
+            obj.visible = False
         else:
             raise ValueError("Unknown argument type, should be SceneObject/SceneObjectRepr")
 

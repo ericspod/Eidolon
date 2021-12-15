@@ -34,13 +34,10 @@ dat = np.load("data/linmesh.npz")
 
 mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)}, {"field": (dat["d"], "inds")})
 
-plugin = MeshScenePlugin("Mesh")
-plugin.init(0, mgr)
-
-obj = MeshSceneObject("linmesh", [mesh], plugin)
+obj = MeshSceneObject("linmesh", [mesh], mgr.get_plugin("Mesh"))
 mgr.add_scene_object(obj)
 
-repr = plugin.create_repr(obj, ReprType._volume)
+repr = obj.plugin.create_repr(obj, ReprType._volume)
 mgr.add_scene_object_repr(repr)
 
 mgr.controller.set_camera_see_all()
