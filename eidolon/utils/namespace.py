@@ -62,7 +62,7 @@ class NamespaceMeta(type):
 
 class Namespace(metaclass=NamespaceMeta):
     """
-    A Namespace is a multable sequence of identifiers defined by static class members. Like Enum, a class inheriting
+    A Namespace is a mutable sequence of identifiers defined by static class members. Like Enum, a class inheriting
     from Namespace defines a new sequence variables which can be accessed as members, as items with [] syntax, and
     iterated over. Additionally the name of each variable is stored as a separate member with the same name prepended
     with underscore. Namespace classes are meant to be mutable and represent stored resources which plugins or other

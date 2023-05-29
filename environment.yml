@@ -1,0 +1,20 @@
+name: eidolon
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - pip
+  - python<3.10
+  - numpy
+  - numba
+  - scipy
+  - pyqt
+  - ipython
+  - qtconsole
+  - ipykernel
+  - imageio
+  - pandas
+  - coverage
+  - pyyaml
+  - pip:
+    - panda3d

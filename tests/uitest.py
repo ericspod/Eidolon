@@ -4,7 +4,8 @@ import threading
 from PyQt5 import QtCore, QtGui
 
 from eidolon.mathdef import vec3, generate_axes_arrows
-from eidolon.ui import MainWindow, exec_ui, init_ui, load_rc_file, CameraWidget, CameraController
+from eidolon.scene import QtCameraController
+from eidolon.ui import MainWindow, exec_ui, init_ui, load_rc_file, CameraWidget
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon import config
 from eidolon.utils import Future
@@ -24,7 +25,7 @@ cam = OffscreenCamera("test", 400, 400)
 
 camwidget = CameraWidget(cam)
 
-ctrl = CameraController(cam, vec3.zero, 0, 0, 50)
+ctrl = QtCameraController(cam, vec3.zero, 0, 0, 50)
 ctrl.attach_events(camwidget.events)
 
 win.setCentralWidget(camwidget)

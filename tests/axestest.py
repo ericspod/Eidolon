@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets
 
 import eidolon.renderer
 import eidolon.ui
+from eidolon.scene import QtCameraController
 
 from eidolon.mathdef import vec3, generate_axes_arrows
 
@@ -54,7 +55,7 @@ frag_body = """
 
 camwidget = eidolon.ui.CameraWidget(cam)
 
-ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
+ctrl = QtCameraController(cam, vec3.zero, 0, 0, 50)
 ctrl.attach_events(camwidget.events)
 
 verts, inds, norms, colors = generate_axes_arrows(5, 10)

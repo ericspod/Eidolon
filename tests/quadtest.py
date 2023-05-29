@@ -10,7 +10,7 @@ from eidolon.mathdef import vec3
 mgr = eidolon.renderer.RenderBase()
 cam = eidolon.renderer.OffscreenCamera(mgr, "test", 400, 400)
 
-ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
+ctrl = eidolon.rendere.QtCameraController(cam, vec3.zero, 0, 0, 50)
 
 verts = [(0, 0, 0), (10, 0, 0), (0, 0, 10), (10, 0, 10)]
 inds = [(0, 1, 2), (1, 3, 2)]
