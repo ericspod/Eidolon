@@ -61,20 +61,20 @@ geom_image_volume = """
     out vec3 texcoord;
 
     // topos of the edges for the cube, each successive pair represents one edge
-    int[24] edges={  
+    int[24] edges=int[24](  
         0, 1, 0, 2, 1, 3, 2, 3, // bottom square 
         0, 4, 1, 5, 2, 6, 3, 7, // vertical edges 
         4, 5, 4, 6, 5, 7, 6, 7 // top square
-    };
+    );
     
     // topos of the triangles defining this plane, up to 4 depending on how many vertices are generated
-    int[] triangle_indices = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 };
+    int[12] triangle_indices = int[12]( 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 );
     
     // vertices for the unit cude, also used as texture uvw coordinates 
-    vec4[8] unitcube={ 
+    vec4[8] unitcube=vec4[8]( 
         vec4(0,0,0,1), vec4(1,0,0,1), vec4(0,1,0,1), vec4(1,1,0,1), 
         vec4(0,0,1,1), vec4(1,0,1,1), vec4(0,1,1,1), vec4(1,1,1,1)
-    };
+    );
 
     // linear interpolation between vec4 values
     vec4 v4lerp(float val, vec4 v1, vec4 v2) { return (1.0-val)*v1+val*v2; }
@@ -154,10 +154,11 @@ frag_image_volume = """
     uniform float alpha;
     
     in vec3 texcoord;
+    out vec4 fragcolor;
     
     void main() {
-        gl_FragColor = texture(p3d_Texture0, texcoord);
-        gl_FragColor.a *= alpha;
+        fragcolor = texture(p3d_Texture0, texcoord);
+        fragcolor.a *= alpha;
     }
 """
 

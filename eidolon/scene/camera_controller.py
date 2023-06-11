@@ -91,7 +91,7 @@ class CameraController:
         else:
             return self.free_rotator
 
-    def set_rotation(self, theta_r: float, phi: float = 0):
+    def set_rotation(self, theta_r: Union[float, rotator], phi: float = 0):
         """
         Sets rotational parameters. If z_lock is True, `theta_r' and  `phi' are polar rotation values, these are
         used to set v1.theta and v1.phi contrained within their respective ranges and tolerances. If z_lock

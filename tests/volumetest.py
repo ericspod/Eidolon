@@ -29,11 +29,11 @@ img[:10, :, :10, 1] = 1
 img[:15, :15, :, 2] = 1
 img[..., 3] = (img.sum(axis=3) > 0).astype(np.float32)
 
-fig = eidolon.renderer.ImageVolumeFigure("planes", img, num_planes=100)
+fig = eidolon.renderer.ImageVolumeFigure("planes", img, num_planes=1000)
 
 fig.attach(win.cam)
 fig.scale = vec3.one * 10
 
 win.ctrl.set_camera_see_all()
 
-win.run()
+win.exec()

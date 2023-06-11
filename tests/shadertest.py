@@ -69,13 +69,15 @@ frag_body = """
 
     in vec3 texcoord;
     in vec4 color;
+
+    out vec4 fragcolor;
     
     void main() {
         //gl_FragColor=color;
         vec4 texcolor = texture(p3d_Texture0, texcoord.xy);
         float mag=length(texcolor.rgb);
          
-        gl_FragColor = texture(p3d_Texture1, vec2(mag,mag));
+        fragcolor = texture(p3d_Texture1, vec2(mag,mag));
     }
 """
 

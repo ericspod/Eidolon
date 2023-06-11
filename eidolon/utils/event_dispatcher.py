@@ -30,8 +30,8 @@ class EventDispatcher:
     maintains a list of callback callable objects which accept a set of parameters specific for each event type. When
     _triggerEvent() is called, each callback associated with the given event name is called with the given arguments
     passed in. If the callback returns True then subsequent callbacks for that type are ignored. A second list of post
-    event handlers is also maintained which is processed after regular events with the return value ignored. This can be
-    used to register events which must occur last and which must not be skipped.
+    event handlers is also maintained which is processed after regular events with the return value ignored. This can
+    be used to register events which must occur last and which must not be skipped.
     """
 
     def __init__(self):
@@ -43,7 +43,7 @@ class EventDispatcher:
         """
         Broadcast event to handler callback functions, stopping for any regular callback that returns True. For every
         callback associated with event `name', call it expanding `args' as the arguments. This must be called in the
-        main thread. Callbacks stored as post event handlers are called after regular ones with the stop feature ignored.
+        main thread. Callbacks stored as post event handlers are called after regular ones ignoring the stop feature.
         """
 
         def _trigger_handlers(handlers, allow_break):

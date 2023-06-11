@@ -43,4 +43,4 @@ amb.attach(win.cam)
 print(win.cam.get_screen_ray())
 
 win.ctrl.set_camera_see_all()
-win.run()
+win.exec()

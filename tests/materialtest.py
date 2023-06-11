@@ -48,4 +48,4 @@ amb = Light("amb", LightType.AMBIENT, (0.25, 0.25, 0.25, 1))
 amb.attach(win.cam)
 
 win.ctrl.set_camera_see_all()
-win.run()
+win.exec()

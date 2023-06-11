@@ -60,8 +60,8 @@ def exec_ui(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
 class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
         # imported here to avoid dependency issues
-        from ..scene.camera_controller import QtCameraController
-        from ..renderer import OffscreenCamera
+        from eidolon.scene import QtCameraController
+        from eidolon.renderer import OffscreenCamera
 
         self.app = init_ui(sys.argv)
         super().__init__(parent)
