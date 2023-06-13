@@ -29,32 +29,32 @@ __all__ = ["load_config", "load_config_file", "save_config_file"]
 
 DEFAULT_CONFIG = """
 all:
-    # Vertical screen sync, possible values: true (default), false
-    vsync: True
-    # Log file name in Eidolon's users data directory, default is eidolon.log
-    logfile: eidolon.log
-    # Maximum number of processors to use when computing datasets/representations
-    maxprocs: 8
-    # Default window size at start-up (actual size may be larger if necesary to fit UI components)
-    winsize: [1200, 800]
-    # Qt style to base the UI look-and-feel on
-    uistyle: plastique
-    # Stylesheet used to define the interface look-and-feel, must be an absolute path or relative to the <app> directory 
-    stylesheet: DefaultUIStyle
-    # Sets the initial state of the camera's Z-axis locking: true (default), false
-    camerazlock: True
-    # Comma-separated list of scripts to load at runtime before any others specified on the command line (prefix with ./ to be relative to config file)
-    preloadscripts: ""
-    # render high quality for every frame by default
-    renderhighquality: True
-    # location of the per-user application data directory to create at startup if it doesn't exist, This file will be copied there and can be modified for per-user configuration
-    userappdir: ~/.eidolon
-    # console log filename, to be stored in userappdir
-    consolelogfile: console.log
-    # how many lines of console logs to store in the log file
-    consoleloglen: 10000
-    # try to use the Jupyter Qt console widget instead of the built-in console widget: true (default), false
-    usejupyter: True
+  # Vertical screen sync, possible values: true (default), false
+  vsync: True
+  # Log file name in Eidolon's users data directory, default is eidolon.log
+  logfile: eidolon.log
+  # Maximum number of processors to use when computing datasets/representations
+  maxprocs: 8
+  # Default window size at start-up (actual size may be larger if necesary to fit UI components)
+  winsize: [1200, 800]
+  # Qt style to base the UI look-and-feel on
+  uistyle: plastique
+  # Stylesheet used to define the interface look-and-feel, must be an absolute path or relative to the <app> directory 
+  stylesheet: DefaultUIStyle
+  # Sets the initial state of the camera's Z-axis locking: true (default), false
+  camerazlock: True
+  # Comma-separated list of scripts to load at runtime before any others specified on the command line (prefix with ./ to be relative to config file)
+  preloadscripts: ""
+  # render high quality for every frame by default
+  renderhighquality: True
+  # location of the per-user application data directory to create at startup if it doesn't exist, This file will be copied there and can be modified for per-user configuration
+  userappdir: ~/.eidolon
+  # console log filename, to be stored in userappdir
+  consolelogfile: console.log
+  # how many lines of console logs to store in the log file
+  consoleloglen: 10000
+  # try to use the Jupyter Qt console widget instead of the built-in console widget: true (default), false
+  usejupyter: True
 """
 
 

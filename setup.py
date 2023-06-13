@@ -16,33 +16,9 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from setuptools import setup, find_packages
-import os
 import sys
+from subprocess import check_call
+from setuptools import setup
 
-from PyQt5.pyrcc_main import processResourceFile
-
-from eidolon import __appname__, __version__, __author__
-
-scriptdir = os.path.dirname(os.path.abspath(__file__))  # path of the current file
-
-long_description = """
-Eidolon is the experimental medical imaging visualization framework.
-"""
-
-if "generate" in sys.argv:  # generate only, quit at this point before setup
-    # generate resource file for PyQt4 or 5
-    processResourceFile([scriptdir + "/res/Resources.qrc"], scriptdir + "/eidolon/ui/resources_rc.py", False)
-else:
-    setup(
-        name=__appname__,
-        version=__version__,
-        packages=find_packages(exclude=("res", "tests")),
-        author=__author__,
-        author_email="eric.kerfoot@kcl.ac.uk",
-        url="http://github.com/ericspod/Eidolon",
-        license="GPLv3",
-        description='Experimental medical imaging visualization framework.',
-        keywords="dicom python medical imaging pydicom pyqtgraph nibabel visualisation",
-        long_description=long_description.strip(),
-    )
+if __name__ == "__main__":    
+    setup()
