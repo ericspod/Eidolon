@@ -28,6 +28,12 @@ import sys
 
 from ._version import __version__
 
+import eidolon.mathdef
+import eidolon.renderer
+import eidolon.scene
+import eidolon.ui
+import eidolon.utils
+
 _scriptdir = os.path.dirname(os.path.abspath(__file__))
 
 # the application directory is given by pyinstaller in _MEIPASS, if not present use the directory one level up

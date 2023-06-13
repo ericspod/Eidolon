@@ -28,9 +28,7 @@ from pathlib import Path
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 
-from .. import APPDATADIR
-from ..utils import is_darwin
-from ..utils import first
+from eidolon.utils import is_darwin, first
 
 try:
     from qtconsole.inprocess import QtInProcessKernelManager, QtInProcessRichJupyterWidget
@@ -125,6 +123,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         self.loglines = int(conf.get("consoleloglen", 10000))
 
         # try to set the log filename, if there's no user directory this won't be set so no logging will occur
+        from eidolon import APPDATADIR
         appdatadir = Path(APPDATADIR)
         if appdatadir.is_dir():
             self.logfile = str(appdatadir / conf["consolelogfile"])
