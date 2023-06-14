@@ -39,6 +39,6 @@ except ImportError:
 
 
     prange = range
-    has_numba = True
+    has_numba = False
 
 __all__ = ["has_numba", "jit", "prange", "set_num_threads"]

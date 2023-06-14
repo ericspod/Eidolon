@@ -26,7 +26,7 @@ import sys
 
 # from .utils.platform import is_windows, is_linux, add_path_variable
 
-from ._version import __version__
+from ._version import __version__, __appname__
 
 import eidolon.mathdef
 import eidolon.renderer

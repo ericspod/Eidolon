@@ -31,7 +31,7 @@ import numpy as np
 
 __all__ = [
     "calculate_mesh_octree", "calculate_shared_nodes", "calculate_mesh_ext_adj", "calculate_tri_mesh",
-    "calculate_field", "calculate_field_colors"
+    "calculate_field", "calculate_field_colors", "calculate_trimesh_normals"
 ]
 
 
@@ -84,14 +84,9 @@ def calculate_shared_nodes(topo_array: np.array, leaf: np.array):
 
 
 @timing
+@jit(parallel=True)
 def calculate_trimesh_normals(nodes: np.ndarray, triinds: np.ndarray):
     normals = np.zeros_like(nodes)
-    _calculate_trimesh_normals_main(nodes, normals, triinds)
-    return normals
-
-
-@jit(parallel=True)
-def _calculate_trimesh_normals_main(nodes: np.ndarray, normals: np.ndarray, triinds: np.ndarray):
     for tri_idx in prange(triinds.shape[0]):
         a, b, c = triinds[tri_idx, :3]
         nx, ny, nz = plane_norm(
@@ -114,6 +109,8 @@ def _calculate_trimesh_normals_main(nodes: np.ndarray, normals: np.ndarray, trii
         nl: float = len3(normals[norm_idx, 0], normals[norm_idx, 1], normals[norm_idx, 2])
         if nl != 0:
             normals[norm_idx] /= nl
+
+    return normals
 
 
 @jit(parallel=True)
