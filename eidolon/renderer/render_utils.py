@@ -18,7 +18,7 @@
 
 import numpy as np
 
-from ..mathdef.math_types import vec3, transform
+from ..mathdef.math_types import vec3
 
 __all__ = ["create_simple_geom", "create_texture_np"]
 

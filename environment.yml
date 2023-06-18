@@ -4,7 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - pip
-  - python<3.10
+  - python<3.9
   - numpy
   - numba
   - scipy
