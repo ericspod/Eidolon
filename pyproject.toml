@@ -8,7 +8,7 @@ name = "eidolon"
 description = "Experimental medical imaging visualization framework"
 license = {text = "GPLv3, see LICENSE.txt"}
 dependencies = ["numpy", "pyqt5", "pyqtgraph", "pydicom", "pylibjpeg[all]", "nibabel", "numba", "pyyaml", "panda3d", "trimesh", "pandas"]
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 authors = [{ name = "Eric Kerfoot", email = "eric.kerfoot@kcl.ac.uk" }]
 dynamic = ["version", "readme"]
 keywords = ["dicom", "python", "medical imaging", "pydicom", "pyqtgraph", "nibabel", "visualisation"]
