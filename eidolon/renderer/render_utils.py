@@ -28,8 +28,6 @@ from panda3d.core import (
     GeomVertexFormat,
     GeomVertexArrayFormat,
     GeomVertexData,
-    GeomVertexWriter,
-    LVector3,
     GeomTriangles,
     GeomLines,
     GeomPoints,
@@ -56,14 +54,17 @@ def _create_vertex_data(vertices, indices=None, norms=None, colors=None, uvwcoor
     colors = iter_to_np(colors if colors is not None else [(1, 1, 1, 1)] * len(vertices), np.float32)
     uvwcoords = iter_to_np(uvwcoords if uvwcoords is not None else [(0, 0, 0)] * len(vertices), np.float32)
 
+    is_large_prim = len(vertices) >= np.iinfo(np.uint16).max
+    index_dtype = np.uint32 if is_large_prim else np.uint16
+
     if indices is None:
-        indices = np.arange(len(vertices))
+        indices = np.arange(len(vertices), index_dtype)
     else:
-        indices=iter_to_np(indices, np.int32)
+        indices = iter_to_np(indices, index_dtype)
 
     prim: GeomPrimitive = None
     vformat = vformat or default_vformat
-    varr=vformat.get_array(0)
+    varr = vformat.get_array(0)
     row_size = sum(c.get_num_values() for c in varr.get_columns())
 
     vdata = GeomVertexData("vdata", vformat, Geom.UH_dynamic)
@@ -72,69 +73,34 @@ def _create_vertex_data(vertices, indices=None, norms=None, colors=None, uvwcoor
     view = memoryview(vdata.modify_array(0)).cast("B").cast("f")
     npview = np.asarray(view).reshape((len(vertices), row_size))
 
-    vstart=varr.get_column("vertex").get_start()//4
-    npview[:, vstart:vstart+vertices.shape[1]] = vertices
+    vstart = varr.get_column("vertex").get_start() // 4
+    npview[:, vstart : vstart + vertices.shape[1]] = vertices
 
-    nstart=varr.get_column("normal").get_start()//4
-    npview[:, nstart:nstart+norms.shape[1]] = norms
+    nstart = varr.get_column("normal").get_start() // 4
+    npview[:, nstart : nstart + norms.shape[1]] = norms
 
-    cstart=varr.get_column("color").get_start()//4
-    npview[:,cstart:cstart+colors.shape[1]] = colors
+    cstart = varr.get_column("color").get_start() // 4
+    npview[:, cstart : cstart + colors.shape[1]] = colors
 
-    tstart=varr.get_column("texcoord").get_start()//4
-    npview[:,tstart:tstart+uvwcoords.shape[1]] = uvwcoords
+    tstart = varr.get_column("texcoord").get_start() // 4
+    npview[:, tstart : tstart + uvwcoords.shape[1]] = uvwcoords
 
-    # vertex = GeomVertexWriter(vdata, "vertex")
-    # normal = GeomVertexWriter(vdata, "normal")
-    # color = GeomVertexWriter(vdata, "color")
-    # texcoord = GeomVertexWriter(vdata, "texcoord")
-
-    # for i in range(len(vertices)):
-    #     vertex.add_data3f(*vertices[i])
-    #     normal.add_data3f(*vec3(*norms[i]).norm)
-    #     color.add_data4f(*colors[i])
-    #     texcoord.add_data3f(*uvwcoords[i])
-
-    if indices.ndim==1:
+    if indices.ndim == 1:
         prim = GeomPoints(Geom.UH_static)
     elif indices.shape[1] == 2:
         prim = GeomLines(Geom.UH_static)
     elif indices.shape[1] == 3:
         prim = GeomTriangles(Geom.UH_static)
     else:
-        raise ValueError(f"Unknown primitive format with size {len(indices[0])}")
-    
-    is_large_prim=len(indices)>=np.iinfo(np.uint16).max
+        raise ValueError(f"Unknown primitive format with size {indices.shape[1]}")
+
     prim.set_index_type(GeomEnums.NT_uint32 if is_large_prim else GeomEnums.NT_uint16)
 
-    pverts=prim.modify_vertices()
+    pverts = prim.modify_vertices()
     pverts.unclean_set_num_rows(indices.size)
-    view = memoryview(pverts).cast('B').cast('I' if is_large_prim else "H")
-    npview = np.asarray(view).reshape(indices.shape)
-    npview[:]=indices.astype(np.uint32 if is_large_prim else np.uint16)
-    
-
-    # if indices is not None:
-    #     if indices.ndim==1:
-    #         prim = GeomPoints(Geom.UH_dynamic)
-    #     if len(indices[0]) == 2:
-    #         prim = GeomLines(Geom.UH_dynamic)
-    #     elif len(indices[0]) == 3:
-    #         prim = GeomTriangles(Geom.UH_dynamic)
-    #     else:
-    #         raise ValueError(f"Unknown primitive format with size {len(indices[0])}")
-        
-    #     prim_size=GeomEnums.NT_uint32 if len(indices)>np.iinfo(np.uint16).max else GeomEnums.NT_uint16
-    #     prim.set_index_type(prim_size)
-
-    #     pverts=prim.modify_vertices()
-
-    #     # for i in range(len(indices)):
-    #         # prim.add_vertices(*indices[i])
-    # else:
-    #     prim = GeomPoints(Geom.UH_dynamic)
-    #     for i in range(len(vertices)):
-    #         prim.add_vertex(i)
+    view = memoryview(pverts).cast("B").cast("I" if is_large_prim else "H")
+    npview = np.asarray(view, index_dtype).reshape(indices.shape)
+    npview[:] = indices.astype(index_dtype)
 
     return vdata, prim
 

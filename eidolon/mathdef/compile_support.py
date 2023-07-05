@@ -30,8 +30,11 @@ except ImportError:
     warnings.warn("Numba not found, code will not be compiled")
 
 
-    def jit(func):
-        return func
+    def jit(func=None,*_,**__):
+        if func is not None and callable(func):
+            return func
+        else:
+            return lambda f:f
 
 
     def set_num_threads(n):
