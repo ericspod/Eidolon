@@ -21,10 +21,29 @@ from typing import Tuple
 
 from .compile_support import jit
 
+import numpy as np
+
 __all__ = [
-    "FEPSILON", "HALFPI", "TAU", "len3", "lensq3", "fequals_eps", "finv", "fsign", "fclamp", "rad_clamp",
-    "rad_circular_convert", "rotator_yaw", "rotator_roll", "rotator_pitch", "frange", "lerp", "lerp_xi",
-    "angle_between", "plane_norm"
+    "FEPSILON",
+    "HALFPI",
+    "TAU",
+    "len3",
+    "lensq3",
+    "fequals_eps",
+    "finv",
+    "fsign",
+    "fclamp",
+    "rad_clamp",
+    "rad_circular_convert",
+    "rotator_yaw",
+    "rotator_roll",
+    "rotator_pitch",
+    "frange",
+    "lerp",
+    "lerp_xi",
+    "angle_between",
+    "plane_norm",
+    "iter_to_np"
 ]
 
 FEPSILON: float = 1e-10
@@ -40,12 +59,12 @@ def epsilon_zero(val):
 
 @jit
 def len3(x: float, y: float, z: float) -> float:
-    return sqrt(x ** 2 + y ** 2 + z ** 2)
+    return sqrt(x**2 + y**2 + z**2)
 
 
 @jit
 def lensq3(x: float, y: float, z: float) -> float:
-    return x ** 2 + y ** 2 + z ** 2
+    return x**2 + y**2 + z**2
 
 
 @jit
@@ -92,8 +111,17 @@ def angle_between(x0, y0, z0, x1, y1, z1):
 
 
 @jit
-def plane_norm(x0: float, y0: float, z0: float, x1: float, y1: float, z1: float, x2: float, y2: float, z2: float) -> \
-        Tuple[float, float, float]:
+def plane_norm(
+    x0: float,
+    y0: float,
+    z0: float,
+    x1: float,
+    y1: float,
+    z1: float,
+    x2: float,
+    y2: float,
+    z2: float,
+) -> Tuple[float, float, float]:
     dx1 = x1 - x0
     dy1 = y1 - y0
     dz1 = z1 - z0
@@ -160,7 +188,7 @@ def rotator_pitch(x: float, y: float, z: float, w: float) -> float:
         return 0
 
     y1: float = 2 * x * w - 2 * y * z
-    x1: float = 1 - 2 * x ** 2 - 2 * z ** 2
+    x1: float = 1 - 2 * x**2 - 2 * z**2
     return atan2(y1, x1)
 
 
@@ -174,7 +202,7 @@ def rotator_roll(x: float, y: float, z: float, w: float) -> float:
         return -2 * atan2(x, w)
 
     y1: float = 2 * y * w - 2 * x * z
-    x1: float = 1 - 2 * y ** 2 - 2 * z ** 2
+    x1: float = 1 - 2 * y**2 - 2 * z**2
     return atan2(y1, x1)
 
 
@@ -195,13 +223,19 @@ def frange(start, stop=None, step=None):
         return
 
     if step <= 0:
-        raise ValueError('Step must be positive and non-zero (step=%s)' % (str(step),))
+        raise ValueError("Step must be positive and non-zero (step=%s)" % (str(step),))
 
     if stop < 0 or start < 0:
-        raise ValueError('All arguments must be positive (start=%s, stop=%s)' % (str(start), str(stop)))
+        raise ValueError(
+            "All arguments must be positive (start=%s, stop=%s)"
+            % (str(start), str(stop))
+        )
 
     if stop < start:
-        raise ValueError('Stop value must be greater than start value (start=%s, stop=%s)' % (str(start), str(stop)))
+        raise ValueError(
+            "Stop value must be greater than start value (start=%s, stop=%s)"
+            % (str(start), str(stop))
+        )
 
     # Kahan algorithm (W. Kahan. 1965. Pracniques: further remarks on reducing truncation errors. Commun. ACM 8)
 
@@ -227,3 +261,17 @@ def lerp_xi(val, minv, maxv):
     ie. if lerp_xi(V,A,B)==X then lerp(X,A,B)==V assuming A<B. If minv>=maxv then `val` is returned.
     """
     return val if minv >= maxv else float(val - minv) / float(maxv - minv)
+
+
+def iter_to_np(values, dtype=None):
+    """Convert an iterable of iterables into a 2D Numpy array, dtype will be float32 or int32 if not provided."""
+    if isinstance(values, np.ndarray):
+        return values
+    
+    values = list(values)
+    v0 = tuple(values[0])
+
+    if dtype is None:
+        dtype = np.float32 if isinstance(v0[0], float) else np.int32
+
+    return np.fromiter(map(tuple, values), np.dtype((dtype, len(v0))), len(values))

@@ -7,11 +7,14 @@ build-backend = "setuptools.build_meta"
 name = "eidolon"
 description = "Experimental medical imaging visualization framework"
 license = {text = "GPLv3, see LICENSE.txt"}
-dependencies = ["numpy", "pyqt5", "pyqtgraph", "pydicom", "pylibjpeg[all]", "nibabel", "numba", "pyyaml", "panda3d", "trimesh", "pandas"]
+dependencies = ["numpy", "pyqt5", "pyqtgraph", "pydicom", "pylibjpeg[all]", "nibabel", "pyyaml", "panda3d", "trimesh", "pandas"]
 requires-python = ">=3.8"
 authors = [{ name = "Eric Kerfoot", email = "eric.kerfoot@kcl.ac.uk" }]
 dynamic = ["version", "readme"]
 keywords = ["dicom", "python", "medical imaging", "pydicom", "pyqtgraph", "nibabel", "visualisation"]
+
+[project.optional-dependencies]
+numba = ["numba"]
 
 [project.urls]
 homepage = "http://github.com/ericspod/Eidolon"
@@ -31,3 +34,7 @@ readme = {file = ["README.md"], content-type = "text/markdown"}
 
 [metadata]
 description-file = "README.md"
+
+[tool.black]
+line-length = 120
+

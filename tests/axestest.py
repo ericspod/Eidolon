@@ -9,15 +9,17 @@ from eidolon.mathdef import vec3, generate_axes_arrows
 
 from panda3d.core import Shader
 
-app = QtWidgets.QApplication(sys.argv)
+# app = QtWidgets.QApplication(sys.argv)
 
-cam = eidolon.renderer.OffscreenCamera("test", 400, 400)
+# cam = eidolon.renderer.OffscreenCamera("test", 400, 400)
+
+win = eidolon.ui.SimpleApp(1200, 800)
 
 light = eidolon.renderer.Light("dlight", eidolon.renderer.LightType.DIRECTIONAL, (1, 1, 1, 1))
-light.attach(cam, True)
+light.attach(win.cam, True)
 
 amb = eidolon.renderer.Light("amb", eidolon.renderer.LightType.AMBIENT, (0.25, 0.25, 0.25, 1))
-amb.attach(cam)
+amb.attach(win.cam)
 
 vert_body = """
     #version 150
@@ -53,19 +55,21 @@ frag_body = """
 
 # cam.nodepath.setShader(s)
 
-camwidget = eidolon.ui.CameraWidget(cam)
+# camwidget = eidolon.ui.CameraWidget(cam)
 
-ctrl = QtCameraController(cam, vec3.zero, 0, 0, 50)
-ctrl.attach_events(camwidget.events)
+# ctrl = QtCameraController(cam, vec3.zero, 0, 0, 50)
+# ctrl.attach_events(camwidget.events)
 
 verts, inds, norms, colors = generate_axes_arrows(5, 10)
 
 mesh = eidolon.renderer.SimpleFigure("axes", verts, inds, norms, colors)
-mesh.attach(cam)
+mesh.attach(win.cam)
 
-appw = QtWidgets.QMainWindow()
-appw.resize(800, 600)
-appw.setCentralWidget(camwidget)
-appw.show()
+# appw = QtWidgets.QMainWindow()
+# appw.resize(800, 600)
+# appw.setCentralWidget(camwidget)
+# appw.show()
 
-eidolon.ui.exec_ui(app)
+# eidolon.ui.exec_ui(app)
+
+win.exec()
