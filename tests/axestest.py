@@ -15,6 +15,8 @@ from panda3d.core import Shader
 
 win = eidolon.ui.SimpleApp(1200, 800)
 
+win.cam.nodepath.setShaderAuto()
+
 light = eidolon.renderer.Light("dlight", eidolon.renderer.LightType.DIRECTIONAL, (1, 1, 1, 1))
 light.attach(win.cam, True)
 
@@ -37,21 +39,23 @@ vert_body = """
         gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
 
         color = p3d_Color;
-        texcoord=p3d_MultiTexCoord0;
+        texcoord = p3d_MultiTexCoord0;
     }
 """
 
 frag_body = """
     #version 150
 
+    uniform vec4 ambient;
+
     in vec4 color;
 
     void main() {
-        gl_FragColor=color;
+        gl_FragColor=color*ambient;
     }
 """
 
-# s = Shader.make(lang=Shader.SL_GLSL, vertex=vert_body, fragment=frag_body)
+s = Shader.make(lang=Shader.SL_GLSL, vertex=vert_body, fragment=frag_body)
 
 # cam.nodepath.setShader(s)
 
@@ -64,6 +68,9 @@ verts, inds, norms, colors = generate_axes_arrows(5, 10)
 
 mesh = eidolon.renderer.SimpleFigure("axes", verts, inds, norms, colors)
 mesh.attach(win.cam)
+mesh.set_shader(s)
+
+win.cam.nodepath.set_shader_input("ambient",1.0,0.0,1.0,1.0)
 
 # appw = QtWidgets.QMainWindow()
 # appw.resize(800, 600)

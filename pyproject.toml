@@ -25,8 +25,8 @@ homepage = "http://github.com/ericspod/Eidolon"
 [tool.setuptools.packages.find]
 include = ["eidolon*"]
 
-#[tool.setuptools.package-data]
-#"eidolon.res" = ["*.*"]
+[tool.setuptools.package-data]
+"eidolon.resources" = ["*.*", "**/*.*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "eidolon._version.__version__"}

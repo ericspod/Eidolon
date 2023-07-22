@@ -33,6 +33,7 @@ import eidolon.renderer
 import eidolon.scene
 import eidolon.ui
 import eidolon.utils
+import eidolon.resources
 
 _scriptdir = os.path.dirname(os.path.abspath(__file__))
 
