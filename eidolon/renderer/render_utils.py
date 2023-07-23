@@ -58,7 +58,7 @@ def _create_vertex_data(vertices, indices=None, norms=None, colors=None, uvwcoor
     index_dtype = np.uint32 if is_large_prim else np.uint16
 
     if indices is None:
-        indices = np.arange(len(vertices), index_dtype)
+        indices = np.arange(len(vertices), dtype=index_dtype)
     else:
         indices = iter_to_np(indices, index_dtype)
 
