@@ -9,19 +9,20 @@ in vec4 vColor[];
 
 out vec4 fColor;
 out vec3 texcoord;
+out vec3 texnorm;
 
 // topos of the edges for the cube, each successive pair represents one edge
-int[24] edges=int[24](  
+const int[24] edges=int[24](  
     0, 1, 0, 2, 1, 3, 2, 3, // bottom square 
     0, 4, 1, 5, 2, 6, 3, 7, // vertical edges 
     4, 5, 4, 6, 5, 7, 6, 7 // top square
 );
 
 // topos of the triangles defining this plane, up to 4 depending on how many vertices are generated
-int[12] triangle_indices = int[12]( 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 );
+const int[12] triangle_indices = int[12]( 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 );
 
 // vertices for the unit cude, also used as texture uvw coordinates 
-vec4[8] unitcube=vec4[8]( 
+const vec4[8] unitcube=vec4[8]( 
     vec4(0,0,0,1), vec4(1,0,0,1), vec4(0,1,0,1), vec4(1,1,0,1), 
     vec4(0,0,1,1), vec4(1,0,1,1), vec4(0,1,1,1), vec4(1,1,1,1)
 );
@@ -30,7 +31,7 @@ vec4[8] unitcube=vec4[8](
 vec4 v4lerp(float val, vec4 v1, vec4 v2) { return (1.0-val)*v1+val*v2; }
 
 // Determine the polygon which represents the intersection of the plane at distance z from the camera by finding every
-// edge bisected by the plane and taking the intersection point as a vertex of the output triangle fan.
+// edge bisected by the plane and taking the intersection point as a vertex of the output triangle strip.
 void main()
 {
     fColor = vColor[0];  // use the same color for all vertices
@@ -85,6 +86,8 @@ void main()
             num_vertices++;
         } 
     }
+
+    texnorm=cross(texcoords[1]-texcoords[0],texcoords[2]-texcoords[0]); // normal of the plane in texture space
     
     // iterate over every triangle index, ending the primitive once a triangle is emitted
     for(int i=0;i<3*(num_vertices-2);i++){

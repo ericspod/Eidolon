@@ -18,6 +18,6 @@ void main() {
 
     color = p3d_Color;
     texcoord = p3d_MultiTexCoord0;
-    normal = p3d_NormalMatrix* p3d_Normal;
-    position=gl_Position;
+    normal = normalize(p3d_NormalMatrix * p3d_Normal);
+    position = gl_Position;
 }

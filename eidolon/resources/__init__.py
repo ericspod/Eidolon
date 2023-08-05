@@ -1,5 +1,5 @@
 import importlib.resources as pkg_resources
-import sys
+# import sys
 
 
 def _get_module(submodule=None):

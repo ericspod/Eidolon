@@ -80,7 +80,7 @@ class Figure(Transformable):
 
     def attach(self, camera: OffscreenCamera):
         cnode: NodePath = camera.nodepath.attach_new_node(self.node)
-        cnode.set_transparency(TransparencyAttrib.M_alpha)
+        # cnode.set_transparency(TransparencyAttrib.M_alpha)
         cnode.set_two_sided(True)
 
         self.camnodes.append(cnode)

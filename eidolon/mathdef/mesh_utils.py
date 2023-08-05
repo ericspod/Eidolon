@@ -28,7 +28,8 @@ __all__ = [
     "generate_plane", "generate_cube", "calculate_aabb_corners",
     "calculate_bound_box", "generate_cylinder", "generate_arrow", "generate_sphere",
     "generate_axes_arrows", "generate_tri_normals", "add_indices",
-    "generate_line_cuboid", "divide_tri_to_tri_mesh", "divide_quad_to_tri_mesh"
+    "generate_line_cuboid", "divide_tri_to_tri_mesh", "divide_quad_to_tri_mesh", 
+    "generate_separate_tri_mesh"
 ]
 
 
@@ -408,3 +409,16 @@ def divide_quad_to_tri_mesh(n: int = 0):
         inds += [(start, start + 1, next_row), (next_row, start + 1, next_row + 1)]
 
     return xis, inds
+
+
+def generate_separate_tri_mesh(nodes, indices):
+    out_nodes=[]
+    out_inds=[]
+
+    for tri in indices:
+        len_nodes=len(out_nodes)
+        out_nodes+=[nodes[i] for i in tri]
+        out_inds.append((len_nodes,len_nodes+1,len_nodes+2))
+
+    return out_nodes, out_inds
+    

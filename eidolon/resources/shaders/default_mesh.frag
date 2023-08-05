@@ -14,6 +14,13 @@ uniform struct {
     float refractiveIndex;
 } p3d_Material;
 
+const int NUM_LIGHTS=1;
+
+// The sum of all active ambient light colors.
+uniform struct {
+  vec4 ambient;
+} p3d_LightModel;
+
 uniform struct p3d_LightSourceParameters {
     // Primary light color.
     vec4 color;
@@ -47,29 +54,35 @@ uniform struct p3d_LightSourceParameters {
 
     // Transforms view-space coordinates to shadow map coordinates
     mat4 shadowViewMatrix;
-} p3d_LightSource[1];
-
-const int NUM_LIGHTS=1;
+} p3d_LightSource[NUM_LIGHTS];
 
 in vec4 color;
 in vec3 normal;
 in vec4 position;
 
-vec4 compute_directional_light(vec3 ldir,vec3 norm, vec4 col){
-    float mag=max(dot(ldir,norm),0);
-    return col*mag;
+// TODO: specular highlights
+vec4 compute_directional_light(vec3 ldir, vec3 norm, vec4 col){
+    float mag = dot(ldir, norm);
+    return col * mag;
 }
 
 void main() {
-    vec4 col=length(color) > 0 ? color: p3d_Material.diffuse;
-
-    gl_FragColor = p3d_Material.emission + col * p3d_Material.ambient;
+    vec4 out=p3d_LightModel.ambient * p3d_Material.ambient;
+    // gl_FragColor = p3d_LightModel.ambient * p3d_Material.ambient;
 
     for(int n=0;n<NUM_LIGHTS;n++){
         vec4 lpos=p3d_LightSource[n].position;
         vec4 lcol=p3d_LightSource[n].color;
-
+        
         if(lpos.w==0)
-            gl_FragColor += col*compute_directional_light(lpos.xyz, normal, lcol);
+            out += compute_directional_light(lpos.xyz, normal, lcol * p3d_Material.diffuse);
+        // TODO: point and spot lights
     }
+
+    // vertex color
+    if(length(color)>0)
+        out *= color;  // TODO: texture color instead of vertex color if present
+
+    out += p3d_Material.emission;
+    gl_FragColor = out;
 }
