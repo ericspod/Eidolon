@@ -38,18 +38,18 @@ class Light:
         self.ltype = ltype
 
         if ltype == LightType.AMBIENT:
-            self.light = AmbientLight(name)
+            self._light = AmbientLight(name)
         elif ltype == LightType.DIRECTIONAL:
-            self.light = DirectionalLight(name)
+            self._light = DirectionalLight(name)
         elif ltype == LightType.SPOTLIGHT:
-            self.light = Spotlight(name)
-            self.light.attenuation = attenuation
+            self._light = Spotlight(name)
+            self._light.attenuation = attenuation
         elif ltype == LightType.POINT:
-            self.light = PointLight(name)
-            self.light.attenuation = attenuation
+            self._light = PointLight(name)
+            self._light.attenuation = attenuation
 
-        self.light.set_color(VBase4F(*color))
-        self.nodepath = NodePath(self.light)
+        self._light.set_color(VBase4F(*color))
+        self.nodepath = NodePath(self._light)
         self._node_attached = False
 
     def attach(self, camera: OffscreenCamera, attach_node=False):

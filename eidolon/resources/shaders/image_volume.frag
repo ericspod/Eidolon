@@ -1,11 +1,7 @@
 #version 150
     
 // The sum of all active ambient light colors.
-uniform struct {
-  vec4 ambient;
-} p3d_LightModel;
-
-uniform struct {
+uniform struct p4d_MaterialParameters {
     vec4 ambient;
     vec4 diffuse;
     vec4 emission;
@@ -19,7 +15,12 @@ uniform struct {
     float refractiveIndex;
 } p3d_Material;
 
-const int NUM_LIGHTS=1;
+// The sum of all active ambient light colors.
+uniform struct p3d_LightModelParameters {
+  vec4 ambient;
+} p3d_LightModel;
+
+const int NUM_LIGHTS=10;
 
 uniform struct p3d_LightSourceParameters {
     // Primary light color.
@@ -56,12 +57,12 @@ uniform struct p3d_LightSourceParameters {
     mat4 shadowViewMatrix;
 } p3d_LightSource[NUM_LIGHTS];
 
-const float TRANS_DIST=0.01;
+const float TRANS_DIST=0.001;
 const float TRANS_THRESHOLD=0.01;
 
-uniform mat4 p3d_ModelViewProjectionMatrix;
-uniform mat3 p3d_NormalMatrix;
-uniform mat4 p3d_ProjectionMatrixInverse;
+// uniform mat4 p3d_ModelViewProjectionMatrix;
+// uniform mat3 p3d_NormalMatrix;
+// uniform mat4 p3d_ProjectionMatrixInverse;
 
 uniform sampler3D p3d_Texture0;
 uniform float alpha;
@@ -70,9 +71,14 @@ in vec3 texcoord;
 in vec3 texnorm;
 out vec4 fragcolor;
 
-vec4 compute_directional_light(vec3 ldir,vec3 norm, vec4 col){
-    float mag=max(dot(ldir,norm),0);
-    return col*mag;
+vec4 calculate_directional_light(vec3 ldir, vec3 norm, vec4 diffuse, vec3 specular, float shininess){
+    ldir = normalize(ldir);
+    vec3 halfdir = normalize(ldir + vec3(0, 0, 1)); // assumes eye direction is (0,0,1)
+
+    float mag = clamp(dot(ldir, norm), 0, 1);
+    float smag = clamp(dot(halfdir, norm), 0, 1);
+    float power = pow(smag, shininess);
+    return (diffuse * mag) + vec4(specular * power, 1.0);
 }
 
 void main() {
@@ -88,18 +94,20 @@ void main() {
 
     // ORIGINAL
     // fragcolor = texture(p3d_Texture0, texcoord);
-    // fragcolor.a *= alpha;
+    // fragcolor.a = alpha;
 
-    fragcolor=vec4(0);
-    col=p3d_Material.emission + p3d_LightModel.ambient * p3d_Material.ambient;
+    fragcolor=vec4(1.0,0,0,0.01);
 
-    for(int n=0;n<NUM_LIGHTS;n++){
-        vec4 lpos=p3d_LightSource[n].position;
-        vec4 lcol=p3d_LightSource[n].color;
+    // fragcolor=vec4(0);
+    // col=p3d_Material.emission + p3d_LightModel.ambient * p3d_Material.ambient;
 
-        if(lpos.w==0)
-            fragcolor += col*compute_directional_light(lpos.xyz, normal, lcol);
-    }
+    // for(int n=0;n<NUM_LIGHTS;n++){
+    //     vec4 lpos=p3d_LightSource[n].position;
+    //     vec4 lcol=p3d_LightSource[n].color;
 
-    fragcolor *= texture(p3d_Texture0, texcoord);
+    //     if(lpos.w==0)
+    //         fragcolor += col*compute_directional_light(lpos.xyz, normal, lcol);
+    // }
+
+    // fragcolor *= texture(p3d_Texture0, texcoord);
 }

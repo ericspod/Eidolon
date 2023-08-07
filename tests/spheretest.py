@@ -17,9 +17,13 @@ amb = eidolon.renderer.Light("amb", eidolon.renderer.LightType.AMBIENT, (0.3, 0.
 amb.attach(win.cam)
 
 light = eidolon.renderer.Light("dlight", eidolon.renderer.LightType.DIRECTIONAL, (0.3, 0.6, 0.3, 1))
-light.attach(win.cam, True)
+light.attach(win.cam, False)
 
-verts, inds = generate_sphere(2)
+# light = eidolon.renderer.Light("slight", eidolon.renderer.LightType.POINT, (0.3, 0.6, 0.3, 1),(1,0,0))
+# light.nodepath.set_pos((0,0,0))
+# light.attach(win.cam, False)
+
+verts, inds = generate_sphere(3)
 verts, inds = generate_separate_tri_mesh(verts,inds)
 norms = generate_tri_normals(verts, inds)
 colors = [(1, 1, 1, 1)] * len(verts)
@@ -45,11 +49,12 @@ axes.camnodes[0].set_shader_auto()
 shader_mesh.set_shader(eidolon.renderer.shaders.make_shader_from_prefix("default_mesh"))
 
 m=Material()
-m.set_diffuse((1,1,0,1.0))
-# m.set_specular((1,0,0,1))
+# m.set_diffuse((1,1,0,1.0))
+m.set_specular((1,0,0,1))
 # m.set_emission((0,0,0.25,1))
-# m.shininess=64
+m.shininess=2
 auto_mesh.camnodes[0].set_material(m)
+
 shader_mesh.camnodes[0].set_material(m)
 
 win.ctrl.set_camera_see_all()

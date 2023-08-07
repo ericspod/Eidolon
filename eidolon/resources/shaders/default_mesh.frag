@@ -1,6 +1,6 @@
 #version 150
 
-uniform struct {
+uniform struct p4d_MaterialParameters {
     vec4 ambient;
     vec4 diffuse;
     vec4 emission;
@@ -14,12 +14,12 @@ uniform struct {
     float refractiveIndex;
 } p3d_Material;
 
-const int NUM_LIGHTS=1;
-
 // The sum of all active ambient light colors.
-uniform struct {
+uniform struct p3d_LightModelParameters {
   vec4 ambient;
 } p3d_LightModel;
+
+const int NUM_LIGHTS=10;
 
 uniform struct p3d_LightSourceParameters {
     // Primary light color.
@@ -56,33 +56,55 @@ uniform struct p3d_LightSourceParameters {
     mat4 shadowViewMatrix;
 } p3d_LightSource[NUM_LIGHTS];
 
+uniform mat4 p3d_ModelViewProjectionMatrixInverse;
+uniform mat3 p3d_NormalMatrixInverse;
+
 in vec4 color;
 in vec3 normal;
 in vec4 position;
 
-// TODO: specular highlights
-vec4 compute_directional_light(vec3 ldir, vec3 norm, vec4 col){
-    float mag = dot(ldir, norm);
-    return col * mag;
+vec4 calculate_directional_light(vec3 ldir, vec3 norm, vec4 diffuse, vec3 specular, float shininess){
+    ldir = normalize(ldir);
+    vec3 halfdir = normalize(ldir + vec3(0, 0, 1)); // assumes eye direction is (0,0,1)
+
+    float mag = clamp(dot(ldir, norm), 0, 1);
+    float smag = clamp(dot(halfdir, norm), 0, 1);
+    float power = pow(smag, shininess);
+    return (diffuse * mag) + vec4(specular * power, 1.0);
+}
+
+float calculate_falloff(float dist, float constant, float linear, float quadratic){
+    return 1.0 / (constant + linear * dist + quadratic * dist * dist);
 }
 
 void main() {
-    vec4 out=p3d_LightModel.ambient * p3d_Material.ambient;
-    // gl_FragColor = p3d_LightModel.ambient * p3d_Material.ambient;
+    gl_FragColor=p3d_LightModel.ambient * p3d_Material.ambient;
 
     for(int n=0;n<NUM_LIGHTS;n++){
         vec4 lpos=p3d_LightSource[n].position;
+        vec3 sdir=p3d_LightSource[n].spotDirection;
         vec4 lcol=p3d_LightSource[n].color;
         
-        if(lpos.w==0)
-            out += compute_directional_light(lpos.xyz, normal, lcol * p3d_Material.diffuse);
-        // TODO: point and spot lights
+        if(lpos.w==0){
+            gl_FragColor += calculate_directional_light(
+                lpos.xyz, normal, lcol * p3d_Material.diffuse, p3d_Material.specular * lcol.rgb, p3d_Material.shininess
+            );
+        }
+        // // TODO: point and spot lights
+        // else {//if(length(ldir)==0){
+        //     vec3 ldir=lpos.xyz-position.xyz*lpos.w;
+        //     vec4 spot_col = calculate_directional_light(
+        //         normalize(ldir), normal, lcol * p3d_Material.diffuse, p3d_Material.specular * lcol.rgb, p3d_Material.shininess
+        //     );
+        //     // vec3 atten_vec=p3d_LightSource[n].attenuation;
+        //     // float atten=calculate_falloff(length(lpos.xyz-position.xyz),atten_vec.x,atten_vec.y,atten_vec.z);
+        //     gl_FragColor += spot_col ;//* atten;
+        // }
     }
 
     // vertex color
     if(length(color)>0)
-        out *= color;  // TODO: texture color instead of vertex color if present
+        gl_FragColor *= color;  // TODO: texture color instead of vertex color if present
 
-    out += p3d_Material.emission;
-    gl_FragColor = out;
+    gl_FragColor += p3d_Material.emission;
 }

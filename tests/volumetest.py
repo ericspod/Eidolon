@@ -13,7 +13,10 @@ win = eidolon.ui.SimpleApp(1200, 800)
 
 win.ctrl.position=vec3.one * 5
 
-light = eidolon.renderer.Light("dlight", eidolon.renderer.LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
+amb = eidolon.renderer.Light("amb", eidolon.renderer.LightType.AMBIENT, (0.3, 0.3, 0.3, 1))
+amb.attach(win.cam)
+
+light = eidolon.renderer.Light("dlight", eidolon.renderer.LightType.DIRECTIONAL, (0.3, 0.3, 0.3, 1))
 light.attach(win.cam, True)
 
 verts, inds, norms, colors = generate_axes_arrows(5, 10)
@@ -42,9 +45,9 @@ fig = eidolon.renderer.ImageVolumeFigure("planes", img, num_planes=1000)
 fig.attach(win.cam)
 fig.scale = vec3.one * 10
 
-m=Material()
-m.set_specular((1, 1, 1, 1))
-fig.camnodes[0].set_material(m)
+# m=Material()
+# m.set_specular((1, 1, 1, 1))
+# fig.camnodes[0].set_material(m)
 
 win.ctrl.set_camera_see_all()
 
