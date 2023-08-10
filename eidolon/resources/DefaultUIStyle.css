@@ -33,7 +33,7 @@ QAbstractItemView {
 }
 
 QMenuBar::item { 
-    background-color: rgb(0, 0, 0,0);
+    background-color: rgb(0, 0, 0);
 }
 
 QTextEdit,QLineEdit,QPlainTextEdit {
@@ -161,7 +161,7 @@ QDockWidget::title {
 
 QDockWidget::close-button, QDockWidget::float-button
 {
-	background-color: rgb(255,255,255,0);
+	background-color: rgb(255,255,255);
 }
 
 QSpinBox::up-button, QDoubleSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::down-button

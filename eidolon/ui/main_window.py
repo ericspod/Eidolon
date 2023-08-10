@@ -25,7 +25,7 @@ from typing import Optional, Any
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 
-from .loader import load_rc_layout
+from .loader import load_res_layout
 
 import eidolon
 from ..utils import Namespace
@@ -38,7 +38,7 @@ __all__ = ["IconName", "MainWindow"]
 
 main_title = '%s v%s (FOR RESEARCH ONLY)'
 
-Ui_MainWindow = load_rc_layout("MainWindow")
+Ui_MainWindow = load_res_layout("main_window.ui")
 
 
 class IconName(Namespace):

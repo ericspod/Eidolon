@@ -3,20 +3,22 @@ import traceback
 import threading
 from PyQt5 import QtCore, QtGui
 
+import eidolon
 from eidolon.mathdef import vec3, generate_axes_arrows
 from eidolon.scene import QtCameraController
-from eidolon.ui import MainWindow, exec_ui, init_ui, load_rc_file, CameraWidget
+from eidolon.ui import MainWindow, exec_ui, init_ui, CameraWidget
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon import config
 from eidolon.utils import Future
+
 
 conf = config.load_config()
 
 app = init_ui()
 
 app.setStyle("plastique")
-sheet = load_rc_file("DefaultUIStyle", ":/css").decode('utf-8')
-
+# sheet = load_rc_file("DefaultUIStyle", ":/css").decode('utf-8')
+sheet = eidolon.resources.read_text("DefaultUIStyle.css")
 app.setStyleSheet(sheet)
 
 win = MainWindow(conf)

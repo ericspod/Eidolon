@@ -93,10 +93,8 @@ void main() {
         // fragcolor.r=1.0;
 
     // ORIGINAL
-    // fragcolor = texture(p3d_Texture0, texcoord);
+    fragcolor = texture(p3d_Texture0, texcoord);
     // fragcolor.a = alpha;
-
-    fragcolor=vec4(1.0,0,0,0.01);
 
     // fragcolor=vec4(0);
     // col=p3d_Material.emission + p3d_LightModel.ambient * p3d_Material.ambient;
