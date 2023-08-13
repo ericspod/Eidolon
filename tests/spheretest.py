@@ -1,6 +1,7 @@
 import sys
 from PyQt5 import QtWidgets
 
+from eidolon.mathdef import vec3
 import eidolon.renderer
 import eidolon.ui
 

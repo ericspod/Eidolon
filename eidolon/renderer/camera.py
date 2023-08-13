@@ -34,7 +34,7 @@ from panda3d.core import (
 )
 
 from .render_base import RenderBase
-from ..mathdef import vec3, BoundBox, ray
+from eidolon.mathdef import vec3, BoundBox, ray
 
 __all__ = ["OffscreenCamera"]
 

@@ -28,25 +28,20 @@ __all__ = ["create_default_app", "default_entry_point"]
 
 def create_default_app(argv=None):
     from eidolon.scene import QtCameraController
-    from eidolon import config
+    from eidolon import config, ConfigVarNames
 
     conf = config.load_config()
 
     app = init_ui()
 
-    app.setStyle("plastique")
+    app.setStyle(conf.get(ConfigVarNames.uistyle.name,ConfigVarNames.uistyle.value[0]))
     sheet=""
-    sheet_path=Path(conf.get("stylesheet", "DefaultUIStyle.css"))
-    if sheet_path.exists():
-        with open(str(sheet_path)) as o:
+    sheet_value=conf.get(ConfigVarNames.stylesheet.name, ConfigVarNames.stylesheet.value[0])
+    if Path(sheet_value).is_file():
+        with open(str(sheet_value)) as o:
             sheet=o.read()
-    else:
-        sheet_name=conf.get("stylesheet", "DefaultUIStyle.css")
-        if has_resource(sheet_name+".css"):
-            sheet_name+=".css"
-
-        if has_resource(sheet_name):
-            sheet=read_text(sheet)
+    elif has_resource(sheet_value):
+            sheet=read_text(sheet_value)
 
     app.setStyleSheet(sheet)
 

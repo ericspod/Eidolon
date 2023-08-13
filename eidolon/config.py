@@ -20,42 +20,31 @@ from pathlib import Path
 from io import StringIO
 from typing import Optional
 from collections.abc import Mapping
+from enum import Enum
 import yaml
 
 from . import CONFIGFILE, APPDATADIR
 from .utils import PlatformName
 
-__all__ = ["load_config", "load_config_file", "save_config_file"]
+__all__ = ["load_config", "load_config_file", "save_config_file", "ConfigVarNames"]
 
-DEFAULT_CONFIG = """
-all:
-  # Vertical screen sync, possible values: true (default), false
-  vsync: True
-  # Log file name in Eidolon's users data directory, default is eidolon.log
-  logfile: eidolon.log
-  # Maximum number of processors to use when computing datasets/representations
-  maxprocs: 8
-  # Default window size at start-up (actual size may be larger if necesary to fit UI components)
-  winsize: [1200, 800]
-  # Qt style to base the UI look-and-feel on
-  uistyle: plastique
-  # Stylesheet used to define the interface look-and-feel, must be an absolute path or relative to the <app> directory 
-  stylesheet: DefaultUIStyle
-  # Sets the initial state of the camera's Z-axis locking: true (default), false
-  camerazlock: True
-  # Comma-separated list of scripts to load at runtime before any others specified on the command line (prefix with ./ to be relative to config file)
-  preloadscripts: ""
-  # render high quality for every frame by default
-  renderhighquality: True
-  # location of the per-user application data directory to create at startup if it doesn't exist, This file will be copied there and can be modified for per-user configuration
-  userappdir: ~/.eidolon
-  # console log filename, to be stored in userappdir
-  consolelogfile: console.log
-  # how many lines of console logs to store in the log file
-  consoleloglen: 10000
-  # try to use the Jupyter Qt console widget instead of the built-in console widget: true (default), false
-  usejupyter: True
-"""
+
+class ConfigVarNames(Enum):
+    vsync = (True, "Vertical screen sync, possible values: True (default), False")
+    logfile = ("eidolon.log", "Log file name in Eidolon's users data directory, default is eidolon.log")
+    maxprocs = (8, "Maximum number of processors to use when computing datasets/representations")
+    winsize = ([1200, 800], "Default window size at start-up (actual size may be larger to fit UI components)")
+    uistyle = ("plastique", "Qt style to base the UI look-and-feel on")
+    stylesheet = ("DefaultUIStyle.css", "UI stylesheet, must be path to external file or name of resource file")
+    camerazlock = (True, "Sets the initial state of the camera's Z-axis locking: True (default), False")
+    preloadscripts = ("", "Comma-separated list of scripts to load at runtime before any specified on the command line")
+    userappdir = ("~/.eidolon", "Location of the per-user data directory to create at startup if it doesn't exist")
+    consolelogfile = ("console.log", "Console log filename, to be stored in userappdir")
+    consoleloglen = (10000, "How many lines of console logs to store in the log file")
+    usejupyter = (True, "Try to use Jupyter console widget instead of built-in console widget: True (default), False")
+
+
+DEFAULT_CONFIG = "all:\n" + "\n".join([f"  # {cvn.value[1]}\n  {cvn.name}: {cvn.value[0]}" for cvn in ConfigVarNames])
 
 
 def update_dict(orig, updates):
@@ -106,7 +95,7 @@ def load_config_file(filename):
 
 
 def save_config_file(conf, filename):
-    with open(filename, 'w') as o:
+    with open(filename, "w") as o:
         yaml.safe_dump(conf, o)
 
 

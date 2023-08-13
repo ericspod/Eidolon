@@ -24,8 +24,8 @@ from typing import Optional
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 
-from ..mathdef import vec3
-from ..utils import is_interactive
+from eidolon.mathdef import vec3
+from eidolon.utils import is_interactive
 from .camera_widget import CameraWidget
 
 __all__ = ["init_ui", "exec_ui", "SimpleApp"]
