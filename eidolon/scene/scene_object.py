@@ -245,4 +245,4 @@ class SceneObjectRepr(Transformable):
         self._matname = mat.name
 
         for fig in self.figures:
-            fig.apply_material(mat)
+            fig.set_material(mat)

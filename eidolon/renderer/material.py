@@ -18,20 +18,10 @@
 
 from typing import Optional, Tuple, List
 
-from ..utils import first
-from .render_utils import create_simple_geom
-from .camera import OffscreenCamera
-from ..mathdef.math_types import vec3, rotator, transform, BoundBox, Transformable
 
-from panda3d.core import (
-    Texture,
-    TextureStage,
-    Shader,
-)
+from panda3d.core import Texture, TextureStage, Shader, Material as PMaterial
 
-from panda3d.core import Material as PMaterial
-
-__all__=["Material","MAIN_TEX_NAME","SPECTRUM_TEX_NAME"]
+__all__ = ["Material", "MAIN_TEX_NAME", "SPECTRUM_TEX_NAME"]
 
 color = Tuple[float, float, float, float]
 
@@ -41,15 +31,15 @@ SPECTRUM_TEX_NAME = "spec"
 
 class Material:
     def __init__(
-            self,
-            name: str,
-            texture: Optional[Texture] = None,
-            shader: Optional[Shader] = None,
-            diffuse: color = (1, 1, 1, 1),
-            emissive: color = (0, 0, 0, 0),
-            specular: color = (0, 0, 0, 0),
-            refractive_index: float = 1,
-            shininess: float = 0.0
+        self,
+        name: str,
+        texture: Optional[Texture] = None,
+        shader: Optional[Shader] = None,
+        diffuse: color = (1, 1, 1, 1),
+        emissive: color = (0, 0, 0, 0),
+        specular: color = (0, 0, 0, 0),
+        # refractive_index: float = 1,
+        shininess: float = 0.0,
     ):
         self._name: str = name
         self.texture: Optional[Texture] = texture
@@ -57,16 +47,14 @@ class Material:
         self.diffuse: color = diffuse
         self.emissive: color = emissive
         self.specular: color = specular
-        self.refractive_index: float = refractive_index
+        # self.refractive_index: float = refractive_index
         self.shininess: float = shininess
 
-        self._alpha_curve: List[Tuple[float, float]] = []
+        # self._alpha_curve: List[Tuple[float, float]] = []
+        # self._spectrum: List[color] = []
+        # self._spectrum_tex: Optional[Texture] = None
 
-        self._spectrum: List[color] = []
-
-        self._spectrum_tex: Optional[Texture] = None
-
-        self.pmaterial=PMaterial()
+        self.pmaterial = PMaterial()
 
     @property
     def name(self):
@@ -76,21 +64,21 @@ class Material:
         self.pmaterial.set_diffuse(self.diffuse)
         self.pmaterial.set_specular(self.specular)
         self.pmaterial.set_emission(self.emissive)
-        self.pmaterial.set_refractive_index(self.refractive_index)
+        # self.pmaterial.set_refractive_index(self.refractive_index)
         self.pmaterial.set_shininess(self.shininess)
         return self.pmaterial
 
-    def get_texture_stages(self):
-        stages = []
+    # def get_texture_stages(self):
+    #     stages = []
 
-        if self.texture is not None:
-            ts = TextureStage(MAIN_TEX_NAME)
-            ts.set_sort(0)
-            stages.append((ts, self.texture))
+    #     if self.texture is not None:
+    #         ts = TextureStage(MAIN_TEX_NAME)
+    #         ts.set_sort(0)
+    #         stages.append((ts, self.texture))
 
-        if self._spectrum_tex is not None:
-            ts = TextureStage(SPECTRUM_TEX_NAME)
-            ts.set_sort(1)
-            stages.append((ts, self._spectrum_tex))
+    #     if self._spectrum_tex is not None:
+    #         ts = TextureStage(SPECTRUM_TEX_NAME)
+    #         ts.set_sort(1)
+    #         stages.append((ts, self._spectrum_tex))
 
-        return stages
+    #     return stages

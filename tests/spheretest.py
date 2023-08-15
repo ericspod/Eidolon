@@ -54,9 +54,9 @@ m=Material()
 m.set_specular((1,0,0,1))
 # m.set_emission((0,0,0.25,1))
 m.shininess=2
-auto_mesh.camnodes[0].set_material(m)
+auto_mesh.set_material(m)
 
-shader_mesh.camnodes[0].set_material(m)
+shader_mesh.set_material(m)
 
 win.ctrl.set_camera_see_all()
 

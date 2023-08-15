@@ -20,30 +20,33 @@ from pathlib import Path
 import sys
 from eidolon.resources import read_text, has_resource
 from eidolon.mathdef import vec3
-from eidolon.ui import MainWindow, exec_ui, init_ui, CameraWidget
+from eidolon.ui import MainWindow, exec_ui, init_ui, add_search_path, CameraWidget
 from eidolon.renderer import OffscreenCamera
 
 
 __all__ = ["create_default_app", "default_entry_point"]
 
+
 def create_default_app(argv=None):
     from eidolon.scene import QtCameraController
-    from eidolon import config, ConfigVarNames
+    from eidolon.config import load_config, ConfigVarNames
 
-    conf = config.load_config()
+    conf = load_config()
 
     app = init_ui()
 
-    app.setStyle(conf.get(ConfigVarNames.uistyle.name,ConfigVarNames.uistyle.value[0]))
-    sheet=""
-    sheet_value=conf.get(ConfigVarNames.stylesheet.name, ConfigVarNames.stylesheet.value[0])
+    app.setStyle(conf.get(ConfigVarNames._uistyle, ConfigVarNames.uistyle[0]))
+    sheet = ""
+    sheet_value = conf.get(ConfigVarNames._stylesheet, ConfigVarNames.stylesheet[0])
     if Path(sheet_value).is_file():
         with open(str(sheet_value)) as o:
-            sheet=o.read()
+            sheet = o.read()
     elif has_resource(sheet_value):
-            sheet=read_text(sheet_value)
+        sheet = read_text(sheet_value)
 
     app.setStyleSheet(sheet)
+
+    add_search_path("icons", "icons")
 
     win = MainWindow(conf)
 
@@ -61,12 +64,10 @@ def create_default_app(argv=None):
 
 def default_entry_point(argv=None):
     if argv is None:
-        argv=sys.argv
+        argv = sys.argv
 
     app, win, _, _ = create_default_app(argv)
 
     win.show()
 
     exec_ui(app)
-
-

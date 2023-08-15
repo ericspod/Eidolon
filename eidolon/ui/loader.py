@@ -24,46 +24,23 @@ from PyQt5 import QtCore, uic
 
 from eidolon import resources
 
-__all__ = ["load_ui", "load_res_layout"]
+__all__ = ["load_ui", "load_res_layout", "add_search_path"]
 
-restag = re.compile('<resources>.*</resources>', flags=re.DOTALL)  # matches the resource tags in the ui files
-
-layouts_section = ":/layouts"
-
+restag = re.compile("<resources>.*</resources>", flags=re.DOTALL)  # matches the resource tags in the ui files
 
 def load_ui(xmlstr):
     """Loads the given XML ui file data and returns the created type."""
-    s = re.sub(restag, '', xmlstr)  # get rid of the resources section in the XML
+    s = re.sub(restag, "", xmlstr)  # get rid of the resources section in the XML
     uiclass, _ = uic.loadUiType(StringIO(s))  # create a local type definition
     return uiclass
 
 
 def load_res_layout(filename):
     if not resources.has_resource(filename, "ui"):
-      raise ValueError(f"Cannot find UI layout with name {filename}")
+        raise ValueError(f"Cannot find UI layout with name {filename}")
 
-    return load_ui(resources.read_text(filename, "ui"))  
-
-# def load_rc_layout(filename):
-#     layout = load_rc_file(filename, layouts_section)
-
-#     if layout:
-#         return load_ui(layout.decode("utf-8"))
-
-#     raise ValueError(f"Cannot find UI layout with name {filename}")
+    return load_ui(resources.read_text(filename, "ui"))
 
 
-# def load_rc_file(filename, section):
-#     it = QtCore.QDirIterator(section)
-
-#     while it.hasNext():
-#         name = it.next()
-#         if filename in name:
-#             with contextlib.closing(QtCore.QFile(name)) as qfile:
-#                 if qfile.open(QtCore.QFile.ReadOnly):
-#                     xfile = qfile.readAll()
-#                     return bytes(xfile)
-#                 else:
-#                     raise ValueError(f"Unable to open {name}")
-
-#     return None
+def add_search_path(name, submodule):
+    QtCore.QDir.addSearchPath(name, resources.get_resource_path(submodule))

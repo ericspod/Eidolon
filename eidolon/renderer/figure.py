@@ -169,6 +169,10 @@ class Figure(Transformable):
         for camnode in self.camnodes:
             camnode.set_shader_input(name, *args)
 
+    def set_material(self, mat: PMaterial):
+        for camnode in self.camnodes:
+            camnode.set_material(mat)
+
     def apply_material(self, mat: Material, set_main_texture: bool = True, set_shader: bool = True):
         pm: PMaterial = mat.get_material_obj()
         stages = mat.get_texture_stages()

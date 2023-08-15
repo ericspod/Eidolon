@@ -16,20 +16,37 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+import os
+import sys
 from pathlib import Path
 from io import StringIO
 from typing import Optional
 from collections.abc import Mapping
-from enum import Enum
 import yaml
 
-from . import CONFIGFILE, APPDATADIR
-from .utils import PlatformName
+from .utils import PlatformName, Namespace
 
 __all__ = ["load_config", "load_config_file", "save_config_file", "ConfigVarNames"]
 
+_scriptdir = os.path.dirname(os.path.abspath(__file__))
 
-class ConfigVarNames(Enum):
+# the application directory is given by pyinstaller in _MEIPASS, if not present use the directory one level up
+__appdir__ = getattr(sys, '_MEIPASS', os.path.abspath(_scriptdir + '/..'))
+
+# environment variable names
+APPDIRVAR = "APPDIR"  # path to the application's directory, default __appdir__
+APPDATADIRVAR = "APPDATADIR"  # path to app data directory, default ~/.eidolon
+CONFIGFILEVAR = "CONFIGFILE"  # path to config file, default config.yaml
+LOGFILEVAR = "LOGFILE" # path to log file, default eidolon.log
+
+# LIBSDIR = "EidolonLibs"  # directory name containing the application's libraries
+APPDIR = os.environ.get(APPDIRVAR, __appdir__)
+APPDATADIR = os.environ.get(APPDATADIRVAR, "~/.eidolon")
+CONFIGFILE = os.environ.get(CONFIGFILEVAR, "config.yaml")  # config file name
+LOGFILE = os.environ.get(LOGFILEVAR, "eidolon.log")  # config file name
+
+
+class ConfigVarNames(Namespace):
     vsync = (True, "Vertical screen sync, possible values: True (default), False")
     logfile = ("eidolon.log", "Log file name in Eidolon's users data directory, default is eidolon.log")
     maxprocs = (8, "Maximum number of processors to use when computing datasets/representations")
@@ -44,7 +61,7 @@ class ConfigVarNames(Enum):
     usejupyter = (True, "Try to use Jupyter console widget instead of built-in console widget: True (default), False")
 
 
-DEFAULT_CONFIG = "all:\n" + "\n".join([f"  # {cvn.value[1]}\n  {cvn.name}: {cvn.value[0]}" for cvn in ConfigVarNames])
+DEFAULT_CONFIG = "all:\n" + "".join([f"  # {v[1]}\n  {k}: {v[0]}\n" for k,v in ConfigVarNames])
 
 
 def update_dict(orig, updates):

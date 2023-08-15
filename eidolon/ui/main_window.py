@@ -25,14 +25,13 @@ from typing import Optional, Any
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 
-from .loader import load_res_layout
 
 import eidolon
-from ..utils import Namespace
-from ..utils.platform import is_darwin
+from eidolon.utils import Namespace, is_darwin
 from .ui_utils import resize_screen_relative, center_window, choose_file_dialog
 from .console_widget import jupyter_present, JupyterWidget, ConsoleWidget
 from .threadsafe_calls import qtmainthread
+from .loader import load_res_layout
 
 __all__ = ["IconName", "MainWindow"]
 

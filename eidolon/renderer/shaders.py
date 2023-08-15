@@ -25,13 +25,14 @@ __all__ = ["get_default_image_volume"]
 def read_shader(filename):
     if res.has_resource(filename, "shaders"):
         return res.read_text(filename, "shaders")
-    
+
     return None
 
+
 def make_shader_from_prefix(prefix):
-    vert=read_shader(f"{prefix}.vert") or ""
-    geom=read_shader(f"{prefix}.geom") or ""
-    frag=read_shader(f"{prefix}.frag") or ""
+    vert = read_shader(f"{prefix}.vert") or ""
+    geom = read_shader(f"{prefix}.geom") or ""
+    frag = read_shader(f"{prefix}.frag") or ""
 
     return Shader.make(Shader.SL_GLSL, vert, frag, geom)
 

@@ -28,6 +28,7 @@ nodes = np.array(list(map(tuple, nodes)), np.float32)
 tri_mesh = Mesh(nodes, {"inds": (np.array(inds), "Tri1NL")})
 tri_mesh.other_data["norms"] = norms
 
+
 fig = SimpleFigure("mesh", tri_mesh.nodes, tri_mesh.topos["inds"][0], tri_mesh.other_data["norms"])
 fig.attach(win.cam)
 # fig.orientation = rotator.from_axis(vec3.X, HALFPI)
@@ -39,7 +40,7 @@ m = Material(
     shininess=20,
     refractive_index=1.5
 )
-fig.apply_material(m)
+fig.set_material(m)
 
 light = Light("dlight", LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
 light.attach(win.cam, True)

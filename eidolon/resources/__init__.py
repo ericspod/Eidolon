@@ -1,4 +1,5 @@
 import importlib.resources as pkg_resources
+
 # import sys
 
 
@@ -7,6 +8,15 @@ def _get_module(submodule=None):
     return mname
     # __import__(mname)
     # return sys.modules[mname]
+
+
+def get_resource_path(submodule=None):
+    rmod = _get_module(submodule)
+    if hasattr(pkg_resources, "files"):
+        return str(pkg_resources.files(rmod))
+    else:
+        with pkg_resources.path(rmod, "") as p:
+            return str(p)
 
 
 def list_resources(submodule=None):

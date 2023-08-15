@@ -108,11 +108,7 @@ class ImageVolumeFigure(ImageFigure):
     def attach(self, camera: OffscreenCamera):
         super().attach(camera)
         self.set_texture(self._texture, MAIN_TEX_NAME)
-
-        for camnode in self.camnodes:
-            camnode.set_shader(self.shader)
-            camnode.set_shader_input(NUM_PLANES_VAR, self._num_planes)
-            camnode.set_shader_input(ALPHA_VAR, self._alpha)
+        self.set_shader(self.shader)
 
     def aabb(self):
         return BoundBox(vec3.zero, vec3.one) * self.get_transform()
@@ -138,4 +134,3 @@ class ImageVolumeFigure(ImageFigure):
     def num_planes(self, num_planes: int):
         update_geom(self.node.get_geom(0), [vec3.one * (i / num_planes) for i in range(num_planes)])
         self._num_planes = num_planes
-        self.set_shader_input(NUM_PLANES_VAR, self._num_planes)

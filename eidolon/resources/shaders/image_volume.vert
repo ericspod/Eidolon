@@ -6,8 +6,6 @@ uniform mat4 p3d_ProjectionMatrix;
 in vec4 p3d_Vertex;
 in vec4 p3d_Color;
 
-uniform int num_planes;  // number of planes to render with, used to determine distance between plane centroids
-
 out vec4 vColor; 
 
 void main() {

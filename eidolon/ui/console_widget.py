@@ -123,7 +123,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         self.loglines = int(conf.get("consoleloglen", 10000))
 
         # try to set the log filename, if there's no user directory this won't be set so no logging will occur
-        from eidolon import APPDATADIR
+        from eidolon.config import APPDATADIR
         appdatadir = Path(APPDATADIR)
         if appdatadir.is_dir():
             self.logfile = str(appdatadir / conf["consolelogfile"])
