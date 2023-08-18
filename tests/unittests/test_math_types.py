@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon.mathdef import vec3, rotator, transform, BoundBox
 from unittest import TestCase
+
 from numpy.testing import assert_array_equal
+
+from eidolon.mathdef import BoundBox, rotator, transform, vec3
 
 
 class TestVec3(TestCase):
@@ -52,7 +54,7 @@ class TestBoundBox(TestCase):
     def test_basic(self):
         bb = BoundBox(vec3.zero, vec3.one)
 
-        self.assertEqual(bb.diag.len, 3 ** 0.5)
+        self.assertEqual(bb.diag.len, 3**0.5)
 
     def test_add(self):
         bb = BoundBox(vec3.zero, vec3.one)

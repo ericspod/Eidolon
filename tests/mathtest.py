@@ -1,5 +1,6 @@
 import numpy as np
-from eidolon.mathdef import vec3, rotator, transform
+
+from eidolon.mathdef import rotator, transform, vec3
 
 v = vec3(1, -2, 3)
 print(v)

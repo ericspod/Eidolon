@@ -174,7 +174,7 @@
        </property>
        <widget class="QWidget" name="sceneTab">
         <attribute name="icon">
-         <iconset resource="../Resources.qrc">
+         <iconset resource="../icons/icons.qrc">
           <normaloff>:/icons/camera.png</normaloff>:/icons/camera.png</iconset>
         </attribute>
         <attribute name="title">
@@ -295,7 +295,7 @@
                  <string/>
                 </property>
                 <property name="icon">
-                 <iconset resource="../Resources.qrc">
+                 <iconset resource="../icons/icons.qrc">
                   <normaloff>:/icons/nametag.png</normaloff>:/icons/nametag.png</iconset>
                 </property>
                 <property name="iconSize">
@@ -327,7 +327,7 @@
                  <string/>
                 </property>
                 <property name="icon">
-                 <iconset resource="../Resources.qrc">
+                 <iconset resource="../icons/icons.qrc">
                   <normaloff>:/icons/trash-a.png</normaloff>:/icons/trash-a.png</iconset>
                 </property>
                 <property name="iconSize">
@@ -363,7 +363,7 @@
                  <string/>
                 </property>
                 <property name="icon">
-                 <iconset resource="../Resources.qrc">
+                 <iconset resource="../icons/icons.qrc">
                   <normaloff>:/icons/close-circled.png</normaloff>:/icons/close-circled.png</iconset>
                 </property>
                </widget>
@@ -451,7 +451,7 @@
        </widget>
        <widget class="QWidget" name="assetsTab">
         <attribute name="icon">
-         <iconset resource="../Resources.qrc">
+         <iconset resource="../icons/icons.qrc">
           <normaloff>:/icons/gear-b.png</normaloff>:/icons/gear-b.png</iconset>
         </attribute>
         <attribute name="title">
@@ -572,7 +572,7 @@
               <string/>
              </property>
              <property name="icon">
-              <iconset resource="../Resources.qrc">
+              <iconset resource="../icons/icons.qrc">
                <normaloff>:/icons/trash-a.png</normaloff>:/icons/trash-a.png</iconset>
              </property>
              <property name="iconSize">
@@ -604,7 +604,7 @@
               <string/>
              </property>
              <property name="icon">
-              <iconset resource="../Resources.qrc">
+              <iconset resource="../icons/icons.qrc">
                <normaloff>:/icons/clone.png</normaloff>:/icons/clone.png</iconset>
              </property>
              <property name="iconSize">
@@ -687,7 +687,7 @@
        </widget>
        <widget class="QWidget" name="configTab">
         <attribute name="icon">
-         <iconset resource="../Resources.qrc">
+         <iconset resource="../icons/icons.qrc">
           <normaloff>:/icons/wrench.png</normaloff>:/icons/wrench.png</iconset>
         </attribute>
         <attribute name="title">
@@ -1146,7 +1146,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../Resources.qrc">
+          <iconset resource="../icons/icons.qrc">
            <normaloff>:/icons/stop.png</normaloff>:/icons/stop.png</iconset>
          </property>
         </widget>
@@ -1178,7 +1178,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../Resources.qrc">
+          <iconset resource="../icons/icons.qrc">
            <normaloff>:/icons/play.png</normaloff>:/icons/play.png</iconset>
          </property>
         </widget>
@@ -1210,7 +1210,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../Resources.qrc">
+          <iconset resource="../icons/icons.qrc">
            <normaloff>:/icons/chevron-left.png</normaloff>:/icons/chevron-left.png</iconset>
          </property>
         </widget>
@@ -1242,7 +1242,7 @@
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../Resources.qrc">
+          <iconset resource="../icons/icons.qrc">
            <normaloff>:/icons/chevron-right.png</normaloff>:/icons/chevron-right.png</iconset>
          </property>
         </widget>
@@ -1497,7 +1497,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../Resources.qrc"/>
+  <include location="../icons/icons.qrc"/>
  </resources>
  <connections/>
 </ui>

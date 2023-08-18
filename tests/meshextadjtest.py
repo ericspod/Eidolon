@@ -1,8 +1,9 @@
 import timeit
+
 import numpy as np
 
 from eidolon.mathdef import ElemType
-from eidolon.mathdef.mesh_algorithms import calculate_shared_nodes, calculate_expanded_face_inds, calculate_leaf_ext_adj
+from eidolon.mathdef.mesh_algorithms import calculate_expanded_face_inds, calculate_leaf_ext_adj, calculate_shared_nodes
 
 cuboid = np.load("data/cuboid.npz")
 
@@ -14,23 +15,23 @@ et = ElemType.Hex1NL
 face_inds = np.array(et.faces)[:, :-1]
 
 # leafdata = np.arange(t.shape[0])
-leafdata=np.arange(100000)
+leafdata = np.arange(100000)
 
 num_faces = face_inds.shape[0]
 face_size = face_inds.shape[1]
-number=10
+number = 10
 
 topo_ext_adj = -np.ones((t.shape[0], et.num_faces * 2), dtype=int)
 
 expanded_face_inds = np.zeros((leafdata.shape[0], num_faces, face_size), dtype=int)
 
-func=lambda: calculate_shared_nodes(t,leafdata)
+func = lambda: calculate_shared_nodes(t, leafdata)
 
 func()
 
-res=timeit.timeit(func,number=number)
+res = timeit.timeit(func, number=number)
 
-print("calculate_shared_nodes", res/number)
+print("calculate_shared_nodes", res / number)
 
 # func=lambda: calculate_expanded_face_inds(expanded_face_inds, t, leafdata, face_inds)
 #

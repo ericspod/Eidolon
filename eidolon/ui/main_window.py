@@ -20,39 +20,40 @@ import os
 import sys
 import textwrap
 import warnings
-from typing import Optional, Any
+from typing import Any, Optional
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-
 
 import eidolon
 from eidolon.utils import Namespace, is_darwin
-from .ui_utils import resize_screen_relative, center_window, choose_file_dialog
-from .console_widget import jupyter_present, JupyterWidget, ConsoleWidget
-from .threadsafe_calls import qtmainthread
+
+from .console_widget import ConsoleWidget, JupyterWidget, jupyter_present
 from .loader import load_res_layout
+from .threadsafe_calls import qtmainthread
+from .ui_utils import center_window, choose_file_dialog, resize_screen_relative
 
 __all__ = ["IconName", "MainWindow"]
 
-main_title = '%s v%s (FOR RESEARCH ONLY)'
+main_title = "%s v%s (FOR RESEARCH ONLY)"
 
 Ui_MainWindow = load_res_layout("main_window.ui")
 
 
 class IconName(Namespace):
     """Names of icons mapped to the filename in loaded resources."""
-    default = ':/icons/document.png'
-    mesh = ':/icons/cube.png'
-    image = ':/icons/image.png'
-    eye = ':/icons/eye.png'
-    eyeclosed = ':/icons/eye-disabled.png'
-    bars = ':/icons/stats-bars.png'
-    help = ':/icons/help-circled.png'
-    scissors = ':/icons/scissors.png'
-    trash = ':/icons/trash-a.png'
-    seg = ':/icons/seg.png'
-    clipboard = ':/icons/clipboard.png'
+
+    default = ":/icons/document.png"
+    mesh = ":/icons/cube.png"
+    image = ":/icons/image.png"
+    eye = ":/icons/eye.png"
+    eyeclosed = ":/icons/eye-disabled.png"
+    bars = ":/icons/stats-bars.png"
+    help = ":/icons/help-circled.png"
+    scissors = ":/icons/scissors.png"
+    trash = ":/icons/trash-a.png"
+    seg = ":/icons/seg.png"
+    clipboard = ":/icons/clipboard.png"
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -72,11 +73,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.action_About.triggered.connect(self._show_about)
         self.action_Scene_Elements.triggered.connect(
-            lambda: self.interfaceDock.setVisible(not self.interfaceDock.isVisible()))
+            lambda: self.interfaceDock.setVisible(not self.interfaceDock.isVisible())
+        )
         self.action_Console.triggered.connect(lambda: self.consoleWidget.setVisible(not self.consoleWidget.isVisible()))
         self.action_Time.triggered.connect(lambda: self.timeWidget.setVisible(not self.timeWidget.isVisible()))
         self.actionScratch_Pad.triggered.connect(
-            lambda: self.scratchWidget.setVisible(not self.scratchWidget.isVisible()))
+            lambda: self.scratchWidget.setVisible(not self.scratchWidget.isVisible())
+        )
 
         self.execButton.clicked.connect(self._execute_scratch)
         self.loadScratchButton.clicked.connect(self._load_scratch)
@@ -86,13 +89,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.status_progress_bar.setMaximumWidth(200)
         self.status_progress_bar.setRange(0, 1)
         self.status_progress_bar.setValue(1)
-        self.status_progress_bar.setFormat('%p% (%v / %m)')
+        self.status_progress_bar.setFormat("%p% (%v / %m)")
         self.status_progress_bar.setTextVisible(True)
         self.status_progress_bar.setVisible(False)
         self.status_text = QtWidgets.QLabel(self)
         self.statusBar.addWidget(self.status_progress_bar)
         self.statusBar.addWidget(self.status_text)
-        self.set_status('Ready')
+        self.set_status("Ready")
 
         if jupyter_present and conf.get("usejupyter", True):
             try:
@@ -239,14 +242,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """Execute the contents of the scratch pad line-by-line in the console, making it visible first."""
         self.consoleWidget.setVisible(True)
         text = str(self.scratchEdit.document().toPlainText())
-        if text[-1] != '\n':
-            text += '\n'
+        if text[-1] != "\n":
+            text += "\n"
 
         self.console.send_input_block(text, False)
 
     def _load_scratch(self):
         # scratch = v1.chooseFileDialog('Choose Load Scratch Filename', chooseMultiple=False, isOpen=True)
-        scratch = choose_file_dialog('Choose Load Scratch Filename', self)
+        scratch = choose_file_dialog("Choose Load Scratch Filename", self)
         if scratch:
             self.working_dir = os.path.dirname(scratch[0])
             with open(scratch[0]) as o:
@@ -256,15 +259,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """Save the scratch pad contents to a chosen file."""
         # scratch = v1.chooseFileDialog('Choose Save Scratch Filename', chooseMultiple=False, isOpen=False)
 
-        scratch = choose_file_dialog('Choose Save Scratch Filename', self, is_open=False)
+        scratch = choose_file_dialog("Choose Save Scratch Filename", self, is_open=False)
         if scratch:
             self.working_dir = os.path.dirname(scratch[0])
             text = str(self.scratchEdit.document().toPlainText())
-            if text[-1] != '\n':
-                text += '\n'
+            if text[-1] != "\n":
+                text += "\n"
 
-            with open(scratch[0], 'w') as ofile:
+            with open(scratch[0], "w") as ofile:
                 ofile.write(text)
 
     def _remove_button(self):
-        obj=self.get_selected_tree_object()
+        obj = self.get_selected_tree_object()

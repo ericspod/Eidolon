@@ -16,13 +16,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .basis_functions import *
-from .compile_support import *
-from .elem_type import *
-from .image_utils import *
-from .math_types import *
-from .math_utils import *
-from .mesh import *
-from .mesh_algorithms import *
-from .mesh_utils import *
-from .octree import *
+from typing import Optional, Tuple
+
+__all__ = ["color", "Opt"]
+
+color = Tuple[float, float, float, float]
+
+Opt = Optional

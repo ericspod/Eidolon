@@ -17,11 +17,12 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from __future__ import annotations
+
 import time
-from typing import Optional, List
 import traceback
-from threading import RLock, Event, ThreadError, current_thread
 from functools import wraps
+from threading import Event, RLock, ThreadError, current_thread
+from typing import List, Optional
 
 __all__ = ["is_main_thread", "Future", "get_object_lock", "locking", "trylocking", "Task", "task_method", "TaskQueue"]
 
@@ -37,13 +38,13 @@ class FutureError(Exception):
         self.exc_type = exc_type
         self.exc_value = exc_value
         self.tb = tb
-        msg = ''
+        msg = ""
 
         if exc_value:
-            fexp = '\n'.join(traceback.format_exception(exc_type, exc_value, tb))
-            msg = 'Future object left control block with exception:\n' + fexp
+            fexp = "\n".join(traceback.format_exception(exc_type, exc_value, tb))
+            msg = "Future object left control block with exception:\n" + fexp
         else:
-            msg = 'Future object left control block without a value'
+            msg = "Future object left control block without a value"
 
         Exception.__init__(self, msg)
 
@@ -196,10 +197,11 @@ class Task:
 
     @staticmethod
     def null():
-        return Task('NullTask', lambda *args, **kwargs: None)
+        return Task("NullTask", lambda *args, **kwargs: None)
 
-    def __init__(self, label, func=None, args=(), kwargs={}, self_name: Optional[str] = None,
-                 parent_task: Optional[Task] = None):
+    def __init__(
+        self, label, func=None, args=(), kwargs={}, self_name: Optional[str] = None, parent_task: Optional[Task] = None
+    ):
         self._cur_progress: int = 0
         self._max_progress: int = 0
         self._label: str = ""
@@ -304,6 +306,7 @@ def task_method(meth, task_queue_name="mgr", task_arg_name="task", task_label=No
     is passed to the method through the named additional keyword argument. If `task_label` is not None this labels the
     Task instead of the method name. The returned value is a Future object which eventually stores the task's result.
     """
+
     @wraps(meth)
     def _wrapper(self, *args, **kwargs):
         tqueue = getattr(self, task_queue_name)
@@ -363,14 +366,14 @@ class TaskQueue(object):
                     while exc != fe and isinstance(exc, FutureError):
                         exc = exc.exc_value
 
-                    self.task_except(fe, exc, 'Exception from queued task ' + self.current_task.getLabel())
+                    self.task_except(fe, exc, "Exception from queued task " + self.current_task.getLabel())
                     # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
                     self.current_task.flush_queue = True
 
                 except Exception as e:
                     # if no current task then some non-task exception we don't care about has occurred
                     if self.current_task:
-                        self.task_except(e, '', 'Exception from queued task ' + self.current_task.getLabel())
+                        self.task_except(e, "", "Exception from queued task " + self.current_task.getLabel())
                         self.current_task.flush_queue = True  # remove waiting tasks
                 finally:
                     # set the current task to None, using self lock to prevent inconsistency with updatethread

@@ -17,14 +17,14 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import math
-from typing import Union, Generator
+from typing import Generator, Union
 
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore, QtGui
 
-from ..ui.camera_widget import CameraWidget, CameraWidgetEvent
+from ..mathdef.math_types import rotator, vec3
+from ..mathdef.math_utils import rad_circular_convert, rad_clamp
 from ..renderer import OffscreenCamera
-from ..mathdef.math_types import vec3, rotator
-from ..mathdef.math_utils import rad_clamp, rad_circular_convert
+from ..ui.camera_widget import CameraWidget, CameraWidgetEvent
 
 __all__ = ["CameraController", "QtCameraController"]
 
@@ -46,7 +46,7 @@ class CameraController:
 
         self.apply_camera_position()
 
-    def cameras(self) -> Generator[OffscreenCamera,None,None]:
+    def cameras(self) -> Generator[OffscreenCamera, None, None]:
         yield self.camera
 
     @property

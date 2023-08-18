@@ -17,10 +17,10 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import itertools
 import functools
-from typing import Tuple, NamedTuple
+import itertools
 from textwrap import dedent
+from typing import NamedTuple, Tuple
 
 import numpy as np
 
@@ -41,12 +41,13 @@ class ShapeType(Namespace):
     Stores the geometry types with their full names, dimensions, and if they are symplex or not. These members are
     capitalized since they will be used in constructing a basis type name.
     """
+
     Point = ShapeTypeDesc("Point", 0, False)
     Line = ShapeTypeDesc("Line", 1, False)
-    Tri = ShapeTypeDesc('Triangle', 2, True)
-    Quad = ShapeTypeDesc('Quadrilateral', 2, False)
-    Tet = ShapeTypeDesc('Tetrahedron', 3, True)
-    Hex = ShapeTypeDesc('Hexahedron', 3, False)
+    Tri = ShapeTypeDesc("Triangle", 2, True)
+    Quad = ShapeTypeDesc("Quadrilateral", 2, False)
+    Tet = ShapeTypeDesc("Tetrahedron", 3, True)
+    Hex = ShapeTypeDesc("Hexahedron", 3, False)
 
 
 def line_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float]:
@@ -94,8 +95,16 @@ def hex_1nl(xi0: float, xi1: float, xi2: float) -> Tuple[float, float, float, fl
     xi01: float = xi0 * xi1
     xi02: float = xi0 * xi2
 
-    return 1.0 - xi0 - xi1 - xi2 + xi01 + xi02 + xi12 - xi012, xi0 - xi01 - xi02 + xi012, xi1 - xi01 - xi12 + xi012, \
-           xi01 - xi012, xi2 - xi02 - xi12 + xi012, xi02 - xi012, xi12 - xi012, xi012
+    return (
+        1.0 - xi0 - xi1 - xi2 + xi01 + xi02 + xi12 - xi012,
+        xi0 - xi01 - xi02 + xi012,
+        xi1 - xi01 - xi12 + xi012,
+        xi01 - xi012,
+        xi2 - xi02 - xi12 + xi012,
+        xi02 - xi012,
+        xi12 - xi012,
+        xi012,
+    )
 
 
 def lagrange_beta(order: int, is_simplex: bool, dim: int):
@@ -196,7 +205,7 @@ def lagrange_basis_eval_str(i, alpha, beta):
         if a == 0:
             continue
 
-        eq = ''
+        eq = ""
         is_first = True
 
         if a != 1:
@@ -209,20 +218,20 @@ def lagrange_basis_eval_str(i, alpha, beta):
                 continue
 
             if not is_first:
-                eq += '*'
+                eq += "*"
 
             is_first = False
 
-            eq += 'xi' + str(k)
+            eq += "xi" + str(k)
             if b != 1:
-                eq += '**' + str(b)
+                eq += "**" + str(b)
 
-        if eq == '':
-            eq = '1'
+        if eq == "":
+            eq = "1"
 
-        result.append('(' + eq + ')')
+        result.append("(" + eq + ")")
 
-    return '+'.join(result)
+    return "+".join(result)
 
 
 def lagrange_basis(shape_type, order, prefix_code=""):
@@ -263,7 +272,7 @@ def lagrange_basis(shape_type, order, prefix_code=""):
         alpha = lagrange_alpha(beta, xis)
         k = xis.shape[0]
 
-        exprs = '(' + ','.join(lagrange_basis_eval_str(i, alpha, beta) for i in range(k)) + ')'
+        exprs = "(" + ",".join(lagrange_basis_eval_str(i, alpha, beta) for i in range(k)) + ")"
 
         basis_func = f"""
             {prefix_code}

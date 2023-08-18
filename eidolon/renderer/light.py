@@ -18,10 +18,12 @@
 
 
 from enum import Enum
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
+
+from panda3d.core import AmbientLight, DirectionalLight, NodePath, PointLight, Spotlight, VBase4F
+
 from ..mathdef import vec3
 from .camera import OffscreenCamera
-from panda3d.core import AmbientLight, DirectionalLight, PointLight, Spotlight, NodePath, VBase4F
 
 __all__ = ["LightType", "Light"]
 

@@ -18,8 +18,10 @@
 
 
 try:
-    from numba import jit as _jit, prange, set_num_threads
     from functools import partial
+
+    from numba import jit as _jit
+    from numba import prange, set_num_threads
 
     jit = partial(_jit, nopython=True, cache=True, nogil=True)
     has_numba = True
@@ -29,17 +31,14 @@ except ImportError:
 
     warnings.warn("Numba not found, code will not be compiled")
 
-
-    def jit(func=None,*_,**__):
+    def jit(func=None, *_, **__):
         if func is not None and callable(func):
             return func
         else:
-            return lambda f:f
-
+            return lambda f: f
 
     def set_num_threads(n):
         pass
-
 
     prange = range
     has_numba = False

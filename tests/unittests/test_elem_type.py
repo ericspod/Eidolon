@@ -17,9 +17,10 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from unittest import TestCase
+
 from numpy.testing import assert_array_almost_equal
 
-from eidolon.mathdef import ShapeType, ElemType
+from eidolon.mathdef import ElemType, ShapeType
 
 
 class TestShapeType(TestCase):

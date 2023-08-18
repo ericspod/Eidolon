@@ -20,8 +20,14 @@ from unittest import TestCase
 
 import numpy as np
 
-from eidolon.mathdef import vec3, Mesh, MeshDataValue, calculate_mesh_octree, calculate_shared_nodes, \
-    calculate_mesh_ext_adj
+from eidolon.mathdef import (
+    Mesh,
+    MeshDataValue,
+    calculate_mesh_ext_adj,
+    calculate_mesh_octree,
+    calculate_shared_nodes,
+    vec3,
+)
 
 
 class SimpleMeshTestCase(TestCase):
@@ -33,7 +39,6 @@ class SimpleMeshTestCase(TestCase):
 
 
 class TestCalculateOctree(SimpleMeshTestCase):
-
     def test_calculate_octree(self):
         calculate_mesh_octree(self.mesh, "inds")
 
@@ -41,7 +46,6 @@ class TestCalculateOctree(SimpleMeshTestCase):
 
 
 class TestCalculateSharedNodes(SimpleMeshTestCase):
-
     def test_calculate_shared_nodes(self):
         result = calculate_shared_nodes(self.mesh.topos["inds"][0], np.array([0, 1]))
 

@@ -18,8 +18,11 @@
 
 
 from __future__ import annotations
-from typing import NamedTuple, Optional, Dict, Any, Tuple, Union
+
+from typing import Any, Dict, NamedTuple, Optional, Tuple, Union
+
 import numpy as np
+
 from ..utils import Namespace, first
 
 __all__ = ["Mesh", "MeshDataValue"]
@@ -27,6 +30,7 @@ __all__ = ["Mesh", "MeshDataValue"]
 
 class MeshDataValue(Namespace):
     """List of names and descriptions of known data objects that might appear in Mesh.other_data or Mesh.properties."""
+
     node = "Nodes"
     line = "Lines Indices"
     tri = "Triangles Indices"

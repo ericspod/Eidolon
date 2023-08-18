@@ -1,13 +1,12 @@
 import sys
+
+from panda3d.core import Material
 from PyQt5 import QtWidgets
 
 import eidolon.renderer
 import eidolon.ui
+from eidolon.mathdef import generate_axes_arrows, vec3
 from eidolon.scene import QtCameraController
-
-from eidolon.mathdef import vec3, generate_axes_arrows
-
-from panda3d.core import Material
 
 win = eidolon.ui.SimpleApp(1200, 800)
 
@@ -27,7 +26,7 @@ mesh.attach(win.cam)
 s = eidolon.renderer.shaders.make_shader_from_prefix("default_mesh")
 mesh.set_shader(s)
 
-m=Material()
+m = Material()
 # mesh.camnodes[0].set_material(m)
 
 win.exec()

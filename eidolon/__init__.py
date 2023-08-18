@@ -19,11 +19,11 @@
 Eidolon is the experimental medical imaging visualization framework.
 """
 
-from ._version import __version__, __appname__, __copyright__
-
 import eidolon.mathdef
 import eidolon.renderer
+import eidolon.resources
 import eidolon.scene
 import eidolon.ui
 import eidolon.utils
-import eidolon.resources
+
+from ._version import __appname__, __copyright__, __version__

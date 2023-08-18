@@ -1,16 +1,15 @@
 import sys
-import traceback
 import threading
+import traceback
+
 from PyQt5 import QtCore, QtGui
 
 import eidolon
-from eidolon.mathdef import vec3, generate_axes_arrows
-from eidolon.scene import QtCameraController
-from eidolon.ui import MainWindow, exec_ui, init_ui, CameraWidget
+from eidolon.mathdef import generate_axes_arrows, vec3
 from eidolon.renderer import OffscreenCamera, SimpleFigure
-from eidolon import config
-from eidolon.utils import Future
-
+from eidolon.scene import QtCameraController
+from eidolon.ui import CameraWidget, MainWindow, exec_ui, init_ui
+from eidolon.utils import Future, config
 
 conf = config.load_config()
 
@@ -37,7 +36,7 @@ verts, inds, norms, colors = generate_axes_arrows(5, 10)
 mesh = SimpleFigure("axes", verts, inds, norms, colors)
 mesh.attach(cam)
 
-model=win.treeView.model()
+model = win.treeView.model()
 
 # item=QtGui.QStandardItem(QtGui.QIcon(':/icons/document.png'),"foo")
 # item.setData("bar")
@@ -49,7 +48,6 @@ model=win.treeView.model()
 # item.appendRow(item1)
 #
 # win.treeView.expand(model.indexFromItem(item))
-
 
 
 win.show()

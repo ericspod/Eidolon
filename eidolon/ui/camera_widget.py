@@ -17,11 +17,12 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from typing import NamedTuple, Optional
-from PyQt5 import QtGui, QtCore, QtWidgets
 
-from ..utils import Namespace, EventDispatcher, timing
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 from ..renderer.camera import OffscreenCamera
 from ..renderer.render_base import RenderBase
+from ..utils import EventDispatcher, Namespace, timing
 from .threadsafe_calls import qtmainthread
 
 __all__ = ["CameraWidget", "CameraWidgetEvent", "WidgetEventDesc"]
@@ -47,8 +48,12 @@ class CameraWidgetEvent(Namespace):
 
 
 class CameraWidget(QtWidgets.QWidget):
-    def __init__(self, camera: OffscreenCamera,
-                 parent: Optional[QtWidgets.QWidget] = None, events: Optional[EventDispatcher] = None):
+    def __init__(
+        self,
+        camera: OffscreenCamera,
+        parent: Optional[QtWidgets.QWidget] = None,
+        events: Optional[EventDispatcher] = None,
+    ):
         super().__init__(parent)
 
         self.camera: OffscreenCamera = camera
@@ -62,7 +67,7 @@ class CameraWidget(QtWidgets.QWidget):
         self.redraw_timer.setSingleShot(True)
         self.redraw_timer.timeout.connect(self.repaint_on_ready)
 
-    def _trigger_event(self, name:str, evt=None):
+    def _trigger_event(self, name: str, evt=None):
         self.events.trigger_event(name, widget=self, event=evt)
 
     @property

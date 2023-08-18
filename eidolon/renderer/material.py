@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import Optional, Tuple, List
+from typing import Optional
 
+from panda3d.core import Material as PMaterial
+from panda3d.core import Shader, Texture, TextureStage
 
-from panda3d.core import Texture, TextureStage, Shader, Material as PMaterial
+from eidolon.utils import color
 
 __all__ = ["Material", "MAIN_TEX_NAME", "SPECTRUM_TEX_NAME"]
-
-color = Tuple[float, float, float, float]
 
 MAIN_TEX_NAME = "tex"
 SPECTRUM_TEX_NAME = "spec"

@@ -20,10 +20,14 @@ Eidolon is the experimental medical imaging visualization framework.
 """
 
 
-__appname__ = 'Eidolon Biomedical Framework'
+__appname__ = "Eidolon Biomedical Framework"
 __version_info__ = (0, 6, 99)  # global version, major/minor/patch, patch value 99 means development code from repo
-__version__ = '%i.%i.%i' % __version_info__
-__author__ = 'Eric Kerfoot'
+__version__ = "%i.%i.%i" % __version_info__
+__author__ = "Eric Kerfoot"
 __copyright__ = "Copyright (c) 2016-20 Eric Kerfoot, King's College London, all rights reserved. Licensed under the GPL (see LICENSE.txt)."
 __website__ = "https://ericspod.github.io/Eidolon"
 __verurl__ = "https://api.github.com/repos/ericspod/Eidolon/releases"
+
+if __name__ == "__main__":
+    print("Eidolon version:", __version__)
+    

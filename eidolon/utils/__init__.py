@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .event_dispatcher import *
-from .platform import *
 from .decorators import *
+from .event_dispatcher import *
+from .namespace import *
+from .path_utils import *
+from .platform import *
 from .routines import *
 from .thread_support import *
-from .path_utils import *
-from .namespace import *
+from .types import *

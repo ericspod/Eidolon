@@ -1,17 +1,14 @@
 import sys
+
+import numpy as np
+from panda3d.core import Texture
 from PyQt5 import QtWidgets
+from scipy.misc import face
 
 import eidolon.renderer
 import eidolon.ui
-
-from eidolon.mathdef import vec3, generate_plane, generate_axes_arrows
+from eidolon.mathdef import generate_axes_arrows, generate_plane, vec3
 from eidolon.renderer import create_texture_np
-
-import numpy as np
-
-from panda3d.core import Texture
-
-from scipy.misc import face
 
 mgr = eidolon.renderer.RenderBase()
 cam = eidolon.renderer.OffscreenCamera(mgr, "test", 400, 400)

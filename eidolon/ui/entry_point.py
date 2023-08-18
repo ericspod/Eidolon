@@ -16,20 +16,20 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from pathlib import Path
 import sys
-from eidolon.resources import read_text, has_resource
-from eidolon.mathdef import vec3
-from eidolon.ui import MainWindow, exec_ui, init_ui, add_search_path, CameraWidget
-from eidolon.renderer import OffscreenCamera
+from pathlib import Path
 
+from eidolon.mathdef import vec3
+from eidolon.renderer import Light, LightType, OffscreenCamera
+from eidolon.resources import has_resource, read_text
+from eidolon.ui import CameraWidget, MainWindow, add_search_path, exec_ui, init_ui
 
 __all__ = ["create_default_app", "default_entry_point"]
 
 
 def create_default_app(argv=None):
-    from eidolon.scene import QtCameraController
-    from eidolon.config import load_config, ConfigVarNames
+    from eidolon.scene import QtCameraController, SceneManager
+    from eidolon.utils.config import ConfigVarNames, load_config
 
     conf = load_config()
 
@@ -59,15 +59,23 @@ def create_default_app(argv=None):
 
     win.setCentralWidget(camwidget)
 
-    return app, win, cam, ctrl
+    mgr = SceneManager(conf, win)
+    mgr.cameras.append(cam)
+    mgr.controller = ctrl
+
+    amb = Light("amb", LightType.AMBIENT, (0.3, 0.3, 0.3, 1))
+    amb.attach(cam)
+    mgr.lights.append(amb)
+
+    return app, mgr
 
 
 def default_entry_point(argv=None):
     if argv is None:
         argv = sys.argv
 
-    app, win, _, _ = create_default_app(argv)
+    app, mgr = create_default_app(argv)
 
-    win.show()
+    mgr.win.show()
 
     exec_ui(app)

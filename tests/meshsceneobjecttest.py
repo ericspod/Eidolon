@@ -1,13 +1,14 @@
 import os
+
 import numpy as np
 
+from eidolon.mathdef import ElemType, Mesh, vec3
 from eidolon.renderer import Light, LightType, OffscreenCamera
-from eidolon.ui import MainWindow, init_ui, exec_ui, load_rc_file, CameraWidget
-from eidolon import config
-from eidolon.mathdef import vec3, Mesh, ElemType
-from eidolon.scene import ReprType, MeshSceneObject, QtCameraController, MeshScenePlugin, SceneManager
+from eidolon.scene import MeshSceneObject, MeshScenePlugin, QtCameraController, ReprType, SceneManager
+from eidolon.ui import CameraWidget, MainWindow, exec_ui, init_ui, load_rc_file
+from eidolon.utils import config
 
-scriptdir=os.path.dirname(__file__)
+scriptdir = os.path.dirname(__file__)
 
 # win = SimpleApp(1200, 800)
 
@@ -16,7 +17,7 @@ conf = config.load_config()
 app = init_ui()
 
 app.setStyle("plastique")
-sheet = load_rc_file("DefaultUIStyle", ":/css").decode('utf-8')
+sheet = load_rc_file("DefaultUIStyle", ":/css").decode("utf-8")
 
 app.setStyleSheet(sheet)
 
@@ -33,7 +34,7 @@ mgr.controller.attach_events(camwidget.events)
 
 win.setCentralWidget(camwidget)
 
-dat = np.load(scriptdir+"/data/linmesh.npz")
+dat = np.load(scriptdir + "/data/linmesh.npz")
 
 mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)}, {"field": (dat["d"], "inds")})
 

@@ -19,27 +19,15 @@
 from enum import Enum
 from typing import List, Optional
 
-from ..utils import first
-from .render_utils import create_simple_geom
-from .camera import OffscreenCamera
-from .material import Material, MAIN_TEX_NAME
-from ..mathdef.math_types import vec3, rotator, transform, BoundBox, Transformable
-
-from panda3d.core import (
-    NodePath,
-    GeomNode,
-    Geom,
-    TransparencyAttrib,
-    Texture,
-    TextureStage,
-    Shader,
-    BoundingBox,
-    BoundingSphere,
-    LQuaternionf,
-    RenderModeAttrib
-)
-
+from panda3d.core import BoundingBox, BoundingSphere, Geom, GeomNode, LQuaternionf
 from panda3d.core import Material as PMaterial
+from panda3d.core import NodePath, RenderModeAttrib, Shader, Texture, TextureStage, TransparencyAttrib
+
+from ..mathdef.math_types import BoundBox, Transformable, rotator, transform, vec3
+from ..utils import first
+from .camera import OffscreenCamera
+from .material import MAIN_TEX_NAME, Material
+from .render_utils import create_simple_geom
 
 __all__ = ["Figure", "SimpleFigure", "RenderMode"]
 

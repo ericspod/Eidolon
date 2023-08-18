@@ -18,14 +18,26 @@
 
 from __future__ import annotations
 
-import numpy as np
-from math import sin, cos, acos, atan2, sqrt, pi, inf
-from typing import Union, Optional, Tuple
+from math import acos, atan2, cos, inf, pi, sin, sqrt
+from typing import Optional, Tuple, Union
 
-from .math_utils import (FEPSILON, finv, fequals_eps, fclamp, fsign, len3, lensq3, angle_between, plane_norm,
-                         rotator_pitch,
-                         rotator_roll, rotator_yaw)
+import numpy as np
+
 from ..utils import cached_property
+from .math_utils import (
+    FEPSILON,
+    angle_between,
+    fclamp,
+    fequals_eps,
+    finv,
+    fsign,
+    len3,
+    lensq3,
+    plane_norm,
+    rotator_pitch,
+    rotator_roll,
+    rotator_yaw,
+)
 
 __all__ = ["vec3", "rotator", "ray", "transform", "BoundBox", "Transformable"]
 
@@ -161,14 +173,12 @@ class vec3:
 
     @cached_property
     def to_cylindrical(self) -> vec3:
-        return vec3(atan2(self._y, self._x), self._z, sqrt(self._y ** 2 + self._x ** 2))
+        return vec3(atan2(self._y, self._x), self._z, sqrt(self._y**2 + self._x**2))
 
     @cached_property
     def from_polar(self) -> vec3:
         return vec3(
-            cos(self._x) * sin(self._y) * self._z,
-            sin(self._y) * sin(self._x) * self._z,
-            cos(self._y) * self._z
+            cos(self._x) * sin(self._y) * self._z, sin(self._y) * sin(self._x) * self._z, cos(self._y) * self._z
         )
 
     @cached_property
@@ -176,8 +186,11 @@ class vec3:
         return vec3(cos(self._x) * self._z, sin(self._x) * self._z, self._y)
 
     def cross(self, other: vec3) -> vec3:
-        return vec3(self._y * other.z - self._z * other.y, self._z * other.x - self._x * other.z,
-                    self._x * other.y - self._y * other.x)
+        return vec3(
+            self._y * other.z - self._z * other.y,
+            self._z * other.x - self._x * other.z,
+            self._x * other.y - self._y * other.x,
+        )
 
     def dot(self, other: vec3) -> float:
         return self._x * other.x + self._y * other.y + self._z * other.z
@@ -202,11 +215,10 @@ class vec3:
 
     def in_obb(self, center: vec3, hx: vec3, hy: vec3, hz: vec3):
         diff: vec3 = self - center
-        return abs(hx.dot(diff)) <= hx.len_sq and abs(hy.dot(diff)) <= hy.len_sq and \
-               abs(hz.dot(diff)) <= hz.len_sq
+        return abs(hx.dot(diff)) <= hx.len_sq and abs(hy.dot(diff)) <= hy.len_sq and abs(hz.dot(diff)) <= hz.len_sq
 
     def in_sphere(self, center: vec3, radius: float) -> bool:
-        return self.dist_to_sq(center) <= (radius ** 2 + FEPSILON)
+        return self.dist_to_sq(center) <= (radius**2 + FEPSILON)
 
     def on_plane(self, planept: vec3, planenorm: vec3) -> bool:
         return fequals_eps(self.plane_dist(planept, planenorm), 0)
@@ -249,7 +261,6 @@ vec3.neg_inf = vec3(-inf, -inf, -inf)
 
 
 class rotator:
-
     @staticmethod
     def from_axis(axis: vec3, rads: float) -> rotator:
         if fequals_eps(rads, 0) or axis.is_zero:  # no rotation or bad axis
@@ -287,8 +298,9 @@ class rotator:
         return rotator(_x, _y, _z, _w)
 
     @staticmethod
-    def from_mat3x3(m00: float, m01: float, m02: float, m10: float, m11: float, m12: float, m20: float, m21: float,
-                    m22: float) -> rotator:
+    def from_mat3x3(
+        m00: float, m01: float, m02: float, m10: float, m11: float, m12: float, m20: float, m21: float, m22: float
+    ) -> rotator:
         tr: float = m00 + m11 + m22
 
         if tr > 0:
@@ -397,8 +409,12 @@ class rotator:
         return self.conjugate.norm
 
     def __eq__(self, other: rotator) -> bool:
-        return fequals_eps(self._x, other.x) and fequals_eps(self._y, other.y) and \
-               fequals_eps(self._z, other.z) and fequals_eps(self._w, other.w)
+        return (
+            fequals_eps(self._x, other.x)
+            and fequals_eps(self._y, other.y)
+            and fequals_eps(self._z, other.z)
+            and fequals_eps(self._w, other.w)
+        )
 
     @cached_property
     def yaw(self) -> float:
@@ -418,7 +434,7 @@ class rotator:
 
     @cached_property
     def len(self) -> float:
-        return sqrt(self._x ** 2 + self._y ** 2 + self._z ** 2 + self._w ** 2)
+        return sqrt(self._x**2 + self._y**2 + self._z**2 + self._w**2)
 
     @cached_property
     def norm(self) -> rotator:
@@ -494,13 +510,28 @@ class ray:
 
 class transform:
     @staticmethod
-    def from_values(tx: float = 0, ty: float = 0, tz: float = 0, sx: float = 0, sy: float = 0, sz: float = 0,
-                    rx: float = 0, ry: float = 0, rz: float = 0, rw: float = 1, is_inverse: bool = False) -> transform:
-
+    def from_values(
+        tx: float = 0,
+        ty: float = 0,
+        tz: float = 0,
+        sx: float = 0,
+        sy: float = 0,
+        sz: float = 0,
+        rx: float = 0,
+        ry: float = 0,
+        rz: float = 0,
+        rw: float = 1,
+        is_inverse: bool = False,
+    ) -> transform:
         return transform(vec3(tx, ty, tz), vec3(sx, sy, sz), rotator(rx, ry, rz, rw), is_inverse)
 
-    def __init__(self, trans: Optional[vec3] = None, scale: Optional[vec3] = None,
-                 rot: Optional[rotator] = None, is_inverse: bool = False):
+    def __init__(
+        self,
+        trans: Optional[vec3] = None,
+        scale: Optional[vec3] = None,
+        rot: Optional[rotator] = None,
+        is_inverse: bool = False,
+    ):
         self._trans = trans or vec3.zero
         self._scale = scale or vec3.one
         self._rot = rot or rotator()
@@ -536,8 +567,9 @@ class transform:
             xcorner: vec3 = self * (other * vec3.X)
             ycorner: vec3 = self * (other * vec3.Y)
 
-            rot: rotator = rotator.between_planes((xcorner - mincorner).norm, (ycorner - mincorner).norm, vec3.X,
-                                                  vec3.Y)
+            rot: rotator = rotator.between_planes(
+                (xcorner - mincorner).norm, (ycorner - mincorner).norm, vec3.X, vec3.Y
+            )
             scale: vec3 = rot / (maxcorner - mincorner)
 
             return transform(mincorner, scale, rot)
@@ -555,8 +587,12 @@ class transform:
         return transform(self._trans * -1, self._scale.inv, ~self._rot, not self._is_inverse)
 
     def __eq__(self, other: transform) -> bool:
-        return self._trans == other.trans and self._scale == other.scale and \
-               self._rot == other.rot and self._is_inverse == other.is_inverse
+        return (
+            self._trans == other.trans
+            and self._scale == other.scale
+            and self._rot == other.rot
+            and self._is_inverse == other.is_inverse
+        )
 
     def __repr__(self):
         return f"transform({self._rot}, {self._scale}, {self._rot}, {self._is_inverse})"
@@ -599,6 +635,7 @@ class BoundBox:
     @staticmethod
     def from_vertices(vertices) -> BoundBox:
         from .mesh_utils import calculate_bound_box
+
         xmin, ymin, zmin, xmax, ymax, zmax = calculate_bound_box(vertices)
         return BoundBox(vec3(xmin, ymin, zmin), vec3(xmax, ymax, zmax))
 

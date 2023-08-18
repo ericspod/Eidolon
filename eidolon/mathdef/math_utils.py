@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from math import asin, acos, atan2, sqrt, pi
+from math import acos, asin, atan2, pi, sqrt
 from typing import Tuple
 
-from .compile_support import jit
-
 import numpy as np
+
+from .compile_support import jit
 
 __all__ = [
     "FEPSILON",
@@ -43,7 +43,7 @@ __all__ = [
     "lerp_xi",
     "angle_between",
     "plane_norm",
-    "iter_to_np"
+    "iter_to_np",
 ]
 
 FEPSILON: float = 1e-10
@@ -112,15 +112,7 @@ def angle_between(x0, y0, z0, x1, y1, z1):
 
 @jit
 def plane_norm(
-    x0: float,
-    y0: float,
-    z0: float,
-    x1: float,
-    y1: float,
-    z1: float,
-    x2: float,
-    y2: float,
-    z2: float,
+    x0: float, y0: float, z0: float, x1: float, y1: float, z1: float, x2: float, y2: float, z2: float
 ) -> Tuple[float, float, float]:
     dx1 = x1 - x0
     dy1 = y1 - y0
@@ -226,16 +218,10 @@ def frange(start, stop=None, step=None):
         raise ValueError("Step must be positive and non-zero (step=%s)" % (str(step),))
 
     if stop < 0 or start < 0:
-        raise ValueError(
-            "All arguments must be positive (start=%s, stop=%s)"
-            % (str(start), str(stop))
-        )
+        raise ValueError("All arguments must be positive (start=%s, stop=%s)" % (str(start), str(stop)))
 
     if stop < start:
-        raise ValueError(
-            "Stop value must be greater than start value (start=%s, stop=%s)"
-            % (str(start), str(stop))
-        )
+        raise ValueError("Stop value must be greater than start value (start=%s, stop=%s)" % (str(start), str(stop)))
 
     # Kahan algorithm (W. Kahan. 1965. Pracniques: further remarks on reducing truncation errors. Commun. ACM 8)
 
@@ -267,7 +253,7 @@ def iter_to_np(values, dtype=None):
     """Convert an iterable of iterables into a 2D Numpy array, dtype will be float32 or int32 if not provided."""
     if isinstance(values, np.ndarray):
         return values
-    
+
     values = list(values)
     v0 = tuple(values[0])
 

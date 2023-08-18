@@ -18,5 +18,5 @@
 
 if __name__ == "__main__":
     from eidolon.ui import default_entry_point
+
     default_entry_point()
-    

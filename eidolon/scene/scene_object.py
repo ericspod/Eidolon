@@ -20,9 +20,9 @@ from typing import List, Optional
 
 import numpy as np
 
-from ..utils import cached_property, Namespace
-from ..mathdef import Transformable, BoundBox, transform
+from ..mathdef import BoundBox, Transformable, transform
 from ..renderer import Figure, Material
+from ..utils import Namespace, cached_property
 
 __all__ = ["ReprType", "SceneObject", "SceneObjectRepr"]
 
@@ -31,6 +31,7 @@ class ReprType(Namespace):
     """
     Stores the types of visual representations data can have.
     """
+
     # mesh types
     vertex = "Mesh Vertices"
     point = "Mesh Points"
@@ -52,7 +53,7 @@ class SceneObject:
     represent the data store. The representations are stored as children of the originating SceneObject.
     """
 
-    def __init__(self, name:str, plugin=None, **other_values):
+    def __init__(self, name: str, plugin=None, **other_values):
         self._name: str = name  # object name
         self.reprs: list = []  # list of current representations
         self.reprcount: int = 0  # number of representations created, used to ensure unique names
@@ -130,7 +131,7 @@ class SceneObjectRepr(Transformable):
     figures, triangle meshes for rendering solid objects, texture planes for representing imaging data, and so forth.
     """
 
-    def __init__(self, parent: SceneObject, repr_type: str, repr_count: int, matname: str = 'Default'):
+    def __init__(self, parent: SceneObject, repr_type: str, repr_count: int, matname: str = "Default"):
         super().__init__()
 
         self.parent: SceneObject = parent  # parent SceneObject instance
@@ -152,7 +153,7 @@ class SceneObjectRepr(Transformable):
     @property
     def label(self):
         """Returns the UI label, this may be different from the name and include additional information."""
-        return self._name + ' <' + self.parent.name + '>'
+        return self._name + " <" + self.parent.name + ">"
 
     @property
     def name(self):

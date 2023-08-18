@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import Set, Dict, List, Callable
 from collections import defaultdict
 from threading import RLock
-from weakref import ref, WeakMethod
+from typing import Callable, Dict, List, Set
+from weakref import WeakMethod, ref
 
 __all__ = ["EventDispatcher"]
 

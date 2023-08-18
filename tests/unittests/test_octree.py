@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from eidolon.mathdef import vec3, Octree, generate_cylinder
 from unittest import TestCase
+
 from numpy.testing import assert_array_equal
+
+from eidolon.mathdef import Octree, generate_cylinder, vec3
 
 
 class TestOctree(TestCase):

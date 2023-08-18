@@ -69,4 +69,5 @@ class Namespace(metaclass=NamespaceMeta):
     extensions can add to or modify to change system behaviour. To define a set of static constants with a separate type
     definition, use Enum instead.
     """
+
     pass

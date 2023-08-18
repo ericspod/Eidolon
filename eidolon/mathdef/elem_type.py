@@ -29,15 +29,16 @@ y    |\    |  |
 
 """
 from __future__ import annotations
-import itertools
+
 import functools
+import itertools
 import re
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from ..utils import Namespace, NamespaceMeta, cached_property, is_iterable_notstr, mulsum
-from .math_utils import lerp, lerp_xi, FEPSILON
-from .basis_functions import lagrange_basis, ShapeType
+from .basis_functions import ShapeType, lagrange_basis
 from .math_types import vec3
+from .math_utils import FEPSILON, lerp, lerp_xi
 
 __all__ = ["ElemType", "ElemTypeDef", "BasisGenFuncs", "get_xi_elem_directions"]
 
@@ -47,10 +48,22 @@ class ElemTypeDef(object):
     Defines a mesh element type, including the basis function and its face definition.
     """
 
-    def __init__(self, shape_type: str, basis_name: str, desc: str, order: int, xis: list, vertices: list,
-                 faces: list, edges: list, face_xi_norms: list, xi_elem_dirs: list, basis: Callable,
-                 point_search: Optional[Callable], face_type: Optional[ElemTypeDef]):
-
+    def __init__(
+        self,
+        shape_type: str,
+        basis_name: str,
+        desc: str,
+        order: int,
+        xis: list,
+        vertices: list,
+        faces: list,
+        edges: list,
+        face_xi_norms: list,
+        xi_elem_dirs: list,
+        basis: Callable,
+        point_search: Optional[Callable],
+        face_type: Optional[ElemTypeDef],
+    ):
         self.shape_type: str = shape_type  # geometry (tet, hex, etc)
         self.dim: int = ShapeType[shape_type].dim  # spatial dimensions
         self.is_simplex: bool = ShapeType[shape_type].is_simplex  # whether the element is simplex (tri,tet) or not
@@ -150,15 +163,17 @@ class ElemTypeDef(object):
         """
         Evaluates the basis function at the xi point, multiplies the values by the coefficients, and sums the result.
         """
-        assert len(self.xis) in (0, len(vals)), 'Number of values (%i) does not match control point count (%i)' % (
-            len(vals), len(self.xis))
+        assert len(self.xis) in (0, len(vals)), "Number of values (%i) does not match control point count (%i)" % (
+            len(vals),
+            len(self.xis),
+        )
         return self.apply_coeffs(vals, self.basis(xi0, xi1, xi2, *args, **kwargs))
 
     def apply_coeffs(self, vals, coeffs):
         """Apply the given coefficients to the given values and return the summed result."""
         assert is_iterable_notstr(vals)
         assert is_iterable_notstr(coeffs)
-        assert len(vals) == len(coeffs), '%i != %i' % (len(vals), len(coeffs))
+        assert len(vals) == len(coeffs), "%i != %i" % (len(vals), len(coeffs))
 
         if isinstance(vals[0], (list, tuple)):
             result = [0] * len(vals[0])
@@ -353,8 +368,19 @@ def nodal_lagrange_type(shape, desc, order):
         face_type = ElemType[face_name]
 
     return ElemTypeDef(
-        shape, 'NL', desc, order, xis, vertices, faces, edges, face_norms, xi_elem_dirs, basis, point_search_elem,
-        face_type
+        shape,
+        "NL",
+        desc,
+        order,
+        xis,
+        vertices,
+        faces,
+        edges,
+        face_norms,
+        xi_elem_dirs,
+        basis,
+        point_search_elem,
+        face_type,
     )
 
 
@@ -368,6 +394,7 @@ class BasisGenFuncs(Namespace):
     The nodal lagrange function is thus stored under the key "NL" and contains ("Nodal Lagrange", nodal_lagrange_type).
     The function "nodal_lagrange_type" accepts the arguments (shape, desc, order) and returns a ElemTypeDef object.
     """
+
     NL = ("Nodal Lagrange", nodal_lagrange_type)
 
 
@@ -383,7 +410,7 @@ class ElemTypeMeta(NamespaceMeta):
         """
         nsplit = re.split("([a-zA-Z]+)(\d+)([a-zA-Z0-9]+)", name)
 
-        assert len(nsplit) > 3, 'Bad name: ' + str(nsplit) + ' ' + str(name)
+        assert len(nsplit) > 3, "Bad name: " + str(nsplit) + " " + str(name)
 
         shape = nsplit[1]
         order = int(nsplit[2])
@@ -398,7 +425,7 @@ class ElemTypeMeta(NamespaceMeta):
         if basistype not in BasisGenFuncs:
             raise ValueError(f"Basis Function type '{basistype}' not recognized")
 
-        ordernames = ['Linear', 'Quadratic', 'Cubic', 'Quartic']
+        ordernames = ["Linear", "Quadratic", "Cubic", "Quartic"]
 
         orderstr = ordernames[order - 1] if order <= len(ordernames) else f"Order {order}"
 
@@ -466,4 +493,5 @@ class ElemType(metaclass=ElemTypeMeta):
     For example, Tet1NL will cause the nodal lagrange (NL) basis generator function to be pulled from BasisGenFuncs and
     the values "Tet" and 1 passed as the shape and order values. The resulting object is keyed to Tet1NL internally.
     """
+
     Point = ElemTypeDef(ShapeType._Point, "NL", "Point", 0, [], [], [], [], [], [], None, None, None)

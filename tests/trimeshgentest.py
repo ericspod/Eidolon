@@ -1,13 +1,11 @@
 import sys
 
 import numpy as np
-
 from PyQt5 import QtWidgets
 
 import eidolon.renderer
 import eidolon.ui
-
-from eidolon.mathdef import vec3, Mesh, ElemType, calculate_tri_mesh, calculate_field, calculate_field_colors
+from eidolon.mathdef import ElemType, Mesh, calculate_field, calculate_field_colors, calculate_tri_mesh, vec3
 
 cam = eidolon.renderer.OffscreenCamera("test", 400, 400)
 
@@ -84,4 +82,3 @@ appw.setCentralWidget(camwidget)
 appw.show()
 
 eidolon.ui.exec_ui(app)
-

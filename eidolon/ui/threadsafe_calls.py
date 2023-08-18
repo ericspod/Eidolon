@@ -19,6 +19,7 @@
 import sys
 import traceback
 from functools import wraps
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 

@@ -17,12 +17,23 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import os
-import shutil
 import re
+import shutil
 import time
 
-__all__ = ["split_path_ext", "get_win_drives", "check_valid_path", "get_valid_filename", "has_ext", "ensure_ext",
-           "time_backup_file", "is_same_file", "is_text_file", "copy_file_safe", "rename_file"]
+__all__ = [
+    "split_path_ext",
+    "get_win_drives",
+    "check_valid_path",
+    "get_valid_filename",
+    "has_ext",
+    "ensure_ext",
+    "time_backup_file",
+    "is_same_file",
+    "is_text_file",
+    "copy_file_safe",
+    "rename_file",
+]
 
 
 def split_path_ext(path, full_ext=False):
@@ -33,9 +44,9 @@ def split_path_ext(path, full_ext=False):
     """
     path, basename = os.path.split(path)
 
-    if full_ext and '.' in basename:
-        basename, ext = basename.split('.', 1)  # consider everything to the right of the first . as the extension
-        ext = '.' + ext
+    if full_ext and "." in basename:
+        basename, ext = basename.split(".", 1)  # consider everything to the right of the first . as the extension
+        ext = "." + ext
     else:
         basename, ext = os.path.splitext(basename)  # consider everything to the right of the last . as the extension
 
@@ -45,8 +56,9 @@ def split_path_ext(path, full_ext=False):
 def get_win_drives():
     """Returns available Windows drive letters."""
     import win32api
+
     d = win32api.GetLogicalDriveStrings()
-    return [dd[0] for dd in d.split('\x00') if dd]
+    return [dd[0] for dd in d.split("\x00") if dd]
 
 
 def check_valid_path(path):
@@ -56,7 +68,7 @@ def check_valid_path(path):
     the extension contains invalid characters.
     """
     pdir, basename, ext = split_path_ext(path)
-    invalidchars = '\\/:;*?!<>|"\'\0'
+    invalidchars = "\\/:;*?!<>|\"'\0"
 
     if os.path.exists(path):
         return 0
@@ -77,7 +89,7 @@ def get_valid_filename(name):
 
 def has_ext(path, *exts):
     """Returns True if the filename `path` has any of the extensions in `exts`, which can start with a period or not."""
-    return any(path.endswith(('' if e[0] == '.' else '.') + e) for e in exts)
+    return any(path.endswith(("" if e[0] == "." else ".") + e) for e in exts)
 
 
 def ensure_ext(path, ext, replace_ext=False):
@@ -101,7 +113,7 @@ def time_backup_file(filename, back_dir=None):
     if os.path.exists(filename):
         root, name = os.path.split(filename)
         back_dir = back_dir or root
-        timefile = '%s.%s.old' % (name, time.time())
+        timefile = "%s.%s.old" % (name, time.time())
         shutil.copyfile(filename, os.path.join(back_dir, timefile))
         return timefile
 
@@ -111,7 +123,7 @@ def is_same_file(src, dst):
     if not os.path.exists(src) or not os.path.exists(dst):
         return False
 
-    if hasattr(os.path, 'samefile') and os.path.samefile(src, dst):
+    if hasattr(os.path, "samefile") and os.path.samefile(src, dst):
         return True
 
     if os.path.normcase(os.path.abspath(src)) == os.path.normcase(os.path.abspath(dst)):
@@ -123,7 +135,7 @@ def is_same_file(src, dst):
 def is_text_file(filename, bufferlen=512):
     """Checks the first `bufferlen` characters in `filename` to assess whether the file is a text file or not."""
     buf = open(filename).read(bufferlen)
-    return '\0' not in buf  # FIXME: maybe something a bit more involved than just checking for null characters?
+    return "\0" not in buf  # FIXME: maybe something a bit more involved than just checking for null characters?
 
 
 def copy_file_safe(src, dst, overwrite_file=False):
@@ -150,11 +162,11 @@ def rename_file(oldpath, newname, move_file=True, overwrite_file=False):
     newpath = os.path.join(olddir, newname + ext)
 
     if not os.path.exists(oldpath):
-        raise IOError('Cannot move %r to %r, source file does not exist' % (oldpath, newpath))
+        raise IOError("Cannot move %r to %r, source file does not exist" % (oldpath, newpath))
     elif os.path.exists(newpath) and not overwrite_file:
-        raise IOError('Cannot move %r to %r, destination file already exists' % (oldpath, newpath))
+        raise IOError("Cannot move %r to %r, destination file already exists" % (oldpath, newpath))
     elif is_same_file(oldpath, newpath):
-        raise IOError('File names %r and %r refer to the same file' % (oldpath, newpath))
+        raise IOError("File names %r and %r refer to the same file" % (oldpath, newpath))
     elif move_file:
         shutil.move(oldpath, newpath)
 

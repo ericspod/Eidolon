@@ -19,30 +19,36 @@
 from typing import Optional
 
 import numpy as np
-
 from panda3d.core import (
-    GraphicsPipe,
-    NodePath,
-    Lens, Camera,
+    Camera,
     FrameBufferProperties,
     GraphicsOutput,
+    GraphicsPipe,
+    Lens,
+    LPoint2f,
+    LPoint3f,
+    NodePath,
     Texture,
     WindowProperties,
-    LVecBase4f,
-    LPoint3f,
-    LPoint2f
 )
 
-from .render_base import RenderBase
-from eidolon.mathdef import vec3, BoundBox, ray
+from eidolon.mathdef import BoundBox, ray, vec3
+from eidolon.renderer.render_base import RenderBase
+from eidolon.utils import color
 
 __all__ = ["OffscreenCamera"]
 
 
 class OffscreenCamera:
-
-    def __init__(self, name: str, width: int = 400, height: int = 400, sort: int = -100,
-                 clear_color: LVecBase4f = LVecBase4f(0.1, 0.1, 0.1, 1), rbase: Optional[RenderBase] = None):
+    def __init__(
+        self,
+        name: str,
+        width: int = 400,
+        height: int = 400,
+        sort: int = -100,
+        clear_color: color = (0.1, 0.1, 0.1, 1),
+        rbase: Optional[RenderBase] = None,
+    ):
         self.rbase: RenderBase = rbase or RenderBase.instance()
         self.name: str = name
 
@@ -84,12 +90,16 @@ class OffscreenCamera:
 
             self.set_clear_color(clear_color)
 
-    def set_clear_color(self, clear_color: LVecBase4f):
+    def set_clear_color(self, clear_color: color):
         if clear_color is None:
             self.buffer.set_clear_active(GraphicsOutput.RTPColor, False)
         else:
             self.buffer.set_clear_color(clear_color)
             self.buffer.set_clear_active(GraphicsOutput.RTPColor, True)
+
+    def get_clear_color(self):
+        clear_active = self.buffer.get_clear_active(GraphicsOutput.RTPColor)
+        return tuple(self.buffer.get_clear_color()) if clear_active else None
 
     def get_memory_image(self):
         if not self.texture.might_have_ram_image():

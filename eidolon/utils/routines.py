@@ -16,13 +16,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import operator
 import itertools
-from typing import Iterable
+import operator
 from functools import reduce
+from typing import Iterable
 
-__all__ = ["is_iterable_notstr", "fcomp", "first", "last",
-           "list_sum", "zip_with", "mulsum", "successive", "group"]
+__all__ = ["is_iterable_notstr", "fcomp", "first", "last", "list_sum", "zip_with", "mulsum", "successive", "group"]
 
 
 def is_iterable_notstr(val) -> bool:

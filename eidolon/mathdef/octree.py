@@ -17,12 +17,14 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from __future__ import annotations
+
 import operator
 from typing import Callable, Iterable
 
 import numpy as np
-from .math_types import vec3, BoundBox
-from ..utils import list_sum, first
+
+from ..utils import first, list_sum
+from .math_types import BoundBox, vec3
 
 
 class Octree:
@@ -57,15 +59,28 @@ class Octree:
         return vec3(x, y, z)
 
     @staticmethod
-    def from_mesh(depth: int, nodes: np.array, inds: np.array, margins: float = 0.05,
-                  eq_func: Callable = None, add_nodes: bool = False):
+    def from_mesh(
+        depth: int,
+        nodes: np.array,
+        inds: np.array,
+        margins: float = 0.05,
+        eq_func: Callable = None,
+        add_nodes: bool = False,
+    ):
         aabb = BoundBox.from_vertices(nodes)
         octree = Octree(depth, aabb.diag * (1.0 + margins), aabb.center, eq_func)
         octree.add_mesh(nodes, inds, add_nodes)
         return octree
 
-    def __init__(self, depth: int, dim: vec3, parentcenter: vec3, eq_func: Callable = None, octant: int = 8,
-                 parent: Octree = None):
+    def __init__(
+        self,
+        depth: int,
+        dim: vec3,
+        parentcenter: vec3,
+        eq_func: Callable = None,
+        octant: int = 8,
+        parent: Octree = None,
+    ):
         """
         Initializes a new self-contained octree or an octant within one. When creating a new octree, `octant' and
         `parent' must be left with their default values, `depth' will define how many levels of sub-octants to create,
@@ -89,7 +104,7 @@ class Octree:
         self.leafdata = []
         self.eq_func = operator.eq if eq_func is None else eq_func
 
-        self.name = 'Oc' if self.parent is None else self.parent.name + str(self.octant)
+        self.name = "Oc" if self.parent is None else self.parent.name + str(self.octant)
         self.subtrees = []
 
         if depth != 0:
@@ -97,7 +112,7 @@ class Octree:
 
     @property
     def octant_id(self):
-        assert self.depth <= 16, 'Cannot create unique IDs for octrees greater than 16 in depth.'
+        assert self.depth <= 16, "Cannot create unique IDs for octrees greater than 16 in depth."
         pid = 0 if self.parent is None else self.parent.octant_id
         return pid << 4 | self.octant
 

@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import re
 import contextlib
+import re
 from io import StringIO
 
 from PyQt5 import QtCore, uic
@@ -26,12 +26,21 @@ from eidolon import resources
 
 __all__ = ["load_ui", "load_res_layout", "add_search_path"]
 
-restag = re.compile("<resources>.*</resources>", flags=re.DOTALL)  # matches the resource tags in the ui files
+# restag = re.compile("<resources>.*</resources>", flags=re.DOTALL)  # matches the resource tags in the ui files
+
+ui_replacements = [
+    ("<resources>.*</resources>", ""),  # remove the resources section from the XML
+    (">\\:/([^/]+)/([^<]+)<", ">\\1:\\2<"),  # replace every ':/path/filename.ext' with 'path:filename.ext'
+]
+
 
 def load_ui(xmlstr):
     """Loads the given XML ui file data and returns the created type."""
-    s = re.sub(restag, "", xmlstr)  # get rid of the resources section in the XML
-    uiclass, _ = uic.loadUiType(StringIO(s))  # create a local type definition
+    # s = re.sub(restag, "", xmlstr)  # get rid of the resources section in the XML
+    for p, r in ui_replacements:
+        xmlstr = re.sub(p, r, xmlstr, flags=re.DOTALL)
+
+    uiclass, _ = uic.loadUiType(StringIO(xmlstr))  # create a local type definition
     return uiclass
 
 

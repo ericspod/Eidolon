@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import os
-import sys
-import time
-import platform
 import logging
-import threading
+import os
+import platform
 import subprocess
-from pathlib import Path
+import sys
+import threading
+import time
 from enum import Enum
+from pathlib import Path
 
 from .path_utils import ensure_ext
 
@@ -58,14 +58,14 @@ def add_path_variable(varname, path, append=True):
     original variable are moved to the end to prevent consecutive os.pathsep characters appearing in the variable. If
     `varname` does not name a variable with text it will be set to `path`.
     """
-    var = os.environ.get(varname, '').strip()
+    var = os.environ.get(varname, "").strip()
 
     if var:  # if the variable exists and has text
         paths = [p.strip() for p in var.split(os.pathsep)]  # split by the separator and strip whitespace just in case
         paths.insert(len(paths) if append else 0, path)  # append or prepend `path'
 
-        if '' in paths:  # need to move the blank path to the end to prevent :: from appearing in the variable
-            paths = list(filter(bool, paths)) + ['']
+        if "" in paths:  # need to move the blank path to the end to prevent :: from appearing in the variable
+            paths = list(filter(bool, paths)) + [""]
     else:
         paths = [path]  # variable is new so only text is `path'
 
@@ -80,7 +80,7 @@ def set_trace():
             filename = frame.f_code.co_filename
             threadname = threading.current_thread().name
 
-            if 'threading' in filename:  # ignore thread code tracing
+            if "threading" in filename:  # ignore thread code tracing
                 return None
 
             if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
@@ -95,7 +95,7 @@ def set_trace():
     sys.settrace(trace)
 
 
-def set_logging(logfile=None, filemode='a', level=logging.DEBUG):
+def set_logging(logfile=None, filemode="a", level=logging.DEBUG):
     """
     Enables logging to the given file, or the default log file is not given, with the given filemode and log level.
     Returns the log file path.
@@ -103,18 +103,15 @@ def set_logging(logfile=None, filemode='a', level=logging.DEBUG):
 
     if logfile is None:
         from ..__init__ import APPDATADIR, LOGFILE
+
         datadir = Path(APPDATADIR).expanduser()
         logfile = str(datadir / LOGFILE)
 
     logging.basicConfig(
-        format='%(asctime)s %(message)s',
-        filename=logfile,
-        filemode=filemode,
-        level=level,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format="%(asctime)s %(message)s", filename=logfile, filemode=filemode, level=level, datefmt="%Y-%m-%d %H:%M:%S"
     )
     logging.getLogger().setLevel(level)
-    logging.info('Start log')
+    logging.info("Start log")
     logging.raiseExceptions = False  # stop exception prints about the log file being closed when writing traces
 
     return logfile
@@ -130,6 +127,7 @@ def process_exists(pid):
 
         import ctypes
         import ctypes.wintypes
+
         kernel32 = ctypes.windll.kernel32
 
         handle = kernel32.OpenProcess(_PROCESS_QUERY_INFORMATION, 0, pid)
@@ -156,10 +154,12 @@ def get_username():
     if is_windows:
         import win32api
         import win32con
+
         hostuname = win32api.GetUserNameEx(win32con.NameSamCompatible)
-        return str(hostuname.split('\\')[-1])
+        return str(hostuname.split("\\")[-1])
     else:
         import pwd
+
         return pwd.getpwuid(os.getuid()).pw_name
 
 
@@ -177,21 +177,21 @@ def exec_batch_program(exefile, *exeargs, timeout=None, cwd=None, env=None, logc
     """
 
     exefile = os.path.abspath(exefile)
-    output = ''
+    output = ""
     errcode = 0
 
     if is_windows:
-        exefile = ensure_ext(exefile, '.exe')
+        exefile = ensure_ext(exefile, ".exe")
 
     if logcmd:
         print(exefile, exeargs, f"cwd={cwd} env={env} timeout={timeout} logfile={logfile}", flush=True)
 
     if not os.path.isfile(exefile):
-        raise IOError('Cannot find program %r' % exefile)
+        raise IOError("Cannot find program %r" % exefile)
 
     # if log file given, open it to receive output, otherwise send output to pipe
     if logfile is not None:
-        stdout = open(logfile, 'w+')
+        stdout = open(logfile, "w+")
     else:
         stdout = subprocess.PIPE
 
@@ -214,7 +214,7 @@ def exec_batch_program(exefile, *exeargs, timeout=None, cwd=None, env=None, logc
 
         if tm <= 0:
             proc.kill()
-            output = 'Process %r failed to complete after %.3f seconds\n' % (exefile, timeout)
+            output = "Process %r failed to complete after %.3f seconds\n" % (exefile, timeout)
             errcode = 1
 
     out, _ = proc.communicate()
@@ -230,9 +230,8 @@ def exec_batch_program(exefile, *exeargs, timeout=None, cwd=None, env=None, logc
         stdout.close()
 
     try:
-        out = out.decode('utf-8')
+        out = out.decode("utf-8")
     except:
         pass
 
-    return returncode, output + (out or '')
-
+    return returncode, output + (out or "")

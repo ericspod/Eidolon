@@ -1,16 +1,14 @@
 import sys
-from PyQt5 import QtWidgets
 
 import numpy as np
+from panda3d.core import Shader, TextureStage
+from PyQt5 import QtWidgets
 from scipy.ndimage import gaussian_filter
 
 import eidolon.renderer
 import eidolon.ui
-
-from eidolon.mathdef import vec3, rotator, transform, generate_center_circle, generate_axes_arrows
+from eidolon.mathdef import generate_axes_arrows, generate_center_circle, rotator, transform, vec3
 from eidolon.renderer import create_texture_np
-
-from panda3d.core import Shader, TextureStage
 
 app = QtWidgets.QApplication(sys.argv)
 
@@ -88,12 +86,7 @@ num_items = 9
 verts = [(-10, 0, -10), (10, 0, -10), (-10, 0, 10), (10, 0, 10)]
 inds = [(0, 1, 2), (1, 3, 2)]
 norms = [(0, -1, 0)] * len(verts)
-colors = [
-    (1.0, 0.0, 0.0, 1.0),
-    (0.0, 1.0, 0.0, 1.0),
-    (0.0, 0.0, 1.0, 1.0),
-    (1.0, 1.0, 1.0, 0.0),
-]
+colors = [(1.0, 0.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0), (1.0, 1.0, 1.0, 0.0)]
 texcoords = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0)]
 
 fig = eidolon.renderer.SimpleFigure("quad", verts, inds, norms, colors, texcoords)

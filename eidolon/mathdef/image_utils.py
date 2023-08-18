@@ -24,9 +24,9 @@ __all__ = ["generate_center_circle", "generate_center_sphere"]
 
 def generate_center_circle(width, height, radius):
     x, y = np.meshgrid(np.linspace(-1, 1, width), np.linspace(-1, 1, height))
-    return ((x ** 2 + y ** 2) <= radius ** 2).astype(np.float32)
+    return ((x**2 + y**2) <= radius**2).astype(np.float32)
 
 
 def generate_center_sphere(width, height, depth, radius):
     x, y, z = np.meshgrid(np.linspace(-1, 1, width), np.linspace(-1, 1, height), np.linspace(-1, 1, depth))
-    return ((x ** 2 + y ** 2 + z ** 2) <= radius ** 2).astype(np.float32)
+    return ((x**2 + y**2 + z**2) <= radius**2).astype(np.float32)

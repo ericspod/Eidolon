@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-import os
 import contextlib
+import os
 from functools import partial
-from PyQt5 import QtWidgets, QtGui
+
+from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
 from .threadsafe_calls import qtmainthread
@@ -85,8 +86,8 @@ def set_collapsible_groupbox(box, is_visible=True):
     w = QtWidgets.QWidget()
     w.setLayout(box.layout())
     w.setContentsMargins(0, 0, 0, 0)
-    w.setStyleSheet('.QWidget{background-color:0x00000000;}')
-    box.setStyleSheet('.QGroupBox::title { padding-left:-1px; }')
+    w.setStyleSheet(".QWidget{background-color:0x00000000;}")
+    box.setStyleSheet(".QGroupBox::title { padding-left:-1px; }")
     layout = QtWidgets.QVBoxLayout(box)
     layout.addWidget(w)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -206,10 +207,10 @@ def create_menu(title, values, default_func=lambda v: None, parent=None):
         return partial(_func, _val)
 
     for val in values:
-        if val == '---':
+        if val == "---":
             menu.addSeparator()
         elif isinstance(val, list):
-            menu.addMenu(create_menu('', val, default_func, menu))
+            menu.addMenu(create_menu("", val, default_func, menu))
         else:
             if isinstance(val, str):
                 func = default_func
@@ -256,7 +257,7 @@ def choose_str_dialog(title, defaultval, parent, callback):
     When the dialog closes, the callable `callback` is called with the given string value as the only argument.
     """
 
-    text, ok = QtWidgets.QInputDialog.getText(parent, 'Input String', title, text=defaultval)
+    text, ok = QtWidgets.QInputDialog.getText(parent, "Input String", title, text=defaultval)
     if ok:
         callback(str(text))
 
@@ -304,8 +305,9 @@ def choose_str_dialog(title, defaultval, parent, callback):
 
 
 @qtmainthread
-def choose_file_dialog(title, parent, opendir=None, filterstr='', is_open=True,
-                       choose_multiple=False, confirm_overwrite=True):
+def choose_file_dialog(
+    title, parent, opendir=None, filterstr="", is_open=True, choose_multiple=False, confirm_overwrite=True
+):
     """
     Return a list of chosen files selected from a dialog box. If `is_open` is True the dialog is for selecting files to
     open, allowing the choice of multiple files if `choose_multiple` is True. The dialog is for selecting a file to save
@@ -329,7 +331,7 @@ def choose_file_dialog(title, parent, opendir=None, filterstr='', is_open=True,
         fname = QtWidgets.QFileDialog.getSaveFileName(parent, title, opendir, filterstr, "", options)
         result = [str(fname[0])]
 
-    return list(filter(bool,result))
+    return list(filter(bool, result))
 
 
 @qtmainthread

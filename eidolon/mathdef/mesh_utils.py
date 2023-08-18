@@ -17,19 +17,30 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import math
 import itertools
+import math
 from functools import lru_cache
+
 import numpy as np
-from .math_types import vec3, rotator
+
+from .math_types import rotator, vec3
 from .math_utils import frange
 
 __all__ = [
-    "generate_plane", "generate_cube", "calculate_aabb_corners",
-    "calculate_bound_box", "generate_cylinder", "generate_arrow", "generate_sphere",
-    "generate_axes_arrows", "generate_tri_normals", "add_indices",
-    "generate_line_cuboid", "divide_tri_to_tri_mesh", "divide_quad_to_tri_mesh", 
-    "generate_separate_tri_mesh"
+    "generate_plane",
+    "generate_cube",
+    "calculate_aabb_corners",
+    "calculate_bound_box",
+    "generate_cylinder",
+    "generate_arrow",
+    "generate_sphere",
+    "generate_axes_arrows",
+    "generate_tri_normals",
+    "add_indices",
+    "generate_line_cuboid",
+    "divide_tri_to_tri_mesh",
+    "divide_quad_to_tri_mesh",
+    "generate_separate_tri_mesh",
 ]
 
 
@@ -73,8 +84,16 @@ def calculate_aabb_corners(vmin: vec3, vmax: vec3):
     xmin, ymin, zmin = vmin
     xmax, ymax, zmax = vmax
 
-    return vmin, vec3(xmax, ymin, zmin), vec3(xmin, ymax, zmin), vec3(xmax, ymax, zmin), \
-           vec3(xmin, ymin, zmax), vec3(xmax, ymin, zmax), vec3(xmin, ymax, zmax), vmax
+    return (
+        vmin,
+        vec3(xmax, ymin, zmin),
+        vec3(xmin, ymax, zmin),
+        vec3(xmax, ymax, zmin),
+        vec3(xmin, ymin, zmax),
+        vec3(xmax, ymin, zmax),
+        vec3(xmin, ymax, zmax),
+        vmax,
+    )
 
 
 def add_indices(indices, offset):
@@ -173,9 +192,14 @@ def generate_cube(refine: int):
     pnodes, pinds, pxis = generate_plane(refine)
 
     # define each face as a rotation of the original plane after being translated by (0,0,0.5)
-    faces = [rotator.from_axis(vec3.X, 0), rotator.from_axis(vec3.X, math.pi), rotator.from_axis(vec3.X, math.pi / 2),
-             rotator.from_axis(vec3.X, -math.pi / 2), rotator.from_axis(vec3.Y, math.pi / 2),
-             rotator.from_axis(vec3.Y, -math.pi / 2)]
+    faces = [
+        rotator.from_axis(vec3.X, 0),
+        rotator.from_axis(vec3.X, math.pi),
+        rotator.from_axis(vec3.X, math.pi / 2),
+        rotator.from_axis(vec3.X, -math.pi / 2),
+        rotator.from_axis(vec3.Y, math.pi / 2),
+        rotator.from_axis(vec3.Y, -math.pi / 2),
+    ]
 
     for rot in faces:
         inds += [(i + len(nodes), j + len(nodes), k + len(nodes)) for i, j, k in pinds]
@@ -309,17 +333,42 @@ def generate_sphere(refine=0):
 
     # define the points of an icosahedron
     nodes = [
-        vec3(0, 1, gold), vec3(0, -1, gold), vec3(0, 1, -gold), vec3(0, -1, -gold),  # YZ-plane
-        vec3(1, gold, 0), vec3(-1, gold, 0), vec3(1, -gold, 0), vec3(-1, -gold, 0),  # XY-plane
-        vec3(gold, 0, 1), vec3(-gold, 0, 1), vec3(gold, 0, -1), vec3(-gold, 0, -1)  # XZ-plane
+        vec3(0, 1, gold),
+        vec3(0, -1, gold),
+        vec3(0, 1, -gold),
+        vec3(0, -1, -gold),  # YZ-plane
+        vec3(1, gold, 0),
+        vec3(-1, gold, 0),
+        vec3(1, -gold, 0),
+        vec3(-1, -gold, 0),  # XY-plane
+        vec3(gold, 0, 1),
+        vec3(-gold, 0, 1),
+        vec3(gold, 0, -1),
+        vec3(-gold, 0, -1),  # XZ-plane
     ]
 
     # define the triangle topos of the icosahedron
     indices = [
-        (0, 1, 8), (0, 9, 1), (0, 8, 4), (0, 4, 5), (0, 5, 9),
-        (2, 3, 11), (2, 11, 5), (2, 5, 4), (2, 4, 10), (2, 10, 3),
-        (1, 9, 7), (1, 7, 6), (1, 6, 8), (3, 10, 6), (3, 6, 7),
-        (3, 7, 11), (4, 8, 10), (5, 11, 9), (6, 10, 8), (7, 9, 11)
+        (0, 1, 8),
+        (0, 9, 1),
+        (0, 8, 4),
+        (0, 4, 5),
+        (0, 5, 9),
+        (2, 3, 11),
+        (2, 11, 5),
+        (2, 5, 4),
+        (2, 4, 10),
+        (2, 10, 3),
+        (1, 9, 7),
+        (1, 7, 6),
+        (1, 6, 8),
+        (3, 10, 6),
+        (3, 6, 7),
+        (3, 7, 11),
+        (4, 8, 10),
+        (5, 11, 9),
+        (6, 10, 8),
+        (7, 9, 11),
     ]
 
     # rotate the icosahedron so that a node of the YZ plane is up; when refined this
@@ -346,7 +395,7 @@ def generate_sphere(refine=0):
                 (i, medians[(i, j)], medians[(i, k)]),
                 (medians[(i, j)], j, medians[(j, k)]),
                 (medians[(i, k)], medians[(j, k)], k),
-                (medians[(i, j)], medians[(j, k)], medians[(i, k)])
+                (medians[(i, j)], medians[(j, k)], medians[(i, k)]),
             ]
 
         indices = newindices
@@ -412,13 +461,12 @@ def divide_quad_to_tri_mesh(n: int = 0):
 
 
 def generate_separate_tri_mesh(nodes, indices):
-    out_nodes=[]
-    out_inds=[]
+    out_nodes = []
+    out_inds = []
 
     for tri in indices:
-        len_nodes=len(out_nodes)
-        out_nodes+=[nodes[i] for i in tri]
-        out_inds.append((len_nodes,len_nodes+1,len_nodes+2))
+        len_nodes = len(out_nodes)
+        out_nodes += [nodes[i] for i in tri]
+        out_inds.append((len_nodes, len_nodes + 1, len_nodes + 2))
 
     return out_nodes, out_inds
-    

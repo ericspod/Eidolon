@@ -17,14 +17,15 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from typing import Iterable, List
-from .scene_object import SceneObject, SceneObjectRepr
+
 from ..mathdef import Mesh
+from .scene_object import SceneObject, SceneObjectRepr
 
 __all__ = ["MeshSceneObject", "MeshSceneObjectRepr"]
 
 
 class MeshSceneObject(SceneObject):
-    def __init__(self, name:str, meshes: Iterable[Mesh], plugin=None, **other_values):
+    def __init__(self, name: str, meshes: Iterable[Mesh], plugin=None, **other_values):
         super().__init__(name, plugin, **other_values)
         self.meshes: List[Mesh] = meshes
 
@@ -34,7 +35,7 @@ class MeshSceneObject(SceneObject):
             ("# Meshes", len(self.meshes)),
             ("Start Time", starttime),
             ("Interval", interval),
-            ("# Nodes", len(self.meshes[0].nodes))
+            ("# Nodes", len(self.meshes[0].nodes)),
         ]
 
         for iname, ind in self.meshes[0].topos.items():

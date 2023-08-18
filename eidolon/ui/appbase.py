@@ -17,8 +17,8 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import sys
 import signal
+import sys
 from typing import Optional
 
 from PyQt5 import QtWidgets
@@ -26,6 +26,7 @@ from PyQt5.QtCore import Qt
 
 from eidolon.mathdef import vec3
 from eidolon.utils import is_interactive
+
 from .camera_widget import CameraWidget
 
 __all__ = ["init_ui", "exec_ui", "SimpleApp"]
@@ -60,8 +61,8 @@ def exec_ui(app: QtWidgets.QApplication, do_exit: Optional[bool] = None):
 class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
         # imported here to avoid dependency issues
-        from eidolon.scene import QtCameraController
         from eidolon.renderer import OffscreenCamera
+        from eidolon.scene import QtCameraController
 
         self.app = init_ui(sys.argv)
         super().__init__(parent)

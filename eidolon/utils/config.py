@@ -18,26 +18,27 @@
 
 import os
 import sys
-from pathlib import Path
-from io import StringIO
-from typing import Optional
 from collections.abc import Mapping
+from io import StringIO
+from pathlib import Path
+from typing import Optional
+
 import yaml
 
-from .utils import PlatformName, Namespace
+from eidolon.utils import Namespace, PlatformName
 
 __all__ = ["load_config", "load_config_file", "save_config_file", "ConfigVarNames"]
 
 _scriptdir = os.path.dirname(os.path.abspath(__file__))
 
 # the application directory is given by pyinstaller in _MEIPASS, if not present use the directory one level up
-__appdir__ = getattr(sys, '_MEIPASS', os.path.abspath(_scriptdir + '/..'))
+__appdir__ = getattr(sys, "_MEIPASS", os.path.abspath(_scriptdir + "/.."))
 
 # environment variable names
 APPDIRVAR = "APPDIR"  # path to the application's directory, default __appdir__
 APPDATADIRVAR = "APPDATADIR"  # path to app data directory, default ~/.eidolon
 CONFIGFILEVAR = "CONFIGFILE"  # path to config file, default config.yaml
-LOGFILEVAR = "LOGFILE" # path to log file, default eidolon.log
+LOGFILEVAR = "LOGFILE"  # path to log file, default eidolon.log
 
 # LIBSDIR = "EidolonLibs"  # directory name containing the application's libraries
 APPDIR = os.environ.get(APPDIRVAR, __appdir__)
@@ -61,7 +62,7 @@ class ConfigVarNames(Namespace):
     usejupyter = (True, "Try to use Jupyter console widget instead of built-in console widget: True (default), False")
 
 
-DEFAULT_CONFIG = "all:\n" + "".join([f"  # {v[1]}\n  {k}: {v[0]}\n" for k,v in ConfigVarNames])
+DEFAULT_CONFIG = "all:\n" + "".join([f"  # {v[1]}\n  {k}: {v[0]}\n" for k, v in ConfigVarNames])
 
 
 def update_dict(orig, updates):

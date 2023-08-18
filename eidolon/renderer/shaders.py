@@ -17,6 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from panda3d.core import Shader
+
 import eidolon.resources as res
 
 __all__ = ["get_default_image_volume"]

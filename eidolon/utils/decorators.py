@@ -17,9 +17,9 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import sys
-from time import perf_counter
-from functools import wraps
 from contextlib import contextmanager
+from functools import wraps
+from time import perf_counter
 
 __all__ = ["timing", "timing_block", "cached_property"]
 
@@ -31,7 +31,7 @@ def timing_block(name: str, stream=sys.stdout):
     start = perf_counter()
     yield
     end = perf_counter()
-    print(name, 'dT (s) =', end - start, flush=True, file=stream)
+    print(name, "dT (s) =", end - start, flush=True, file=stream)
 
 
 def timing(func, name: str = None, stream=sys.stdout):

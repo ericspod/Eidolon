@@ -17,18 +17,18 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 
-import sys
 import codeop
 import queue
+import sys
 import threading
 import time
 import traceback
 from pathlib import Path
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-from eidolon.utils import is_darwin, first
+from eidolon.utils import first, is_darwin
 
 try:
     from qtconsole.inprocess import QtInProcessKernelManager, QtInProcessRichJupyterWidget
@@ -59,7 +59,7 @@ class JupyterWidget(QtInProcessRichJupyterWidget):
         self.kernel_manager = QtInProcessKernelManager()
         self.kernel_manager.start_kernel(show_banner=False)
         self.kernel = self.kernel_manager.kernel
-        self.kernel.gui = 'qt'
+        self.kernel.gui = "qt"
 
         self.kernel_client = self.kernel_manager.client()
         self.kernel_client.start_channels()
@@ -86,17 +86,17 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
     def __init__(self, win, conf, parent=None):
         QtWidgets.QTextEdit.__init__(self, parent)
-        self.setFont(QtGui.QFont('Courier', 10))
+        self.setFont(QtGui.QFont("Courier", 10))
 
         self.win = win
-        self.logfile = ''
+        self.logfile = ""
         self.locals = {"console": self, "win": self.win}
         self.comp = codeop.CommandCompiler()
         self.inputlines = queue.Queue()
         self.linebuffer = []
         self.history = []
         self.historypos = 0
-        self.curline = ''
+        self.curline = ""
         self.is_executing = False
         self.init_cmds = [init_cmd]
 
@@ -110,12 +110,12 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         try:
             self.ps1 = sys.ps1
         except:
-            self.ps1 = '>>> '
+            self.ps1 = ">>> "
 
         try:
             self.ps2 = sys.ps2
         except:
-            self.ps2 = '... '
+            self.ps2 = "... "
 
         self.currentPrompt = self.ps1
 
@@ -123,7 +123,8 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         self.loglines = int(conf.get("consoleloglen", 10000))
 
         # try to set the log filename, if there's no user directory this won't be set so no logging will occur
-        from eidolon.config import APPDATADIR
+        from eidolon.utils.config import APPDATADIR
+
         appdatadir = Path(APPDATADIR)
         if appdatadir.is_dir():
             self.logfile = str(appdatadir / conf["consolelogfile"])
@@ -134,9 +135,9 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                 with open(self.logfile) as o:
                     log = [s.rstrip() for s in o.readlines()]
 
-                self.history = log[-self.loglines:]  # add no more than v1.loglines values to the history
+                self.history = log[-self.loglines :]  # add no more than v1.loglines values to the history
             except Exception as e:
-                self.write('Cannot open console log file %r:\n%r\n' % (self.logfile, e))
+                self.write("Cannot open console log file %r:\n%r\n" % (self.logfile, e))
 
         self.thread = threading.Thread(target=self._interpret_thread)
         self.thread.daemon = True
@@ -154,7 +155,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         for cmd in self.init_cmds:
             self.execute(cmd)  # execute initialization commands
 
-        self.send_input_line('')  # show initial prompt
+        self.send_input_line("")  # show initial prompt
 
         multiline = False  # indicates if following lines are expected to be part of a indented block
         while True:
@@ -168,7 +169,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                     self.currentPrompt = self.ps2 if multiline else self.ps1
 
                     if len(self.get_current_line()) > 0:  # ensure prompt goes onto a new line
-                        self.write('\n')
+                        self.write("\n")
 
                     self.write(self.currentPrompt)
                     line = None
@@ -179,8 +180,8 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         """Send the given line to the interpreter's line queue."""
 
         # skip the usual console exiting commands, these don't make sense for a persistent console
-        if line in ('exit', 'exit()', 'quit', 'quit()'):
-            inputline = ''  # do nothing, forces clean prompt printing
+        if line in ("exit", "exit()", "quit", "quit()"):
+            inputline = ""  # do nothing, forces clean prompt printing
         else:
             # execute command and append to history
             inputline = line
@@ -193,24 +194,24 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                 # write to log file if present
                 if self.logfile:
                     try:
-                        with open(self.logfile, 'a') as o:
-                            o.write('%s\n' % line)
+                        with open(self.logfile, "a") as o:
+                            o.write("%s\n" % line)
                     except Exception as e:
-                        self.write('Cannot write to console log file %r:\n%r\n' % (self.logfile, e))
+                        self.write("Cannot write to console log file %r:\n%r\n" % (self.logfile, e))
 
         self.inputlines.put(inputline)
 
     def send_input_block(self, block, print_block=True):
         """Send a block of code lines `block' to be interpreted, printing the block to the console if `print_block'."""
         block = str(block)
-        lines = block.split('\n')
+        lines = block.split("\n")
 
         if len(lines) == 1:  # if there's only one line, print it and wait for user interaction
             self.write(lines[0])
         elif len(lines) > 1:
             if print_block:  # set the cursor and print out the code block into the console
                 self._set_cursor(endline=True)
-                self.write(block + '\n')
+                self.write(block + "\n")
 
             lastindent = 0  # last line's indent distance
             for line in lines:
@@ -218,12 +219,12 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                     indent = first(i for i in range(len(line)) if not line[i].isspace())  # get line's indent
                     # if this line is not indented but last one was, send an empty line to end a multi-line input block
                     if indent == 0 and lastindent > 0:
-                        self.send_input_line('\n')
+                        self.send_input_line("\n")
 
                     lastindent = indent
                     self.send_input_line(line)
 
-            self.send_input_line('\n')
+            self.send_input_line("\n")
 
     def update_locals(self, localvals):
         """Override the local variable dictionary with the given dictionary."""
@@ -240,7 +241,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
             # once followed by a blank line. Only then will the compile happen, otherwise a None object is returned
             # indicating more lines are needed. To do this statements accumulate in the buffer until compilation.
             self.linebuffer.append(line)
-            comp = self.comp('\n'.join(self.linebuffer), '<console>')
+            comp = self.comp("\n".join(self.linebuffer), "<console>")
 
             if comp is None:  # expecting more statements to fill in an indented block, return true to indicate this
                 return True
@@ -254,11 +255,11 @@ class ConsoleWidget(QtWidgets.QTextEdit):
 
         except SyntaxError as se:
             self.linebuffer = []
-            self.write('\n'.join(l.rstrip() for l in traceback.format_exception_only(SyntaxError, se) if l.strip()))
+            self.write("\n".join(l.rstrip() for l in traceback.format_exception_only(SyntaxError, se) if l.strip()))
 
         except Exception as e:
             self.linebuffer = []
-            self.write(str(e) + '\n')
+            self.write(str(e) + "\n")
             self.write(traceback.format_exc())
 
         finally:
@@ -369,7 +370,7 @@ class ConsoleWidget(QtWidgets.QTextEdit):
                 self.clear_current_line()
                 if self.historypos == 0:
                     self.write(self.curline)
-                    self.curline = ''
+                    self.curline = ""
                 else:
                     self.write(self.history[self.historypos])
 
@@ -392,5 +393,6 @@ class ConsoleWidget(QtWidgets.QTextEdit):
         # disallow OS X specific key combo of Cmd+Left or Ctrl+a to go past the prompt
         if is_darwin:
             if ((self.metadown & Qt.Key_Control) and key == Qt.Key_Left) or (
-                    (self.metadown & Qt.Key_Meta) and key == Qt.Key_A):
+                (self.metadown & Qt.Key_Meta) and key == Qt.Key_A
+            ):
                 self._set_cursor()

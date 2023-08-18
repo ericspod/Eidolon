@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import List, Union, NamedTuple, Callable
+from typing import Callable, List, NamedTuple, Union
 
-from .scene_object import ReprType, SceneObject, SceneObjectRepr
+from eidolon.mathdef import ElemType, Mesh, MeshDataValue, calculate_tri_mesh
+from eidolon.renderer import OffscreenCamera, SimpleFigure
+from eidolon.ui import IconName
+from eidolon.utils import Namespace, first, split_path_ext, task_method
+
 from .mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
-from ..utils import split_path_ext, Namespace, first, task_method
-from ..ui import IconName
-from ..mathdef import calculate_tri_mesh, ElemType, Mesh, MeshDataValue
-from ..renderer import SimpleFigure, OffscreenCamera
+from .scene_object import ReprType, SceneObject, SceneObjectRepr
 
 __all__ = ["MeshAlgorithmDesc", "ReprMeshAlgorithm", "ScenePlugin", "MeshScenePlugin", "ImageScenePlugin"]
 
@@ -89,8 +90,9 @@ class ScenePlugin:
     def load_object(self, filename: str, name: str = None, **kwargs) -> SceneObject:
         pass
 
-    def save_object(self, obj: SceneObject, filename: str, overwrite: bool = False, set_filename: bool = True,
-                    **kwargs):
+    def save_object(
+        self, obj: SceneObject, filename: str, overwrite: bool = False, set_filename: bool = True, **kwargs
+    ):
         pass
 
     def remove_object(self, obj: SceneObject):
@@ -110,7 +112,7 @@ class ScenePlugin:
             if not fig.attached_to_camera(camera):
                 fig.attach(camera)
 
-        rep.visible=True
+        rep.visible = True
 
     def detach_repr(self, rep: SceneObjectRepr, camera: OffscreenCamera):
         for fig in rep.figures:
@@ -138,7 +140,9 @@ class MeshScenePlugin(ScenePlugin):
         spatial_topos = obj.meshes[0].get_spatial_topos()
         min_dim = min(ElemType[t.elem_type].dim for t in spatial_topos.values())
 
-        calc_func = first(d.calc_func for _,d in ReprMeshAlgorithm if d.repr_type == repr_type and d.min_dim >= min_dim)
+        calc_func = first(
+            d.calc_func for _, d in ReprMeshAlgorithm if d.repr_type == repr_type and d.min_dim >= min_dim
+        )
 
         mesh0: Mesh = calc_func(obj.meshes[0], **kwargs)
         meshes = [mesh0]

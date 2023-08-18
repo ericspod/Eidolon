@@ -18,12 +18,13 @@
 
 import threading
 import time
-from typing import Union, List, Optional
-from .scene_object import SceneObject, SceneObjectRepr
-from .scene_plugin import ScenePlugin, MeshScenePlugin
-from .camera_controller import CameraController
-from ..utils import Namespace, TaskQueue, EventDispatcher, first
-from ..ui import IconName, qtmainthread
+from typing import List, Optional, Union
+
+from eidolon.scene.camera_controller import CameraController
+from eidolon.scene.scene_object import SceneObject, SceneObjectRepr
+from eidolon.scene.scene_plugin import MeshScenePlugin, ScenePlugin
+from eidolon.ui import IconName, qtmainthread
+from eidolon.utils import EventDispatcher, Namespace, TaskQueue, first
 
 __all__ = ["SceneManager"]
 
@@ -77,10 +78,10 @@ class SceneManager(TaskQueue):
         self.mats = []  # Existing materials
         self.textures = []  # Existing textures
         self.lights = []  # existing light objects
-        self.programs = []  # existing Vertex/Fragment shader GPU programs
+        self.programs = []  # existing shader GPU program names
 
-        self.ambient_color = (1, 1, 1, 1)
-        self.background_color = (1, 1, 1, 1)
+        # self.ambient_color = (1, 1, 1, 1)
+        # self.background_color = (1, 1, 1, 1)
 
         # # secondary scene elements
         # self.bbmap = {}  # maps representations to their bounding boxes
@@ -102,19 +103,18 @@ class SceneManager(TaskQueue):
 
         # time stepping components
         self.timestep = 0
-        self.timestepMin = 0
-        self.timestepMax = 0
-        self.timestepSpan = 0
-        self.timeFPS = 25
-        self.timeStepsPerSec = 1.0
+        self.timestep_range = (0, 0)
+        self.timestep_span = 0
+        self.time_fps = 25
+        self.timesteps_persec = 1.0
         self.playerEvent = threading.Event()
         self.player = threading.Thread(target=self._player_thread)
         self.player.daemon = True
         self.player.start()
 
         # script local variables
-        self.scriptlocals = {'mgr': self}  # local environment object scripts are executed with
-        self.lastScript = ''  # name of last executed script file
+        self.scriptlocals = {"mgr": self}  # local environment object scripts are executed with
+        self.lastScript = ""  # name of last executed script file
 
         # if self.conf.hasValue('var', 'names'):  # add command line variables to the script variable map
         #     names = self.conf.get('var', 'names').split('|')
@@ -187,7 +187,7 @@ class SceneManager(TaskQueue):
         """
         Takes tasks from the queue and runs them. This is executed in a separate daemon thread and should not be called.
         """
-        assert threading.currentThread().daemon, 'Task thread must be a daemon'
+        assert threading.current_thread().daemon, "Task thread must be a daemon"
 
         # if self.conf.hasValue('args', 't'):
         #     setTrace()

@@ -17,15 +17,15 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 from typing import List
+
 import numpy as np
+from panda3d.core import Geom, Shader, Texture
 
-from panda3d.core import Texture, Shader, Geom
-
-from .figure import Figure
-from .material import Material, MAIN_TEX_NAME
-from .render_utils import create_simple_geom, create_texture_np, update_geom
-from ..mathdef import vec3, BoundBox, generate_plane, generate_cube
+from ..mathdef import BoundBox, generate_cube, generate_plane, vec3
 from .camera import OffscreenCamera
+from .figure import Figure
+from .material import MAIN_TEX_NAME, Material
+from .render_utils import create_simple_geom, create_texture_np, update_geom
 from .shaders import get_default_image_volume
 
 __all__ = ["ImagePlaneFigure", "ImageVolumeFigure"]
@@ -94,8 +94,9 @@ class ImagePlaneFigure(ImageFigure):
 
 
 class ImageVolumeFigure(ImageFigure):
-    def __init__(self, name: str, image: np.ndarray, num_planes: int = 100,
-                 shader: Shader = None, t_format=None, f_format=None):
+    def __init__(
+        self, name: str, image: np.ndarray, num_planes: int = 100, shader: Shader = None, t_format=None, f_format=None
+    ):
         texture: Texture = create_texture_np(image, True, t_format, f_format)
         self._num_planes: int = num_planes
         self.shader = shader or get_default_image_volume()

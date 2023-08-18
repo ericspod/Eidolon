@@ -1,8 +1,8 @@
 import numpy as np
 
+from eidolon.mathdef import HALFPI, ElemType, Mesh, calculate_tri_mesh, rotator, vec3
 from eidolon.renderer import Light, LightType, SimpleFigure
-from eidolon.ui import init_ui, SimpleApp
-from eidolon.mathdef import vec3, rotator, Mesh, ElemType, calculate_tri_mesh, HALFPI
+from eidolon.ui import SimpleApp, init_ui
 
 app = init_ui()
 
@@ -13,11 +13,10 @@ elemtypes = [ElemType.Tri1NL, ElemType.Quad1NL, ElemType.Tet1NL, ElemType.Hex1NL
 figures = []
 
 for i, et in enumerate(elemtypes):
-
     nodes = np.zeros((et.num_nodes, 3), np.float32)
 
     for j, n in enumerate(et.xis):
-        nodes[j, :len(n)] = n
+        nodes[j, : len(n)] = n
 
     inds = np.arange(et.num_nodes, dtype=np.int32)[None, :]
 

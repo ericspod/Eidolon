@@ -1,8 +1,8 @@
 import numpy as np
 
-from eidolon.renderer import Light, LightType, SimpleFigure, Material
-from eidolon.ui import init_ui, SimpleApp
-from eidolon.mathdef import vec3, rotator, Mesh, ElemType, generate_tri_normals, generate_sphere, HALFPI
+from eidolon.mathdef import HALFPI, ElemType, Mesh, generate_sphere, generate_tri_normals, rotator, vec3
+from eidolon.renderer import Light, LightType, Material, SimpleFigure
+from eidolon.ui import SimpleApp, init_ui
 
 app = init_ui()
 
@@ -33,13 +33,7 @@ fig = SimpleFigure("mesh", tri_mesh.nodes, tri_mesh.topos["inds"][0], tri_mesh.o
 fig.attach(win.cam)
 # fig.orientation = rotator.from_axis(vec3.X, HALFPI)
 
-m = Material(
-    "mat",
-    diffuse=(1, 0, 0, 1),
-    specular=(0, 1, 0, 1),
-    shininess=20,
-    refractive_index=1.5
-)
+m = Material("mat", diffuse=(1, 0, 0, 1), specular=(0, 1, 0, 1), shininess=20, refractive_index=1.5)
 fig.set_material(m)
 
 light = Light("dlight", LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))

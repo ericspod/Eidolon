@@ -24,17 +24,17 @@ from eidolon.mathdef.math_utils import iter_to_np
 __all__ = ["create_simple_geom", "create_texture_np"]
 
 from panda3d.core import (
+    BoundingVolume,
     Geom,
-    GeomVertexFormat,
-    GeomVertexArrayFormat,
-    GeomVertexData,
-    GeomTriangles,
+    GeomEnums,
     GeomLines,
     GeomPoints,
     GeomPrimitive,
-    GeomEnums,
+    GeomTriangles,
+    GeomVertexArrayFormat,
+    GeomVertexData,
+    GeomVertexFormat,
     Texture,
-    BoundingVolume,
 )
 
 vaformat = GeomVertexArrayFormat()

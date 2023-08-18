@@ -1,8 +1,9 @@
 import sys
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-from eidolon.ui import DictTableModel, ComboBoxModel
+from eidolon.ui import ComboBoxModel, DictTableModel
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -34,12 +35,12 @@ class TupleTreeModel(QtGui.QStandardItemModel):
 
         self.fill(data)
 
-    def fill(self,data):
+    def fill(self, data):
         self.clear()
-        self._data[:]=data
+        self._data[:] = data
 
         for idx in range(len(self._data)):
-            item=self._get_item(idx)
+            item = self._get_item(idx)
 
             self.appendRow(item)
 
@@ -110,13 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.timer.timeout.connect(update)
         # self.timer.start()
 
-        self.model = TupleTreeModel([
-            ("foo", ()),
-            ("bar", (
-                ("baz", ()),
-                ("thunk", ())
-            ))
-        ])
+        self.model = TupleTreeModel([("foo", ()), ("bar", (("baz", ()), ("thunk", ())))])
 
         self.tree = QtWidgets.QTreeView()
         self.tree.setModel(self.model)

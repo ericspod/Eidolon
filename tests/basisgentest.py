@@ -1,7 +1,8 @@
-from eidolon.mathdef.basis_functions import lagrange_beta, xi_coords, lagrange_alpha, lagrange_basis_eval_str
-from sympy import symbols, simplify, cse
+from sympy import cse, simplify, symbols
 
-types = ('tri', 'quad', 'tet', 'hex')
+from eidolon.mathdef.basis_functions import lagrange_alpha, lagrange_basis_eval_str, lagrange_beta, xi_coords
+
+types = ("tri", "quad", "tet", "hex")
 orders = (2,)
 
 xi0, xi1, xi2 = symbols("xi0,xi1,xi2")
@@ -14,7 +15,7 @@ for t in types:
         xis = xi_coords(order, beta)
         alpha = lagrange_alpha(beta, xis)
         k = xis.shape[0]
-        exprs = '(' + ','.join(lagrange_basis_eval_str(i, k, dim, alpha, beta) for i in range(k)) + ')'
+        exprs = "(" + ",".join(lagrange_basis_eval_str(i, k, dim, alpha, beta) for i in range(k)) + ")"
         exprs = eval(exprs)
 
         varlist, expr = [], simplify(exprs)
@@ -23,7 +24,7 @@ for t in types:
         if k > 10:
             rtype = "float, ..."
         else:
-            rtype = ', '.join(['float'] * k)
+            rtype = ", ".join(["float"] * k)
 
         print("\n\n@jit")
         print(f"def {t}_{order}nl(xi0: float, xi1: float, xi2: float) -> Tuple[{rtype}]:")

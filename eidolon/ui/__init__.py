@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .camera_widget import *
 from .appbase import *
+from .camera_widget import *
+from .console_widget import *
+from .entry_point import *
 from .loader import *
 from .main_window import *
-from .console_widget import *
-from .threadsafe_calls import *
 from .models import *
-from .entry_point import *
+from .threadsafe_calls import *

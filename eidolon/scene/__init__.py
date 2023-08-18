@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from .scene_object import *
+from .camera_controller import *
 from .mesh_scene_object import *
 from .scene_manager import *
+from .scene_object import *
 from .scene_plugin import *
-from .camera_controller import *

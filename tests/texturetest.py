@@ -1,10 +1,10 @@
 import sys
+
 from PyQt5 import QtWidgets
 
 import eidolon.renderer
 import eidolon.ui
-
-from eidolon.mathdef import vec3, rotator, transform, generate_center_circle
+from eidolon.mathdef import generate_center_circle, rotator, transform, vec3
 from eidolon.renderer import create_texture_np
 
 mgr = eidolon.renderer.RenderBase()
@@ -15,12 +15,7 @@ ctrl = eidolon.ui.CameraController(cam, vec3.zero, 0, 0, 50)
 verts = [(0, 0, 0), (10, 0, 0), (0, 0, 10), (10, 0, 10)]
 inds = [(0, 1, 2), (1, 3, 2)]
 norms = [(0, 0, 1)] * len(verts)
-colors = [
-    (1.0, 0.0, 0.0, 1.0),
-    (0.0, 1.0, 0.0, 1.0),
-    (0.0, 0.0, 1.0, 1.0),
-    (1.0, 1.0, 1.0, 0.0),
-]
+colors = [(1.0, 0.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0), (1.0, 1.0, 1.0, 0.0)]
 uvs = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0)]
 
 circle_img = generate_center_circle(128, 128, 0.8)[:, :, None].repeat(2, 2)
