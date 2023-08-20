@@ -24,6 +24,9 @@ homepage = "http://github.com/ericspod/Eidolon"
 #[project.scripts]
 #eidolon = "eidolon.ui:default_entry_point"
 
+[metadata]
+description-file = "README.md"
+
 [tool.setuptools.packages.find]
 include = ["eidolon*"]
 
@@ -34,9 +37,8 @@ include = ["eidolon*"]
 version = {attr = "eidolon._version.__version__"}
 readme = {file = ["README.md"], content-type = "text/markdown"}
 
-[metadata]
-description-file = "README.md"
-
 [tool.black]
 line-length = 120
 
+[tool.flake8]
+line-length = 120

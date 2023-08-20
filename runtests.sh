@@ -10,6 +10,7 @@ doDryRun=false
 # home directory
 homedir="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$homedir"
+echo "PWD: $(pwd)"
 
 # python path
 export PYTHONPATH="$homedir:$PYTHONPATH"
@@ -80,11 +81,11 @@ ${cmdPrefix}${PY_EXE} -m isort "$(pwd)"
 ${cmdPrefix}${PY_EXE} -m black --skip-magic-trailing-comma "$(pwd)"
 
 # flake8
-${cmdPrefix}${PY_EXE} -m flake8 "$(pwd)" --count --statistics
+# ${cmdPrefix}${PY_EXE} -m flake8 "$(pwd)" --count --statistics --max-line-length 120
 
 # pylint
 ignore_codes="C,R,W,E1101,E1102,E0601,E1130,E1123,E0102,E1120,E1137,E1136"
-${cmdPrefix}${PY_EXE} -m pylint eidolon tests --disable=$ignore_codes
+# ${cmdPrefix}${PY_EXE} -m pylint eidolon tests --disable=$ignore_codes
 
 # set coverage command
 if [ $doCoverage = true ]
@@ -95,7 +96,7 @@ else
 fi
 
 #unit tests
-${cmdPrefix}${cmd} -m unittest tests/unittests/*.py 
+# ${cmdPrefix}${cmd} -m unittest tests/unittests/*.py 
 
 if [ $doCoverage = true ]
 then

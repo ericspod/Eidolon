@@ -30,4 +30,3 @@ __verurl__ = "https://api.github.com/repos/ericspod/Eidolon/releases"
 
 if __name__ == "__main__":
     print("Eidolon version:", __version__)
-    
