@@ -1,0 +1,17 @@
+name: eidolon_py37
+channels:
+  - defaults
+dependencies:
+  - pip
+  - python<3.8
+  - numpy
+  - numba
+  - scipy
+  - pyqt<5.15
+  - ipython
+  - qtconsole
+  - ipykernel
+  - imageio
+  - pyyaml
+  - pandas
+  
