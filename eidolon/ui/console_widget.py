@@ -50,6 +50,7 @@ class JupyterWidget(QtInProcessRichJupyterWidget):
     """
 
     def __init__(self, win, conf, parent=None):
+        raise Exception()  # TODO: fix this class and re-enable
         super().__init__(parent)
         self.win = win
         self.conf = conf

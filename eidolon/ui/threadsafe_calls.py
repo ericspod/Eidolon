@@ -21,11 +21,10 @@ import traceback
 from functools import wraps
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
 
-from ..utils import Future, is_main_thread
+from eidolon.utils import Future, is_main_thread
 
-__all__ = ["qtmainthread", "delayedmethod"]
+__all__ = ["qtmainthread", "delayedmethod", "connect", "delayedmethod"]
 
 
 class MainThreadEvent(QtCore.QEvent):

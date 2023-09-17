@@ -24,21 +24,27 @@ from PyQt5 import QtCore, uic
 
 from eidolon import resources
 
-__all__ = ["load_ui", "load_res_layout", "add_search_path"]
+__all__ = ["load_ui", "load_res_layout", "add_search_path", "rename_ui_paths"]
 
 # restag = re.compile("<resources>.*</resources>", flags=re.DOTALL)  # matches the resource tags in the ui files
 
-ui_replacements = [
+UI_REPLACE_PATTERNS = [
     ("<resources>.*</resources>", ""),  # remove the resources section from the XML
-    (">\\:/([^/]+)/([^<]+)<", ">\\1:\\2<"),  # replace every ':/path/filename.ext' with 'path:filename.ext'
+    (">\\:/([^/]+)/([^<]+)<", ">\\1:\\2<"),  # replace every ':/path/filename.ext' with 'path:filename.ext' in XML
+    ("\(\\:/([^/]+)/([^<]+)\)", "\(\\1:\\2\)")  # replace every ':/path/filename.ext' with 'path:filename.ext' in CSS
 ]
 
+
+def rename_ui_paths(uistr):
+    for p, r in UI_REPLACE_PATTERNS:
+        uistr = re.sub(p, r, uistr, flags=re.DOTALL)
+
+    return uistr
 
 def load_ui(xmlstr):
     """Loads the given XML ui file data and returns the created type."""
     # s = re.sub(restag, "", xmlstr)  # get rid of the resources section in the XML
-    for p, r in ui_replacements:
-        xmlstr = re.sub(p, r, xmlstr, flags=re.DOTALL)
+    xmlstr=rename_ui_paths(xmlstr)
 
     uiclass, _ = uic.loadUiType(StringIO(xmlstr))  # create a local type definition
     return uiclass

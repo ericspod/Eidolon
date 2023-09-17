@@ -18,6 +18,7 @@
 
 
 try:
+    raise ImportError
     from functools import partial
 
     from numba import jit as _jit

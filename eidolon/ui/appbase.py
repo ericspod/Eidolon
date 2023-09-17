@@ -62,7 +62,7 @@ class SimpleApp(QtWidgets.QMainWindow):
     def __init__(self, width: int, height: int, parent=None):
         # imported here to avoid dependency issues
         from eidolon.renderer import OffscreenCamera
-        from eidolon.scene import QtCameraController
+        from eidolon.scene import QtCamera3DController
 
         self.app = init_ui(sys.argv)
         super().__init__(parent)
@@ -70,7 +70,7 @@ class SimpleApp(QtWidgets.QMainWindow):
 
         self.camwidget = CameraWidget(self.cam)
 
-        self.ctrl = QtCameraController(self.cam, vec3.zero, 0, 0, 50)
+        self.ctrl = QtCamera3DController(self.cam, vec3.zero, 0, 0, 50, self.camwidget.repaint_on_ready)
         self.ctrl.attach_events(self.camwidget.events)
 
         self.resize(width, height)

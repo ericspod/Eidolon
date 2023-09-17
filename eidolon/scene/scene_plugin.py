@@ -82,9 +82,9 @@ class ScenePlugin:
         """Return the ReprType identifiers for the valid representations of this object."""
         return []
 
-    def accept_file(self, filename: str) -> bool:
+    def accept_path(self, loadpath: str) -> bool:
         """Returns True if this plugin can load or save to the given file."""
-        ext = split_path_ext(filename, True)[2]
+        ext = split_path_ext(loadpath, True)[2]
         return ext in self.file_exts
 
     def load_object(self, filename: str, name: str = None, **kwargs) -> SceneObject:

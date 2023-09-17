@@ -20,7 +20,7 @@ import threading
 import time
 from typing import List, Optional, Union
 
-from eidolon.scene.camera_controller import CameraController
+from eidolon.scene.camera_controller import Camera3DController
 from eidolon.scene.scene_object import SceneObject, SceneObjectRepr
 from eidolon.scene.scene_plugin import MeshScenePlugin, ScenePlugin
 from eidolon.ui import IconName, qtmainthread
@@ -69,7 +69,7 @@ class SceneManager(TaskQueue):
         self.evt_dispatch = EventDispatcher()
 
         # camera controller
-        self.controller: Optional[CameraController] = None  # the camera controller
+        self.controller: Optional[Camera3DController] = None  # the camera controller
 
         # scene assets and objects
         self.cameras = []  # list of Camera objects, cameras[0] is "main" 3D perspective camera
@@ -177,11 +177,16 @@ class SceneManager(TaskQueue):
 
     @qtmainthread
     def ui_init(self):
-        print("ui_init")
-        self.win.seeAllButton.clicked.connect(self.set_camera_see_all)
+        w = self.win
 
-    def get_plugin(self, name: str):
-        return first(p for p in self.global_plugins if p.name == name)
+        def _click(widg, func):
+            widg.clicked.connect(func)
+
+        _click(w.seeAllButton, self.set_camera_see_all)
+        _click(w.clearButton, self.clear_scene)
+        _click(w.removeObjectButton, self._remove_tree_object)
+
+        w.treeView.doubleClicked.connect(self._tree_object_dblclick)
 
     def _process_tasks(self):
         """
@@ -214,40 +219,73 @@ class SceneManager(TaskQueue):
 
         self.process_queue()  # process the queue
 
-    def set_task_status(self, task_label, cur_progress, max_progress):
-        pass
-
     def _player_thread(self):
         pass
+
+    def task_except(self, ex, msg, title):
+        print(ex,msg,title,flush=True)  # TODO: change to use GUI to show exception
+
+    def get_plugin(self, name: str):
+        return first(p for p in self.global_plugins if p.name == name)
+
+    def set_task_status(self, task_label, cur_progress, max_progress):
+        if self.win:
+            if max_progress<=0:
+                self.win.set_status("Ready", 0,0)
+            else:
+                self.win.set_status(task_label, cur_progress, max_progress)
 
     def set_camera_see_all(self):
         if self.controller is not None:
             self.controller.set_camera_see_all()
 
+    def repaint(self):
+        if self.controller is not None:
+            self.controller.repaint()
+
+    def try_load_path(self,loadpath: str):
+        for p in self.global_plugins:
+            if p.accept_path(loadpath):
+                obj=p.load_object(loadpath)
+                self.add_scene_object(obj)
+                return obj
+            
+        return None
+
     def add_scene_object(self, obj: SceneObject):
         if obj in self.objects:
-            raise ValueError("Object already in scene")
+            raise ValueError(f"Object already in scene: {obj}")
 
         self.objects.append(obj)
         plugin: ScenePlugin = obj.plugin
 
         if self.win is not None:
             icon = plugin.get_icon(obj) or IconName.default
-            # menu=plugin.get_menu(obj)
-            self.win.add_tree_object(obj, obj.label, icon)
+            menu, menu_func = plugin.get_menu(obj)
+            self.win.add_tree_object(obj, obj.label, icon, menu, menu_func, None)
 
     def add_scene_object_repr(self, rep: SceneObjectRepr):
+        if rep.parent not in self.objects:
+            raise ValueError(f"Repr is not for an object in the scene: {rep}")
+
         for cam in self.controller.cameras():
             rep.plugin.attach_repr(rep, cam)
 
         if self.win is not None:
-            icon = IconName.eye
-            self.win.add_tree_object(rep, rep.label, icon, rep.parent)
+            item = self.win.add_tree_object(rep, rep.label, IconName.eye, None, None, rep.parent)
+
+        self.repaint()
+
+    def add_object(self, obj: Union[SceneObject, SceneObjectRepr]):
+        if isinstance(obj, SceneObject):
+            self.add_scene_object(obj)
+        else:
+            self.add_scene_object_repr(obj)
 
     def remove_object(self, obj: Union[SceneObject, SceneObjectRepr]):
         if isinstance(obj, SceneObject):
             if obj not in self.objects:
-                raise ValueError("Object not in scene")
+                raise ValueError(f"Object not in scene: {obj}")
 
             for r in obj.reprs:
                 self.remove_object(r)
@@ -255,11 +293,34 @@ class SceneManager(TaskQueue):
             self.objects.remove(obj)
         elif isinstance(obj, SceneObjectRepr):
             for cam in self.controller.cameras():
-                obj.plugin.dettach_repr(obj, cam)
+                obj.plugin.detach_repr(obj, cam)
 
-            obj.visible = False
+            obj.parent.remove_repr(obj)
         else:
             raise ValueError("Unknown argument type, should be SceneObject/SceneObjectRepr")
 
         if self.win is not None:
             self.win.remove_tree_object(obj)
+
+        self.repaint()
+
+    def clear_scene(self):
+        for obj in list(self.objects):
+            self.remove_object(obj)
+
+    def _remove_tree_object(self):
+        obj = self.win.get_selected_tree_object()
+        if obj is not None:
+            self.remove_object(obj)
+
+    def _tree_object_dblclick(self, index):
+        obj = self.win.get_selected_tree_object()
+
+        if isinstance(obj, SceneObjectRepr):
+            is_visible = obj.visible
+            obj.visible = not obj.visible
+
+            if self.win is not None:
+                self.win.set_object_icon(obj, IconName.eye if obj.visible else IconName.eyeclosed)
+
+            self.repaint()

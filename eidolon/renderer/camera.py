@@ -129,7 +129,9 @@ class OffscreenCamera:
 
     @property
     def scene_aabb(self):
-        vmin, vmax = self.nodepath.get_tight_bounds()
+        bounds = self.nodepath.get_tight_bounds()
+        vmin,vmax = bounds if bounds is not None else (vec3.zero, vec3.zero)
+        
         return BoundBox(vec3(*vmin), vec3(*vmax))
 
     @property

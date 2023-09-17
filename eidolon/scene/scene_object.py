@@ -20,9 +20,9 @@ from typing import List, Optional
 
 import numpy as np
 
-from ..mathdef import BoundBox, Transformable, transform
-from ..renderer import Figure, Material
-from ..utils import Namespace, cached_property
+from eidolon.mathdef import BoundBox, Transformable, transform
+from eidolon.renderer import Figure, Material
+from eidolon.utils import Namespace, cached_property
 
 __all__ = ["ReprType", "SceneObject", "SceneObjectRepr"]
 
@@ -92,6 +92,7 @@ class SceneObject:
         return self.plugin.get_repr_types(self)
 
     def remove_repr(self, rep):
+        rep.visible=False
         self.reprs.remove(rep)
 
     def get_dataset(self):

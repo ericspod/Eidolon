@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui
 import eidolon
 from eidolon.mathdef import generate_axes_arrows, vec3
 from eidolon.renderer import OffscreenCamera, SimpleFigure
-from eidolon.scene import QtCameraController
+from eidolon.scene import QtCamera3DController
 from eidolon.ui import CameraWidget, MainWindow, exec_ui, init_ui
 from eidolon.utils import Future, config
 
@@ -26,7 +26,7 @@ cam = OffscreenCamera("test", 400, 400)
 
 camwidget = CameraWidget(cam)
 
-ctrl = QtCameraController(cam, vec3.zero, 0, 0, 50)
+ctrl = QtCamera3DController(cam, vec3.zero, 0, 0, 50)
 ctrl.attach_events(camwidget.events)
 
 win.setCentralWidget(camwidget)

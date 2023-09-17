@@ -292,18 +292,34 @@ def is_elem_inverted(nodes: np.ndarray, elem: np.ndarray, elem_dirs: np.ndarray)
 def calculate_tri_mesh(
     mesh: Mesh, refine=0, topo_name=None, external_only=True, octree_threshold=100000, octree_depth=3
 ):
+    """
+    Calculates a triangle mesh from the given Mesh object.
+    """
     topo_name = topo_name or first(t for t in mesh.topos if not mesh.topos[t].is_field_topo)
     nodes = mesh.nodes
     topo_array, et_name, _ = mesh.topos[topo_name]
     et: ElemTypeDef = ElemType[et_name]
 
+    # if et_name == ElemType._Tri1NL and refine==0:
+    #     out_nodes = np.array(nodes)
+    #     out_inds = np.array(topo_array)
+    #     out_norms = calculate_trimesh_normals(out_nodes, out_inds)
+
+    #     out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)}, {}, mesh.timestep, mesh)
+    #     out_mesh.other_data[MeshDataValue._xis] = out_xis
+    #     out_mesh.other_data[MeshDataValue._norms] = out_norms
+    #     out_mesh.other_data[MeshDataValue._nodeprops] = out_props
+
+    face_xis, coeffs, face_tris = calculate_tri_elem_face_meshes(et, refine)
+    num_elems = topo_array.shape[0]
+
     if et.dim < 2:
         raise ValueError(f"Triangles can only be generated for 2/3D element types, not {et_name}")
-
-    ext_adj = calculate_mesh_ext_adj(mesh, topo_name, octree_threshold, octree_depth)
-    face_xis, coeffs, face_tris = calculate_tri_elem_face_meshes(et, refine)
-
-    num_elems = topo_array.shape[0]
+    elif et.dim == 2:
+        ext_adj = -np.ones((num_elems, 1), dtype=int)  # don't need to do adjacency calculation
+        external_only = False  # generate all faces since they're all external
+    else:
+        ext_adj = calculate_mesh_ext_adj(mesh, topo_name, octree_threshold, octree_depth)
 
     if external_only:
         ext_faces = ext_adj[:, : et.num_faces] < 0
@@ -312,7 +328,7 @@ def calculate_tri_mesh(
         start_elem_idx[1:] = start_elem_idx[:-1]
         start_elem_idx[0] = 0
     else:
-        ext_faces = np.ones_like(ext_adj[:, : et.num_faces], dtype=np.bool)
+        ext_faces = np.ones_like(ext_adj[:, : et.num_faces], dtype=bool)
         num_ext_faces = et.num_faces * num_elems
         start_elem_idx = np.arange(num_elems) * et.num_faces
 

@@ -38,11 +38,11 @@ class MeshDataValue(Namespace):
     norms = "Node Normals"
     colors = "Node Colors"
     uvwcoords = "Texture Coordinates"
-    nodeprops = "Per-node Properties Array"
+    nodeprops = "Per-node Properties Array, contains (element index, face index) for each node"
     spatial = "Spatial Topology"
     field = "Data Field"
     octree = "Octree Data"
-    ext_adj = "Array of Adjacent Elements/Faces"
+    ext_adj = "Array of Adjacent Elements/Faces, for each element face list adjacent elements then list face indices"
     ext_inds = "Indices of External Elements"
 
 
@@ -61,14 +61,14 @@ class Field(NamedTuple):
 
 class Mesh:
     def __init__(self, nodes, topo_sets={}, field_sets={}, timestep=0, parent=None):
-        self.nodes: np.ndarray = np.asarray(nodes)
-        self.topos: Dict[str, Topology] = {}
-        self.fields: Dict[str, Field] = {}
-        self.timestep: float = timestep
+        self.nodes: np.ndarray = np.asarray(nodes)  # array of node values
+        self.topos: Dict[str, Topology] = {}  # topologies for mesh or fields
+        self.fields: Dict[str, Field] = {}  # data fields, per-node or per-element
+        self.timestep: float = timestep  # timestep this mesh is at
         self.parent: Mesh = parent
 
-        self.properties: Dict[Union[str, Tuple[str, str]], Any] = {}
-        self.other_data: Dict[Union[str, Tuple[str, str]], Any] = {}
+        self.properties: Dict[Union[str, Tuple[str, str]], Any] = {}  # general purpose properties for the mesh
+        self.other_data: Dict[Union[str, Tuple[str, str]], Any] = {}  # data arrays that aren't one of the other types
 
         for name, vals in topo_sets.items():
             self.set_topology(name, *vals)

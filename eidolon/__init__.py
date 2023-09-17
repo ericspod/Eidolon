@@ -25,5 +25,6 @@ import eidolon.resources
 import eidolon.scene
 import eidolon.ui
 import eidolon.utils
+import eidolon.plugins
 
 from ._version import __appname__, __copyright__, __version__

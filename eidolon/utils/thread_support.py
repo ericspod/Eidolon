@@ -366,14 +366,15 @@ class TaskQueue(object):
                     while exc != fe and isinstance(exc, FutureError):
                         exc = exc.exc_value
 
-                    self.task_except(fe, exc, "Exception from queued task " + self.current_task.getLabel())
+                    self.task_except(fe, exc, "Exception from queued task " + self.current_task.label)
                     # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
                     self.current_task.flush_queue = True
 
                 except Exception as e:
+                    print("EX",e,self.current_task is not None)
                     # if no current task then some non-task exception we don't care about has occurred
-                    if self.current_task:
-                        self.task_except(e, "", "Exception from queued task " + self.current_task.getLabel())
+                    if self.current_task is not None:
+                        self.task_except(e, "", "Exception from queued task " + self.current_task.label)
                         self.current_task.flush_queue = True  # remove waiting tasks
                 finally:
                     # set the current task to None, using self lock to prevent inconsistency with updatethread

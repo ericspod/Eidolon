@@ -3,53 +3,59 @@ import os
 import numpy as np
 
 from eidolon.mathdef import ElemType, Mesh, vec3
-from eidolon.renderer import Light, LightType, OffscreenCamera
-from eidolon.scene import MeshSceneObject, MeshScenePlugin, QtCameraController, ReprType, SceneManager
-from eidolon.ui import CameraWidget, MainWindow, exec_ui, init_ui, load_rc_file
-from eidolon.utils import config
+# from eidolon.renderer import Light, LightType, OffscreenCamera
+from eidolon.scene import MeshSceneObject, MeshScenePlugin, QtCamera3DController, ReprType, SceneManager
+# from eidolon.ui import CameraWidget, MainWindow, exec_ui, init_ui, load_rc_file
+# from eidolon.utils import config
+from eidolon.ui import create_default_app, exec_ui
+
 
 scriptdir = os.path.dirname(__file__)
 
-# win = SimpleApp(1200, 800)
+# SceneManager.add_plugin(MeshScenePlugin("Mesh"))
 
-conf = config.load_config()
+app, mgr=create_default_app()
 
-app = init_ui()
+# # win = SimpleApp(1200, 800)
 
-app.setStyle("plastique")
-sheet = load_rc_file("DefaultUIStyle", ":/css").decode("utf-8")
+# conf = config.load_config()
 
-app.setStyleSheet(sheet)
+# app = init_ui()
 
-win = MainWindow(conf)
-mgr = SceneManager.init({}, win)
+# app.setStyle("plastique")
+# sheet = load_rc_file("DefaultUIStyle", ":/css").decode("utf-8")
 
-cam = OffscreenCamera("test", 400, 400)
-mgr.cameras.append(cam)
+# app.setStyleSheet(sheet)
 
-camwidget = CameraWidget(cam, events=mgr.evt_dispatch)
+# win = MainWindow(conf)
+# mgr = SceneManager.init({}, win)
 
-mgr.controller = QtCameraController(cam, vec3.zero, 0, 0, 50)
-mgr.controller.attach_events(camwidget.events)
+# cam = OffscreenCamera("test", 400, 400)
+# mgr.cameras.append(cam)
 
-win.setCentralWidget(camwidget)
+# camwidget = CameraWidget(cam, events=mgr.evt_dispatch)
+
+# mgr.controller = QtCameraController(cam, vec3.zero, 0, 0, 50)
+# mgr.controller.attach_events(camwidget.events)
+
+# win.setCentralWidget(camwidget)
 
 dat = np.load(scriptdir + "/data/linmesh.npz")
 
 mesh = Mesh(dat["x"], {"inds": (dat["t"] - 1, ElemType._Hex1NL)}, {"field": (dat["d"], "inds")})
 
-obj = MeshSceneObject("linmesh", [mesh], mgr.get_plugin("Mesh"))
+obj = MeshSceneObject("linmesh", [mesh], mgr.get_plugin("TriMesh"))
 mgr.add_scene_object(obj)
 
 repr = obj.plugin.create_repr(obj, ReprType._volume)
 mgr.add_scene_object_repr(repr)
 
-mgr.controller.set_camera_see_all()
+mgr.set_camera_see_all()
 
-light = Light("dlight", LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
-light.attach(cam, True)
+# light = Light("dlight", LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
+# light.attach(cam, True)
 
-amb = Light("amb", LightType.AMBIENT, (0.25, 0.25, 0.25, 1))
-amb.attach(cam)
+# amb = Light("amb", LightType.AMBIENT, (0.25, 0.25, 0.25, 1))
+# amb.attach(cam)
 
 exec_ui(app)

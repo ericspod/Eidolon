@@ -17,7 +17,7 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 import math
-from typing import Generator, Union
+from typing import Callable, Generator, Optional, Union
 
 from PyQt5 import QtCore, QtGui
 
@@ -26,11 +26,19 @@ from ..mathdef.math_utils import rad_circular_convert, rad_clamp
 from ..renderer import OffscreenCamera
 from ..ui.camera_widget import CameraWidget, CameraWidgetEvent
 
-__all__ = ["CameraController", "QtCameraController"]
+__all__ = ["Camera3DController", "QtCamera3DController"]
 
 
-class CameraController:
-    def __init__(self, camera: OffscreenCamera, position: vec3, theta: float, phi: float, dist: float):
+class Camera3DController:
+    def __init__(
+        self,
+        camera: OffscreenCamera,
+        position: vec3,
+        theta: float,
+        phi: float,
+        dist: float,
+        repaint_func: Optional[Callable] = None,
+    ):
         self.camera: OffscreenCamera = camera
         self._position: vec3 = position
         self.theta: float = theta
@@ -43,12 +51,17 @@ class CameraController:
         self.rscale: float = 5e-3
         self.tscale: float = 1e-1
         self.zscale: float = 1e-1
+        self._repaint_func = repaint_func
 
-        self.apply_camera_position()
+        self.apply_camera_position(False)  # don't repaint when the controller is created
 
     def cameras(self) -> Generator[OffscreenCamera, None, None]:
         yield self.camera
 
+    def repaint(self):
+        if self._repaint_func is not None:
+            self._repaint_func()
+            
     @property
     def z_lock(self) -> bool:
         return self._is_z_locked
@@ -143,15 +156,18 @@ class CameraController:
 
         self.apply_camera_position()
 
-    def apply_camera_position(self):
+    def apply_camera_position(self, do_repaint=True):
         rot = self.get_rotation()
         campos = (rot * vec3(0, -self.dist, 0)) + self.position
         up = rot * vec3.Z
 
         self.camera.set_camera_lookat(campos, self.position, up)
 
+        if do_repaint:
+            self.repaint()
 
-class QtCameraController(CameraController):
+
+class QtCamera3DController(Camera3DController):
     def attach_events(self, events):
         events.add_handler(CameraWidgetEvent._mouse_pressed, self._mouse_pressed)
         events.add_handler(CameraWidgetEvent._mouse_moved, self._mouse_moved)
@@ -179,10 +195,9 @@ class QtCameraController(CameraController):
             self.translate_camera_relative(0, -dy, 0)
 
         self.apply_camera_position()
-        widget.repaint_on_ready()
         self.last_pos = (event.x(), event.y())
 
     def _mouse_wheel(self, widget: CameraWidget, event: QtGui.QWheelEvent):
         self.zoom(-event.angleDelta().y())
         self.apply_camera_position()
-        widget.repaint_on_ready()
+        

@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets
 import eidolon.renderer
 import eidolon.ui
 from eidolon.mathdef import generate_axes_arrows, vec3
-from eidolon.scene import QtCameraController
+from eidolon.scene import QtCamera3DController
 
 win = eidolon.ui.SimpleApp(1200, 800)
 

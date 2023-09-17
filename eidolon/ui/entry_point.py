@@ -19,16 +19,15 @@
 import sys
 from pathlib import Path
 
-from eidolon.mathdef import vec3
-from eidolon.renderer import Light, LightType, OffscreenCamera
-from eidolon.resources import has_resource, read_text
-from eidolon.ui import CameraWidget, MainWindow, add_search_path, exec_ui, init_ui
-
 __all__ = ["create_default_app", "default_entry_point"]
 
 
 def create_default_app(argv=None):
-    from eidolon.scene import QtCameraController, SceneManager
+    from eidolon.mathdef import vec3
+    from eidolon.renderer import Light, LightType, OffscreenCamera
+    from eidolon.resources import has_resource, read_text
+    from eidolon.ui import CameraWidget, MainWindow, add_search_path, init_ui, rename_ui_paths
+    from eidolon.scene import QtCamera3DController, SceneManager
     from eidolon.utils.config import ConfigVarNames, load_config
 
     conf = load_config()
@@ -44,33 +43,39 @@ def create_default_app(argv=None):
     elif has_resource(sheet_value):
         sheet = read_text(sheet_value)
 
-    app.setStyleSheet(sheet)
+    app.setStyleSheet(rename_ui_paths(sheet))
 
     add_search_path("icons", "icons")
 
     win = MainWindow(conf)
 
     cam = OffscreenCamera("test", 400, 400)
-
     camwidget = CameraWidget(cam)
 
-    ctrl = QtCameraController(cam, vec3.zero, 0, 0, 50)
+    ctrl = QtCamera3DController(cam, vec3.zero, 0, 0, 50, camwidget.repaint_on_ready)
     ctrl.attach_events(camwidget.events)
 
     win.setCentralWidget(camwidget)
 
-    mgr = SceneManager(conf, win)
+    mgr = SceneManager.init(conf, win)
+
     mgr.cameras.append(cam)
     mgr.controller = ctrl
 
     amb = Light("amb", LightType.AMBIENT, (0.3, 0.3, 0.3, 1))
     amb.attach(cam)
-    mgr.lights.append(amb)
+
+    dlight = Light("dlight", LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
+    dlight.attach(cam, True)
+
+    mgr.lights+=[amb, dlight]
 
     return app, mgr
 
 
 def default_entry_point(argv=None):
+    from eidolon.ui import exec_ui
+
     if argv is None:
         argv = sys.argv
 

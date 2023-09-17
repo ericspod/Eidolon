@@ -71,7 +71,7 @@ class CameraWidget(QtWidgets.QWidget):
         self.events.trigger_event(name, widget=self, event=evt)
 
     @property
-    def events(self):
+    def events(self) -> EventDispatcher:
         return self._events
 
     @qtmainthread

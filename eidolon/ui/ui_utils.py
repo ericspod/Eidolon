@@ -319,19 +319,19 @@ def choose_file_dialog(
         if choose_multiple:
             fnames = QtWidgets.QFileDialog.getOpenFileNames(parent, title, opendir, filterstr)
 
-            result = [os.path.abspath(str(f)) for f in fnames[0]]
+            result = fnames[0]
         else:
             fname = QtWidgets.QFileDialog.getOpenFileName(parent, title, opendir, filterstr)
-            result = [str(fname[0])]
+            result = [fname[0]]
     else:
         options = QtWidgets.QFileDialog.Options()
         if not confirm_overwrite:
             options |= QtWidgets.QFileDialog.DontConfirmOverwrite
 
         fname = QtWidgets.QFileDialog.getSaveFileName(parent, title, opendir, filterstr, "", options)
-        result = [str(fname[0])]
+        result = [fname[0]]
 
-    return list(filter(bool, result))
+    return [str(r) for r in result if r]
 
 
 @qtmainthread
