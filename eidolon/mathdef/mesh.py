@@ -68,7 +68,7 @@ class Mesh:
         self.parent: Mesh = parent
 
         self.properties: Dict[Union[str, Tuple[str, str]], Any] = {}  # general purpose properties for the mesh
-        self.other_data: Dict[Union[str, Tuple[str, str]], Any] = {}  # data arrays that aren't one of the other types
+        self.other_data: Dict[Union[str, Tuple[str, str]], Any] = {}  # other data, data arrays not one of other types
 
         for name, vals in topo_sets.items():
             self.set_topology(name, *vals)

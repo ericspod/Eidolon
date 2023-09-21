@@ -371,7 +371,6 @@ class TaskQueue(object):
                     self.current_task.flush_queue = True
 
                 except Exception as e:
-                    print("EX",e,self.current_task is not None)
                     # if no current task then some non-task exception we don't care about has occurred
                     if self.current_task is not None:
                         self.task_except(e, "", "Exception from queued task " + self.current_task.label)
@@ -416,6 +415,14 @@ class TaskQueue(object):
             return self.current_task.label, self.current_task.progress, self.current_task.max_progress
         else:
             return "", 0, 0
+
+    @locking
+    def set_task_status(self, task_label, cur_progress, max_progress):
+        """Set the current task status to the given values, do nothing if there's no current task."""
+        if self.current_task is not None:
+            self.current_task.label = task_label
+            self.current_task.progress = cur_progress
+            self.current_task.max_progress = max_progress
 
     def task_except(self, ex, msg, title):
         """Called when the task queue encounters exception `ex` with message `msg` and report window title `title`."""

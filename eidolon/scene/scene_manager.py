@@ -229,11 +229,13 @@ class SceneManager(TaskQueue):
         return first(p for p in self.global_plugins if p.name == name)
 
     def set_task_status(self, task_label, cur_progress, max_progress):
+        super().set_task_status(task_label,cur_progress,max_progress)
+        
         if self.win:
-            if max_progress<=0:
-                self.win.set_status("Ready", 0,0)
-            else:
+            if task_label:
                 self.win.set_status(task_label, cur_progress, max_progress)
+            else:
+                self.win.set_status("Ready", 0,0)
 
     def set_camera_see_all(self):
         if self.controller is not None:

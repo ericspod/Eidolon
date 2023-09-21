@@ -52,7 +52,7 @@ class Material:
 
         # self._alpha_curve: List[Tuple[float, float]] = []
         # self._spectrum: List[color] = []
-        # self._spectrum_tex: Optional[Texture] = None
+        self._spectrum_tex: Optional[Texture] = None
 
         self.pmaterial = PMaterial()
 
@@ -68,17 +68,17 @@ class Material:
         self.pmaterial.set_shininess(self.shininess)
         return self.pmaterial
 
-    # def get_texture_stages(self):
-    #     stages = []
+    def get_texture_stages(self):
+        stages = []
 
-    #     if self.texture is not None:
-    #         ts = TextureStage(MAIN_TEX_NAME)
-    #         ts.set_sort(0)
-    #         stages.append((ts, self.texture))
+        if self.texture is not None:
+            ts = TextureStage(MAIN_TEX_NAME)
+            ts.set_sort(0)
+            stages.append((ts, self.texture))
 
-    #     if self._spectrum_tex is not None:
-    #         ts = TextureStage(SPECTRUM_TEX_NAME)
-    #         ts.set_sort(1)
-    #         stages.append((ts, self._spectrum_tex))
+        if self._spectrum_tex is not None:
+            ts = TextureStage(SPECTRUM_TEX_NAME)
+            ts.set_sort(1)
+            stages.append((ts, self._spectrum_tex))
 
-    #     return stages
+        return stages

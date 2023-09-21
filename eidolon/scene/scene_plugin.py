@@ -18,7 +18,7 @@
 
 from typing import Callable, List, NamedTuple, Union
 
-from eidolon.mathdef import ElemType, Mesh, MeshDataValue, calculate_tri_mesh
+from eidolon.mathdef import ElemType, Mesh, MeshDataValue, calculate_tri_mesh, calculate_surface_mesh
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon.ui import IconName
 from eidolon.utils import Namespace, first, split_path_ext, task_method
@@ -36,6 +36,7 @@ class MeshAlgorithmDesc(NamedTuple):
 
 
 class ReprMeshAlgorithm(Namespace):
+    surfmesh=MeshAlgorithmDesc(ReprType._surface, calculate_surface_mesh, 2)
     trimesh = MeshAlgorithmDesc(ReprType._volume, calculate_tri_mesh, 3)
 
 

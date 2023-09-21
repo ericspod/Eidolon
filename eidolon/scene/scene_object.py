@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import List, Optional
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
 from eidolon.mathdef import BoundBox, Transformable, transform
-from eidolon.renderer import Figure, Material
+from eidolon.renderer import Figure, Material, make_shader_from_prefix
 from eidolon.utils import Namespace, cached_property
 
 __all__ = ["ReprType", "SceneObject", "SceneObjectRepr"]
@@ -36,7 +36,9 @@ class ReprType(Namespace):
     vertex = "Mesh Vertices"
     point = "Mesh Points"
     line = "Mesh Lines"
+    surface = "Mesh Surfaces"
     volume = "Mesh Volumes"
+
     # image types
     imagestack = "Image Stack"
     imagevolume = "Image Volume"
@@ -92,7 +94,7 @@ class SceneObject:
         return self.plugin.get_repr_types(self)
 
     def remove_repr(self, rep):
-        rep.visible=False
+        rep.visible = False
         self.reprs.remove(rep)
 
     def get_dataset(self):
@@ -146,7 +148,7 @@ class SceneObjectRepr(Transformable):
         self._current_timestep: float = 0
 
         self.figures: List[Figure] = []
-        self.secondary_figures = []
+        self.secondary_figures: List[Figure] = []
 
     def __repr__(self):
         return f"{self.__class__.__name__}<{self.name} @ {id(self):x}>"
@@ -229,7 +231,7 @@ class SceneObjectRepr(Transformable):
 
     @property
     def timestep_interval(self):
-        """Returns the interval between timesteps."""
+        """Returns the interval between timesteps, which is the mean of differences between values."""
         return np.diff(self.timestep_list).mean()
 
     def set_transform(self, trans: transform):
@@ -248,3 +250,18 @@ class SceneObjectRepr(Transformable):
 
         for fig in self.figures:
             fig.set_material(mat)
+
+    def set_shader(self, shader: Union[str, Any], apply_to_seconds=False):
+        figures = list(self.figures) + list(self.secondary_figures if apply_to_seconds else [])
+
+        if isinstance(shader, str):
+            shader = make_shader_from_prefix(shader)
+
+        for fig in figures:
+            fig.set_shader(shader)
+
+    def set_shader_input(self, name: str, *args, apply_to_seconds=False):
+        figures = list(self.figures) + list(self.secondary_figures if apply_to_seconds else [])
+
+        for fig in figures:
+            fig.set_shader_input(name,*args)

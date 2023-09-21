@@ -20,7 +20,7 @@ from panda3d.core import Shader
 
 import eidolon.resources as res
 
-__all__ = ["get_default_image_volume"]
+__all__ = ["make_shader_from_prefix", "get_default_image_volume"]
 
 
 def read_shader(filename):
@@ -34,6 +34,9 @@ def make_shader_from_prefix(prefix):
     vert = read_shader(f"{prefix}.vert") or ""
     geom = read_shader(f"{prefix}.geom") or ""
     frag = read_shader(f"{prefix}.frag") or ""
+
+    if not vert and not geom and not frag:
+        raise ValueError(f"Shader with prefix {prefix} not found")
 
     return Shader.make(Shader.SL_GLSL, vert, frag, geom)
 

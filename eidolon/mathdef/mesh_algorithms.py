@@ -20,7 +20,7 @@ from typing import Callable, Optional
 
 import numpy as np
 
-from ..utils import first, timing
+from eidolon.utils import first, timing
 from .compile_support import has_numba, jit, prange
 from .elem_type import ElemType, ElemTypeDef, get_xi_elem_directions
 from .math_types import vec3
@@ -33,6 +33,7 @@ __all__ = [
     "calculate_mesh_octree",
     "calculate_shared_nodes",
     "calculate_mesh_ext_adj",
+    "calculate_surface_mesh",
     "calculate_tri_mesh",
     "calculate_field",
     "calculate_field_colors",
@@ -214,7 +215,22 @@ def _calculate_leaf_ext_adj(
 
 
 @timing
-def calculate_tri_elem_face_meshes(et: ElemTypeDef, refine=0):
+def calculate_tri_elem_face_meshes(et: ElemTypeDef, refine: int = 0):
+    """
+    Calculate the triangle meshes for each of the faces of the given element type. An element of type `et` has
+    `num_faces` number of faces and so there is a mesh for each with xi coordinates, basis function coefficients, and
+    triangle indices. Each face will have `num_nodes` number of vertices to the mesh with `num_inds` number of
+    triangles. This function assumes the faces of `et` are all the same shape, ie. prisms not represented.
+
+    Arguments:
+        et: element type to generate the face meshes for
+        refine: refinement level for the meshes
+
+    Returns:
+        xis: (num_faces, num_nodes, 3) shape array with xi coordinates for each vertex for each face
+        coeffs: (num_faces, num_nodes, et.num_nodes) shape array with coefficient weights for every mesh vertex
+        inds: (num_faces, num_inds, 3) shape array with triangle indices for the mesh
+    """
     fet: ElemTypeDef = et.face_type
     num_faces: int = et.num_faces
 
@@ -227,6 +243,7 @@ def calculate_tri_elem_face_meshes(et: ElemTypeDef, refine=0):
     coeffs = np.zeros((num_faces, len(nodes), et.num_nodes))
     inds = np.zeros((num_faces, len(tri_inds), 3), dtype=np.int32)
 
+    # for each face calculate the mesh with outward facing triangle windings
     for face_idx in range(num_faces):
         for i, (xi0, xi1) in enumerate(nodes):
             xi = et.face_xi_to_elem_xi(face_idx, xi0, xi1)
@@ -289,6 +306,39 @@ def is_elem_inverted(nodes: np.ndarray, elem: np.ndarray, elem_dirs: np.ndarray)
 
 
 @timing
+def calculate_surface_mesh(mesh: Mesh, refine=0, topo_name=None):
+    """
+    Calculate a surface triangle mesh from the given 2D mesh. This requires the mesh to have 2D elements only. The
+    `refine` value is ignored.
+    """
+    topo_name = topo_name or first(t for t in mesh.topos if not mesh.topos[t].is_field_topo)
+    nodes = mesh.nodes
+    topo_array, et_name, _ = mesh.topos[topo_name]
+    et: ElemTypeDef = ElemType[et_name]
+    num_nodes = nodes.shape[0]
+
+    if et.dim != 2:
+        raise ValueError("Only 2D meshes can be made into surfaces directly, 3D meshes must be volumes")
+
+    if et.name != "Tri1NL":
+        raise NotImplementedError("Only triangles meshes can be made into surfaces currently")
+
+    out_nodes = nodes
+    out_inds = topo_array
+    out_norms = mesh.other_data.get(MeshDataValue._norms, None)
+
+    if out_norms is None:
+        out_norms = calculate_trimesh_normals(out_nodes, out_inds)
+
+    out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)}, {}, mesh.timestep, mesh)
+    out_mesh.other_data[MeshDataValue._xis] = None
+    out_mesh.other_data[MeshDataValue._norms] = out_norms
+    out_mesh.other_data[MeshDataValue._nodeprops] = None
+
+    return out_mesh
+
+
+@timing
 def calculate_tri_mesh(
     mesh: Mesh, refine=0, topo_name=None, external_only=True, octree_threshold=100000, octree_depth=3
 ):
@@ -299,16 +349,6 @@ def calculate_tri_mesh(
     nodes = mesh.nodes
     topo_array, et_name, _ = mesh.topos[topo_name]
     et: ElemTypeDef = ElemType[et_name]
-
-    # if et_name == ElemType._Tri1NL and refine==0:
-    #     out_nodes = np.array(nodes)
-    #     out_inds = np.array(topo_array)
-    #     out_norms = calculate_trimesh_normals(out_nodes, out_inds)
-
-    #     out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)}, {}, mesh.timestep, mesh)
-    #     out_mesh.other_data[MeshDataValue._xis] = out_xis
-    #     out_mesh.other_data[MeshDataValue._norms] = out_norms
-    #     out_mesh.other_data[MeshDataValue._nodeprops] = out_props
 
     face_xis, coeffs, face_tris = calculate_tri_elem_face_meshes(et, refine)
     num_elems = topo_array.shape[0]
@@ -337,10 +377,10 @@ def calculate_tri_mesh(
     num_nodes = num_face_nodes * num_ext_faces
     num_inds = num_face_tris * num_ext_faces
 
-    out_nodes = np.zeros((num_nodes, nodes.shape[1]), dtype=nodes.dtype)
-    out_xis = np.zeros((num_nodes, 3), dtype=np.float32)
-    out_inds = np.zeros((num_inds, 3), dtype=np.int32)
-    out_props = np.zeros((num_nodes, 2), dtype=np.int32)
+    out_nodes = np.zeros((num_nodes, nodes.shape[1]), dtype=nodes.dtype)  # output nodes
+    out_xis = np.zeros((num_nodes, 3), dtype=np.float32)  # xi coordinate of each node
+    out_inds = np.zeros((num_inds, 3), dtype=np.int32)  # output triangle indices
+    out_props = np.zeros((num_nodes, 2), dtype=np.int32)  # element and face indices for each node
 
     # if this is a 3D element compute the element edge direction matrix to detect inverted elements
     if et.dim == 3:

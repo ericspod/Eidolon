@@ -118,6 +118,18 @@ class Figure(Transformable):
         self._timestep = ts
 
     @property
+    def two_sided(self):
+        if self.camnodes:
+            return first(self.camnodes).get_two_sided()
+        
+        return False
+    
+    @two_sided.setter
+    def two_sided(self,val:bool):
+        for camnode in self.camnodes:
+            camnode.set_two_sided(val)
+
+    @property
     def render_mode(self) -> Optional[RenderMode]:
         if self.camnodes:
             mode = first(self.camnodes).get_render_mode()

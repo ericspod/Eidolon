@@ -19,55 +19,58 @@
 from typing import Union
 import os
 from eidolon.scene import MeshScenePlugin, SceneObject, SceneObjectRepr, MeshSceneObject, SceneManager, ReprType
-from eidolon.mathdef import ElemType, Mesh
+from eidolon.mathdef import ElemType, Mesh, MeshDataValue
 from eidolon.ui import choose_file_dialog
 import trimesh
 
 
 __all__ = ["TriMeshPlugin"]
 
+
 class TriMeshPlugin(MeshScenePlugin):
     def init(self, plugid: int, mgr):
-        super().init(plugid,mgr)
+        super().init(plugid, mgr)
 
         # more formats mentioned in trimesh.exchange.load.mesh_formats
-        self.file_exts+=[".obj",".stl",".ply",".xyz",".off"]  
+        self.file_exts += [".obj", ".stl", ".ply", ".xyz", ".off"]
 
         if mgr.win is not None:
-            mgr.win.add_menu_item("Import","trimesh_import","Trimesh-compatible File",self._import_menu)
+            mgr.win.add_menu_item("Import", "trimesh_import", "Trimesh-compatible File", self._import_menu)
 
     def load_object(self, filename: str, name: str = None, **kwargs) -> SceneObject:
-        tmesh=trimesh.load_mesh(filename)
+        tmesh: trimesh.Trimesh = trimesh.load_mesh(filename)
         trimesh.repair.fix_inversion(tmesh)
         trimesh.repair.fix_winding(tmesh)
 
         mesh = Mesh(tmesh.vertices, {"inds": (tmesh.faces, ElemType._Tri1NL)})
+        mesh.other_data.update(tmesh.metadata)
+
+        if tmesh.vertex_normals is not None:
+            mesh.other_data[MeshDataValue._norms] = tmesh.vertex_normals
 
         if name is None:
-            name=os.path.splitext(os.path.basename(filename))[0]
+            name = os.path.splitext(os.path.basename(filename))[0]
 
         obj = MeshSceneObject(name, [mesh], self)
 
         return obj
-    
+
     def get_menu(self, obj):
         if not isinstance(obj, SceneObject):
             return None, None
-        
-        return [obj.name, "Volumes"], self._object_menu_item
+
+        return [obj.name, "Surfaces", "Volumes"], self._object_menu_item
 
     def _object_menu_item(self, obj: Union[SceneObject, SceneObjectRepr], item: str):
-        if item=="Volumes":
+        if item == "Volumes":
             repr = self.create_repr(obj, ReprType._volume)
             self.mgr.add_scene_object_repr(repr)
 
     def _import_menu(self):
-        fname=self.mgr.win.choose_file_dialog("Choose TriMesh file")
+        fname = self.mgr.win.choose_file_dialog("Choose Trimesh file")
         if fname:
-            obj=self.load_object(fname[0])
+            obj = self.load_object(fname[0])
             self.mgr.add_scene_object(obj)
-
-
 
 
 SceneManager.add_plugin(TriMeshPlugin("TriMesh"))
