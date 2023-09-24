@@ -461,6 +461,7 @@ def divide_quad_to_tri_mesh(n: int = 0):
 
 
 def generate_separate_tri_mesh(nodes, indices):
+    """Generate a mesh from the given nodes and indices with unique nodes for every element vertex."""
     out_nodes = []
     out_inds = []
 

@@ -25,7 +25,7 @@ from .compile_support import has_numba, jit, prange
 from .elem_type import ElemType, ElemTypeDef, get_xi_elem_directions
 from .math_types import vec3
 from .math_utils import FEPSILON, HALFPI, angle_between, len3, plane_norm
-from .mesh import Mesh, MeshDataValue
+from .mesh import Mesh, MeshDataValue, Topology, Field
 from .mesh_utils import divide_quad_to_tri_mesh, divide_tri_to_tri_mesh
 from .octree import Octree
 
@@ -38,6 +38,7 @@ __all__ = [
     "calculate_field",
     "calculate_field_colors",
     "calculate_trimesh_normals",
+    "calculate_inverted_tri_mesh",
 ]
 
 
@@ -509,3 +510,28 @@ def calculate_field_colors(mesh: Mesh, field_name: str, color_func: Callable, co
     mesh.other_data[MeshDataValue._colors] = out_colors
 
     return out_colors
+
+
+@timing
+def calculate_inverted_tri_mesh(mesh: Mesh):
+    """Calculate an inside-out mesh from the given triangle mesh"""
+    out_topos = {}
+
+    # invert triangle topologies
+    for name, topo in mesh.topos.items():
+        if not topo.is_field_topo and topo.elem_type == ElemType._Tri1NL:
+            data = topo.data.copy()
+            out_topos[name] = Topology(data[:, [0, 2, 1]], topo.elem_type, False)
+        else:
+            out_topos[name] = topo
+
+    out_mesh = Mesh(mesh.nodes, out_topos, mesh.fields, mesh.timestep, mesh.parent)
+    out_mesh.other_data = dict(mesh.other_data)
+    out_mesh.properties = dict(mesh.properties)
+
+    # invert norms
+    norms = out_mesh.other_data.get(MeshDataValue._norms, None)
+    if norms is not None:
+        out_mesh.other_data[MeshDataValue._norms] = -norms
+
+    return out_mesh

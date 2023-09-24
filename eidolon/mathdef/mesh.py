@@ -23,9 +23,9 @@ from typing import Any, Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 
-from ..utils import Namespace, first
+from eidolon.utils import Namespace, first
 
-__all__ = ["Mesh", "MeshDataValue"]
+__all__ = ["Mesh", "MeshDataValue","Topology", "Field"]
 
 
 class MeshDataValue(Namespace):

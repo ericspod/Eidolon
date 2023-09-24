@@ -18,7 +18,14 @@
 
 from typing import Callable, List, NamedTuple, Union
 
-from eidolon.mathdef import ElemType, Mesh, MeshDataValue, calculate_tri_mesh, calculate_surface_mesh
+from eidolon.mathdef import (
+    ElemType,
+    Mesh,
+    MeshDataValue,
+    calculate_tri_mesh,
+    calculate_surface_mesh,
+    calculate_inverted_tri_mesh,
+)
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon.ui import IconName
 from eidolon.utils import Namespace, first, split_path_ext, task_method
@@ -36,7 +43,7 @@ class MeshAlgorithmDesc(NamedTuple):
 
 
 class ReprMeshAlgorithm(Namespace):
-    surfmesh=MeshAlgorithmDesc(ReprType._surface, calculate_surface_mesh, 2)
+    surfmesh = MeshAlgorithmDesc(ReprType._surface, calculate_surface_mesh, 2)
     trimesh = MeshAlgorithmDesc(ReprType._volume, calculate_tri_mesh, 3)
 
 
@@ -137,7 +144,7 @@ class MeshScenePlugin(ScenePlugin):
 
         return reprs
 
-    def create_repr(self, obj: MeshSceneObject, repr_type: str, **kwargs):
+    def create_repr(self, obj: MeshSceneObject, repr_type: str, make_two_side=False, **kwargs):
         spatial_topos = obj.meshes[0].get_spatial_topos()
         min_dim = min(ElemType[t.elem_type].dim for t in spatial_topos.values())
 
@@ -153,6 +160,9 @@ class MeshScenePlugin(ScenePlugin):
             mesh0.share_other_data(m)
             meshm = calc_func(m, **kwargs)
             meshes.append(meshm)
+
+        if make_two_side:
+            meshes+=[calculate_inverted_tri_mesh(m) for m in meshes]
 
         for m in meshes:
             inds = first(m.topos.values()).data

@@ -66,8 +66,8 @@ in vec4 position;
 
 // in vec4 p3d_Vertex;
 
-uniform in vec3 landmark;
-uniform in float angle;
+uniform vec3 landmark;
+uniform float angle;
 
 out vec4 frag_color;
 
@@ -120,12 +120,17 @@ void main() {
     vec3 axis=normalize(-lm.xyz);
     vec3 to_vert=normalize(position.xyz-lm.xyz);
 
-    frag_color.r=length(position.xyz)*0.001;
-    frag_color.g=frag_color.b=frag_color.a=1.0;
+    // frag_color.r=length(position.xyz)*0.001;
+    // frag_color.g=frag_color.b=frag_color.a=1.0;
 
-    // frag_color.r=frag_color.g=frag_color.b=acos(dot(axis,to_vert));
+    float v_angle = acos(dot(axis,to_vert));
 
-    // float lm_angle=(1.0-dot(axis,to_vert))*PI*0.5;
+    if(v_angle<angle)
+        frag_color.a=0;
+    else if((v_angle-angle)<0.01)
+        frag_color.rgba=vec4(0,0,0,1);
+
+    // float lm_angle=(1.0-dot(axis,to_vert))*pi*0.5;
     // if(lm_angle<angle)
         // frag_color.r=1;
 
