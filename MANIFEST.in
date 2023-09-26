@@ -1,3 +1,4 @@
 include *.md
 include *.txt
-include eidolon/resources/**
+include eidolon/resources/*.*
+include eidolon/resources/**/*.*

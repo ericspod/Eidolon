@@ -7,7 +7,9 @@ build-backend = "setuptools.build_meta"
 name = "eidolon"
 description = "Experimental medical imaging visualization framework"
 license = {text = "GPLv3, see LICENSE.txt"}
-dependencies = ["numpy", "pyqt5", "pyqtgraph", "pydicom", "pylibjpeg[all]", "nibabel", "pyyaml", "panda3d", "trimesh"]
+dependencies = [
+    "numpy", "pyqt5", "pyqtgraph", "pydicom", "pylibjpeg[all]", "nibabel", "pyyaml", "panda3d", "trimesh", "scipy"
+]
 requires-python = ">=3.8"
 authors = [{ name = "Eric Kerfoot", email = "eric.kerfoot@kcl.ac.uk" }]
 dynamic = ["version", "readme"]
