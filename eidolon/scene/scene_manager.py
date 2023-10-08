@@ -16,9 +16,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
+import os
+import datetime
 import threading
 import time
 from typing import List, Optional, Union
+
+from PIL import Image
 
 from eidolon.scene.camera_controller import Camera3DController
 from eidolon.scene.scene_object import SceneObject, SceneObjectRepr
@@ -116,6 +120,8 @@ class SceneManager(TaskQueue):
         self.scriptlocals = {"mgr": self}  # local environment object scripts are executed with
         self.lastScript = ""  # name of last executed script file
 
+        self.cur_dir:str= os.getcwd()  # current directory
+
         # if self.conf.hasValue('var', 'names'):  # add command line variables to the script variable map
         #     names = self.conf.get('var', 'names').split('|')
         #     for n in names:
@@ -187,6 +193,8 @@ class SceneManager(TaskQueue):
         _click(w.removeObjectButton, self._remove_tree_object)
 
         w.treeView.doubleClicked.connect(self._tree_object_dblclick)
+
+        w.actionTake_Screenshot.triggered.connect(lambda *_:self.take_screenshot())
 
     def _process_tasks(self):
         """
@@ -310,6 +318,21 @@ class SceneManager(TaskQueue):
         for obj in list(self.objects):
             self.remove_object(obj)
 
+    def take_screenshot(self, filename=None, camera=None):
+        if filename is None:
+            filename=datetime.datetime.now().strftime(os.path.join(self.cur_dir,"screenshot_%y%m%d_%H%M%S.png"))
+
+        if camera is None:
+            camera=self.cameras[0]
+
+        @qtmainthread
+        def _take_shot():
+            cim=camera.get_memory_image()
+            Image.fromarray(cim).save(filename)
+
+        self.repaint()
+        _take_shot()
+
     def _remove_tree_object(self):
         obj = self.win.get_selected_tree_object()
         if obj is not None:
@@ -323,6 +346,6 @@ class SceneManager(TaskQueue):
             obj.visible = not obj.visible
 
             if self.win is not None:
-                self.win.set_object_icon(obj, IconName.eye if obj.visible else IconName.eyeclosed)
+                self.win.set_object_icon(obj, IconName.eye if is_visible else IconName.eyeclosed)
 
             self.repaint()
