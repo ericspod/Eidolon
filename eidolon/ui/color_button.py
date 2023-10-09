@@ -33,6 +33,7 @@ class ColorButton(QtWidgets.QPushButton):
         super().__init__(parent=parent)
         self.button_color = color
         self._evt_dispatch = evt_dispatch
+        self.clicked.connect(self._pressed)
 
     @property
     def button_color(self) -> color:
