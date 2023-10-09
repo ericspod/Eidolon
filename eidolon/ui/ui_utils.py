@@ -23,7 +23,7 @@ from functools import partial
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-from .threadsafe_calls import qtmainthread
+from eidolon.ui.threadsafe_calls import qtmainthread
 
 
 def to_qt_color(c):
@@ -31,8 +31,7 @@ def to_qt_color(c):
     if isinstance(c, QtGui.QColor):
         return c
     else:
-        c = list(c)
-        c += [1.0] * (4 - len(c))
+        c = tuple(c)+(1.0,)*4
         return QtGui.QColor(c[0] * 255, c[1] * 255, c[2] * 255, c[3] * 255)
 
 
@@ -226,12 +225,12 @@ def create_menu(title, values, default_func=lambda v: None, parent=None):
 @qtmainthread
 def choose_rgb_color_dialog(origcolor, parent, callback):
     """
-    Opens a color pick dialog initialized with `origcolor` (RGBA tuple or color object). If Ok is pressed, the
+    Opens a color pick dialog initialized with `origcolor` (RGBA tuple or QColor object). If Ok is pressed, the
     callable `callback` is invoked with the RGBA color tuple passed as the single argument, otherwise does nothing.
     """
     c = QtWidgets.QColorDialog.getColor(to_qt_color(origcolor), parent)
-    # if validQVariantStr(c):
-    callback(c.getRgbF())
+    if c.isValid() and callback is not None:
+        callback(c.getRgbF())
 
 
 @qtmainthread
