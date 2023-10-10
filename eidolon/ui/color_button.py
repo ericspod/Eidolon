@@ -21,7 +21,7 @@ from typing import Optional
 from eidolon.utils import color, EventDispatcher, Namespace
 from eidolon.ui import set_color_button, to_qt_color
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 
 class ColorButtonEvent(Namespace):

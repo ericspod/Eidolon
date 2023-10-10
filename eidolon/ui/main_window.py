@@ -28,10 +28,10 @@ from PyQt5.QtCore import Qt
 import eidolon
 from eidolon.utils import Namespace, is_darwin
 
-from .console_widget import ConsoleWidget, JupyterWidget, jupyter_present
-from .loader import load_res_layout
-from .threadsafe_calls import qtmainthread
-from .ui_utils import center_window, choose_file_dialog, resize_screen_relative, create_menu
+from eidolon.ui.console_widget import ConsoleWidget, JupyterWidget, jupyter_present
+from eidolon.ui.loader import load_res_layout
+from eidolon.ui.threadsafe_calls import qtmainthread
+from eidolon.ui.ui_utils import center_window, choose_file_dialog, resize_screen_relative, create_menu
 
 __all__ = ["IconName", "MainWindow"]
 
@@ -57,10 +57,10 @@ class IconName(Namespace):
 
 
 class TreeItem:
-    def __init__(self,obj,**named_values):
-        self.obj=obj
-        for k,v in named_values.items():
-            setattr(self,k,v)
+    def __init__(self, obj, **named_values):
+        self.obj = obj
+        for k, v in named_values.items():
+            setattr(self, k, v)
 
     def __eq__(self, value: object) -> bool:
         return self.obj == value
@@ -195,13 +195,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if not index.isValid():
             return
-        
-        item = self.tree_model.itemFromIndex(index)
-        idata=item.data()
-        if getattr(idata,"menu") is not None:
-            menu=create_menu(idata.menu[0],idata.menu[1:],lambda i: idata.menu_func(idata.obj, i))
-            menu.exec_(self.treeView.mapToGlobal(point))
 
+        item = self.tree_model.itemFromIndex(index)
+        idata = item.data()
+        if getattr(idata, "menu") is not None:
+            menu = create_menu(idata.menu[0], idata.menu[1:], lambda i: idata.menu_func(idata.obj, i))
+            menu.exec_(self.treeView.mapToGlobal(point))
 
     @qtmainthread
     def set_status(self, msg, progress=0, progressmax=0):
@@ -214,39 +213,48 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.status_progress_bar.setValue(progress)
 
     @qtmainthread
-    def add_menu_item(self,menu_name,obj_name,text,func):
-        '''
+    def add_menu_item(self, menu_name, obj_name, text, func):
+        """
         Add a menu item to the menu `menu_name', which must be one of ('File','Import','Export','Create','Project').
         The menu item is named `obj_name' with label `text', when clicked `callback' will be called with no arguments.
-        '''
-        assert menu_name in ('File','Import','Export','Create','Project')
+        """
+        assert menu_name in ("File", "Import", "Export", "Create", "Project")
 
-        action= QtWidgets.QAction(self)
+        action = QtWidgets.QAction(self)
         action.setObjectName(obj_name)
         action.setText(text)
         action.triggered.connect(func)
 
-        if menu_name=='File':
-            self.menuFile.insertAction(self.action_Quit,action)
-        elif menu_name=='Import':
+        if menu_name == "File":
+            self.menuFile.insertAction(self.action_Quit, action)
+        elif menu_name == "Import":
             self.menuImport.addAction(action)
-        elif menu_name=='Export':
+        elif menu_name == "Export":
             self.menuExport.addAction(action)
-        elif menu_name=='Create':
+        elif menu_name == "Create":
             self.menuCreate.addAction(action)
-        elif menu_name=='Project':
+        elif menu_name == "Project":
             self.menu_New_Project.addAction(action)
 
         return action
-    
-    def choose_file_dialog(self,title, opendir=None,filterstr='',is_open=True,choose_multiple=False,confirm_overwrite=True,parent=None):
-        parent=parent or self
-        opendir=opendir or self.working_dir
 
-        results = choose_file_dialog(title,parent,opendir,filterstr, is_open, choose_multiple,confirm_overwrite)
-        
+    def choose_file_dialog(
+        self,
+        title,
+        opendir=None,
+        filterstr="",
+        is_open=True,
+        choose_multiple=False,
+        confirm_overwrite=True,
+        parent=None,
+    ):
+        parent = parent or self
+        opendir = opendir or self.working_dir
+
+        results = choose_file_dialog(title, parent, opendir, filterstr, is_open, choose_multiple, confirm_overwrite)
+
         if results:
-            self.working_dir=os.path.dirname(os.path.abspath(results[0]))
+            self.working_dir = os.path.dirname(os.path.abspath(results[0]))
 
         return results
 
@@ -295,9 +303,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if item is not None:
             item.setIcon(QtGui.QIcon(icon_name))
 
-    def add_tree_object(self, obj, text: str, icon: str, menu:List[str], menu_func: Callable, parent: Optional[Any]) -> QtGui.QStandardItem:
+    def add_tree_object(
+        self,
+        obj,
+        text: str,
+        icon: str,
+        menu: Optional[List[str]],
+        menu_func: Optional[Callable],
+        prop: Optional[QtWidgets.QWidget],
+        parent: Optional[Any],
+    ) -> QtGui.QStandardItem:
         item = QtGui.QStandardItem(QtGui.QIcon(icon), text)
-        item.setData(TreeItem(obj,menu=menu,menu_func=menu_func))
+        item.setData(TreeItem(obj, menu=menu, menu_func=menu_func, prop=prop))
         parent_item = self.tree_model
 
         if parent is not None:

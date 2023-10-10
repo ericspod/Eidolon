@@ -28,12 +28,17 @@ from eidolon.mathdef import (
 )
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon.ui import IconName
+from eidolon.ui.loader import load_res_layout
 from eidolon.utils import Namespace, first, split_path_ext, task_method
 
-from .mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
-from .scene_object import ReprType, SceneObject, SceneObjectRepr
+from eidolon.scene.mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
+from eidolon.scene.scene_object import ReprType, SceneObject, SceneObjectRepr
 
 __all__ = ["MeshAlgorithmDesc", "ReprMeshAlgorithm", "ScenePlugin", "MeshScenePlugin", "ImageScenePlugin"]
+
+
+Ui_ObjectProp = load_res_layout("object_property.ui")
+Ui_ReprProp = load_res_layout("repr_property.ui")
 
 
 class MeshAlgorithmDesc(NamedTuple):
