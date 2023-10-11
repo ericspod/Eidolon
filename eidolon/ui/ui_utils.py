@@ -60,6 +60,18 @@ def signal_blocker(*objs):
         o.blockSignals(v)
 
 
+def replace_widget(orig_widg, new_widg, layout=None):
+    """Replace a widget with a new one in its containing layout."""
+    if layout is None:
+        layout = orig_widg.parent().layout()   
+        
+    layout.replaceWidget(orig_widg, new_widg)
+    new_widg.setParent(orig_widg.parent())
+    orig_widg.setParent(None)
+
+    return new_widg
+
+
 def get_wheel_delta(qwheelevent):
     """Returns a wheel scroll delta value combining the X and Y axes."""
     delta = qwheelevent.angleDelta()

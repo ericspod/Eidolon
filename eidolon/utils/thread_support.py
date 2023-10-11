@@ -371,6 +371,7 @@ class TaskQueue(object):
                     self.current_task.flush_queue = True
 
                 except Exception as e:
+                    print(e,flush=True)
                     # if no current task then some non-task exception we don't care about has occurred
                     if self.current_task is not None:
                         self.task_except(e, "", "Exception from queued task " + self.current_task.label)

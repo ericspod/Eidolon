@@ -64,7 +64,7 @@ class TreeItem:
 
     def __eq__(self, value: object) -> bool:
         return self.obj == value
-
+    
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, conf, width=1200, height=800):
@@ -138,8 +138,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         resize_screen_relative(self, 0.8, 0.8)
         center_window(self)
 
-    # def _connect_components(self):
-    #     self.removeObjectButton.clicked.connect(self._remove_button)
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_F11:
+            self.toggle_fullscreen()
+        elif e.key() == Qt.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(e)
+
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasText():
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+        pass
 
     def _show_about(self):
         """Show the about dialog box."""
@@ -154,6 +168,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
 
         QtWidgets.QMessageBox.about(self, f"About {eidolon.__appname__}", textwrap.dedent(msg))
+
+    def _menu_tree_view(self, point):
+        index = self.treeView.indexAt(point)
+
+        if not index.isValid():
+            return
+
+        item = self.tree_model.itemFromIndex(index)
+        idata = item.data()
+        if getattr(idata, "menu") is not None:
+            menu = create_menu(idata.menu[0], idata.menu[1:], lambda i: idata.menu_func(idata.obj, i))
 
     # def _check_version(v1):
     #     """
@@ -172,34 +197,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #         v1.showMsg(textwrap.dedent(msg), title)
     #     except Exception as e:
     #         QtWidgets.QMessageBox.about(v1, title, repr(e))
-
-    def keyPressEvent(self, e):
-        if e.key() == Qt.Key_F11:
-            self.toggle_fullscreen()
-        elif e.key() == Qt.Key_Escape:
-            self.close()
-        else:
-            super().keyPressEvent(e)
-
-    def dragEnterEvent(self, e):
-        if e.mimeData().hasText():
-            e.accept()
-        else:
-            e.ignore()
-
-    def dropEvent(self, e):
-        pass
-
-    def _menu_tree_view(self, point):
-        index = self.treeView.indexAt(point)
-
-        if not index.isValid():
-            return
-
-        item = self.tree_model.itemFromIndex(index)
-        idata = item.data()
-        if getattr(idata, "menu") is not None:
-            menu = create_menu(idata.menu[0], idata.menu[1:], lambda i: idata.menu_func(idata.obj, i))
             menu.exec_(self.treeView.mapToGlobal(point))
 
     @qtmainthread
@@ -275,7 +272,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #     else:
     #         self.msgdialog.addMsg(title, msg, str(text), width, height)
 
-    def find_tree_item(self, obj, search_list: Optional[list] = None):
+    def find_tree_item(self, obj, search_list: Optional[list] = None) -> Optional[QtGui.QStandardItem]:
         if search_list is None:
             search_list = self.tree_model.findItems(".*", Qt.MatchRegExp)
 
@@ -288,20 +285,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     return child
 
         return None
-
-    def get_selected_tree_object(self):
+    
+    def get_selected_tree_item(self) -> Optional[QtGui.QStandardItem]:
         indices = self.treeView.selectedIndexes()
 
         if len(indices) > 0:
-            item = self.tree_model.itemFromIndex(indices[0])
-            return item.data().obj
-        else:
-            return None
+            return self.tree_model.itemFromIndex(indices[0])
+        
+        return None
+
+    def get_selected_tree_object(self):
+        item=self.get_selected_tree_item()
+        return item.data().obj if item is not None else None
 
     def set_object_icon(self, obj, icon_name: str):
-        item = self.find_tree_item(obj)
+        item:Optional[QtGui.QStandardItem] = self.find_tree_item(obj)
         if item is not None:
             item.setIcon(QtGui.QIcon(icon_name))
+
+    def select_object(self,obj=None):
+        if obj is None:
+            self.propScrollArea.takeWidget()
+            self.treeView.clearSelection()
+            # item:Optional[QtGui.QStandardItem] = self.get_selected_tree_item()
+            # if item is not None:
+                # item.setSelected(False)
+        else:
+            item:Optional[QtGui.QStandardItem] = self.find_tree_item(obj)
+            prop=getattr(item.data(),"prop",None)
+            if prop is not None:
+                self.propScrollArea.takeWidget()
+                self.propScrollArea.setWidget(prop)
+
+
 
     def add_tree_object(
         self,

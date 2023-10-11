@@ -23,15 +23,16 @@ from eidolon.ui import set_color_button, to_qt_color
 
 from PyQt5 import QtWidgets
 
+__all__=["ColorButtonEvent", "ColorButton"]
 
 class ColorButtonEvent(Namespace):
-    selected: (QtWidgets.QPushButton, color)
+    selected = (QtWidgets.QPushButton, color)
 
 
 class ColorButton(QtWidgets.QPushButton):
-    def __init__(self, col: color, parent: QtWidgets.QWidget, evt_dispatch: Optional[EventDispatcher] = None):
-        super().__init__(parent=parent)
-        self.button_color = color
+    def __init__(self, text: str, col: color, parent: QtWidgets.QWidget, evt_dispatch: Optional[EventDispatcher] = None):
+        super().__init__(text=text,parent=parent)
+        self.button_color = col
         self._evt_dispatch = evt_dispatch
         self.clicked.connect(self._pressed)
 
@@ -42,7 +43,7 @@ class ColorButton(QtWidgets.QPushButton):
     @button_color.setter
     def button_color(self, col: color):
         self._button_color = col
-        set_color_button(col, self)
+        # set_color_button(col, self)
 
     def _pressed(self):
         c = QtWidgets.QColorDialog.getColor(to_qt_color(self.button_color), self)

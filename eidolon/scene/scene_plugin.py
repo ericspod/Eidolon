@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
-from typing import Callable, List, NamedTuple, Union
+from typing import Any, Callable, List, NamedTuple, Optional, Tuple, Union
 
 from eidolon.mathdef import (
     ElemType,
@@ -27,18 +27,13 @@ from eidolon.mathdef import (
     calculate_inverted_tri_mesh,
 )
 from eidolon.renderer import OffscreenCamera, SimpleFigure
-from eidolon.ui import IconName
-from eidolon.ui.loader import load_res_layout
+from eidolon.ui import IconName, ObjectProp, ReprProp
 from eidolon.utils import Namespace, first, split_path_ext, task_method
 
 from eidolon.scene.mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
 from eidolon.scene.scene_object import ReprType, SceneObject, SceneObjectRepr
 
 __all__ = ["MeshAlgorithmDesc", "ReprMeshAlgorithm", "ScenePlugin", "MeshScenePlugin", "ImageScenePlugin"]
-
-
-Ui_ObjectProp = load_res_layout("object_property.ui")
-Ui_ReprProp = load_res_layout("repr_property.ui")
 
 
 class MeshAlgorithmDesc(NamedTuple):
@@ -74,11 +69,18 @@ class ScenePlugin:
         """Returns the icon name for `obj` (which will likely be a member of IconName), or None for the default."""
         return IconName.default
 
+    def get_properties_panel(self, obj: Union[SceneObject, SceneObjectRepr]) -> Optional[Any]:
+        """Returns the properties panel if there is any for the given object."""
+        if isinstance(obj,SceneObject):
+            return ObjectProp(obj)
+        else:
+            return ReprProp(obj)
+
     def get_help(self) -> str:
         """Return a help text block."""
         return ""
 
-    def get_menu(self, obj):
+    def get_menu(self, obj) -> Tuple[List[str], Callable]:
         """
         Returns the menu structure for `obj` and the callback for when an item is clicked, by default this is
         self._object_menu_item. The menu structure is a list whose first element is the menu title, followed by values
@@ -167,7 +169,7 @@ class MeshScenePlugin(ScenePlugin):
             meshes.append(meshm)
 
         if make_two_side:
-            meshes+=[calculate_inverted_tri_mesh(m) for m in meshes]
+            meshes += [calculate_inverted_tri_mesh(m) for m in meshes]
 
         for m in meshes:
             inds = first(m.topos.values()).data

@@ -192,6 +192,7 @@ class SceneManager(TaskQueue):
         _click(w.clearButton, self.clear_scene)
         _click(w.removeObjectButton, self._remove_tree_object)
 
+        w.treeView.clicked.connect(self._tree_object_click)
         w.treeView.doubleClicked.connect(self._tree_object_dblclick)
 
         w.actionTake_Screenshot.triggered.connect(lambda *_:self.take_screenshot())
@@ -272,7 +273,8 @@ class SceneManager(TaskQueue):
         if self.win is not None:
             icon = plugin.get_icon(obj) or IconName.default
             menu, menu_func = plugin.get_menu(obj)
-            self.win.add_tree_object(obj, obj.label, icon, menu, menu_func, None)
+            prop=plugin.get_properties_panel(obj)
+            self.win.add_tree_object(obj=obj, text=obj.label, icon=icon, menu=menu, menu_func=menu_func, prop=prop,parent=None)
 
     def add_scene_object_repr(self, rep: SceneObjectRepr):
         if rep.parent not in self.objects:
@@ -282,9 +284,11 @@ class SceneManager(TaskQueue):
             rep.plugin.attach_repr(rep, cam)
 
         if self.win is not None:
-            item = self.win.add_tree_object(rep, rep.label, IconName.eye, None, None, rep.parent)
+            prop=rep.plugin.get_properties_panel(rep)
+            item = self.win.add_tree_object(obj=rep, text= rep.label, icon=IconName.eye, menu=None, menu_func=None, prop=prop, parent=rep.parent)
 
         self.repaint()
+        
 
     def add_object(self, obj: Union[SceneObject, SceneObjectRepr]):
         if isinstance(obj, SceneObject):
@@ -337,6 +341,10 @@ class SceneManager(TaskQueue):
         obj = self.win.get_selected_tree_object()
         if obj is not None:
             self.remove_object(obj)
+
+    def _tree_object_click(self, index):
+        obj = self.win.get_selected_tree_object()
+        self.win.select_object(obj)
 
     def _tree_object_dblclick(self, index):
         obj = self.win.get_selected_tree_object()
