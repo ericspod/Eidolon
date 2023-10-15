@@ -20,7 +20,7 @@ from typing import Callable, List, NamedTuple, Union
 
 from PyQt5 import QtWidgets
 from eidolon.ui import ColorButtonEvent, ColorButton
-from eidolon.ui.ui_utils import replace_widget
+from eidolon.ui.ui_utils import replace_widget, set_checked
 from eidolon.ui.loader import load_res_layout
 from eidolon.utils import color, EventDispatcher
 
@@ -42,4 +42,18 @@ class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.repr=repr
-        self.chooseAmbient=replace_widget(self.chooseAmbient,ColorButton("Ambient",(1,1,1,1),None))
+        # self.chooseAmbient=replace_widget(self.chooseAmbient,ColorButton("Ambient",(1,1,1,1),None))
+        self.handleCheckbox.setVisible(False)
+        self.bbCheckbox.setVisible(False)
+        self.materialBox.setVisible(False)
+        self.spectrumBox.setVisible(False)
+        self.transformBox.setVisible(False)
+        self.parentObjBox.setVisible(False)
+
+    def _update_state(self):
+        set_checked(self.repr.visible,self.visibleCheckbox)
+    
+    def showEvent(self, evt):
+        QtWidgets.QWidget.showEvent(self,evt)
+        self._update_state()
+        

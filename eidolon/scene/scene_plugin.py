@@ -28,6 +28,7 @@ from eidolon.mathdef import (
 )
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon.ui import IconName, ObjectProp, ReprProp
+from eidolon.ui.threadsafe_calls import qtmainthread
 from eidolon.utils import Namespace, first, split_path_ext, task_method
 
 from eidolon.scene.mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
@@ -69,6 +70,7 @@ class ScenePlugin:
         """Returns the icon name for `obj` (which will likely be a member of IconName), or None for the default."""
         return IconName.default
 
+    @qtmainthread
     def get_properties_panel(self, obj: Union[SceneObject, SceneObjectRepr]) -> Optional[Any]:
         """Returns the properties panel if there is any for the given object."""
         if isinstance(obj,SceneObject):

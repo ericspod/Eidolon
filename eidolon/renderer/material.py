@@ -35,6 +35,7 @@ class Material:
         name: str,
         texture: Optional[Texture] = None,
         shader: Optional[Shader] = None,
+        ambient: color = (1, 1, 1, 1),
         diffuse: color = (1, 1, 1, 1),
         emissive: color = (0, 0, 0, 0),
         specular: color = (0, 0, 0, 0),
@@ -44,6 +45,7 @@ class Material:
         self._name: str = name
         self.texture: Optional[Texture] = texture
         self.shader: Optional[Shader] = shader
+        self.ambient:color=ambient
         self.diffuse: color = diffuse
         self.emissive: color = emissive
         self.specular: color = specular
@@ -61,6 +63,7 @@ class Material:
         return self._name
 
     def get_material_obj(self) -> PMaterial:
+        self.pmaterial.set_ambient(self.ambient)
         self.pmaterial.set_diffuse(self.diffuse)
         self.pmaterial.set_specular(self.specular)
         self.pmaterial.set_emission(self.emissive)

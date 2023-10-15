@@ -48,6 +48,8 @@ class TriMeshPlugin(MeshScenePlugin):
         if tmesh.vertex_normals is not None:
             mesh.other_data[MeshDataValue._norms] = tmesh.vertex_normals
 
+        # TODO: other loaded values from trimesh compatible files like color
+        
         if name is None:
             name = os.path.splitext(os.path.basename(filename))[0]
 

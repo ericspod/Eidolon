@@ -25,10 +25,14 @@ from typing import List, Optional, Union
 from PIL import Image
 
 from eidolon.scene.camera_controller import Camera3DController
+from eidolon.scene.mesh_scene_object import MeshSceneObject
 from eidolon.scene.scene_object import SceneObject, SceneObjectRepr
-from eidolon.scene.scene_plugin import MeshScenePlugin, ScenePlugin
+from eidolon.scene.scene_plugin import ImageScenePlugin, MeshScenePlugin, ScenePlugin
 from eidolon.ui import IconName, qtmainthread
+from eidolon.ui.threadsafe_calls import connect
 from eidolon.utils import EventDispatcher, Namespace, TaskQueue, first
+from eidolon.utils.thread_support import Future
+from eidolon.utils.types import color
 
 __all__ = ["SceneManager"]
 
@@ -55,6 +59,8 @@ class SceneManager(TaskQueue):
         if SceneManager.global_instance is None:
             SceneManager.global_instance = SceneManager(conf, win)
 
+            # add default plugins
+            SceneManager.global_plugins.insert(0, ImageScenePlugin("Image"))
             SceneManager.global_plugins.insert(0, MeshScenePlugin("Mesh"))
 
             for i, p in enumerate(SceneManager.global_plugins):
@@ -120,7 +126,7 @@ class SceneManager(TaskQueue):
         self.scriptlocals = {"mgr": self}  # local environment object scripts are executed with
         self.lastScript = ""  # name of last executed script file
 
-        self.cur_dir:str= os.getcwd()  # current directory
+        self.cur_dir: str = os.getcwd()  # current directory
 
         # if self.conf.hasValue('var', 'names'):  # add command line variables to the script variable map
         #     names = self.conf.get('var', 'names').split('|')
@@ -195,7 +201,7 @@ class SceneManager(TaskQueue):
         w.treeView.clicked.connect(self._tree_object_click)
         w.treeView.doubleClicked.connect(self._tree_object_dblclick)
 
-        w.actionTake_Screenshot.triggered.connect(lambda *_:self.take_screenshot())
+        w.actionTake_Screenshot.triggered.connect(lambda *_: self.take_screenshot())
 
     def _process_tasks(self):
         """
@@ -232,19 +238,19 @@ class SceneManager(TaskQueue):
         pass
 
     def task_except(self, ex, msg, title):
-        print(ex,msg,title,flush=True)  # TODO: change to use GUI to show exception
+        print(ex, msg, title, flush=True)  # TODO: change to use GUI to show exception
 
     def get_plugin(self, name: str):
         return first(p for p in self.global_plugins if p.name == name)
 
     def set_task_status(self, task_label, cur_progress, max_progress):
-        super().set_task_status(task_label,cur_progress,max_progress)
-        
+        super().set_task_status(task_label, cur_progress, max_progress)
+
         if self.win:
             if task_label:
                 self.win.set_status(task_label, cur_progress, max_progress)
             else:
-                self.win.set_status("Ready", 0,0)
+                self.win.set_status("Ready", 0, 0)
 
     def set_camera_see_all(self):
         if self.controller is not None:
@@ -254,18 +260,24 @@ class SceneManager(TaskQueue):
         if self.controller is not None:
             self.controller.repaint()
 
-    def try_load_path(self,loadpath: str):
+    def try_load_path(self, loadpath: str):
         for p in self.global_plugins:
             if p.accept_path(loadpath):
-                obj=p.load_object(loadpath)
+                obj = p.load_object(loadpath)
                 self.add_scene_object(obj)
                 return obj
-            
+
         return None
 
     def add_scene_object(self, obj: SceneObject):
         if obj in self.objects:
             raise ValueError(f"Object already in scene: {obj}")
+
+        if obj.plugin is None:
+            if isinstance(obj, MeshSceneObject):
+                obj.plugin = self.get_plugin("Mesh")
+            # elif isinstance(obj, ImageSceneObject):
+            # obj.plugin=self.get_plugin("Image")
 
         self.objects.append(obj)
         plugin: ScenePlugin = obj.plugin
@@ -273,22 +285,32 @@ class SceneManager(TaskQueue):
         if self.win is not None:
             icon = plugin.get_icon(obj) or IconName.default
             menu, menu_func = plugin.get_menu(obj)
-            prop=plugin.get_properties_panel(obj)
-            self.win.add_tree_object(obj=obj, text=obj.label, icon=icon, menu=menu, menu_func=menu_func, prop=prop,parent=None)
+            prop = Future.get(plugin.get_properties_panel(obj))
+            self.win.add_tree_object(
+                obj=obj, text=obj.label, icon=icon, menu=menu, menu_func=menu_func, prop=prop, parent=None
+            )
 
-    def add_scene_object_repr(self, rep: SceneObjectRepr):
-        if rep.parent not in self.objects:
-            raise ValueError(f"Repr is not for an object in the scene: {rep}")
+    def add_scene_object_repr(self, repr: SceneObjectRepr):
+        if repr.parent not in self.objects:
+            raise ValueError(f"Repr is not for an object in the scene: {repr}")
 
         for cam in self.controller.cameras():
-            rep.plugin.attach_repr(rep, cam)
+            repr.plugin.attach_repr(repr, cam)
 
         if self.win is not None:
-            prop=rep.plugin.get_properties_panel(rep)
-            item = self.win.add_tree_object(obj=rep, text= rep.label, icon=IconName.eye, menu=None, menu_func=None, prop=prop, parent=rep.parent)
+            prop = Future.get(repr.plugin.get_properties_panel(repr))
+
+            def _set_visible():
+                self.set_visible(repr, prop.visibleCheckbox.isChecked())
+                prop.show()
+
+            connect(prop.visibleCheckbox.stateChanged, _set_visible)
+
+            item = self.win.add_tree_object(
+                obj=repr, text=repr.label, icon=IconName.eye, menu=None, menu_func=None, prop=prop, parent=repr.parent
+            )
 
         self.repaint()
-        
 
     def add_object(self, obj: Union[SceneObject, SceneObjectRepr]):
         if isinstance(obj, SceneObject):
@@ -324,18 +346,37 @@ class SceneManager(TaskQueue):
 
     def take_screenshot(self, filename=None, camera=None):
         if filename is None:
-            filename=datetime.datetime.now().strftime(os.path.join(self.cur_dir,"screenshot_%y%m%d_%H%M%S.png"))
+            filename = datetime.datetime.now().strftime(os.path.join(self.cur_dir, "screenshot_%y%m%d_%H%M%S.png"))
 
         if camera is None:
-            camera=self.cameras[0]
+            camera = self.cameras[0]
 
         @qtmainthread
         def _take_shot():
-            cim=camera.get_memory_image()
+            cim = camera.get_memory_image()
             Image.fromarray(cim).save(filename)
 
         self.repaint()
         _take_shot()
+
+    @qtmainthread
+    def set_visible(self, repr: SceneObjectRepr, visible: bool):
+        repr.visible = visible
+
+        if self.win is not None:
+            self.win.set_object_icon(repr, IconName.eye if visible else IconName.eyeclosed)
+
+        self.repaint()
+
+    def set_material_properties(
+        self,
+        repr: SceneObjectRepr,
+        ambient: Optional[color] = None,
+        diffuse: Optional[color] = None,
+        emissive: Optional[color] = None,
+        specular: Optional[color] = None,
+    ):
+        pass
 
     def _remove_tree_object(self):
         obj = self.win.get_selected_tree_object()
@@ -348,12 +389,5 @@ class SceneManager(TaskQueue):
 
     def _tree_object_dblclick(self, index):
         obj = self.win.get_selected_tree_object()
-
         if isinstance(obj, SceneObjectRepr):
-            is_visible = obj.visible
-            obj.visible = not obj.visible
-
-            if self.win is not None:
-                self.win.set_object_icon(obj, IconName.eye if is_visible else IconName.eyeclosed)
-
-            self.repaint()
+            self.set_visible(obj, not obj.visible)

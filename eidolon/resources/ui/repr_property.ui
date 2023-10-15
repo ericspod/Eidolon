@@ -443,7 +443,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="transformBox">
      <property name="title">
       <string>Transform</string>
      </property>
@@ -686,7 +686,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="parentObjBox">
      <property name="minimumSize">
       <size>
        <width>0</width>

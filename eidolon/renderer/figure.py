@@ -169,6 +169,9 @@ class Figure(Transformable):
         for camnode in self.camnodes:
             camnode.set_shader_input(name, *args)
 
+    def get_material(self)->PMaterial:
+        return first(self.camnodes).get_material()
+
     def set_material(self, mat: PMaterial):
         for camnode in self.camnodes:
             camnode.set_material(mat)

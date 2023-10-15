@@ -298,6 +298,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         item=self.get_selected_tree_item()
         return item.data().obj if item is not None else None
 
+    @qtmainthread
     def set_object_icon(self, obj, icon_name: str):
         item:Optional[QtGui.QStandardItem] = self.find_tree_item(obj)
         if item is not None:
@@ -317,8 +318,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.propScrollArea.takeWidget()
                 self.propScrollArea.setWidget(prop)
 
-
-
+    @qtmainthread
     def add_tree_object(
         self,
         obj,

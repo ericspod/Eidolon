@@ -332,6 +332,7 @@ def calculate_surface_mesh(mesh: Mesh, refine=0, topo_name=None):
         out_norms = calculate_trimesh_normals(out_nodes, out_inds)
 
     out_mesh = Mesh(out_nodes, {"inds": (out_inds, ElemType._Tri1NL)}, {}, mesh.timestep, mesh)
+    out_mesh.other_data.update(mesh.other_data)
     out_mesh.other_data[MeshDataValue._xis] = None
     out_mesh.other_data[MeshDataValue._norms] = out_norms
     out_mesh.other_data[MeshDataValue._nodeprops] = None

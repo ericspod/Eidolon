@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import Any, Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
+from eidolon.mathdef.math_utils import iter_to_np
 
 from eidolon.utils import Namespace, first
 
@@ -61,7 +62,7 @@ class Field(NamedTuple):
 
 class Mesh:
     def __init__(self, nodes, topo_sets={}, field_sets={}, timestep=0, parent=None):
-        self.nodes: np.ndarray = np.asarray(nodes)  # array of node values
+        self.nodes: np.ndarray = iter_to_np(nodes, np.float32)  # array of node values
         self.topos: Dict[str, Topology] = {}  # topologies for mesh or fields
         self.fields: Dict[str, Field] = {}  # data fields, per-node or per-element
         self.timestep: float = timestep  # timestep this mesh is at
@@ -77,11 +78,11 @@ class Mesh:
             self.set_field(name, *vals)
 
     def set_topology(self, name, index_array, elem_type=None, is_field_topo=False):
-        self.topos[name] = Topology(np.asarray(index_array), elem_type, is_field_topo)
+        self.topos[name] = Topology(iter_to_np(index_array), elem_type, is_field_topo)
 
     def set_field(self, name, data_array, spatial_topology, field_topology=None, is_per_elem=False):
         field_topology = field_topology or spatial_topology
-        self.fields[name] = Field(np.asarray(data_array), spatial_topology, field_topology, is_per_elem)
+        self.fields[name] = Field(iter_to_np(data_array), spatial_topology, field_topology, is_per_elem)
 
     def get_spatial_topos(self) -> Dict[str, Topology]:
         return {n: t for n, t in self.topos.items() if not t.is_field_topo}
