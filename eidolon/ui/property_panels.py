@@ -43,6 +43,7 @@ class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
         self.setupUi(self)
         self.repr=repr
         # self.chooseAmbient=replace_widget(self.chooseAmbient,ColorButton("Ambient",(1,1,1,1),None))
+        self.visibleCheckbox.setVisible(False)
         self.handleCheckbox.setVisible(False)
         self.bbCheckbox.setVisible(False)
         self.materialBox.setVisible(False)
@@ -51,7 +52,8 @@ class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
         self.parentObjBox.setVisible(False)
 
     def _update_state(self):
-        set_checked(self.repr.visible,self.visibleCheckbox)
+        # set_checked(self.repr.visible,self.visibleCheckbox)
+        pass
     
     def showEvent(self, evt):
         QtWidgets.QWidget.showEvent(self,evt)

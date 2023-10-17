@@ -152,6 +152,27 @@ class MeshScenePlugin(ScenePlugin):
             reprs.append(ReprType._volume)
 
         return reprs
+    
+    def get_menu(self, obj):
+        if not isinstance(obj, SceneObject):
+            return None, None
+
+        menu=[obj.name]
+        if obj.get_max_dimensions()>1:
+            menu+=[ReprType.surface,ReprType.volume]
+
+        return menu, self._object_menu_item
+
+    def _object_menu_item(self, obj: Union[SceneObject, SceneObjectRepr], item: str):
+        repr:Optional[SceneObjectRepr]=None
+
+        if item == ReprType.surface:
+            repr = self.create_repr(obj, ReprType._surface,make_two_side=True)
+        elif item == ReprType.volume:
+            repr = self.create_repr(obj, ReprType._volume)
+
+        if repr is not None:
+            self.mgr.add_scene_object_repr(repr)
 
     def create_repr(self, obj: MeshSceneObject, repr_type: str, make_two_side=False, **kwargs):
         spatial_topos = obj.meshes[0].get_spatial_topos()

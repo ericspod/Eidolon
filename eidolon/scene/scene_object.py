@@ -123,6 +123,10 @@ class SceneObject:
         starttime = ts[0]
         interval = np.diff(ts).mean() if len(ts) > 1 else 0
         return starttime, interval
+    
+    def get_max_dimensions(self):
+        """Returns the maximum spatial dimensions used to represent data in this object."""
+        return 0
 
 
 class SceneObjectRepr(Transformable):
@@ -244,6 +248,9 @@ class SceneObjectRepr(Transformable):
     def material_name(self):
         """Returns the applied material's name."""
         return self._matname
+    
+    def get_material(self) -> Material:
+        pass
 
     def set_material(self, mat: Material):
         self._matname = mat.name

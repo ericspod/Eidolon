@@ -57,17 +57,6 @@ class TriMeshPlugin(MeshScenePlugin):
 
         return obj
 
-    def get_menu(self, obj):
-        if not isinstance(obj, SceneObject):
-            return None, None
-
-        return [obj.name, "Surfaces", "Volumes"], self._object_menu_item
-
-    def _object_menu_item(self, obj: Union[SceneObject, SceneObjectRepr], item: str):
-        if item == "Volumes":
-            repr = self.create_repr(obj, ReprType._volume)
-            self.mgr.add_scene_object_repr(repr)
-
     def _import_menu(self):
         fname = self.mgr.win.choose_file_dialog("Choose Trimesh file")
         if fname:

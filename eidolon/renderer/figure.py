@@ -121,11 +121,11 @@ class Figure(Transformable):
     def two_sided(self):
         if self.camnodes:
             return first(self.camnodes).get_two_sided()
-        
+
         return False
-    
+
     @two_sided.setter
-    def two_sided(self,val:bool):
+    def two_sided(self, val: bool):
         for camnode in self.camnodes:
             camnode.set_two_sided(val)
 
@@ -169,12 +169,14 @@ class Figure(Transformable):
         for camnode in self.camnodes:
             camnode.set_shader_input(name, *args)
 
-    def get_material(self)->PMaterial:
-        return first(self.camnodes).get_material()
+    def get_material(self) -> PMaterial:
+        pmat= first(self.camnodes).get_material()
+        return Material.from_pmaterial(pmat)
 
-    def set_material(self, mat: PMaterial):
+    def set_material(self, mat: Material):
+        pmat=mat.get_material_obj()
         for camnode in self.camnodes:
-            camnode.set_material(mat)
+            camnode.set_material(pmat)
 
     def apply_material(self, mat: Material, set_main_texture: bool = True, set_shader: bool = True):
         pm: PMaterial = mat.get_material_obj()

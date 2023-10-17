@@ -177,8 +177,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         item = self.tree_model.itemFromIndex(index)
         idata = item.data()
+
         if getattr(idata, "menu") is not None:
             menu = create_menu(idata.menu[0], idata.menu[1:], lambda i: idata.menu_func(idata.obj, i))
+            menu.exec_(self.treeView.mapToGlobal(point))
 
     # def _check_version(v1):
     #     """
@@ -197,7 +199,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     #         v1.showMsg(textwrap.dedent(msg), title)
     #     except Exception as e:
     #         QtWidgets.QMessageBox.about(v1, title, repr(e))
-            menu.exec_(self.treeView.mapToGlobal(point))
 
     @qtmainthread
     def set_status(self, msg, progress=0, progressmax=0):

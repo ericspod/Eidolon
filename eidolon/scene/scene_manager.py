@@ -300,11 +300,11 @@ class SceneManager(TaskQueue):
         if self.win is not None:
             prop = Future.get(repr.plugin.get_properties_panel(repr))
 
-            def _set_visible():
-                self.set_visible(repr, prop.visibleCheckbox.isChecked())
-                prop.show()
+            # def _set_visible():
+            #     self.set_visible(repr, prop.visibleCheckbox.isChecked())
+            #     prop.show()
 
-            connect(prop.visibleCheckbox.stateChanged, _set_visible)
+            # connect(prop.visibleCheckbox.stateChanged, _set_visible)
 
             item = self.win.add_tree_object(
                 obj=repr, text=repr.label, icon=IconName.eye, menu=None, menu_func=None, prop=prop, parent=repr.parent

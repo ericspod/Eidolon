@@ -45,10 +45,10 @@ class Material:
         self._name: str = name
         self.texture: Optional[Texture] = texture
         self.shader: Optional[Shader] = shader
-        self.ambient:color=ambient
-        self.diffuse: color = diffuse
-        self.emissive: color = emissive
-        self.specular: color = specular
+        self.ambient:color=tuple(ambient)
+        self.diffuse: color = tuple(diffuse)
+        self.emissive: color = tuple(emissive)
+        self.specular: color = tuple(specular)
         # self.refractive_index: float = refractive_index
         self.shininess: float = shininess
 
@@ -57,6 +57,17 @@ class Material:
         self._spectrum_tex: Optional[Texture] = None
 
         self.pmaterial = PMaterial()
+
+    @staticmethod
+    def from_pmaterial(pmat: PMaterial):
+        return Material(
+            name="",
+            ambient=pmat.get_ambient(),
+            diffuse=pmat.get_diffuse(),
+            emissive=pmat.get_emission(),
+            specular=pmat.get_specular(),
+            shininess=pmat.get_shininess()
+        )
 
     @property
     def name(self):

@@ -44,6 +44,9 @@ class MeshSceneObject(SceneObject):
         for fname, field in self.meshes[0].fields.items():
             self._prop_tuples.append(("Field", f"{fname}, shape: {field[0].shape}"))
 
+    def get_max_dimensions(self):
+        return max(m.get_max_dimensions() for m in self.meshes)
+
     def get_dataset(self):
         return list(self.meshes)
 

@@ -22,11 +22,14 @@ from __future__ import annotations
 from typing import Any, Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
+from eidolon.mathdef import ElemType
+from eidolon.mathdef.basis_functions import ShapeType, ShapeTypeDesc
+from eidolon.mathdef.elem_type import ElemTypeDef
 from eidolon.mathdef.math_utils import iter_to_np
 
 from eidolon.utils import Namespace, first
 
-__all__ = ["Mesh", "MeshDataValue","Topology", "Field"]
+__all__ = ["Mesh", "MeshDataValue", "Topology", "Field"]
 
 
 class MeshDataValue(Namespace):
@@ -76,6 +79,17 @@ class Mesh:
 
         for name, vals in field_sets.items():
             self.set_field(name, *vals)
+
+    def get_max_dimensions(self):
+        """Returns the maximum spatial dimension value of any spatial topology."""
+        maxdim = 0
+        for topo in self.topos.values():
+            if not topo.is_field_topo:
+                et: ElemTypeDef = ElemType[topo.elem_type]
+                st: ShapeTypeDesc = ShapeType[et.shape_type]
+                maxdim = max(maxdim, st.dim)
+
+        return maxdim
 
     def set_topology(self, name, index_array, elem_type=None, is_field_topo=False):
         self.topos[name] = Topology(iter_to_np(index_array), elem_type, is_field_topo)
