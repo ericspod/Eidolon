@@ -28,11 +28,14 @@ from eidolon.mathdef import (
 )
 from eidolon.renderer import OffscreenCamera, SimpleFigure
 from eidolon.ui import IconName, ObjectProp, ReprProp
+from eidolon.ui.property_panels import PropPanelEvent
 from eidolon.ui.threadsafe_calls import qtmainthread
 from eidolon.utils import Namespace, first, split_path_ext, task_method
 
 from eidolon.scene.mesh_scene_object import MeshSceneObject, MeshSceneObjectRepr
 from eidolon.scene.scene_object import ReprType, SceneObject, SceneObjectRepr
+from eidolon.utils.event_dispatcher import EventDispatcher
+from eidolon.utils.types import color
 
 __all__ = ["MeshAlgorithmDesc", "ReprMeshAlgorithm", "ScenePlugin", "MeshScenePlugin", "ImageScenePlugin"]
 
@@ -49,12 +52,23 @@ class ReprMeshAlgorithm(Namespace):
 
 
 class ScenePlugin:
+    """
+    Class for managing interaction and integration for scene objects and extensions to the framework. Plugins should be
+    responsible for data IO, managing behaviour of custom object types, handling UI events for these objects, and any
+    other controller behaviour which doesn't belong in the SceneManager itself.
+    """
+
     def __init__(self, name: str):
         self.plugid: int = -1
         self.name: str = name
         self.mgr = None
         self.win = None
         self.file_exts: List[str] = []
+        self.evt_dispatch = EventDispatcher()
+
+        self.evt_dispatch.add_handler(PropPanelEvent._color_changed, self._repr_color_change)
+        self.evt_dispatch.add_handler(PropPanelEvent._alpha_changed, self._repr_alpha_change)
+        
 
     def init(self, plugid: int, mgr):
         """Called when the manager is being initialized."""
@@ -73,10 +87,10 @@ class ScenePlugin:
     @qtmainthread
     def get_properties_panel(self, obj: Union[SceneObject, SceneObjectRepr]) -> Optional[Any]:
         """Returns the properties panel if there is any for the given object."""
-        if isinstance(obj,SceneObject):
-            return ObjectProp(obj)
+        if isinstance(obj, SceneObject):
+            return ObjectProp(obj, self.evt_dispatch)
         else:
-            return ReprProp(obj)
+            return ReprProp(obj, self.evt_dispatch)
 
     def get_help(self) -> str:
         """Return a help text block."""
@@ -94,6 +108,21 @@ class ScenePlugin:
     def _object_menu_item(self, obj: Union[SceneObject, SceneObjectRepr], item: str):
         """Callback to react to a menu item with value `item` being selected for object `obj`."""
         pass
+
+    def _repr_color_change(self, repr: SceneObjectRepr, component: str, value: Union[float, color]):
+        mat = repr.get_material()
+        mat.update_colors(**{component: value})
+        repr.set_material(mat)
+        self.mgr.repaint()
+
+    def _repr_alpha_change(self,repr: SceneObjectRepr, value: float):
+        mat = repr.get_material()
+        mat.ambient=mat.ambient[:3]+(value,)
+        mat.diffuse=mat.diffuse[:3]+(value,)
+        mat.emissive=mat.emissive[:3]+(value,)
+
+        repr.set_material(mat)
+        self.mgr.repaint()
 
     def get_repr_types(self, obj: SceneObject) -> List[str]:
         """Return the ReprType identifiers for the valid representations of this object."""
@@ -152,22 +181,22 @@ class MeshScenePlugin(ScenePlugin):
             reprs.append(ReprType._volume)
 
         return reprs
-    
+
     def get_menu(self, obj):
         if not isinstance(obj, SceneObject):
             return None, None
 
-        menu=[obj.name]
-        if obj.get_max_dimensions()>1:
-            menu+=[ReprType.surface,ReprType.volume]
+        menu = [obj.name]
+        if obj.get_max_dimensions() > 1:
+            menu += [ReprType.surface, ReprType.volume]
 
         return menu, self._object_menu_item
 
     def _object_menu_item(self, obj: Union[SceneObject, SceneObjectRepr], item: str):
-        repr:Optional[SceneObjectRepr]=None
+        repr: Optional[SceneObjectRepr] = None
 
         if item == ReprType.surface:
-            repr = self.create_repr(obj, ReprType._surface,make_two_side=True)
+            repr = self.create_repr(obj, ReprType._surface, make_two_side=True)
         elif item == ReprType.volume:
             repr = self.create_repr(obj, ReprType._volume)
 

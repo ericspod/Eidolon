@@ -250,7 +250,7 @@ class SceneObjectRepr(Transformable):
         return self._matname
     
     def get_material(self) -> Material:
-        pass
+        return self.figures[0].get_material()
 
     def set_material(self, mat: Material):
         self._matname = mat.name

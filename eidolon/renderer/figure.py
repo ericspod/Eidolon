@@ -171,6 +171,7 @@ class Figure(Transformable):
 
     def get_material(self) -> PMaterial:
         pmat= first(self.camnodes).get_material()
+        
         return Material.from_pmaterial(pmat)
 
     def set_material(self, mat: Material):

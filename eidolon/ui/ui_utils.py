@@ -68,6 +68,7 @@ def replace_widget(orig_widg, new_widg, layout=None):
     layout.replaceWidget(orig_widg, new_widg)
     new_widg.setParent(orig_widg.parent())
     orig_widg.setParent(None)
+    new_widg.setStyleSheet(orig_widg.styleSheet())
 
     return new_widg
 

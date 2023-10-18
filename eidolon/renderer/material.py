@@ -45,7 +45,7 @@ class Material:
         self._name: str = name
         self.texture: Optional[Texture] = texture
         self.shader: Optional[Shader] = shader
-        self.ambient:color=tuple(ambient)
+        self.ambient: color = tuple(ambient)
         self.diffuse: color = tuple(diffuse)
         self.emissive: color = tuple(emissive)
         self.specular: color = tuple(specular)
@@ -59,15 +59,37 @@ class Material:
         self.pmaterial = PMaterial()
 
     @staticmethod
-    def from_pmaterial(pmat: PMaterial):
+    def from_pmaterial(pmat: Optional[PMaterial]):
+        if pmat is None:
+            return Material("")
+        
         return Material(
             name="",
             ambient=pmat.get_ambient(),
             diffuse=pmat.get_diffuse(),
             emissive=pmat.get_emission(),
             specular=pmat.get_specular(),
-            shininess=pmat.get_shininess()
+            shininess=pmat.get_shininess(),
         )
+
+    def update_colors(
+        self,
+        ambient: Optional[color] = None,
+        diffuse: Optional[color] = None,
+        emissive: Optional[color] = None,
+        specular: Optional[color] = None,
+        shininess: Optional[float] = None,
+    ):
+        if ambient is not None:
+            self.ambient = tuple(ambient)
+        if diffuse is not None:
+            self.diffuse = tuple(diffuse)
+        if emissive is not None:
+            self.emissive = tuple(emissive)
+        if specular is not None:
+            self.specular = tuple(specular)
+        if shininess is not None:
+            self.shininess = shininess
 
     @property
     def name(self):
