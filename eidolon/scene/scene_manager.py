@@ -345,19 +345,25 @@ class SceneManager(TaskQueue):
             self.remove_object(obj)
 
     def take_screenshot(self, filename=None, camera=None):
-        if filename is None:
-            filename = datetime.datetime.now().strftime(os.path.join(self.cur_dir, "screenshot_%y%m%d_%H%M%S.png"))
+        print(filename,camera)
+        try:
+            if filename is None:
+                filename = datetime.datetime.now().strftime(os.path.join(self.cur_dir, "screenshot_%y%m%d_%H%M%S.png"))
 
-        if camera is None:
-            camera = self.cameras[0]
+            if camera is None:
+                camera = self.cameras[0]
 
-        @qtmainthread
-        def _take_shot():
-            cim = camera.get_memory_image()
-            Image.fromarray(cim).save(filename)
+            @qtmainthread
+            def _take_shot():
+                cim = camera.get_memory_image()
+                Image.fromarray(cim).save(filename)
+                print(filename)
 
-        self.repaint()
-        _take_shot()
+            self.repaint()
+            _take_shot()
+        except Exception as e:
+            print(e)
+            raise
 
     @qtmainthread
     def set_visible(self, repr: SceneObjectRepr, visible: bool):
