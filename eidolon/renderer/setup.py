@@ -119,8 +119,8 @@ else:
     destfile+='so.%s'%platdir
     
     # force the use of GCC 4.9 for now
-    os.environ["CC"] = "gcc-4.9" 
-    os.environ["CXX"] = "g++-4.9"
+    #os.environ["CC"] = "gcc-4.9" 
+    #os.environ["CXX"] = "g++-4.9"
 
 # root directory for the current platform's libraries
 libdir=os.path.abspath(os.path.join(scriptdir,'..','EidolonLibs',platdir))

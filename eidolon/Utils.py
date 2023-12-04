@@ -2369,17 +2369,6 @@ def stddev(vals, initial=0.0):
 
 def avgspan(vals):
     '''Returns the average difference between successive values derived from the given iterable.'''
-    it = iter(vals)
-    
-    try: # verify there are at least 2 values in `vals', return 0.0 if not
-        valtest=next(it),next(it)
-    except StopIteration:
-        return 0.0
-    
-#    val = tuple(next(it) for i in range(2))
-#    if len(val) != 2:
-#        return 0.0
-
     return avg(b - a for a, b in successive(vals))
 
 

@@ -30,8 +30,11 @@ import signal
 import codeop
 import textwrap
 import warnings
-    
-import sip
+
+try:
+    import sip
+except ModuleNotFoundError:
+    from PyQt5 import sip
 
 import eidolon
 import eidolon.Utils as Utils

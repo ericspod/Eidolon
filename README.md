@@ -44,6 +44,7 @@ Doxygen Documentation: [![Documentation](https://codedocs.xyz/ericspod/Eidolon.s
 The wiki https://github.com/ericspod/Eidolon/wiki is the main source of usage documentation. 
 Online documentation at runtime for Python code can be seen through the console using the **help** command.
 
+
 ## Notifications
 
 Watch this repository to receive notifications for new releases, or subscribe to the Google Group for announcements: eidolon-users+subscribe@googlegroups.com

@@ -78,7 +78,7 @@ distfile: # creates the universal distributable zip file with path DISTNAME.zip
 	$(MAKE) ui
 	$(eval DISTNAME?=Eidolon_All_$(shell ./run.sh --version 2>&1))
 	mkdir $(DISTNAME)
-	cp -Rf src EidolonLibs tutorial tests res $(DISTNAME)
+	cp -Rf eidolon tutorial tests res $(DISTNAME)
 	cp main.py run.sh run.bat config.ini *.md *.txt *.spec $(DISTNAME)
 	find $(DISTNAME) -name .DS_Store -delete
 	find $(DISTNAME) -name \*~ -delete

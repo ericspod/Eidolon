@@ -63,8 +63,8 @@ else:
     platdir='linux'
     
     # force the use of GCC 4.9 for now
-    os.environ["CC"] = "gcc-4.9" 
-    os.environ["CXX"] = "g++-4.9"
+    #os.environ["CC"] = "gcc-4.9" 
+    #os.environ["CXX"] = "g++-4.9"
 
 libdir=os.path.abspath(os.path.join(scriptdir,'EidolonLibs',platdir))
 assert os.path.isdir(libdir),'%r not found'%libdir
