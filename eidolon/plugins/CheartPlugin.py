@@ -391,8 +391,8 @@ class LoadTDDialog(Ui_TDDialog,BaseLoadDialog):
         self.xkeyframes=[]
         self.dkeyframes=[]
 
-        self.xfileTable.verticalHeader().setMovable(True)
-        self.dfileTable.verticalHeader().setMovable(True)
+        #self.xfileTable.verticalHeader().setMovable(True)
+        #self.dfileTable.verticalHeader().setMovable(True)
 
         self.xfileTable.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         self.dfileTable.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
