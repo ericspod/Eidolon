@@ -57,12 +57,15 @@ uniform struct p3d_LightSourceParameters {
 } p3d_LightSource[NUM_LIGHTS];
 
 uniform mat4 p3d_ModelViewProjectionMatrix;
+uniform mat4 p3d_ModelViewMatrix;
+uniform mat3 p3d_NormalMatrix;
 uniform mat4 p3d_ModelViewProjectionMatrixInverse;
 uniform mat3 p3d_NormalMatrixInverse;
 
 in vec4 color;
 in vec3 normal;
 in vec4 position;
+in vec4 world_position;
 
 // in vec4 p3d_Vertex;
 
@@ -117,21 +120,31 @@ void main() {
     frag_color += p3d_Material.emission;
 
     vec4 lm=p3d_ModelViewProjectionMatrix*vec4(landmark, 1);
-    vec3 axis=normalize(-lm.xyz);
-    vec3 to_vert=normalize(position.xyz-lm.xyz);
 
-    // frag_color.r=length(position.xyz)*0.001;
-    // frag_color.g=frag_color.b=frag_color.a=1.0;
+    // vec3 axis=normalize(-lm.xyz);
+    // vec3 to_vert=normalize(position.xyz-lm.xyz);
 
-    float v_angle = acos(dot(axis,to_vert));
 
-    if(v_angle<angle)
+
+    vec4 world_lm=p3d_ModelViewProjectionMatrixInverse * vec4(lm.xy,0,1);
+    vec4 world_vert=p3d_ModelViewProjectionMatrixInverse * vec4(position.xy,0,1);
+
+    vec3 clip_norm=normalize(vec3(0.5,0.5,0));
+    vec3 clip_norm_cam=p3d_NormalMatrix*clip_norm;
+    if(dot(normalize(position.xyz-lm.xyz),clip_norm_cam)>0)
         frag_color.a=0;
-    else if((v_angle-angle)<0.01)
-        frag_color.rgba=vec4(0,0,0,1);
 
-    // float lm_angle=(1.0-dot(axis,to_vert))*pi*0.5;
-    // if(lm_angle<angle)
-        // frag_color.r=1;
+    // float v_angle = acos(dot(landmark-world_lm.xyz,world_position.xyz-world_vert.xyz));
+
+
+    // // frag_color.r=length(position.xyz)*0.001;
+    // // frag_color.g=frag_color.b=frag_color.a=1.0;
+
+    // // float v_angle = acos(dot(axis,to_vert));
+
+    // if(v_angle<angle)
+    //     frag_color.a=0;
+    // else if((v_angle-angle)<0.01)
+    //     frag_color.rgba=vec4(0,0,0,1);
 
 }

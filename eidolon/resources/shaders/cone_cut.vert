@@ -12,6 +12,7 @@ out vec4 color;
 out vec3 texcoord;
 out vec3 normal;
 out vec4 position;
+out vec4 world_position;
 
 void main() {
     gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
@@ -20,4 +21,5 @@ void main() {
     texcoord = p3d_MultiTexCoord0;
     normal = normalize(p3d_NormalMatrix * p3d_Normal);
     position = gl_Position;
+    world_position = p3d_Vertex;
 }
