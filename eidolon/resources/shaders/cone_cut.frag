@@ -77,12 +77,17 @@ out vec4 frag_color;
 
 vec4 calculate_directional_light(vec3 ldir, vec3 norm, vec4 diffuse, vec3 specular, float shininess){
     ldir = normalize(ldir);
-    vec3 halfdir = normalize(ldir + vec3(0, 0, 1)); // assumes eye direction is (0,0,1)
-
     float mag = clamp(dot(ldir, norm), 0, 1);
-    float smag = clamp(dot(halfdir, norm), 0, 1);
-    float power = pow(smag, shininess);
-    return (diffuse * mag) + vec4(specular * power, 1.0);
+    vec4 result = (diffuse * mag);
+
+    if(shininess > 0) {
+        vec3 halfdir = normalize(ldir + vec3(0, 0, 1)); // assumes eye direction is (0,0,1)
+        float smag = clamp(dot(halfdir, norm), 0, 1);
+        float power = pow(smag, shininess);
+        result += vec4(specular * power, 1.0);
+    }
+
+    return result;
 }
 
 float calculate_falloff(float dist, float constant, float linear, float quadratic){
@@ -120,32 +125,15 @@ void main() {
 
     frag_color += p3d_Material.emission;
 
-    vec4 lm=p3d_ModelViewMatrix*vec4(landmark, 1);
-    vec4 world_lm=p3d_ModelViewMatrixInverse * vec4(0,0,0,1);
-    // vec4 world_vert=p3d_ModelViewProjectionMatrixInverse * vec4(position.xy,0,1);
+    vec4 world_cam = p3d_ModelViewMatrixInverse * vec4(0, 0, 0, 1);
+    vec3 axis = normalize(world_cam.xyz - landmark);
+    vec3 to_vert = normalize(world_position.xyz - landmark);
 
-    // vec3 axis=normalize(-lm.xyz);
-    vec3 axis=normalize(world_lm.xyz-landmark);
-    vec3 to_vert=normalize(world_position.xyz-landmark);
+    float v_angle = acos(dot(axis, to_vert));
 
-    // vec3 clip_norm=normalize(vec3(0.5,0.5,0));
-    // vec3 clip_norm_cam=p3d_NormalMatrix*clip_norm;
-    // if(dot(normalize(position.xyz-lm.xyz),clip_norm_cam)>0)
-    //     frag_color.a=0;
-
-
-
-    // float v_angle = acos(dot(landmark-world_lm.xyz,world_position.xyz-world_vert.xyz));
-
-
-    // // frag_color.r=length(position.xyz)*0.001;
-    // // frag_color.g=frag_color.b=frag_color.a=1.0;
-
-    float v_angle = acos(dot(axis,to_vert));
-
-    if(v_angle<angle)
-        frag_color.a=0;
-    else if((v_angle-angle)<0.01)
-        frag_color.rgba=vec4(0,0,0,1);
+    if(v_angle < angle)
+        frag_color.a = 0;
+    else if((v_angle - angle) < 0.01)
+        frag_color.rgba = vec4(0, 0, 0, 1);
 
 }

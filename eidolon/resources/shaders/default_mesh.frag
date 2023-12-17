@@ -67,12 +67,17 @@ out vec4 frag_color;
 
 vec4 calculate_directional_light(vec3 ldir, vec3 norm, vec4 diffuse, vec3 specular, float shininess){
     ldir = normalize(ldir);
-    vec3 halfdir = normalize(ldir + vec3(0, 0, 1)); // assumes eye direction is (0,0,1)
-
     float mag = clamp(dot(ldir, norm), 0, 1);
-    float smag = clamp(dot(halfdir, norm), 0, 1);
-    float power = pow(smag, shininess);
-    return (diffuse * mag) + vec4(specular * power, 1.0);
+    vec4 result = (diffuse * mag);
+
+    if(shininess > 0) {
+        vec3 halfdir = normalize(ldir + vec3(0, 0, 1)); // assumes eye direction is (0,0,1)
+        float smag = clamp(dot(halfdir, norm), 0, 1);
+        float power = pow(smag, shininess);
+        result += vec4(specular * power, 1.0);
+    }
+
+    return result;
 }
 
 float calculate_falloff(float dist, float constant, float linear, float quadratic){
