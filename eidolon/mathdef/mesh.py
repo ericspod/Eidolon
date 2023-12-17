@@ -64,6 +64,15 @@ class Field(NamedTuple):
 
 
 class Mesh:
+    @staticmethod
+    def tri_mesh(nodes,inds, norms=None,field_sets={}, timestep=0, parent=None):
+        mesh = Mesh(nodes, {"inds": (inds, ElemType._Tri1NL)},field_sets,timestep,parent)
+        
+        if norms is not None:
+            mesh.other_data[MeshDataValue._norms]=iter_to_np(norms)
+
+        return mesh
+
     def __init__(self, nodes, topo_sets={}, field_sets={}, timestep=0, parent=None):
         self.nodes: np.ndarray = iter_to_np(nodes, np.float32)  # array of node values
         self.topos: Dict[str, Topology] = {}  # topologies for mesh or fields
