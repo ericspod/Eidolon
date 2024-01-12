@@ -338,7 +338,7 @@ class TaskQueue(object):
     def __init__(self):
         self.task_list: List[Task] = []  # list of queued Task objects
         self.finished_tasks: List[Task] = []  # list of completed Task objects
-        self.current_task: Optional[Task] = None  # the current running task, None if there is none
+        self._current_task: Optional[Task] = None  # the current running task, None if there is none
         self.do_process: bool = True  # loop condition in processTaskQueue
 
     def process_queue(self):
@@ -352,13 +352,13 @@ class TaskQueue(object):
                 # remove the first task, using the self lock to prevent interference while doing so
                 with get_object_lock(self):
                     if len(self.task_list) > 0:
-                        self.current_task = self.task_list.pop(0)
+                        self._current_task = self.task_list.pop(0)
 
                 # attempt to run the task by calling its start() method, on exception report and clear the queue
                 try:
-                    if self.current_task:
-                        self.current_task.start()  # run the task's operation
-                        self.finished_tasks.append(self.current_task)
+                    if self._current_task:
+                        self._current_task.start()  # run the task's operation
+                        self.finished_tasks.append(self._current_task)
                     else:
                         time.sleep(0.1)
                 except FutureError as fe:
@@ -366,26 +366,30 @@ class TaskQueue(object):
                     while exc != fe and isinstance(exc, FutureError):
                         exc = exc.exc_value
 
-                    self.task_except(fe, exc, "Exception from queued task " + self.current_task.label)
+                    self.task_except(fe, exc, "Exception from queued task " + self._current_task.label)
                     # remove all waiting tasks; they may rely on 'task' completing correctly and deadlock
-                    self.current_task.flush_queue = True
+                    self._current_task.flush_queue = True
 
                 except Exception as e:
                     print(e,flush=True)
                     # if no current task then some non-task exception we don't care about has occurred
-                    if self.current_task is not None:
-                        self.task_except(e, "", "Exception from queued task " + self.current_task.label)
-                        self.current_task.flush_queue = True  # remove waiting tasks
+                    if self._current_task is not None:
+                        self.task_except(e, "", "Exception from queued task " + self._current_task.label)
+                        self._current_task.flush_queue = True  # remove waiting tasks
                 finally:
                     # set the current task to None, using self lock to prevent inconsistency with updatethread
                     with get_object_lock(self):
                         # clear the queue if there's a task and it wants to remove all current tasks
-                        if self.current_task is not None and self.current_task.flush_queue:
+                        if self._current_task is not None and self._current_task.flush_queue:
                             del self.task_list[:]
 
-                        self.current_task = None
+                        self._current_task = None
             except:
                 pass  # ignore errors during shutdown
+
+    @property
+    def current_task(self) -> Task:
+        return self._current_task
 
     @locking
     def add_tasks(self, *tasks: Task):
@@ -412,18 +416,18 @@ class TaskQueue(object):
     @locking
     def task_status(self):
         """Returns the current task lable, progress, and max progress, or ("",0,0) if no task running."""
-        if self.current_task is not None:
-            return self.current_task.label, self.current_task.progress, self.current_task.max_progress
+        if self._current_task is not None:
+            return self._current_task.label, self._current_task.progress, self._current_task.max_progress
         else:
             return "", 0, 0
 
     @locking
     def set_task_status(self, task_label, cur_progress, max_progress):
         """Set the current task status to the given values, do nothing if there's no current task."""
-        if self.current_task is not None:
-            self.current_task.label = task_label
-            self.current_task.progress = cur_progress
-            self.current_task.max_progress = max_progress
+        if self._current_task is not None:
+            self._current_task.label = task_label
+            self._current_task.progress = cur_progress
+            self._current_task.max_progress = max_progress
 
     def task_except(self, ex, msg, title):
         """Called when the task queue encounters exception `ex` with message `msg` and report window title `title`."""

@@ -3,7 +3,6 @@
 http://doc.qt.io/qt-5/stylesheet-reference.html
 http://doc.qt.io/qt-5/stylesheet-examples.html
 
-change stylesheet in console: mgr.callThreadSafe(getUIApp().setStyleSheet,open('res/DefaultUIStyle.css').read()) 
 */
 
 QWidget {

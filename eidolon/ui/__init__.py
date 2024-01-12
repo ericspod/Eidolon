@@ -27,4 +27,4 @@ from .threadsafe_calls import *
 from .ui_utils import *
 from .color_button import *
 from .property_panels import *
-
+from .sceneobject_tree import *

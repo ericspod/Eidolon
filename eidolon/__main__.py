@@ -17,6 +17,6 @@
 # with this program (LICENSE.txt).  If not, see <http://www.gnu.org/licenses/>
 
 if __name__ == "__main__":
-    from eidolon.ui import default_entry_point
+    from eidolon.ui import main
 
-    default_entry_point()
+    main()

@@ -28,9 +28,11 @@ from eidolon.scene.camera_controller import Camera3DController
 from eidolon.scene.mesh_scene_object import MeshSceneObject
 from eidolon.scene.scene_object import SceneObject, SceneObjectRepr
 from eidolon.scene.scene_plugin import ImageScenePlugin, MeshScenePlugin, ScenePlugin
-from eidolon.ui import IconName, qtmainthread
+from eidolon.ui import IconName, qtmainthread, MainWindowEvent
 from eidolon.ui.threadsafe_calls import connect
+from eidolon.ui.ui_utils import choose_file_dialog
 from eidolon.utils import EventDispatcher, Namespace, TaskQueue, first
+from eidolon.utils.path_utils import is_text_file
 from eidolon.utils.thread_support import Future
 from eidolon.utils.types import color
 
@@ -90,26 +92,11 @@ class SceneManager(TaskQueue):
         self.lights = []  # existing light objects
         self.programs = []  # existing shader GPU program names
 
-        # self.ambient_color = (1, 1, 1, 1)
-        # self.background_color = (1, 1, 1, 1)
-
-        # # secondary scene elements
-        # self.bbmap = {}  # maps representations to their bounding boxes
-        # self.handlemap = {}  # maps representations to their handles (Repr -> list<Handle>), only populated when handles are first requested
-
         # task related components
         # thread in which tasks are executed, None if no tasks are being run
         self.taskthread = threading.Thread(target=self._process_tasks)
         self.taskthread.daemon = True
         self.updatethread = None
-
-        # # scene component controllers
-        # self.matcontrol = SceneComponents.MaterialController(self,
-        #                                                      self.win)  # the material controller responsible for all materials
-        # self.lightcontrol = SceneComponents.LightController(self,
-        #                                                     self.win)  # the light controller responsible for light UI
-        # self.progcontrol = SceneComponents.GPUProgramController(self,
-        #                                                         self.win)  # the shader GPU program controller responsible for the UI
 
         # time stepping components
         self.timestep = 0
@@ -128,68 +115,14 @@ class SceneManager(TaskQueue):
 
         self.cur_dir: str = os.getcwd()  # current directory
 
-        # if self.conf.hasValue('var', 'names'):  # add command line variables to the script variable map
-        #     names = self.conf.get('var', 'names').split('|')
-        #     for n in names:
-        #         self.scriptlocals[n] = self.conf.get('var', n)
-
-        # def exceptionHook(exctype, value, tb):
-        #     msg = '\n'.join(traceback.format_exception(exctype, value, tb))
-        #     self.showExcept(value, str(value), 'Unhandled Exception', msg)
-        #
-        # sys.excepthook = exceptionHook
-
-        # # create default plugins for meshes and images added to the manager without one provided
-        # self.meshplugin = ScenePlugin.MeshScenePlugin('MeshPlugin')
-        # self.imageplugin = ScenePlugin.ImageScenePlugin('ImgPlugin')
-        #
-        # self.meshplugin.init(0, self.win, self)
-        # self.imageplugin.init(1, self.win, self)
-
-        # global globalPlugins
-        # globalPlugins = [self.meshplugin, self.imageplugin] + globalPlugins
-        #
-        # for plug in globalPlugins:
-        #     self.scriptlocals[plug.name.replace(' ', '_')] = plug
-
-        if self.win is not None:  # window setup
-            self.win.mgr = self
-            # self.scene = self.win.scene
-        #
-        #     self.evtHandler = self.win.viz.evtHandler
-        #
-        #     if self.win.console:
-        #         self.win.console.updateLocals(self.scriptlocals)
-        #         self.win.consoleWidget.setVisible(conf.hasValue('args', 'c'))
-        #
-        #     self.callThreadSafe(self._windowConnect)
-
-        # # set config values
-        # if self.conf.get(platformID, 'renderhighquality').lower() == 'true':
-        #     self.setAlwaysHighQual(True)
-        #
-        # # add the necessary repaint handlers to respond to mouse actions
-        # self.addEventHandler(EventType._mousePress, lambda _: self.repaint(False), isPostEvent=True)
-        # self.addEventHandler(EventType._mouseRelease, lambda _: self.repaint(False), isPostEvent=True)
-        # self.addEventHandler(EventType._mouseMove, lambda _: self.repaint(False), isPostEvent=True)
-        # self.addEventHandler(EventType._mouseWheel, lambda _: self.repaint(False), isPostEvent=True)
-        #
-        # self.addEventHandler(EventType._widgetPreDraw, self._updateUI)  # update UI when redrawing
-        # self.addEventHandler(EventType._widgetPreDraw,
-        #                      self._updateManagedObjects)  # update boxes and handles before drawing
-        # self.addEventHandler(EventType._widgetPostDraw,
-        #                      self._repaintHighQual)  # repaint again in high quality if the first paint was in low quality
-        # self.addEventHandler(EventType._mousePress, self._mousePressHandleCheck)  # transmit mouse presses to handles
-        # self.addEventHandler(EventType._mouseMove, self._mouseMoveHandleCheck)  # transmit mouse moves to handles
-        # self.addEventHandler(EventType._mouseRelease,
-        #                      self._mouseReleaseHandleCheck)  # transmit mouse release to handles
-        # self.addEventHandler(EventType._keyPress, self._keyPressEvent)
-
         self.taskthread.start()  # start taskthread here
 
     @qtmainthread
     def ui_init(self):
         w = self.win
+        w.mgr=self
+
+        w.treeView.evt_dispatch=self.evt_dispatch
 
         def _click(widg, func):
             widg.clicked.connect(func)
@@ -198,10 +131,12 @@ class SceneManager(TaskQueue):
         _click(w.clearButton, self.clear_scene)
         _click(w.removeObjectButton, self._remove_tree_object)
 
-        w.treeView.clicked.connect(self._tree_object_click)
-        w.treeView.doubleClicked.connect(self._tree_object_dblclick)
+        self.evt_dispatch.add_handler(MainWindowEvent._tree_clicked,self.win.select_object)
+        self.evt_dispatch.add_handler(MainWindowEvent._tree_dbl_clicked,self._tree_object_dblclick)
 
         w.actionTake_Screenshot.triggered.connect(lambda *_: self.take_screenshot())
+
+        w.action_Open_Script.triggered.connect(self._load_script)
 
     def _process_tasks(self):
         """
@@ -252,15 +187,58 @@ class SceneManager(TaskQueue):
             else:
                 self.win.set_status("Ready", 0, 0)
 
+    def exec_scripts_task(self, *filenames):
+        def _exec_scripts():
+            for idx, fn in enumerate(filenames):
+                fn = os.path.abspath(fn)
+                self.set_task_status(f"Executing {fn}", idx, len(filenames))
+                self.exec_script(fn)
+
+        self.add_func_task(_exec_scripts, "Execute scripts")
+
+    def exec_script(self, filename, update_locals=True):
+        """Executes the given script file using internal environment, updates local/console variables if `update_locals'."""
+        if not os.path.isfile(filename):
+            raise IOError(f"Cannot execute {filename} (not a file)")
+
+        if not is_text_file(filename):
+            raise IOError(f"Cannot execute {filename} (not a script file)")
+
+        self.last_script = (filename, update_locals)  # save the path of the last script to run it again
+
+        self.scriptlocals["scriptdir"] = os.path.split(os.path.abspath(filename))[0] + os.path.sep
+        self.scriptlocals["task"] = self.current_task
+
+        scriptlocals = self.scriptlocals
+        if not update_locals:  # if not updating local variables, copy so stored version isn't changed
+            scriptlocals = dict(scriptlocals)
+
+        comp = compile(open(filename).read(), os.path.abspath(filename), "exec")
+        exec(comp, scriptlocals, None)
+
+        # if self.win and update_locals:
+        # self.win.console.updateLocals(self.scriptlocals)
+
     def set_camera_see_all(self):
+        """Move the camera to see all visible objects in the scene."""
         if self.controller is not None:
             self.controller.set_camera_see_all()
 
     def repaint(self):
+        """Repaint the scene."""
         if self.controller is not None:
             self.controller.repaint()
 
+    def update_ui(self):
+        """Update UI elements to display correctly when state changes. This will do nothing if there's no UI."""
+        if self.win:
+            self.win.update_ui()
+
     def try_load_path(self, loadpath: str):
+        """
+        Attempt to find a plugin to load the file/directory at location `loadpath`, returning the loaded object or 
+        None if nothing loaded because an acceptable plugin wasn't found.
+        """
         for p in self.global_plugins:
             if p.accept_path(loadpath):
                 obj = p.load_object(loadpath)
@@ -345,7 +323,7 @@ class SceneManager(TaskQueue):
             self.remove_object(obj)
 
     def take_screenshot(self, filename=None, camera=None):
-        print(filename,camera)
+        print(filename, camera)
         try:
             if filename is None:
                 filename = datetime.datetime.now().strftime(os.path.join(self.cur_dir, "screenshot_%y%m%d_%H%M%S.png"))
@@ -365,35 +343,20 @@ class SceneManager(TaskQueue):
             print(e)
             raise
 
-    @qtmainthread
-    def set_visible(self, repr: SceneObjectRepr, visible: bool):
-        repr.visible = visible
-
-        if self.win is not None:
-            self.win.set_object_icon(repr, IconName.eye if visible else IconName.eyeclosed)
-
-        self.repaint()
-
-    def set_material_properties(
-        self,
-        repr: SceneObjectRepr,
-        ambient: Optional[color] = None,
-        diffuse: Optional[color] = None,
-        emissive: Optional[color] = None,
-        specular: Optional[color] = None,
-    ):
-        pass
-
     def _remove_tree_object(self):
         obj = self.win.get_selected_tree_object()
         if obj is not None:
             self.remove_object(obj)
 
-    def _tree_object_click(self, index):
-        obj = self.win.get_selected_tree_object()
-        self.win.select_object(obj)
-
-    def _tree_object_dblclick(self, index):
-        obj = self.win.get_selected_tree_object()
+    def _tree_object_dblclick(self, obj):
         if isinstance(obj, SceneObjectRepr):
-            self.set_visible(obj, not obj.visible)
+            obj.visible=not obj.visible
+            self.update_ui()
+            self.repaint()
+
+    def _load_script(self):
+        filenames=self.win.choose_file_dialog("Select script file")
+        if filenames:
+            self.exec_scripts_task(os.path.abspath(filenames[0]))
+            
+

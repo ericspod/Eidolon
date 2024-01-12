@@ -21,10 +21,10 @@ from typing import Callable, Generator, Optional, Union
 
 from PyQt5 import QtCore, QtGui
 
-from ..mathdef.math_types import rotator, vec3
-from ..mathdef.math_utils import rad_circular_convert, rad_clamp
-from ..renderer import OffscreenCamera
-from ..ui.camera_widget import CameraWidget, CameraWidgetEvent
+from eidolon.mathdef.math_types import rotator, vec3
+from eidolon.mathdef.math_utils import rad_circular_convert, rad_clamp
+from eidolon.renderer import OffscreenCamera
+from eidolon.ui.camera_widget import CameraWidget, CameraWidgetEvent
 
 __all__ = ["Camera3DController", "QtCamera3DController"]
 

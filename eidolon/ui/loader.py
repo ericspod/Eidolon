@@ -31,7 +31,7 @@ __all__ = ["load_ui", "load_res_layout", "add_search_path", "rename_ui_paths"]
 UI_REPLACE_PATTERNS = [
     ("<resources>.*</resources>", ""),  # remove the resources section from the XML
     (">\\:/([^/]+)/([^<]+)<", ">\\1:\\2<"),  # replace every ':/path/filename.ext' with 'path:filename.ext' in XML
-    ("\(\\:/([^/]+)/([^<]+)\)", "\(\\1:\\2\)")  # replace every ':/path/filename.ext' with 'path:filename.ext' in CSS
+    ("\(\\:/([^/]+)/([^)]+)\)", "(\\1:\\2)")  # replace every ':/path/filename.ext' with 'path:filename.ext' in CSS
 ]
 
 
@@ -41,20 +41,21 @@ def rename_ui_paths(uistr):
 
     return uistr
 
-def load_ui(xmlstr):
+def load_ui(xmlstr,from_imports=False,import_from='.'):
     """Loads the given XML ui file data and returns the created type."""
     # s = re.sub(restag, "", xmlstr)  # get rid of the resources section in the XML
     xmlstr=rename_ui_paths(xmlstr)
 
-    uiclass, _ = uic.loadUiType(StringIO(xmlstr))  # create a local type definition
+    # create a local type definition
+    uiclass, _ = uic.loadUiType(StringIO(xmlstr),from_imports=from_imports,import_from=import_from)
     return uiclass
 
 
-def load_res_layout(filename):
+def load_res_layout(filename,from_imports=False,import_from='.'):
     if not resources.has_resource(filename, "ui"):
         raise ValueError(f"Cannot find UI layout with name {filename}")
 
-    return load_ui(resources.read_text(filename, "ui"))
+    return load_ui(resources.read_text(filename, "ui"),from_imports=from_imports,import_from=import_from)
 
 
 def add_search_path(name, submodule):

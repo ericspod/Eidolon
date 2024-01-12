@@ -31,7 +31,7 @@ def to_qt_color(c):
     if isinstance(c, QtGui.QColor):
         return c
     else:
-        c = tuple(c)+(1.0,)*4
+        c = tuple(c) + (1.0,) * 4
         return QtGui.QColor(c[0] * 255, c[1] * 255, c[2] * 255, c[3] * 255)
 
 
@@ -63,8 +63,8 @@ def signal_blocker(*objs):
 def replace_widget(orig_widg, new_widg, layout=None):
     """Replace a widget with a new one in its containing layout."""
     if layout is None:
-        layout = orig_widg.parent().layout()   
-        
+        layout = orig_widg.parent().layout()
+
     layout.replaceWidget(orig_widg, new_widg)
     new_widg.setParent(orig_widg.parent())
     orig_widg.setParent(None)
@@ -233,6 +233,38 @@ def create_menu(title, values, default_func=lambda v: None, parent=None):
             menu.addAction(val, _call_func(func, val))
 
     return menu
+
+
+def set_table_headers(table):
+    # NOTE: the critical property the table must have is the cascading resize settings must be set to true for both dimensions
+    # The designer properties for these are horizontalHeaderCascadingSectionResizes and verticalHeaderCascadingSectionResizes
+    table.verticalHeader().setCascadingSectionResizes(True)
+    table.horizontalHeader().setCascadingSectionResizes(True)
+    table.verticalHeader().setDefaultAlignment(Qt.AlignLeft)  # why doesn't this stick in the designer?
+    table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+    table.horizontalHeader().setStretchLastSection(True)
+
+
+def fill_table(vals, table):
+    with signal_blocker(table):
+        if table.rowCount() != len(vals):
+            table.clearContents()
+            table.setRowCount(len(vals))
+            table.setColumnCount(2)
+            table.verticalHeader().setVisible(False)
+
+        for i, (n, v) in enumerate(vals):
+            item = QtWidgets.QTableWidgetItem(str(n))
+            item.setFlags((item.flags() & ~Qt.ItemIsEditable) | Qt.ItemIsSelectable)
+            table.setItem(i, 0, item)
+            item = QtWidgets.QTableWidgetItem(str(v))
+            item.setFlags((item.flags() & ~Qt.ItemIsEditable) | Qt.ItemIsSelectable)
+            table.setItem(i, 1, item)
+
+        table.resizeColumnToContents(0)
+        table.resizeRowsToContents()
+
+        set_table_headers(table)
 
 
 @qtmainthread

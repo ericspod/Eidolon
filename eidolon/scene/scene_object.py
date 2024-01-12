@@ -61,7 +61,7 @@ class SceneObject:
         self.reprcount: int = 0  # number of representations created, used to ensure unique names
         self.plugin = plugin  # plugin used to link interface and create representations
         self.other_values: dict = other_values  # keyword arguments passed in through the constructor
-        self._prop_tuples: list = []  # list of cached property tuples, filled in by getPropTuples()
+        self._prop_tuples: list = []  # list of cached property tuples
         self.filename: str = None
 
     def __repr__(self):
@@ -82,9 +82,7 @@ class SceneObject:
     @property
     def prop_tuples(self):
         """
-        Returns a list of name/value pairs listing the properties to display for this scene object in the UI. This can
-        use v1._prop_tuples as a cache for efficiency, so the method fills in v1._prop_tuples if this attribute is
-        empty and returns it thereafter.
+        Returns a list of name/value pairs listing the properties to display for this scene object in the UI.
         """
         return tuple(self._prop_tuples)
 
@@ -92,6 +90,10 @@ class SceneObject:
     def repr_types(self):
         """Returns an iterable of ReprType names identifying valid representations of this object."""
         return self.plugin.get_repr_types(self)
+    
+    def add_repr(self, rep):
+        self.reprs.append(rep)
+        self.reprcount+=1
 
     def remove_repr(self, rep):
         rep.visible = False
@@ -150,17 +152,19 @@ class SceneObjectRepr(Transformable):
         self._visible: bool = False
         self._aabb: Optional[BoundBox] = None  # cached AABB object, set to None to force recalc
         self._current_timestep: float = 0
+        self._prop_tuples: list = []  # list of cached property tuples
 
         self.figures: List[Figure] = []
         self.secondary_figures: List[Figure] = []
+        self.repr_data=None
 
     def __repr__(self):
-        return f"{self.__class__.__name__}<{self.name} @ {id(self):x}>"
+        return f"{self.__class__.__name__}<{self.name} {self.repr_count} @ {id(self):x}>"
 
     @property
     def label(self):
         """Returns the UI label, this may be different from the name and include additional information."""
-        return self._name + " <" + self.parent.name + ">"
+        return f"{self._name} {self.repr_count} <{self.parent.name}>"
 
     @property
     def name(self):
@@ -171,6 +175,13 @@ class SceneObjectRepr(Transformable):
     def name(self, name):
         """Sets the name of the object."""
         self._name = name
+
+    @property
+    def prop_tuples(self):
+        """
+        Returns a list of name/value pairs listing the properties to display for this scene object in the UI.
+        """
+        return (("Name",self.name),("Label",self.label))+tuple(self._prop_tuples)
 
     @property
     def visible(self) -> bool:
@@ -250,7 +261,9 @@ class SceneObjectRepr(Transformable):
         return self._matname
     
     def get_material(self) -> Material:
-        return self.figures[0].get_material()
+        m= self.figures[0].get_material()
+        m.name=self.material_name
+        return m
 
     def set_material(self, mat: Material):
         self._matname = mat.name

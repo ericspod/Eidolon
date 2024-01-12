@@ -20,9 +20,10 @@ from typing import Callable, List, NamedTuple, Union
 from functools import partial
 
 from PyQt5 import QtWidgets
+from eidolon.renderer.material import Material
 from eidolon.scene.scene_object import SceneObjectRepr
 from eidolon.ui import ColorButtonEvent, ColorButton
-from eidolon.ui.ui_utils import replace_widget, set_checked, to_qt_color
+from eidolon.ui.ui_utils import fill_table, replace_widget, set_checked, set_color_button, signal_blocker, to_qt_color
 from eidolon.ui.loader import load_res_layout
 from eidolon.utils import color, EventDispatcher, Namespace
 
@@ -32,15 +33,9 @@ Ui_ObjectProp = load_res_layout("object_property.ui")
 Ui_ReprProp = load_res_layout("repr_property.ui")
 
 
-class PropPanelDesc(NamedTuple):
-    repr: SceneObjectRepr = None
-    component: str = None
-    value: Union[float, color] = None
-
-
 class PropPanelEvent(Namespace):
-    color_changed = PropPanelDesc(SceneObjectRepr, str, color)
-    alpha_changed = PropPanelDesc(SceneObjectRepr, color)
+    color_changed = (SceneObjectRepr, str, color)
+    alpha_changed = (SceneObjectRepr, color)
 
 
 class ObjectProp(QtWidgets.QWidget, Ui_ObjectProp):
@@ -48,7 +43,15 @@ class ObjectProp(QtWidgets.QWidget, Ui_ObjectProp):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.obj = obj
-        self.evt_dispatch = evt_dispatch
+        self.evt_dispatch: EventDispatcher = evt_dispatch
+
+    def _update_state(self):
+        with signal_blocker(self.propTable):
+            fill_table(self.obj.prop_tuples,self.propTable)
+
+    def showEvent(self, evt):
+        QtWidgets.QWidget.showEvent(self, evt)
+        self._update_state()
 
 
 class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
@@ -56,10 +59,8 @@ class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.repr = repr
-        self.evt_dispatch = evt_dispatch
+        self.evt_dispatch: EventDispatcher = evt_dispatch
 
-        # self.chooseAmbient=replace_widget(self.chooseAmbient,ColorButton("Ambient",(1,1,1,1),None))
-        self.visibleCheckbox.setVisible(False)
         self.handleCheckbox.setVisible(False)
         self.bbCheckbox.setVisible(False)
         self.materialBox.setVisible(False)
@@ -74,10 +75,21 @@ class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
 
         self.shininessBox.valueChanged.connect(self._select_shininess)
         self.alphaBox.valueChanged.connect(self._select_alpha)
-
+    
     def _update_state(self):
-        # set_checked(self.repr.visible,self.visibleCheckbox)
-        pass
+        mat:Material = self.repr.get_material()
+        with signal_blocker(self.alphaBox,self.shininessBox,self.propTable):
+            self.alphaBox.setValue(mat.diffuse[3])
+            self.shininessBox.setValue(mat.shininess)
+
+            fill_table(self.repr.prop_tuples,self.propTable)
+
+            mat:Material = self.repr.get_material()
+            set_color_button(mat.ambient,self.chooseAmbient)
+            set_color_button(mat.diffuse,self.chooseDiffuse)
+            set_color_button(mat.emissive,self.chooseEmissive)
+            set_color_button(mat.specular,self.chooseSpecular)
+
 
     def showEvent(self, evt):
         QtWidgets.QWidget.showEvent(self, evt)
@@ -92,7 +104,7 @@ class ReprProp(QtWidgets.QWidget, Ui_ReprProp):
         self.evt_dispatch.trigger_event(PropPanelEvent._alpha_changed, repr=self.repr, value=value)
 
     def _select_color(self, component):
-        mat = self.repr.get_material()
+        mat:Material = self.repr.get_material()
         col = to_qt_color(getattr(mat, component))
         c = QtWidgets.QColorDialog.getColor(col, self)
         if c.isValid():

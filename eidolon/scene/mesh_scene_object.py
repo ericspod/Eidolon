@@ -18,7 +18,8 @@
 
 from typing import Iterable, List
 
-from ..mathdef import Mesh
+from eidolon.renderer import Figure
+from eidolon.mathdef import Mesh
 from .scene_object import SceneObject, SceneObjectRepr
 
 __all__ = ["MeshSceneObject", "MeshSceneObjectRepr"]
@@ -66,4 +67,15 @@ class MeshSceneObject(SceneObject):
 
 
 class MeshSceneObjectRepr(SceneObjectRepr):
-    pass
+    def __init__(
+        self,
+        parent: SceneObject,
+        figures: List[Figure],
+        meshes: List[Mesh],
+        repr_type: str,
+        repr_count: int,
+        matname: str = "Default",
+    ):
+        super().__init__(parent, repr_type, repr_count, matname)
+        self.figures = list(figures)
+        self.repr_data = list(meshes)

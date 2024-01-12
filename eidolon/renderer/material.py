@@ -59,12 +59,12 @@ class Material:
         self.pmaterial = PMaterial()
 
     @staticmethod
-    def from_pmaterial(pmat: Optional[PMaterial]):
+    def from_pmaterial(pmat: Optional[PMaterial],name=""):
         if pmat is None:
-            return Material("")
+            return Material(name)
         
         return Material(
-            name="",
+            name=name,
             ambient=pmat.get_ambient(),
             diffuse=pmat.get_diffuse(),
             emissive=pmat.get_emission(),
@@ -91,9 +91,19 @@ class Material:
         if shininess is not None:
             self.shininess = shininess
 
+    def set_alpha(self, alpha):
+        self.ambient = self.ambient[:3] + (alpha,)
+        self.diffuse = self.diffuse[:3] + (alpha,)
+        self.emissive = self.emissive[:3] + (alpha,)
+
     @property
-    def name(self):
+    def name(self)->str:
         return self._name
+    
+    @name.setter
+    def name(self, n:str):
+        if n:
+            self._name=n
 
     def get_material_obj(self) -> PMaterial:
         self.pmaterial.set_ambient(self.ambient)

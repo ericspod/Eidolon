@@ -65,11 +65,14 @@ class Field(NamedTuple):
 
 class Mesh:
     @staticmethod
-    def tri_mesh(nodes,inds, norms=None,field_sets={}, timestep=0, parent=None):
+    def tri_mesh(nodes,inds, norms=None,colors=None,field_sets={}, timestep=0, parent=None):
         mesh = Mesh(nodes, {"inds": (inds, ElemType._Tri1NL)},field_sets,timestep,parent)
         
         if norms is not None:
             mesh.other_data[MeshDataValue._norms]=iter_to_np(norms)
+
+        if colors is not None:
+            mesh.other_data[MeshDataValue._colors]=iter_to_np(colors)
 
         return mesh
 

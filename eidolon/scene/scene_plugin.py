@@ -27,6 +27,7 @@ from eidolon.mathdef import (
     calculate_inverted_tri_mesh,
 )
 from eidolon.renderer import OffscreenCamera, SimpleFigure
+from eidolon.renderer.material import Material
 from eidolon.ui import IconName, ObjectProp, ReprProp
 from eidolon.ui.property_panels import PropPanelEvent
 from eidolon.ui.threadsafe_calls import qtmainthread
@@ -68,7 +69,6 @@ class ScenePlugin:
 
         self.evt_dispatch.add_handler(PropPanelEvent._color_changed, self._repr_color_change)
         self.evt_dispatch.add_handler(PropPanelEvent._alpha_changed, self._repr_alpha_change)
-        
 
     def init(self, plugid: int, mgr):
         """Called when the manager is being initialized."""
@@ -79,6 +79,12 @@ class ScenePlugin:
     def cleanup(self):
         """Called when shutting down, use this to clear and close resources."""
         pass
+
+    def update_post_change(self):
+        """Update the UI and repaint after a change has occurred in an object."""
+        self.mgr.update_ui()
+        self.mgr.repaint()
+
 
     def get_icon(self, obj) -> str:
         """Returns the icon name for `obj` (which will likely be a member of IconName), or None for the default."""
@@ -113,16 +119,14 @@ class ScenePlugin:
         mat = repr.get_material()
         mat.update_colors(**{component: value})
         repr.set_material(mat)
-        self.mgr.repaint()
+        self.update_post_change()
 
-    def _repr_alpha_change(self,repr: SceneObjectRepr, value: float):
-        mat = repr.get_material()
-        mat.ambient=mat.ambient[:3]+(value,)
-        mat.diffuse=mat.diffuse[:3]+(value,)
-        mat.emissive=mat.emissive[:3]+(value,)
+    def _repr_alpha_change(self, repr: SceneObjectRepr, value: float):
+        mat:Material = repr.get_material()
+        mat.set_alpha(value)
 
         repr.set_material(mat)
-        self.mgr.repaint()
+        self.update_post_change()
 
     def get_repr_types(self, obj: SceneObject) -> List[str]:
         """Return the ReprType identifiers for the valid representations of this object."""
@@ -233,9 +237,8 @@ class MeshScenePlugin(ScenePlugin):
             fig.timestep = m.timestep
             figures.append(fig)
 
-        repr = MeshSceneObjectRepr(obj, repr_type, len(obj.reprs))
-        repr.figures[:] = figures
-        obj.reprs.append(repr)
+        repr = MeshSceneObjectRepr(obj, figures, meshes, repr_type, obj.reprcount)
+        obj.add_repr(repr)
 
         return repr
 

@@ -44,7 +44,7 @@ LOGFILEVAR = "LOGFILE"  # path to log file, default eidolon.log
 APPDIR = os.environ.get(APPDIRVAR, __appdir__)
 APPDATADIR = os.environ.get(APPDATADIRVAR, "~/.eidolon")
 CONFIGFILE = os.environ.get(CONFIGFILEVAR, "config.yaml")  # config file name
-LOGFILE = os.environ.get(LOGFILEVAR, "eidolon.log")  # config file name
+LOGFILE = os.environ.get(LOGFILEVAR, "eidolon.log")  # log file name
 
 
 class ConfigVarNames(Namespace):

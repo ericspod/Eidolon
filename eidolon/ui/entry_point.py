@@ -19,10 +19,14 @@
 import sys
 from pathlib import Path
 
-__all__ = ["create_default_app", "default_entry_point", "task_entry_point"]
+import click
+
+from eidolon._version import __version__, __appname__
+
+__all__ = ["create_default_app", "default_entry_point", "task_entry_point", "main"]
 
 
-def create_default_app(argv=None):
+def create_default_app():
     """
     Configure and create the default application with manager and main window. The manager and QApplication is returned.
     """
@@ -45,6 +49,8 @@ def create_default_app(argv=None):
             sheet = o.read()
     elif has_resource(sheet_value):
         sheet = read_text(sheet_value)
+    else:
+        print(f"Failed to load stype sheet {sheet_value}")
 
     app.setStyleSheet(rename_ui_paths(sheet))
 
@@ -71,44 +77,54 @@ def create_default_app(argv=None):
     dlight = Light("dlight", LightType.DIRECTIONAL, (0.5, 0.5, 0.5, 1))
     dlight.attach(cam, True)
 
-    mgr.lights+=[amb, dlight]
+    mgr.lights += [amb, dlight]
 
     return app, mgr
 
 
-def default_entry_point(argv=None):
+def default_entry_point():
     """
     Entry point which calls `create_default_app` and just execs the UI once the window is shown.
     """
     from eidolon.ui import exec_ui
 
-    if argv is None:
-        argv = sys.argv
-
-    app, mgr = create_default_app(argv)
+    app, mgr = create_default_app()
 
     mgr.win.show()
 
     exec_ui(app)
 
 
-def task_entry_point(func_task, argv=None):
+def task_entry_point(func_task):
     """
     Entry point for program with `func_task` executed as a task item after the UI is shown.
     """
     from eidolon.ui import exec_ui
 
-    if argv is None:
-        argv = sys.argv
-
-    app, mgr = create_default_app(argv)
+    app, mgr = create_default_app()
 
     def _taskwrapper():
         mgr.set_task_status("Running task function", 0, 1)
-        func_task(mgr) 
+        func_task(mgr)
 
     mgr.win.show()
 
     mgr.add_func_task(_taskwrapper)
+
+    exec_ui(app)
+
+
+@click.command("eidolon", help=__appname__)
+@click.version_option(__version__, message="%(version)s")
+@click.argument("scripts", required=False, nargs=-1)
+def main(scripts):
+    from eidolon.ui import exec_ui
+
+    app, mgr = create_default_app()
+
+    if scripts:
+        mgr.exec_scripts_task(*scripts)
+
+    mgr.win.show()
 
     exec_ui(app)

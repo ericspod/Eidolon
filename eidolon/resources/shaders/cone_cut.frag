@@ -125,8 +125,8 @@ void main() {
 
     frag_color += p3d_Material.emission;
 
-    vec4 world_cam = p3d_ModelViewMatrixInverse * vec4(0, 0, 0, 1);
-    vec3 axis = normalize(world_cam.xyz - landmark);
+    vec4 world_lm_cam = p3d_ModelViewMatrixInverse * vec4(0, 0, 0, 1);
+    vec3 axis = normalize(world_lm_cam.xyz - landmark);
     vec3 to_vert = normalize(world_position.xyz - landmark);
 
     float v_angle = acos(dot(axis, to_vert));

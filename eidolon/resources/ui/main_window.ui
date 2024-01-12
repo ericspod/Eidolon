@@ -233,7 +233,7 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QTreeView" name="treeView">
+             <widget class="SceneObjectTree" name="treeView">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
@@ -440,8 +440,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>380</width>
-              <height>303</height>
+              <width>395</width>
+              <height>296</height>
              </rect>
             </property>
            </widget>
@@ -483,8 +483,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>98</width>
-              <height>28</height>
+              <width>395</width>
+              <height>280</height>
              </rect>
             </property>
            </widget>
@@ -1496,6 +1496,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>SceneObjectTree</class>
+   <extends>QTreeView</extends>
+   <header>eidolon.ui.sceneobject_tree</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../icons/icons.qrc"/>
  </resources>
